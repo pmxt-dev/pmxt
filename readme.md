@@ -104,3 +104,6 @@ Check out the [examples](pmxt/examples/) directory for more use cases:
 - Historical prices
 - Event price tracking
 - Recent trades
+
+
+[![Stargazers repo roster for @qoery-com/pmxt](https://reporoster.com/stars/qoery-com/pmxt)](https://github.com/qoery-com/pmxt/stargazers)

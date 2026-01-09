@@ -130,13 +130,13 @@ export class KalshiExchange extends PredictionMarketExchange {
 
         const outcomes: MarketOutcome[] = [
             {
-                id: 'yes',
+                id: market.ticker, // The actual market ticker (primary tradeable)
                 label: candidateName || 'Yes',
                 price: price,
                 priceChange24h: priceChange
             },
             {
-                id: 'no',
+                id: `${market.ticker}-NO`, // Virtual ID for the No outcome
                 label: candidateName ? `Not ${candidateName}` : 'No',
                 price: 1 - price,
                 priceChange24h: -priceChange // Inverse change for No? simplified assumption
@@ -234,7 +234,9 @@ export class KalshiExchange extends PredictionMarketExchange {
     async getMarketHistory(id: string, params: HistoryFilterParams): Promise<PriceCandle[]> {
         try {
             // Kalshi API expects uppercase tickers
-            const normalizedId = id.toUpperCase();
+            // Handle virtual "-NO" suffix by stripping it (fetching the underlying market history)
+            const cleanedId = id.replace(/-NO$/, '');
+            const normalizedId = cleanedId.toUpperCase();
             const interval = this.mapIntervalToKalshi(params.resolution);
 
             // Heuristic for series_ticker
@@ -292,7 +294,8 @@ export class KalshiExchange extends PredictionMarketExchange {
 
     async getOrderBook(id: string): Promise<OrderBook> {
         try {
-            const url = `https://api.elections.kalshi.com/trade-api/v2/markets/${id}/orderbook`;
+            const ticker = id.replace(/-NO$/, '');
+            const url = `https://api.elections.kalshi.com/trade-api/v2/markets/${ticker}/orderbook`;
             const response = await axios.get(url);
             const data = response.data.orderbook;
 
@@ -320,10 +323,11 @@ export class KalshiExchange extends PredictionMarketExchange {
 
     async getTradeHistory(id: string, params: HistoryFilterParams): Promise<Trade[]> {
         try {
+            const ticker = id.replace(/-NO$/, '');
             const url = `https://api.elections.kalshi.com/trade-api/v2/markets/trades`;
             const response = await axios.get(url, {
                 params: {
-                    ticker: id,
+                    ticker: ticker,
                     limit: params.limit || 100
                 }
             });

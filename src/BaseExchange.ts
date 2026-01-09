@@ -32,8 +32,8 @@ export abstract class PredictionMarketExchange {
     abstract searchMarkets(query: string, params?: MarketFilterParams): Promise<UnifiedMarket[]>;
 
     /**
-     * Fetch historical price data for a specific market or outcome.
-     * @param id - The market ID or specific outcome ID/Token ID depending on the exchange
+     * Fetch historical price data for a specific market outcome.
+     * @param id - The Outcome ID (MarketOutcome.id). This should be the ID of the specific tradeable asset.
      */
     async getMarketHistory(id: string, params: HistoryFilterParams): Promise<PriceCandle[]> {
         throw new Error("Method getMarketHistory not implemented.");

@@ -4,7 +4,9 @@
 // ----------------------------------------------------------------------------
 
 export interface MarketOutcome {
-    id: string;
+    id: string; // The unique ID of this outcome. This MUST be the ID required for valid deep-dive operations (orderbook/history).
+    // For Polymarket: This is the CLOB Token ID.
+    // For Kalshi: This is the Market This (e.g. "FED-25JAN") for the Yes outcome.
     label: string;
     price: number;
     priceChange24h?: number;

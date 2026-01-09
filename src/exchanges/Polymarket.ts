@@ -99,11 +99,12 @@ export class PolymarketExchange extends PredictionMarketExchange {
                             }
 
                             outcomes.push({
-                                id: String(index),
+                                id: clobTokenIds[index] || String(index), // Use CLOB Token ID as the primary ID
                                 label: outcomeLabel,
                                 price: parseFloat(rawPrice) || 0,
                                 priceChange24h: priceChange,
                                 metadata: {
+                                    // clobTokenId is now the main ID, but keeping it in metadata for backward compat if needed
                                     clobTokenId: clobTokenIds[index]
                                 }
                             });
@@ -233,7 +234,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
                             }
 
                             outcomes.push({
-                                id: String(index),
+                                id: clobTokenIds[index] || String(index),
                                 label: outcomeLabel,
                                 price: parseFloat(outcomePrices[index] || "0") || 0,
                                 priceChange24h: priceChange,
@@ -291,7 +292,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
     async getMarketHistory(id: string, params: HistoryFilterParams): Promise<PriceCandle[]> {
         // ID Validation: Polymarket CLOB requires a Token ID (long numeric string) not a Market ID
         if (id.length < 10 && /^\d+$/.test(id)) {
-            throw new Error(`Invalid ID for Polymarket history: "${id}". You provided a Market ID, but Polymarket's CLOB API requires a Token ID. Use outcome.metadata.clobTokenId instead.`);
+            throw new Error(`Invalid ID for Polymarket history: "${id}". You provided a Market ID, but Polymarket's CLOB API requires a Token ID. Ensure you are using 'outcome.id'.`);
         }
 
         try {

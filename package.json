@@ -1,6 +1,6 @@
 {
   "name": "pmxtjs",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "pmxt is a unified prediction market data API. The ccxt for prediction markets.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,7 +18,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "dependencies": {
     "axios": "^1.7.9",

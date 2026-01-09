@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-01-09
+
+### Breaking Changes
+- **Unified Deep-Dive Method IDs**: Standardized the IDs used in deep-dive methods across exchanges to ensure consistency. This changes the return signatures of data methods.
+
+### Improved
+- **Examples**: Simplified and fixed examples, including `historical_prices`, `orderbook_depth`, and `search_grouping`, to better demonstrate library usage.
+- **Example Data**: Updated default queries in examples for more relevant results.
+
+### Documentation
+- **README Enhancements**: Added badges, platform logos, and a visual overview image to the README.
+- **License**: Added MIT License to the project.
+
 ## [0.1.2] - 2026-01-08
 
 ### Changed

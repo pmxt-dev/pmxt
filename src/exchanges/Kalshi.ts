@@ -165,10 +165,17 @@ export class KalshiExchange extends PredictionMarketExchange {
         try {
             const markets = await this.fetchMarkets({ ...params, limit: fetchLimit });
             const lowerQuery = query.toLowerCase();
-            const filtered = markets.filter(market =>
-                (market.title || '').toLowerCase().includes(lowerQuery) ||
-                (market.description || '').toLowerCase().includes(lowerQuery)
-            );
+            const searchIn = params?.searchIn || 'title'; // Default to title-only search
+
+            const filtered = markets.filter(market => {
+                const titleMatch = (market.title || '').toLowerCase().includes(lowerQuery);
+                const descMatch = (market.description || '').toLowerCase().includes(lowerQuery);
+
+                if (searchIn === 'title') return titleMatch;
+                if (searchIn === 'description') return descMatch;
+                return titleMatch || descMatch; // 'both'
+            });
+
             const limit = params?.limit || 20;
             return filtered.slice(0, limit);
         } catch (error) {

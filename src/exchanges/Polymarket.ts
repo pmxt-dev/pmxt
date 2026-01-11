@@ -153,8 +153,8 @@ export class PolymarketExchange extends PredictionMarketExchange {
 
     async searchMarkets(query: string, params?: MarketFilterParams): Promise<UnifiedMarket[]> {
         // Polymarket Gamma API doesn't support native search
-        // Fetch a larger batch and filter client-side
-        const searchLimit = 100; // Fetch more markets to search through
+        // Fetch all active markets and filter client-side
+        const searchLimit = 100000; // Fetch all markets for comprehensive search
 
         try {
             // Fetch markets with a higher limit
@@ -165,10 +165,16 @@ export class PolymarketExchange extends PredictionMarketExchange {
 
             // Client-side text filtering
             const lowerQuery = query.toLowerCase();
-            const filtered = markets.filter(market =>
-                (market.title || '').toLowerCase().includes(lowerQuery) ||
-                (market.description || '').toLowerCase().includes(lowerQuery)
-            );
+            const searchIn = params?.searchIn || 'title'; // Default to title-only search
+
+            const filtered = markets.filter(market => {
+                const titleMatch = (market.title || '').toLowerCase().includes(lowerQuery);
+                const descMatch = (market.description || '').toLowerCase().includes(lowerQuery);
+
+                if (searchIn === 'title') return titleMatch;
+                if (searchIn === 'description') return descMatch;
+                return titleMatch || descMatch; // 'both'
+            });
 
             // Apply limit to filtered results
             const limit = params?.limit || 20;

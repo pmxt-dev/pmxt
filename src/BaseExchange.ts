@@ -4,6 +4,7 @@ export interface MarketFilterParams {
     limit?: number;
     offset?: number;
     sort?: 'volume' | 'liquidity' | 'newest';
+    searchIn?: 'title' | 'description' | 'both'; // Where to search (default: 'title')
 }
 
 export interface HistoryFilterParams {
@@ -27,7 +28,7 @@ export abstract class PredictionMarketExchange {
 
     /**
      * Search for markets matching a keyword query.
-     * Searches across title and description fields.
+     * By default, searches only in market titles. Use params.searchIn to search descriptions or both.
      */
     abstract searchMarkets(query: string, params?: MarketFilterParams): Promise<UnifiedMarket[]>;
 

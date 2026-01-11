@@ -82,11 +82,11 @@ npm install pmxtjs
 
 ## Documentation
 
-See the [API Reference](pmxt/API_REFERENCE.md) for detailed documentation and more examples.
+See the [API Reference](API_REFERENCE.md) for detailed documentation and more examples.
 
 ## Examples
 
-Check out the [examples](pmxt/examples/) directory for more use cases:
+Check out the [examples](examples/) directory for more use cases:
 - Market search
 - Order book data
 - Historical prices

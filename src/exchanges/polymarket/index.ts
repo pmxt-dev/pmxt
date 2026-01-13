@@ -6,6 +6,7 @@ import { getMarketsBySlug } from './getMarketsBySlug';
 import { fetchOHLCV } from './fetchOHLCV';
 import { fetchOrderBook } from './fetchOrderBook';
 import { fetchTrades } from './fetchTrades';
+import { fetchPositions } from './fetchPositions';
 import { PolymarketAuth } from './auth';
 import { Side, OrderType, AssetType } from '@polymarket/clob-client';
 
@@ -195,10 +196,8 @@ export class PolymarketExchange extends PredictionMarketExchange {
 
     async fetchPositions(): Promise<Position[]> {
         const auth = this.ensureAuth();
-        const client = await auth.getClobClient();
-
-        // Stub for now as detailed position parsing requires external data source
-        return [];
+        const address = auth.getAddress();
+        return fetchPositions(address);
     }
 
     async fetchBalance(): Promise<Balance[]> {

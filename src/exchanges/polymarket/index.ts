@@ -205,16 +205,35 @@ export class PolymarketExchange extends PredictionMarketExchange {
         const client = await auth.getClobClient();
 
         try {
-            // Fetch collateral balance (USDC)
-            const response = await client.getBalanceAllowance({
+            // 1. Fetch raw collateral balance (USDC)
+            // Polymarket relies strictly on USDC (Polygon) which has 6 decimals.
+            const USDC_DECIMALS = 6;
+            const balRes = await client.getBalanceAllowance({
                 asset_type: AssetType.COLLATERAL
             });
+            const rawBalance = parseFloat(balRes.balance);
+            const total = rawBalance / Math.pow(10, USDC_DECIMALS);
+
+            // 2. Fetch open orders to calculate locked funds
+            // We only care about BUY orders for USDC balance locking
+            const openOrders = await client.getOpenOrders({});
+
+            let locked = 0;
+            if (openOrders && Array.isArray(openOrders)) {
+                for (const order of openOrders) {
+                    if (order.side === Side.BUY) {
+                        const remainingSize = parseFloat(order.original_size) - parseFloat(order.size_matched);
+                        const price = parseFloat(order.price);
+                        locked += remainingSize * price;
+                    }
+                }
+            }
 
             return [{
                 currency: 'USDC',
-                total: parseFloat(response.balance), // Note: Verify if this is raw units or decimals
-                available: parseFloat(response.balance), // Need to subtract locked funds if trackable
-                locked: 0
+                total: total,
+                available: total - locked, // Available for new trades
+                locked: locked
             }];
         } catch (error: any) {
             console.error("Polymarket fetchBalance error:", error);

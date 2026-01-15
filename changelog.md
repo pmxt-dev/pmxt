@@ -1,6 +1,19 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+ 
+## [0.4.1] - 2026-01-15
+
+## [0.4.1] - 2026-01-15
+
+### Fixed
+- **Kalshi Metadata Enrichment**: Fixed a major data gap where Kalshi markets were returning empty `tags`. 
+  - **The Issue**: The Kalshi `/events` and `/markets` endpoints do not expose tags. Tags are instead nested under the `/series` metadata, which wasn't being queried.
+  - **The Fix**: Implemented a secondary fetch layer that retrieves Series metadata and maps it back to Markets.
+  - **Unified Tags**: Standardized the provider data model by merging Kalshi's `category` and `tags` into a single unified `tags` array, ensuring consistency with Polymarket's data structure.
+
+### Changed
+- **Kalshi Implementation**: Modified `fetchMarkets` to fetch Series mapping in parallel with events and `getMarketsBySlug` to perform atomic enrichment.
 
 ## [0.4.0] - 2026-01-13
 

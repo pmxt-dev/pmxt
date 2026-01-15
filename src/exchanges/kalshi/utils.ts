@@ -63,7 +63,7 @@ export function mapMarketToUnified(event: any, market: any): UnifiedMarket | nul
     return {
         id: market.ticker,
         title: event.title,
-        description: event.sub_title || market.subtitle || "",
+        description: market.rules_primary || market.rules_secondary || "",
         outcomes: outcomes,
         resolutionDate: new Date(market.expiration_time),
         volume24h: Number(market.volume_24h || market.volume || 0),

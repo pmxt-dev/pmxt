@@ -4,6 +4,9 @@
   "description": "pmxt is a unified prediction market data API. The ccxt for prediction markets.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "pmxt-server": "./dist/server/index.js"
+  },
   "files": [
     "dist",
     "API_REFERENCE.md"
@@ -16,7 +19,9 @@
     "clean": "rm -rf dist",
     "prebuild": "npm run clean",
     "build": "tsc",
-    "test": "jest -c jest.config.js"
+    "test": "jest -c jest.config.js",
+    "server": "tsx watch src/server/index.ts",
+    "server:prod": "node dist/server/index.js"
   },
   "keywords": [],
   "author": "",
@@ -24,13 +29,17 @@
   "type": "commonjs",
   "dependencies": {
     "@polymarket/clob-client": "^5.2.0",
+    "@types/express": "^5.0.6",
     "axios": "^1.7.9",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "ethers": "^5.8.0",
+    "express": "^5.2.1",
     "jest": "^30.2.0",
     "tsx": "^4.21.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.3",
     "identity-obj-proxy": "^3.0.0",

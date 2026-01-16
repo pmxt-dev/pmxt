@@ -2,6 +2,9 @@ export * from './BaseExchange';
 export * from './types';
 export * from './exchanges/polymarket';
 export * from './exchanges/kalshi';
+export * from './server/app';
+export * from './server/utils/port-manager';
+export * from './server/utils/lock-file';
 
 import { PolymarketExchange } from './exchanges/polymarket';
 import { KalshiExchange } from './exchanges/kalshi';

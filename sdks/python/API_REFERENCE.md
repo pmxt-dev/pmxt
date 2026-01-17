@@ -12,7 +12,6 @@ pip install pmxt
 
 ```python
 import pmxt
-from datetime import datetime
 
 # Initialize exchanges (server starts automatically!)
 poly = pmxt.Polymarket()
@@ -466,12 +465,12 @@ for pos in positions:
 ```python
 @dataclass
 class UnifiedMarket:
-    id: str  # 
-    title: str  # 
-    outcomes: List[MarketOutcome]  # 
-    volume24h: float  # 
-    liquidity: float  # 
-    url: str  # 
+id: str # 
+title: str # 
+outcomes: List[MarketOutcome] # 
+volume24h: float # 
+liquidity: float # 
+url: str # 
 ```
 
 ---
@@ -482,9 +481,9 @@ class UnifiedMarket:
 ```python
 @dataclass
 class MarketOutcome:
-    id: str  # 
-    label: str  # 
-    price: float  # 
+id: str # 
+label: str # 
+price: float # 
 ```
 
 ---
@@ -495,12 +494,12 @@ class MarketOutcome:
 ```python
 @dataclass
 class PriceCandle:
-    timestamp: int  # 
-    open: float  # 
-    high: float  # 
-    low: float  # 
-    close: float  # 
-    volume: float  # 
+timestamp: int # 
+open: float # 
+high: float # 
+low: float # 
+close: float # 
+volume: float # 
 ```
 
 ---
@@ -511,8 +510,8 @@ class PriceCandle:
 ```python
 @dataclass
 class OrderBook:
-    bids: List[OrderLevel]  # 
-    asks: List[OrderLevel]  # 
+bids: List[OrderLevel] # 
+asks: List[OrderLevel] # 
 ```
 
 ---
@@ -523,8 +522,8 @@ class OrderBook:
 ```python
 @dataclass
 class OrderLevel:
-    price: float  # 
-    size: float  # 
+price: float # 
+size: float # 
 ```
 
 ---
@@ -535,11 +534,11 @@ class OrderLevel:
 ```python
 @dataclass
 class Trade:
-    id: str  # 
-    price: float  # 
-    amount: float  # 
-    side: str  # 
-    timestamp: int  # 
+id: str # 
+price: float # 
+amount: float # 
+side: str # 
+timestamp: int # 
 ```
 
 ---
@@ -550,17 +549,17 @@ class Trade:
 ```python
 @dataclass
 class Order:
-    id: str  # 
-    market_id: str  # 
-    outcome_id: str  # 
-    side: str  # 
-    type: str  # 
-    price: float  # 
-    amount: float  # 
-    status: str  # 
-    filled: float  # 
-    remaining: float  # 
-    timestamp: int  # 
+id: str # 
+market_id: str # 
+outcome_id: str # 
+side: str # 
+type: str # 
+price: float # 
+amount: float # 
+status: str # 
+filled: float # 
+remaining: float # 
+timestamp: int # 
 ```
 
 ---
@@ -571,14 +570,14 @@ class Order:
 ```python
 @dataclass
 class Position:
-    market_id: str  # 
-    outcome_id: str  # 
-    outcome_label: str  # 
-    size: float  # 
-    entry_price: float  # 
-    current_price: float  # 
-    unrealized_pn_l: float  # 
-    realized_pn_l: float  # 
+market_id: str # 
+outcome_id: str # 
+outcome_label: str # 
+size: float # 
+entry_price: float # 
+current_price: float # 
+unrealized_pn_l: float # 
+realized_pn_l: float # 
 ```
 
 ---
@@ -589,10 +588,10 @@ class Position:
 ```python
 @dataclass
 class Balance:
-    currency: str  # 
-    total: float  # 
-    available: float  # 
-    locked: float  # 
+currency: str # 
+total: float # 
+available: float # 
+locked: float # 
 ```
 
 ---
@@ -606,10 +605,10 @@ class Balance:
 ```python
 @dataclass
 class MarketFilterParams:
-    limit: int  # 
-    offset: int  # 
-    sort: str  # 
-    search_in: str  # 
+limit: int # 
+offset: int # 
+sort: str # 
+search_in: str # 
 ```
 
 ---
@@ -620,10 +619,10 @@ class MarketFilterParams:
 ```python
 @dataclass
 class HistoryFilterParams:
-    resolution: str  # 
-    start: str  # 
-    end: str  # 
-    limit: int  # 
+resolution: str # 
+start: str # 
+end: str # 
+limit: int # 
 ```
 
 ---
@@ -634,12 +633,12 @@ class HistoryFilterParams:
 ```python
 @dataclass
 class CreateOrderParams:
-    market_id: str  # 
-    outcome_id: str  # 
-    side: str  # 
-    type: str  # 
-    amount: float  # 
-    price: float  # 
+market_id: str # 
+outcome_id: str # 
+side: str # 
+type: str # 
+amount: float # 
+price: float # 
 ```
 
 ---

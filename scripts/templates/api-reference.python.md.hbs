@@ -12,7 +12,6 @@ pip install pmxt
 
 ```python
 import pmxt
-from datetime import datetime
 
 # Initialize exchanges (server starts automatically!)
 poly = pmxt.Polymarket()
@@ -87,7 +86,7 @@ def {{pythonName this.name}}({{pythonParams this.params}}) -> {{pythonType this.
 @dataclass
 class {{this.name}}:
 {{#each this.fields}}
-    {{pythonName this.name}}: {{pythonType this.type}}  # {{this.description}}
+{{pythonName this.name}}: {{pythonType this.type}} # {{this.description}}
 {{/each}}
 ```
 
@@ -105,7 +104,7 @@ class {{this.name}}:
 @dataclass
 class {{this.name}}:
 {{#each this.fields}}
-    {{pythonName this.name}}: {{pythonType this.type}}  # {{this.description}}
+{{pythonName this.name}}: {{pythonType this.type}} # {{this.description}}
 {{/each}}
 ```
 

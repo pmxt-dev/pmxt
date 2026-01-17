@@ -69,6 +69,16 @@ export abstract class PredictionMarketExchange {
     }
 
     /**
+     * Watch orderbook updates in real-time via WebSocket.
+     * Returns an async generator that yields OrderBook updates.
+     * @param symbol - The outcome ID (token ID for Polymarket, ticker for Kalshi)
+     * @yields {OrderBook} Orderbook updates as they arrive
+     */
+    async *watchOrderBook(symbol: string): AsyncGenerator<OrderBook> {
+        throw new Error("Method watchOrderBook not implemented.");
+    }
+
+    /**
      * Fetch raw trade history.
      */
     async fetchTrades(id: string, params: HistoryFilterParams): Promise<Trade[]> {

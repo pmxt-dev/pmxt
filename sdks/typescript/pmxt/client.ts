@@ -436,6 +436,65 @@ export abstract class Exchange {
     }
 
     /**
+     * Watch orderbook updates in real-time via WebSocket.
+     * 
+     * Note: This method uses the core exchange directly (bypasses the server)
+     * to maintain a persistent WebSocket connection. For WebSocket features,
+     * consider using the core package directly for better performance.
+     * 
+     * @param outcomeId - Outcome ID (token ID for Polymarket, ticker for Kalshi)
+     * @yields {OrderBook} Orderbook updates as they arrive
+     * 
+     * @example
+     * ```typescript
+     * for await (const orderbook of exchange.watchOrderBook(outcomeId)) {
+     *     console.log(`Best bid: ${orderbook.bids[0]?.price}`);
+     *     console.log(`Best ask: ${orderbook.asks[0]?.price}`);
+     * }
+     * ```
+     */
+    async *watchOrderBook(outcomeId: string): AsyncGenerator<OrderBook> {
+        // Try to import core exchange - works in monorepo or if pmxt-core is installed
+        let ExchangeClass: any;
+        
+        try {
+            // Try relative import (works in monorepo)
+            const coreModule = await import('../../../../core/src/index.js');
+            ExchangeClass = this.exchangeName === 'polymarket' 
+                ? coreModule.PolymarketExchange 
+                : this.exchangeName === 'kalshi'
+                ? coreModule.KalshiExchange
+                : null;
+        } catch {
+            try {
+                // Try package import (works if pmxt-core is installed)
+                const coreModule = await import('pmxt-core');
+                ExchangeClass = this.exchangeName === 'polymarket' 
+                    ? coreModule.PolymarketExchange 
+                    : this.exchangeName === 'kalshi'
+                    ? coreModule.KalshiExchange
+                    : null;
+            } catch (error: any) {
+                throw new Error(
+                    'WebSocket support requires access to pmxt-core. ' +
+                    'For WebSocket features, use the core package directly: ' +
+                    'import { PolymarketExchange } from "pmxt-core"'
+                );
+            }
+        }
+
+        if (!ExchangeClass) {
+            throw new Error(`WebSocket not supported for exchange: ${this.exchangeName}`);
+        }
+
+        // Create exchange instance with credentials
+        const coreExchange = new ExchangeClass(this.getCredentials());
+
+        // Yield from core exchange's watchOrderBook
+        yield* coreExchange.watchOrderBook(outcomeId);
+    }
+
+    /**
      * Get trade history for an outcome.
      * 
      * Note: Polymarket requires API key.

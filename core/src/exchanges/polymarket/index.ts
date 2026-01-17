@@ -48,31 +48,16 @@ export class PolymarketExchange extends PredictionMarketExchange {
         return fetchOrderBook(id);
     }
 
-    /**
-     * Watch orderbook updates in real-time via WebSocket.
-     * First fetches an initial snapshot via REST, then streams updates via WebSocket.
-     * @param tokenId - The CLOB token ID (outcome.id)
-     * @yields {OrderBook} Orderbook updates as they arrive
-     */
     async *watchOrderBook(tokenId: string): AsyncGenerator<OrderBook> {
-        // Initialize WebSocket manager if not exists
         if (!this.wsManager) {
             this.wsManager = new PolymarketWebSocketManager();
         }
 
-        // Fetch initial snapshot via REST
         const initialSnapshot = await this.fetchOrderBook(tokenId);
-        
-        // Set initial snapshot in WebSocket manager
         this.wsManager.setInitialSnapshot(tokenId, initialSnapshot);
-        
-        // Yield initial snapshot
         yield initialSnapshot;
 
-        // Stream updates from WebSocket
-        for await (const update of this.wsManager.watchOrderBook(tokenId)) {
-            yield update;
-        }
+        yield* this.wsManager.watchOrderBook(tokenId);
     }
 
     async fetchTrades(id: string, params: HistoryFilterParams): Promise<Trade[]> {

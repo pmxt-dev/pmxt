@@ -1,34 +1,48 @@
 import pmxt from '../../src';
 
-/**
- * Example: Watch Polymarket Orderbook in Real-Time
- * 
- * This example demonstrates how to stream orderbook updates via WebSocket.
- * It fetches an initial snapshot, then streams real-time updates.
- */
+const MAX_UPDATES = 10;
+const MAX_DURATION_MS = 60000;
 
 const main = async () => {
     const exchange = new pmxt.Polymarket();
 
-    // First, get a market to watch
-    const markets = await exchange.searchMarkets('election', { limit: 1 });
+    console.log('Fetching active markets...');
+    const allMarkets = await exchange.fetchMarkets({ 
+        limit: 100,
+        sort: 'volume'
+    });
     
-    if (markets.length === 0) {
+    if (allMarkets.length === 0) {
         console.log('No markets found');
         return;
     }
 
-    const market = markets[0];
-    const tokenId = market.outcomes[0].id; // Get the token ID for the first outcome
-
-    console.log(`Watching orderbook for: ${market.title}`);
-    console.log(`Token ID: ${tokenId}`);
-    console.log('---');
+    const activeMarkets = allMarkets
+        .filter(m => (m.volume24h || 0) > 10000)
+        .sort((a, b) => (b.volume24h || 0) - (a.volume24h || 0));
+    
+    const market = activeMarkets.length > 0 
+        ? activeMarkets[0] 
+        : allMarkets.sort((a, b) => (b.volume24h || 0) - (a.volume24h || 0))[0];
+    
+    const tokenId = market.outcomes[0].id;
+    
+    console.log(`Selected market: ${market.title}`);
+    console.log(`  24h Volume: $${(market.volume24h || 0).toLocaleString()}`);
+    console.log(`  Liquidity: $${(market.liquidity || 0).toLocaleString()}`);
+    console.log(`Token ID: ${tokenId}\n`);
 
     try {
-        // Watch orderbook updates
         let updateCount = 0;
+        const startTime = Date.now();
+        
+        let timeout: NodeJS.Timeout = setTimeout(() => {
+            console.log(`\nStopping after ${MAX_DURATION_MS / 1000} seconds (received ${updateCount} update(s))...`);
+            process.exit(0);
+        }, MAX_DURATION_MS);
+        
         for await (const orderbook of exchange.watchOrderBook(tokenId)) {
+            clearTimeout(timeout);
             updateCount++;
             
             const bestBid = orderbook.bids[0];
@@ -42,12 +56,20 @@ const main = async () => {
             console.log(`  Timestamp: ${orderbook.timestamp ? new Date(orderbook.timestamp).toISOString() : 'N/A'}`);
             console.log('---');
 
-            // Stop after 10 updates for demo purposes
-            if (updateCount >= 10) {
+            if (updateCount >= MAX_UPDATES) {
+                clearTimeout(timeout);
                 console.log('Stopping after 10 updates...');
                 break;
             }
+            
+            timeout = setTimeout(() => {
+                console.log(`\nStopping after ${MAX_DURATION_MS / 1000} seconds (received ${updateCount} update(s))...`);
+                process.exit(0);
+            }, MAX_DURATION_MS);
         }
+        
+        clearTimeout(timeout);
+        console.log(`\nFinished. Received ${updateCount} update(s) total.`);
     } catch (error) {
         console.error('Error watching orderbook:', error);
     }

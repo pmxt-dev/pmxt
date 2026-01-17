@@ -1,39 +1,40 @@
-import { BaseWebSocketManager, WebSocketState } from '../../websocket/BaseWebSocketManager';
-import { OrderBook, OrderLevel } from '../../types';
+import { BaseWebSocketManager } from '../../websocket/BaseWebSocketManager';
+import { OrderBook } from '../../types';
 import { OrderBookState } from '../../websocket/OrderBookState';
 
 const POLYMARKET_WS_URL = 'wss://ws-subscriptions-clob.polymarket.com/ws/market';
+const CONNECTION_READY_DELAY = 100;
 
-interface PolymarketBookMessage {
-    type: 'book';
+interface BookEntry {
+    market: string;
     asset_id: string;
+    timestamp: string;
+    hash: string;
     bids: Array<{ price: string; size: string }>;
     asks: Array<{ price: string; size: string }>;
-    timestamp?: string;
 }
 
-interface PolymarketPriceChangeMessage {
-    type: 'price_change';
-    asset_id: string;
-    price: string;
+interface PriceChangeMessage {
+    market: string;
+    price_changes: Array<{
+        asset_id: string;
+        price: string;
+        size: string;
+        side: 'BUY' | 'SELL';
+        hash: string;
+        best_bid: string;
+        best_ask: string;
+    }>;
+    timestamp: string;
+    event_type: string;
 }
 
-interface PolymarketTradeMessage {
-    type: 'last_trade_price';
-    asset_id: string;
-    price: string;
-    side: 'buy' | 'sell';
-}
+type WebSocketMessage = BookEntry | PriceChangeMessage | BookEntry[];
 
-type PolymarketMessage = PolymarketBookMessage | PolymarketPriceChangeMessage | PolymarketTradeMessage;
-
-/**
- * WebSocket manager for Polymarket CLOB orderbook streaming.
- */
 export class PolymarketWebSocketManager extends BaseWebSocketManager {
-    private orderbookStates: Map<string, OrderBookState> = new Map();
-    private subscriptions: Set<string> = new Set();
-    private messageHandlers: Map<string, (orderbook: OrderBook) => void> = new Map();
+    private readonly orderbookStates = new Map<string, OrderBookState>();
+    private readonly subscriptions = new Set<string>();
+    private readonly messageHandlers = new Map<string, (orderbook: OrderBook) => void>();
 
     constructor() {
         super({
@@ -45,47 +46,40 @@ export class PolymarketWebSocketManager extends BaseWebSocketManager {
         });
     }
 
-    /**
-     * Subscribe to orderbook updates for a specific token ID.
-     * Returns an async generator that yields OrderBook updates.
-     */
     async *watchOrderBook(tokenId: string): AsyncGenerator<OrderBook> {
-        // Initialize orderbook state if not exists
         if (!this.orderbookStates.has(tokenId)) {
             this.orderbookStates.set(tokenId, new OrderBookState());
         }
 
-        // Buffer queue for orderbook updates
         const updateBuffer: OrderBook[] = [];
         const waiters: Array<{ resolve: (value: OrderBook) => void; reject: (error: Error) => void }> = [];
         let isActive = true;
         let error: Error | null = null;
 
-        // Register handler
+        const errorListener = (err: Error) => {
+            error = err;
+            while (waiters.length > 0) {
+                waiters.shift()!.reject(err);
+            }
+        };
+        this.on('error', errorListener);
+
         const handler = (orderbook: OrderBook) => {
             if (!isActive) return;
 
             if (waiters.length > 0) {
-                // Resolve waiting promise
-                const { resolve } = waiters.shift()!;
-                resolve(orderbook);
+                waiters.shift()!.resolve(orderbook);
             } else {
-                // Buffer the update
                 updateBuffer.push(orderbook);
             }
         };
 
         this.messageHandlers.set(tokenId, handler);
 
-        // Subscribe if not already subscribed
-        if (!this.subscriptions.has(tokenId)) {
-            this.subscribe(tokenId);
-        }
-
-        // Ensure connection
         if (!this.isConnected()) {
             try {
                 await this.connect();
+                await new Promise(resolve => setTimeout(resolve, CONNECTION_READY_DELAY));
             } catch (err) {
                 isActive = false;
                 this.messageHandlers.delete(tokenId);
@@ -93,21 +87,21 @@ export class PolymarketWebSocketManager extends BaseWebSocketManager {
             }
         }
 
+        if (!this.subscriptions.has(tokenId)) {
+            this.subscribe(tokenId);
+        }
+
         try {
             while (isActive) {
-                // Check for buffered updates first
                 if (updateBuffer.length > 0) {
-                    const orderbook = updateBuffer.shift()!;
-                    yield orderbook;
+                    yield updateBuffer.shift()!;
                     continue;
                 }
 
-                // Check for error
                 if (error) {
                     throw error;
                 }
 
-                // Wait for next update
                 const orderbook = await new Promise<OrderBook>((resolve, reject) => {
                     waiters.push({ resolve, reject });
                 });
@@ -115,147 +109,135 @@ export class PolymarketWebSocketManager extends BaseWebSocketManager {
                 yield orderbook;
             }
         } catch (err) {
-            // Reject all waiting promises
             while (waiters.length > 0) {
-                const { reject } = waiters.shift()!;
-                reject(err instanceof Error ? err : new Error(String(err)));
+                waiters.shift()!.reject(err instanceof Error ? err : new Error(String(err)));
             }
             throw err;
         } finally {
-            // Cleanup
+            this.removeListener('error', errorListener);
             isActive = false;
             this.messageHandlers.delete(tokenId);
 
-            // Unsubscribe if no other handlers
             if (this.messageHandlers.size === 0) {
                 this.unsubscribe(tokenId);
             }
         }
     }
 
-    /**
-     * Update the orderbook state with an initial snapshot.
-     * This should be called before starting to watch.
-     */
     setInitialSnapshot(tokenId: string, snapshot: OrderBook): void {
-        const state = this.orderbookStates.get(tokenId);
-        if (state) {
-            state.updateSnapshot(snapshot);
-        } else {
-            const newState = new OrderBookState();
-            newState.updateSnapshot(snapshot);
-            this.orderbookStates.set(tokenId, newState);
+        let state = this.orderbookStates.get(tokenId);
+        if (!state) {
+            state = new OrderBookState();
+            this.orderbookStates.set(tokenId, state);
         }
+        state.updateSnapshot(snapshot);
     }
 
     protected onOpen(): void {
-        // Resubscribe to all active subscriptions
-        const tokenIds = Array.from(this.subscriptions);
-        if (tokenIds.length > 0) {
-            this.subscribe(tokenIds);
-        }
-    }
-
-    protected onMessage(message: string): void {
-        try {
-            const data: PolymarketMessage = JSON.parse(message);
-
-            if (data.type === 'book') {
-                this.handleBookMessage(data);
-            }
-            // We can handle price_change and last_trade_price in the future if needed
-        } catch (error) {
-            this.emit('error', new Error(`Failed to parse message: ${error}`));
-        }
-    }
-
-    protected onClose(code: number, reason: string): void {
-        // Connection closed, will reconnect automatically
-    }
-
-    /**
-     * Handle book update message from Polymarket.
-     */
-    private handleBookMessage(message: PolymarketBookMessage): void {
-        const { asset_id, bids, asks, timestamp } = message;
-
-        // Get or create orderbook state
-        let state = this.orderbookStates.get(asset_id);
-        if (!state) {
-            state = new OrderBookState();
-            this.orderbookStates.set(asset_id, state);
+        if (this.subscriptions.size === 0) {
+            return;
         }
 
-        // Convert Polymarket format to unified format
-        const orderbookDelta: OrderBook = {
-            bids: bids.map(level => ({
-                price: parseFloat(level.price),
-                size: parseFloat(level.size)
-            })),
-            asks: asks.map(level => ({
-                price: parseFloat(level.price),
-                size: parseFloat(level.size)
-            })),
-            timestamp: timestamp ? new Date(timestamp).getTime() : Date.now()
-        };
-
-        // Apply delta to state
-        state.applyDelta(orderbookDelta);
-
-        // Get current snapshot
-        const snapshot = state.getSnapshot();
-
-        // Notify handlers
-        const handler = this.messageHandlers.get(asset_id);
-        if (handler) {
-            handler(snapshot);
-        }
-    }
-
-    /**
-     * Subscribe to orderbook updates for one or more token IDs.
-     */
-    private subscribe(tokenIds: string | string[]): void {
-        const ids = Array.isArray(tokenIds) ? tokenIds : [tokenIds];
-
-        // Add to subscriptions set
-        ids.forEach(id => this.subscriptions.add(id));
-
-        // Send subscribe message
         const subscribeMessage = {
             type: 'market' as const,
-            asset_ids: Array.from(this.subscriptions)
+            assets_ids: Array.from(this.subscriptions)
         };
-
         this.send(JSON.stringify(subscribeMessage));
     }
 
-    /**
-     * Unsubscribe from orderbook updates for a token ID.
-     */
-    private unsubscribe(tokenId: string): void {
-        this.subscriptions.delete(tokenId);
+    protected onMessage(message: string): void {
+        const trimmed = message.trim();
+        
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+            if (trimmed.includes('INVALID OPERATION') || trimmed.includes('INVALID')) {
+                this.emit('error', new Error(`Polymarket WebSocket: ${trimmed}`));
+            }
+            return;
+        }
 
-        if (this.subscriptions.size > 0) {
-            // Update subscription with remaining token IDs
-            const subscribeMessage = {
-                type: 'market' as const,
-                asset_ids: Array.from(this.subscriptions)
-            };
-            this.send(JSON.stringify(subscribeMessage));
-        } else {
-            // No more subscriptions, could disconnect or keep connection alive
-            // For now, we'll keep the connection alive in case new subscriptions come in
+        try {
+            const data: WebSocketMessage = JSON.parse(message);
+            
+            if (Array.isArray(data)) {
+                for (const entry of data) {
+                    if (this.isBookEntry(entry)) {
+                        this.processBookEntry(entry);
+                    }
+                }
+            } else if (this.isBookEntry(data)) {
+                this.processBookEntry(data);
+            }
+        } catch (error) {
+            this.emit('error', new Error(`Failed to parse WebSocket message: ${error}`));
         }
     }
 
-    /**
-     * Clean up resources.
-     */
+    protected onClose(): void {
+        // Reconnection handled by base class
+    }
+
     cleanup(): void {
         this.messageHandlers.clear();
         this.subscriptions.clear();
         this.orderbookStates.clear();
         this.disconnect();
+    }
+
+    private processBookEntry(entry: BookEntry): void {
+        let state = this.orderbookStates.get(entry.asset_id);
+        if (!state) {
+            state = new OrderBookState();
+            this.orderbookStates.set(entry.asset_id, state);
+        }
+
+        const snapshot: OrderBook = {
+            bids: (entry.bids || []).map(level => ({
+                price: parseFloat(level.price),
+                size: parseFloat(level.size)
+            })),
+            asks: (entry.asks || []).map(level => ({
+                price: parseFloat(level.price),
+                size: parseFloat(level.size)
+            })),
+            timestamp: entry.timestamp ? parseInt(entry.timestamp) : Date.now()
+        };
+
+        state.updateSnapshot(snapshot);
+        const handler = this.messageHandlers.get(entry.asset_id);
+        handler?.(state.getSnapshot());
+    }
+
+    private isBookEntry(data: any): data is BookEntry {
+        return data?.asset_id && (data.bids || data.asks);
+    }
+
+    private subscribe(tokenIds: string | string[]): void {
+        const ids = Array.isArray(tokenIds) ? tokenIds : [tokenIds];
+        ids.forEach(id => this.subscriptions.add(id));
+
+        const subscribeMessage = {
+            type: 'market' as const,
+            assets_ids: Array.from(this.subscriptions)
+        };
+
+        this.send(JSON.stringify(subscribeMessage));
+    }
+
+    private unsubscribe(tokenId: string): void {
+        this.subscriptions.delete(tokenId);
+
+        if (this.subscriptions.size > 0) {
+            const subscribeMessage = {
+                type: 'market' as const,
+                assets_ids: Array.from(this.subscriptions)
+            };
+            this.send(JSON.stringify(subscribeMessage));
+        } else {
+            const unsubscribeMessage = {
+                assets_ids: [tokenId],
+                operation: 'unsubscribe' as const
+            };
+            this.send(JSON.stringify(unsubscribeMessage));
+        }
     }
 }

@@ -1,9 +1,7 @@
 import { BaseWebSocketManager } from '../../websocket/BaseWebSocketManager';
 import { OrderBook } from '../../types';
 import { OrderBookState } from '../../websocket/OrderBookState';
-
-const POLYMARKET_WS_URL = 'wss://ws-subscriptions-clob.polymarket.com/ws/market';
-const CONNECTION_READY_DELAY = 100;
+import { POLYMARKET_WS_URL } from './utils';
 
 interface BookEntry {
     market: string;
@@ -31,10 +29,10 @@ interface PriceChangeMessage {
 
 type WebSocketMessage = BookEntry | PriceChangeMessage | BookEntry[];
 
+const MAX_PENDING_MESSAGES = 50;
+
 export class PolymarketWebSocketManager extends BaseWebSocketManager {
-    private readonly orderbookStates = new Map<string, OrderBookState>();
-    private readonly subscriptions = new Set<string>();
-    private readonly messageHandlers = new Map<string, (orderbook: OrderBook) => void>();
+    private pendingMessages: WebSocketMessage[] = [];
 
     constructor() {
         super({
@@ -46,83 +44,6 @@ export class PolymarketWebSocketManager extends BaseWebSocketManager {
         });
     }
 
-    async *watchOrderBook(tokenId: string): AsyncGenerator<OrderBook> {
-        if (!this.orderbookStates.has(tokenId)) {
-            this.orderbookStates.set(tokenId, new OrderBookState());
-        }
-
-        const updateBuffer: OrderBook[] = [];
-        const waiters: Array<{ resolve: (value: OrderBook) => void; reject: (error: Error) => void }> = [];
-        let isActive = true;
-        let error: Error | null = null;
-
-        const errorListener = (err: Error) => {
-            error = err;
-            while (waiters.length > 0) {
-                waiters.shift()!.reject(err);
-            }
-        };
-        this.on('error', errorListener);
-
-        const handler = (orderbook: OrderBook) => {
-            if (!isActive) return;
-
-            if (waiters.length > 0) {
-                waiters.shift()!.resolve(orderbook);
-            } else {
-                updateBuffer.push(orderbook);
-            }
-        };
-
-        this.messageHandlers.set(tokenId, handler);
-
-        if (!this.isConnected()) {
-            try {
-                await this.connect();
-                await new Promise(resolve => setTimeout(resolve, CONNECTION_READY_DELAY));
-            } catch (err) {
-                isActive = false;
-                this.messageHandlers.delete(tokenId);
-                throw err;
-            }
-        }
-
-        if (!this.subscriptions.has(tokenId)) {
-            this.subscribe(tokenId);
-        }
-
-        try {
-            while (isActive) {
-                if (updateBuffer.length > 0) {
-                    yield updateBuffer.shift()!;
-                    continue;
-                }
-
-                if (error) {
-                    throw error;
-                }
-
-                const orderbook = await new Promise<OrderBook>((resolve, reject) => {
-                    waiters.push({ resolve, reject });
-                });
-
-                yield orderbook;
-            }
-        } catch (err) {
-            while (waiters.length > 0) {
-                waiters.shift()!.reject(err instanceof Error ? err : new Error(String(err)));
-            }
-            throw err;
-        } finally {
-            this.removeListener('error', errorListener);
-            isActive = false;
-            this.messageHandlers.delete(tokenId);
-
-            if (this.messageHandlers.size === 0) {
-                this.unsubscribe(tokenId);
-            }
-        }
-    }
 
     setInitialSnapshot(tokenId: string, snapshot: OrderBook): void {
         let state = this.orderbookStates.get(tokenId);
@@ -131,25 +52,66 @@ export class PolymarketWebSocketManager extends BaseWebSocketManager {
             this.orderbookStates.set(tokenId, state);
         }
         state.updateSnapshot(snapshot);
+        this.snapshotApplied.add(tokenId);
+
+        const messagesToFlush = this.pendingMessages.filter(msg => {
+            if (Array.isArray(msg)) {
+                return msg.some((e: any) => this.isBookEntry(e) && e.asset_id === tokenId);
+            }
+            if (this.isBookEntry(msg) && msg.asset_id === tokenId) {
+                return true;
+            }
+            if (this.isPriceChangeMessage(msg)) {
+                return msg.price_changes.some(change => change.asset_id === tokenId);
+            }
+            return false;
+        });
+
+        messagesToFlush.forEach(msg => {
+            if (Array.isArray(msg)) {
+                msg.forEach(entry => {
+                    if (this.isBookEntry(entry) && entry.asset_id === tokenId) {
+                        this.processBookEntry(entry);
+                    }
+                });
+            } else if (this.isBookEntry(msg) && msg.asset_id === tokenId) {
+                this.processBookEntry(msg);
+            } else if (this.isPriceChangeMessage(msg)) {
+                this.processPriceChangeMessage(msg);
+            }
+        });
+
+        this.pendingMessages = this.pendingMessages.filter(msg => {
+            if (Array.isArray(msg)) {
+                return !msg.some((e: any) => this.isBookEntry(e) && e.asset_id === tokenId);
+            }
+            if (this.isBookEntry(msg) && msg.asset_id === tokenId) {
+                return false;
+            }
+            if (this.isPriceChangeMessage(msg)) {
+                return !msg.price_changes.some(change => change.asset_id === tokenId);
+            }
+            return true;
+        });
     }
 
-    protected onOpen(): void {
-        if (this.subscriptions.size === 0) {
-            return;
-        }
+    protected subscribe(tokenIds: string | string[]): void {
+        const ids = Array.isArray(tokenIds) ? tokenIds : [tokenIds];
+        ids.forEach(id => this.subscriptions.add(id));
 
         const subscribeMessage = {
             type: 'market' as const,
             assets_ids: Array.from(this.subscriptions)
         };
+
         this.send(JSON.stringify(subscribeMessage));
     }
 
+
     protected onMessage(message: string): void {
         const trimmed = message.trim();
-        
         if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-            if (trimmed.includes('INVALID OPERATION') || trimmed.includes('INVALID')) {
+            if (/INVALID(\sOPERATION)?/.test(trimmed)) {
                 this.emit('error', new Error(`Polymarket WebSocket: ${trimmed}`));
             }
             return;
@@ -157,15 +119,41 @@ export class PolymarketWebSocketManager extends BaseWebSocketManager {
 
         try {
             const data: WebSocketMessage = JSON.parse(message);
-            
-            if (Array.isArray(data)) {
-                for (const entry of data) {
-                    if (this.isBookEntry(entry)) {
-                        this.processBookEntry(entry);
+            const handleEntry = (entry: BookEntry) => {
+                const state = this.orderbookStates.get(entry.asset_id);
+                if (!state || !this.snapshotApplied.has(entry.asset_id)) {
+                    if (this.pendingMessages.length >= MAX_PENDING_MESSAGES) {
+                        this.pendingMessages.shift();
                     }
+                    this.pendingMessages.push(entry);
+                    return;
+                }
+                this.processBookEntry(entry);
+            };
+
+            if (Array.isArray(data)) {
+                data.forEach(entry => {
+                    if (this.isBookEntry(entry)) {
+                        handleEntry(entry);
+                    }
+                });
+            } else if (this.isPriceChangeMessage(data)) {
+                const hasUnappliedSnapshot = data.price_changes.some(change => {
+                    const assetId = change.asset_id;
+                    const state = this.orderbookStates.get(assetId);
+                    return !state || !this.snapshotApplied.has(assetId);
+                });
+                
+                if (hasUnappliedSnapshot) {
+                    if (this.pendingMessages.length >= MAX_PENDING_MESSAGES) {
+                        this.pendingMessages.shift();
+                    }
+                    this.pendingMessages.push(data);
+                } else {
+                    this.processPriceChangeMessage(data);
                 }
             } else if (this.isBookEntry(data)) {
-                this.processBookEntry(data);
+                handleEntry(data);
             }
         } catch (error) {
             this.emit('error', new Error(`Failed to parse WebSocket message: ${error}`));
@@ -173,14 +161,6 @@ export class PolymarketWebSocketManager extends BaseWebSocketManager {
     }
 
     protected onClose(): void {
-        // Reconnection handled by base class
-    }
-
-    cleanup(): void {
-        this.messageHandlers.clear();
-        this.subscriptions.clear();
-        this.orderbookStates.clear();
-        this.disconnect();
     }
 
     private processBookEntry(entry: BookEntry): void {
@@ -203,27 +183,61 @@ export class PolymarketWebSocketManager extends BaseWebSocketManager {
         };
 
         state.updateSnapshot(snapshot);
-        const handler = this.messageHandlers.get(entry.asset_id);
-        handler?.(state.getSnapshot());
+        const handlers = this.messageHandlers.get(entry.asset_id);
+        if (handlers) {
+            handlers.forEach(h => {
+                try {
+                    h(state.getSnapshot());
+                } catch (err) {
+                    this.emit('error', err instanceof Error ? err : new Error(String(err)));
+                }
+            });
+        }
     }
 
     private isBookEntry(data: any): data is BookEntry {
         return data?.asset_id && (data.bids || data.asks);
     }
 
-    private subscribe(tokenIds: string | string[]): void {
-        const ids = Array.isArray(tokenIds) ? tokenIds : [tokenIds];
-        ids.forEach(id => this.subscriptions.add(id));
-
-        const subscribeMessage = {
-            type: 'market' as const,
-            assets_ids: Array.from(this.subscriptions)
-        };
-
-        this.send(JSON.stringify(subscribeMessage));
+    private isPriceChangeMessage(data: any): data is PriceChangeMessage {
+        return data?.price_changes && Array.isArray(data.price_changes) && data.market;
     }
 
-    private unsubscribe(tokenId: string): void {
+    private processPriceChangeMessage(message: PriceChangeMessage): void {
+        for (const change of message.price_changes) {
+            const assetId = change.asset_id;
+            let state = this.orderbookStates.get(assetId);
+            
+            if (!state) {
+                state = new OrderBookState();
+                this.orderbookStates.set(assetId, state);
+            }
+
+            const price = parseFloat(change.price);
+            const size = parseFloat(change.size);
+            
+            const delta: OrderBook = {
+                bids: change.side === 'BUY' ? [{ price, size }] : [],
+                asks: change.side === 'SELL' ? [{ price, size }] : [],
+                timestamp: message.timestamp ? parseInt(message.timestamp) : Date.now()
+            };
+
+            state.applyDelta(delta);
+            
+            const handlers = this.messageHandlers.get(assetId);
+            if (handlers) {
+                handlers.forEach(h => {
+                    try {
+                        h(state.getSnapshot());
+                    } catch (err) {
+                        this.emit('error', err instanceof Error ? err : new Error(String(err)));
+                    }
+                });
+            }
+        }
+    }
+
+    protected unsubscribe(tokenId: string): void {
         this.subscriptions.delete(tokenId);
 
         if (this.subscriptions.size > 0) {

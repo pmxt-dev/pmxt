@@ -140,4 +140,84 @@ describe('PolymarketExchange - watchOrderBook', () => {
         expect(first.value.bids).toEqual([]);
         expect(first.value.asks).toEqual([]);
     });
+
+    it('should support multiple watchers for the same tokenId', async () => {
+        mockedAxios.get.mockResolvedValue({
+            data: {
+                bids: [{ price: '0.52', size: '100' }],
+                asks: [{ price: '0.53', size: '150' }]
+            }
+        });
+
+        const updates: OrderBook[] = [
+            { bids: [{ price: 0.52, size: 110 }], asks: [{ price: 0.53, size: 150 }], timestamp: 2000 },
+            { bids: [{ price: 0.52, size: 120 }], asks: [{ price: 0.53, size: 150 }], timestamp: 3000 }
+        ];
+
+        let updateCount = 0;
+        mockWsManager.watchOrderBook.mockImplementation(async function* () {
+            for (const update of updates) {
+                yield update;
+            }
+        });
+
+        const tokenId = 'token123';
+        const watcher1 = exchange.watchOrderBook(tokenId);
+        const watcher2 = exchange.watchOrderBook(tokenId);
+
+        const first1 = await watcher1.next();
+        const first2 = await watcher2.next();
+
+        expect(first1.value).toBeDefined();
+        expect(first2.value).toBeDefined();
+        expect(first1.value).toEqual(first2.value);
+
+        const second1 = await watcher1.next();
+        const second2 = await watcher2.next();
+
+        expect(second1.value).toEqual(updates[0]);
+        expect(second2.value).toEqual(updates[0]);
+        expect(second1.value).toEqual(second2.value);
+    });
+
+    it('should continue serving one watcher when another stops', async () => {
+        mockedAxios.get.mockResolvedValue({
+            data: {
+                bids: [{ price: '0.52', size: '100' }],
+                asks: [{ price: '0.53', size: '150' }]
+            }
+        });
+
+        const updates: OrderBook[] = [
+            { bids: [{ price: 0.52, size: 110 }], asks: [{ price: 0.53, size: 150 }], timestamp: 2000 },
+            { bids: [{ price: 0.52, size: 120 }], asks: [{ price: 0.53, size: 150 }], timestamp: 3000 },
+            { bids: [{ price: 0.52, size: 130 }], asks: [{ price: 0.53, size: 150 }], timestamp: 4000 }
+        ];
+
+        let callCount = 0;
+        mockWsManager.watchOrderBook.mockImplementation(async function* () {
+            callCount++;
+            for (const update of updates) {
+                yield update;
+            }
+        });
+
+        const tokenId = 'token123';
+        const watcher1 = exchange.watchOrderBook(tokenId);
+        const watcher2 = exchange.watchOrderBook(tokenId);
+
+        await watcher1.next();
+        await watcher2.next();
+
+        const second1 = await watcher1.next();
+        const second2 = await watcher2.next();
+
+        expect(second1.value).toEqual(updates[0]);
+        expect(second2.value).toEqual(updates[0]);
+
+        watcher1.return(undefined);
+
+        const third2 = await watcher2.next();
+        expect(third2.value).toEqual(updates[1]);
+    });
 });

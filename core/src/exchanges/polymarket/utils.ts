@@ -2,6 +2,7 @@ import { UnifiedMarket, MarketOutcome, CandleInterval } from '../../types';
 
 export const GAMMA_API_URL = 'https://gamma-api.polymarket.com/events';
 export const CLOB_API_URL = 'https://clob.polymarket.com';
+export const POLYMARKET_WS_URL = 'wss://ws-subscriptions-clob.polymarket.com/ws/market'
 
 export function mapMarketToUnified(event: any, market: any, options: { useQuestionAsCandidateFallback?: boolean } = {}): UnifiedMarket | null {
     if (!market) return null;

@@ -53,11 +53,17 @@ export class PolymarketExchange extends PredictionMarketExchange {
             this.wsManager = new PolymarketWebSocketManager();
         }
 
+        if (!this.wsManager.isConnected()) {
+            await this.wsManager.connect();
+        }
+
+        const wsStream = this.wsManager.watchOrderBook(tokenId);
+
         const initialSnapshot = await this.fetchOrderBook(tokenId);
         this.wsManager.setInitialSnapshot(tokenId, initialSnapshot);
         yield initialSnapshot;
 
-        yield* this.wsManager.watchOrderBook(tokenId);
+        yield* wsStream;
     }
 
     async fetchTrades(id: string, params: HistoryFilterParams): Promise<Trade[]> {

@@ -2,6 +2,7 @@ import { UnifiedMarket, MarketOutcome, CandleInterval } from '../../types';
 
 export const KALSHI_API_URL = "https://api.elections.kalshi.com/trade-api/v2/events";
 export const KALSHI_SERIES_URL = "https://api.elections.kalshi.com/trade-api/v2/series";
+export const KALSHI_WS_URL = 'wss://api.elections.kalshi.com/trade-api/ws/v2';
 
 export function mapMarketToUnified(event: any, market: any): UnifiedMarket | null {
     if (!market) return null;

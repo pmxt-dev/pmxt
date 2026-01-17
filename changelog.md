@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.2] - 2026-01-17
+## [1.0.3] - 2026-01-17
 
 ### Added
 - **Zero-Config SDK Installation**: The sidecar server (`pmxt-core`) is now bundled directly within the SDK distributions, enabling a single-command setup experience.
@@ -18,6 +18,10 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - **Broken Documentation Links**: Resolved several dead links in the API Reference and Examples sections.
 - **Installation Footprint**: Optimized the bundled server footprint for faster SDK installs.
+
+## [1.0.2] - 2026-01-17
+
+broken
 
 ## [1.0.1] - 2026-01-17
 

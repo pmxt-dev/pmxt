@@ -14,7 +14,7 @@ if (!version) {
 console.log(`Updating all packages to version ${version}...`);
 
 // Update core/package.json
-const corePath = path.join(__dirname, 'core', 'package.json');
+const corePath = path.join(__dirname, '..', 'core', 'package.json');
 const corePackage = JSON.parse(fs.readFileSync(corePath, 'utf8'));
 corePackage.version = version;
 
@@ -32,14 +32,14 @@ fs.writeFileSync(corePath, JSON.stringify(corePackage, null, 2) + '\n');
 console.log(`[OK] Updated core/package.json to ${version}`);
 
 // Update sdks/typescript/package.json
-const tsPath = path.join(__dirname, 'sdks', 'typescript', 'package.json');
+const tsPath = path.join(__dirname, '..', 'sdks', 'typescript', 'package.json');
 const tsPackage = JSON.parse(fs.readFileSync(tsPath, 'utf8'));
 tsPackage.version = version;
 fs.writeFileSync(tsPath, JSON.stringify(tsPackage, null, 2) + '\n');
 console.log(`[OK] Updated sdks/typescript/package.json to ${version}`);
 
 // Update sdks/python/pyproject.toml
-const pyPath = path.join(__dirname, 'sdks', 'python', 'pyproject.toml');
+const pyPath = path.join(__dirname, '..', 'sdks', 'python', 'pyproject.toml');
 let pyContent = fs.readFileSync(pyPath, 'utf8');
 pyContent = pyContent.replace(/^version = "[^"]*"/m, `version = "${version}"`);
 fs.writeFileSync(pyPath, pyContent);

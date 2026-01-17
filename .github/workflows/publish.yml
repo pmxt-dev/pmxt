@@ -26,6 +26,14 @@ jobs:
       - name: Generate SDKs
         run: npm run generate:sdk:all --workspace=pmxt-core
 
+      - name: Build Core
+        run: npm run build --workspace=pmxt-core
+
+      - name: Start PMXT Server
+        run: |
+          npm run server --workspace=pmxt-core &
+          timeout 30 bash -c 'until curl -s http://localhost:3847/health > /dev/null; do sleep 1; done'
+
       - name: Run Tests (All Workspaces)
         run: npm test --workspaces
         
@@ -66,7 +74,11 @@ jobs:
         working-directory: sdks/python
 
       - name: Run tests
-        run: pytest
+        run: |
+          npm run build --workspace=pmxt-core
+          npm run server --workspace=pmxt-core &
+          timeout 30 bash -c 'until curl -s http://localhost:3847/health > /dev/null; do sleep 1; done'
+          pytest
         working-directory: sdks/python
 
       - name: Build package

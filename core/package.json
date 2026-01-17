@@ -25,7 +25,7 @@
     "server": "tsx watch src/server/index.ts",
     "server:prod": "node dist/server/index.js",
     "generate:sdk:python": "npx @openapitools/openapi-generator-cli generate -i src/server/openapi.yaml -g python -o ../sdks/python/generated --package-name pmxt_internal --additional-properties=projectName=pmxt-internal,packageVersion=0.4.4,library=urllib3",
-    "generate:sdk:typescript": "npx @openapitools/openapi-generator-cli generate -i src/server/openapi.yaml -g typescript-fetch -o ../sdks/typescript --additional-properties=npmName=pmxtjs,npmVersion=0.0.1,supportsES6=true,typescriptThreePlus=true",
+    "generate:sdk:typescript": "npx @openapitools/openapi-generator-cli generate -i src/server/openapi.yaml -g typescript-fetch -o ../sdks/typescript/generated --additional-properties=npmName=pmxtjs,npmVersion=0.0.1,supportsES6=true,typescriptThreePlus=true",
     "generate:sdk:all": "npm run generate:sdk:python && npm run generate:sdk:typescript"
   },
   "keywords": [],

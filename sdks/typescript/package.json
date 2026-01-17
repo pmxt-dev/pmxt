@@ -21,8 +21,8 @@
   },
   "files": [
     "dist",
-    "src",
     "pmxt",
+    "generated",
     "index.ts",
     "README.md"
   ],

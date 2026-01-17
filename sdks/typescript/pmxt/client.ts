@@ -18,7 +18,7 @@ import {
     CancelOrderRequest,
     FetchOpenOrdersRequest,
     FetchPositionsRequest,
-} from "../src/index.js";
+} from "../generated/src/index.js";
 
 import {
     UnifiedMarket,

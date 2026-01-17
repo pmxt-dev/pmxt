@@ -4,7 +4,7 @@
  * Handles automatic server startup and health checks.
  */
 
-import { DefaultApi, Configuration } from "../src/index.js";
+import { DefaultApi, Configuration } from "../generated/src/index.js";
 
 export interface ServerManagerOptions {
     baseUrl?: string;

@@ -34,7 +34,7 @@ jobs:
           npm run server --workspace=pmxt-core &
           # Wait for server to be ready
           echo "Waiting for server to start..."
-          timeout 30 bash -c 'until curl -s http://localhost:3000/health > /dev/null; do sleep 1; done'
+          timeout 30 bash -c 'until curl -s http://localhost:3847/health > /dev/null; do sleep 1; done'
           echo "Server is ready!"
 
       - name: Test All Workspaces
@@ -74,7 +74,7 @@ jobs:
           npm run build --workspace=pmxt-core
           npm run server --workspace=pmxt-core &
           # Wait for server
-          timeout 30 bash -c 'until curl -s http://localhost:3000/health > /dev/null; do sleep 1; done'
+          timeout 30 bash -c 'until curl -s http://localhost:3847/health > /dev/null; do sleep 1; done'
         
       - name: Run Tests
         run: pytest

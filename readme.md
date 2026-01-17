@@ -133,16 +133,14 @@ console.log('Order:', order);
 
 ## Documentation
 
-See the [API Reference](core/API_REFERENCE.md) for detailed documentation and more examples.
+See the [API Reference](https://www.pmxt.dev/docs) for detailed documentation and more examples.
 
 ## Examples
 
-Check out the [examples](core/examples/) directory for more use cases:
-- Market search
-- Order book data
-- Historical prices
-- Event price tracking
-- Recent trades
+Check out the directory for more use cases:
+
+[TypeScript](https://github.com/pmxt-dev/pmxt/tree/main/sdks/typescript/examples) [Python](https://github.com/pmxt-dev/pmxt/tree/main/sdks/python/examples)
+
 
 
 [![Stargazers repo roster for @qoery-com/pmxt](https://reporoster.com/stars/qoery-com/pmxt)](https://github.com/qoery-com/pmxt/stargazers)

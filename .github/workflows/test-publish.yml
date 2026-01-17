@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Simulate Version Update (Dry Run)
-        run: node update-versions.js 0.5.0
+        run: node scripts/update-versions.js 0.5.0
 
       - name: Generate SDKs
         run: npm run generate:sdk:all --workspace=pmxt-core
@@ -73,7 +73,7 @@ jobs:
       - name: Install Node dependencies & Start Server & Simulate Version
         run: |
           npm ci
-          node update-versions.js 0.5.0
+          node scripts/update-versions.js 0.5.0
           npm run generate:sdk:all --workspace=pmxt-core
           npm run build --workspace=pmxt-core
           npm run server --workspace=pmxt-core &

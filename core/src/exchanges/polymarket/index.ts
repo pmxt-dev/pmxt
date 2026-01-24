@@ -9,9 +9,11 @@ import { fetchTrades } from './fetchTrades';
 import { fetchPositions } from './fetchPositions';
 import { PolymarketAuth } from './auth';
 import { Side, OrderType, AssetType } from '@polymarket/clob-client';
+import { PolymarketWebSocketManager } from './websocket';
 
 export class PolymarketExchange extends PredictionMarketExchange {
     private auth?: PolymarketAuth;
+    private wsManager?: PolymarketWebSocketManager;
 
     constructor(credentials?: ExchangeCredentials) {
         super(credentials);
@@ -44,6 +46,24 @@ export class PolymarketExchange extends PredictionMarketExchange {
 
     async fetchOrderBook(id: string): Promise<OrderBook> {
         return fetchOrderBook(id);
+    }
+
+    async *watchOrderBook(tokenId: string): AsyncGenerator<OrderBook> {
+        if (!this.wsManager) {
+            this.wsManager = new PolymarketWebSocketManager();
+        }
+
+        if (!this.wsManager.isConnected()) {
+            await this.wsManager.connect();
+        }
+
+        const wsStream = this.wsManager.watchOrderBook(tokenId);
+
+        const initialSnapshot = await this.fetchOrderBook(tokenId);
+        this.wsManager.setInitialSnapshot(tokenId, initialSnapshot);
+        yield initialSnapshot;
+
+        yield* wsStream;
     }
 
     async fetchTrades(id: string, params: HistoryFilterParams): Promise<Trade[]> {

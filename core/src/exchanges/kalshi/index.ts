@@ -8,9 +8,11 @@ import { fetchOHLCV } from './fetchOHLCV';
 import { fetchOrderBook } from './fetchOrderBook';
 import { fetchTrades } from './fetchTrades';
 import { KalshiAuth } from './auth';
+import { KalshiWebSocketManager } from './websocket';
 
 export class KalshiExchange extends PredictionMarketExchange {
     private auth?: KalshiAuth;
+    private wsManager?: KalshiWebSocketManager;
 
     constructor(credentials?: ExchangeCredentials) {
         super(credentials);
@@ -59,6 +61,28 @@ export class KalshiExchange extends PredictionMarketExchange {
 
     async fetchOrderBook(id: string): Promise<OrderBook> {
         return fetchOrderBook(id);
+    }
+
+    async *watchOrderBook(ticker: string): AsyncGenerator<OrderBook> {
+        if (!this.credentials?.apiKey || !this.credentials?.privateKey) {
+            throw new Error('Kalshi WebSocket requires API credentials (apiKey and privateKey)');
+        }
+
+        if (!this.wsManager) {
+            this.wsManager = new KalshiWebSocketManager(this.credentials);
+        }
+
+        if (!this.wsManager.isConnected()) {
+            await this.wsManager.connect();
+        }
+
+        const wsStream = this.wsManager.watchOrderBook(ticker);
+
+        const initialSnapshot = await this.fetchOrderBook(ticker);
+        this.wsManager.setInitialSnapshot(ticker, initialSnapshot);
+        yield initialSnapshot;
+
+        yield* wsStream;
     }
 
     async fetchTrades(id: string, params: HistoryFilterParams): Promise<Trade[]> {

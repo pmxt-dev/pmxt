@@ -81,7 +81,7 @@ export class KalshiWebSocket {
                     }
                 });
 
-                this.ws.on('error', (error) => {
+                this.ws.on('error', (error: Error) => {
                     console.error('Kalshi WebSocket error:', error);
                     this.isConnecting = false;
                     reject(error);

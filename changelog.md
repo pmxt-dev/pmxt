@@ -2,28 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 2026-01-24
-
-### Added
-- **Polymarket WebSocket Support**: Introduced real-time market data streaming with CCXT Pro-style methods.
-  - Implemented `watchOrderBook(id)` for live order book snapshots and deltas.
-  - Implemented `watchTrades(id)` for real-time trade event tracking.
-  - Created a robust `PolymarketWebSocket` manager featuring automatic reconnection logic and event buffering.
-- **Enhanced Configuration**: Refactored `PolymarketExchange` constructor to support a unified options object for credentials and WebSocket configuration.
-
-### Changed
-- **Unified Exchange API**: Standardized WebSocket initialization patterns across exchanges (Kalshi support pending).
-
-## [1.0.4] - 2026-01-22
-
-### Added
-- **Sidecar Security**: Implemented a secure handshake protocol between the SDK and the Node.js sidecar server to prevent unauthorized access.
-- **Auto-Restart Handshake**: Added logic to automatically detect sidecar crashes and restart the process seamlessly.
-
-### Fixed
-- **Kalshi Pagination**: Fixed a critical bug in `fetchMarkets` where the `offset` parameter was incorrectly ignored, enabling full traversal of Kalshi's market catalog.
-- **Metadata Management**: Improved reliability of internal metadata enrichment for Polymarket results.
-
 ## [1.0.3] - 2026-01-17
 
 ### Added

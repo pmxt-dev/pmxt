@@ -106,8 +106,25 @@ class ServerManager:
             if pkg_path.exists():
                 data = json.loads(pkg_path.read_text())
                 expected_version = data.get('version')
-                if expected_version and not server_info['version'].startswith(expected_version):
-                     return True
+                server_version = server_info['version']
+                
+                if expected_version:
+                    # Extract major.minor.patch (ignore prerelease/dev suffixes)
+                    def normalize_version(v: str) -> str:
+                        """Extract major.minor.patch, ignoring -dev, -b4, etc."""
+                        # Remove -dev.xxx or -b4 suffixes
+                        base = v.split('-')[0]
+                        # Get major.minor.patch
+                        parts = base.split('.')[:3]
+                        return '.'.join(parts)
+                    
+                    expected_base = normalize_version(expected_version)
+                    server_base = normalize_version(server_version)
+                    
+                    # Only restart if major.minor.patch differs
+                    # This allows 1.0.0 and 1.0.0-b4 to coexist in dev
+                    if expected_base != server_base:
+                        return True
         except:
             pass
             

@@ -11,16 +11,30 @@ import { readFileSync, statSync } from 'fs';
 import { join } from 'path';
 
 function getServerVersion(): string {
-    let baseVersion = '1.0.0';
+    let baseVersion = '1.0.0-b4'; // Hardcoded fallback matching package.json
     let packageJson;
 
     try {
-        const packageCtx = readFileSync(join(__dirname, '../../package.json'), 'utf-8');
-        packageJson = JSON.parse(packageCtx);
-        baseVersion = packageJson.version;
+        // Try multiple possible locations for package.json
+        const possiblePaths = [
+            join(__dirname, '../../package.json'),      // From dist/server/
+            join(__dirname, '../../../package.json'),   // From dist/server/bundled
+            join(__dirname, 'package.json'),            // Same directory (unlikely)
+        ];
+
+        for (const pkgPath of possiblePaths) {
+            try {
+                const packageCtx = readFileSync(pkgPath, 'utf-8');
+                packageJson = JSON.parse(packageCtx);
+                baseVersion = packageJson.version;
+                break; // Found it, stop searching
+            } catch {
+                // Try next path
+                continue;
+            }
+        }
     } catch (e) {
-        // Fallback for bundled environments where package.json might not exist relative to __dirname
-        baseVersion = '1.0.0';
+        // Use hardcoded fallback
     }
 
     // Check if we're in development mode or if generic forced restart is requested

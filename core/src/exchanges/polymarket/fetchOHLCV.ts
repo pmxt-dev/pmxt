@@ -19,10 +19,16 @@ export async function fetchOHLCV(id: string, params: HistoryFilterParams): Promi
 
         // 1. Smart Lookback Calculation
         // If start/end not provided, calculate window based on limit * resolution
-        let startTs = params.start ? Math.floor(params.start.getTime() / 1000) : 0;
-        let endTs = params.end ? Math.floor(params.end.getTime() / 1000) : nowTs;
 
-        if (!params.start) {
+        // Helper to handle string dates (from JSON)
+        const ensureDate = (d: any) => (typeof d === 'string' ? new Date(d) : d);
+        const pStart = params.start ? ensureDate(params.start) : undefined;
+        const pEnd = params.end ? ensureDate(params.end) : undefined;
+
+        let startTs = pStart ? Math.floor(pStart.getTime() / 1000) : 0;
+        let endTs = pEnd ? Math.floor(pEnd.getTime() / 1000) : nowTs;
+
+        if (!pStart) {
             // Default limit is usually 20 in the example, but safety margin is good.
             // If limit is not set, we default to 100 candles.
             const count = params.limit || 100;

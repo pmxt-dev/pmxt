@@ -25,12 +25,17 @@ export async function fetchOHLCV(id: string, params: HistoryFilterParams): Promi
         let startTs = now - (24 * 60 * 60);
         let endTs = now;
 
-        if (params.start) {
-            startTs = Math.floor(params.start.getTime() / 1000);
+        // Helper to handle string dates (from JSON)
+        const ensureDate = (d: any) => (typeof d === 'string' ? new Date(d) : d);
+        const pStart = params.start ? ensureDate(params.start) : undefined;
+        const pEnd = params.end ? ensureDate(params.end) : undefined;
+
+        if (pStart) {
+            startTs = Math.floor(pStart.getTime() / 1000);
         }
-        if (params.end) {
-            endTs = Math.floor(params.end.getTime() / 1000);
-            if (!params.start) {
+        if (pEnd) {
+            endTs = Math.floor(pEnd.getTime() / 1000);
+            if (!pStart) {
                 startTs = endTs - (24 * 60 * 60);
             }
         }

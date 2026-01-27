@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4] - 2026-01-27
+
+### Fixed
+- **Timezone Handling**: Hardened date parsing to treat naive ISO strings (typically from Python's `datetime.utcnow()`) as UTC. This prevents timezone shifts when querying historical data across the sidecar interface.
+
+### Improved
+- **Polymarket OHLCV**: Implemented robust client-side candle aggregation for Polymarket price history.
+  - Previously: The endpoint returned raw trade/tick data points which could be noisy or misaligned.
+  - Now: Data is properly bucketed into time intervals (candles) with accurate Open, High, Low, Close, and Volume calculations.
+
 ## [1.1.3] - 2026-01-27
 
 ### Fixed

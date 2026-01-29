@@ -53,7 +53,7 @@
 
 <p align="center">
   <a href="https://discord.gg/Pyn252Pg95">
-    <img src="https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
+    <img src="https://img.shields.io/discord/1461393765196501015?label=Discord&logo=discord&logoColor=white&style=for-the-badge&color=5865F2" alt="Discord">
   </a>
 </p>
 

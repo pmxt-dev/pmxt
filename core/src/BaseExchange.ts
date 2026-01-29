@@ -53,6 +53,12 @@ export abstract class PredictionMarketExchange {
     abstract searchMarkets(query: string, params?: MarketFilterParams): Promise<UnifiedMarket[]>;
 
     /**
+     * Fetch markets by URL slug (Polymarket) or ticker (Kalshi).
+     * @param slug - Market slug or ticker
+     */
+    abstract getMarketsBySlug(slug: string): Promise<UnifiedMarket[]>;
+
+    /**
      * Search for events matching a keyword query.
      * Returns grouped events, each containing related markets.
      * @param query - Search term

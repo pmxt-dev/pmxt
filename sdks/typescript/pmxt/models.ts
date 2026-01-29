@@ -302,3 +302,43 @@ export interface CreateOrderParams {
     /** Limit price (required for limit orders, 0.0-1.0) */
     price?: number;
 }
+/**
+ * A grouped collection of related markets (e.g., "Who will be Fed Chair?" contains multiple candidate markets)
+ */
+export interface UnifiedEvent {
+    /** Event ID */
+    id: string;
+
+    /** Event title */
+    title: string;
+
+    /** Event description */
+    description: string;
+
+    /** Event slug */
+    slug: string;
+
+    /** Related markets in this event */
+    markets: UnifiedMarket[];
+
+    /** Event URL */
+    url: string;
+
+    /** Event image URL */
+    image?: string;
+
+    /** Event category */
+    category?: string;
+
+    /** Event tags */
+    tags?: string[];
+
+    /**
+     * Search for markets within this event by keyword.
+     * 
+     * @param query - Search query (case-insensitive)
+     * @param searchIn - Where to search - "title", "description", or "both"
+     * @returns List of matching markets
+     */
+    searchMarkets(query: string, searchIn?: SearchIn): UnifiedMarket[];
+}

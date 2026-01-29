@@ -9,6 +9,14 @@ from datetime import datetime
 from dataclasses import dataclass
 
 
+# Parameter types
+CandleInterval = Literal["1m", "5m", "15m", "1h", "6h", "1d"]
+SortOption = Literal["volume", "liquidity", "newest"]
+SearchIn = Literal["title", "description", "both"]
+OrderSide = Literal["buy", "sell"]
+OrderType = Literal["market", "limit"]
+
+
 @dataclass
 class MarketOutcome:
     """A single tradeable outcome within a market."""
@@ -146,6 +154,41 @@ class UnifiedEvent:
     
     tags: Optional[List[str]] = None
     """Event tags"""
+    
+    def search_markets(self, query: str, search_in: SearchIn = "both") -> List[UnifiedMarket]:
+        """
+        Search for markets within this event by keyword.
+        
+        Args:
+            query: Search query (case-insensitive)
+            search_in: Where to search - "title", "description", or "both"
+            
+        Returns:
+            List of matching markets
+            
+        Example:
+            >>> events = api.search_events('Fed Chair')
+            >>> event = events[0]
+            >>> warsh_markets = event.search_markets('Kevin Warsh')
+        """
+        query_lower = query.lower()
+        results = []
+        
+        for market in self.markets:
+            match = False
+            
+            if search_in in ("title", "both"):
+                if query_lower in market.title.lower():
+                    match = True
+            
+            if search_in in ("description", "both") and market.description:
+                if query_lower in market.description.lower():
+                    match = True
+            
+            if match:
+                results.append(market)
+        
+        return results
 
 
 
@@ -281,12 +324,6 @@ class Balance:
     """Locked in open orders"""
 
 
-# Parameter types
-CandleInterval = Literal["1m", "5m", "15m", "1h", "6h", "1d"]
-SortOption = Literal["volume", "liquidity", "newest"]
-SearchIn = Literal["title", "description", "both"]
-OrderSide = Literal["buy", "sell"]
-OrderType = Literal["market", "limit"]
 
 
 @dataclass

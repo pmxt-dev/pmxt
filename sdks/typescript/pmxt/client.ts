@@ -34,6 +34,8 @@ import {
     MarketFilterParams,
     HistoryFilterParams,
     CreateOrderParams,
+    SearchIn,
+    UnifiedEvent,
 } from "./models.js";
 
 import { ServerManager } from "./server-manager.js";
@@ -156,6 +158,39 @@ function convertBalance(raw: any): Balance {
     };
 }
 
+function convertEvent(raw: any): UnifiedEvent {
+    const markets = (raw.markets || []).map(convertMarket);
+
+    return {
+        id: raw.id,
+        title: raw.title,
+        description: raw.description,
+        slug: raw.slug,
+        markets,
+        url: raw.url,
+        image: raw.image,
+        category: raw.category,
+        tags: raw.tags,
+        searchMarkets(query: string, searchIn: SearchIn = "both"): UnifiedMarket[] {
+            const queryLower = query.toLowerCase();
+            return this.markets.filter(market => {
+                let match = false;
+                if (searchIn === "title" || searchIn === "both") {
+                    if (market.title.toLowerCase().includes(queryLower)) {
+                        match = true;
+                    }
+                }
+                if (searchIn === "description" || searchIn === "both") {
+                    if (market.description?.toLowerCase().includes(queryLower)) {
+                        match = true;
+                    }
+                }
+                return match;
+            });
+        }
+    };
+}
+
 /**
  * Base exchange client options.
  */
@@ -184,6 +219,7 @@ export abstract class Exchange {
     protected apiKey?: string;
     protected privateKey?: string;
     protected api: DefaultApi;
+    protected config: Configuration;
     protected serverManager: ServerManager;
     protected initPromise: Promise<void>;
 
@@ -199,8 +235,8 @@ export abstract class Exchange {
         this.serverManager = new ServerManager({ baseUrl });
 
         // Configure the API client with the initial base URL (will be updated if port changes)
-        const config = new Configuration({ basePath: baseUrl });
-        this.api = new DefaultApi(config);
+        this.config = new Configuration({ basePath: baseUrl });
+        this.api = new DefaultApi(this.config);
 
         // Initialize the server connection asynchronously
         this.initPromise = this.initializeServer(autoStartServer);
@@ -223,11 +259,11 @@ export abstract class Exchange {
                 }
 
                 // Update API client with actual base URL
-                const newConfig = new Configuration({
+                this.config = new Configuration({
                     basePath: newBaseUrl,
                     headers
                 });
-                this.api = new DefaultApi(newConfig);
+                this.api = new DefaultApi(this.config);
             } catch (error) {
                 throw new Error(
                     `Failed to start PMXT server: ${error}\n\n` +
@@ -331,6 +367,60 @@ export abstract class Exchange {
             return data.map(convertMarket);
         } catch (error) {
             throw new Error(`Failed to search markets: ${error}`);
+        }
+    }
+
+    /**
+     * Search events (groups of related markets) by keyword.
+     * 
+     * @param query - Search query
+     * @param params - Optional filter parameters
+     * @returns List of matching events
+     * 
+     * @example
+     * ```typescript
+     * const events = await exchange.searchEvents("Trump");
+     * ```
+     */
+    async searchEvents(
+        query: string,
+        params?: MarketFilterParams
+    ): Promise<UnifiedEvent[]> {
+        await this.initPromise;
+        try {
+            const args: any[] = [query];
+            if (params) {
+                args.push(params);
+            }
+
+            const body: any = { args };
+            const credentials = this.getCredentials();
+            if (credentials) {
+                body.credentials = credentials;
+            }
+
+            // Manual implementation since generated client is missing this
+            const url = `${this.config.basePath}/api/${this.exchangeName}/searchEvents`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.config.headers
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error?.message || response.statusText);
+            }
+
+            const json = await response.json();
+            const data = this.handleResponse(json);
+            return data.map(convertEvent);
+        } catch (error) {
+            throw new Error(`Failed to search events: ${error}`);
         }
     }
 

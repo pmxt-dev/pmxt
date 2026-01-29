@@ -75,6 +75,18 @@ class UnifiedMarket:
     tags: Optional[List[str]] = None
     """Market tags"""
 
+    yes: Optional[MarketOutcome] = None
+    """Convenience access to the Yes outcome for binary markets."""
+
+    no: Optional[MarketOutcome] = None
+    """Convenience access to the No outcome for binary markets."""
+
+    up: Optional[MarketOutcome] = None
+    """Convenience access to the Up outcome for binary markets."""
+
+    down: Optional[MarketOutcome] = None
+    """Convenience access to the Down outcome for binary markets."""
+
 
 @dataclass
 class PriceCandle:

@@ -647,6 +647,14 @@ components:
           type: array
           items:
             type: string
+        "yes":
+          $ref: '#/components/schemas/MarketOutcome'
+        "no":
+          $ref: '#/components/schemas/MarketOutcome'
+        up:
+          $ref: '#/components/schemas/MarketOutcome'
+        down:
+          $ref: '#/components/schemas/MarketOutcome'
 
     MarketOutcome:
       type: object

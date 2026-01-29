@@ -73,9 +73,10 @@ import pmxt
 api = pmxt.Polymarket()
 markets = api.get_markets_by_slug('who-will-trump-nominate-as-fed-chair')
 
-warsh = next((m for m in markets if m.outcomes[0].label == 'Kevin Warsh'), None) 
+# Find the specific candidate in the election event
+warsh = next((m for m in markets if m.yes.label == 'Kevin Warsh'), None) 
 
-print(warsh.outcomes[0].price) # price of 'Yes' outcome
+print(f"Price: {warsh.yes.price}")
 ```
 
 > **Note**: For TypeScript usage, see [pmxtjs documentation](https://pmxt.dev/docs).

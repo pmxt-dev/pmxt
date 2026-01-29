@@ -105,6 +105,30 @@ export interface UnifiedMarket {
      * @memberof UnifiedMarket
      */
     tags?: Array<string>;
+    /**
+     * 
+     * @type {MarketOutcome}
+     * @memberof UnifiedMarket
+     */
+    yes?: MarketOutcome;
+    /**
+     * 
+     * @type {MarketOutcome}
+     * @memberof UnifiedMarket
+     */
+    no?: MarketOutcome;
+    /**
+     * 
+     * @type {MarketOutcome}
+     * @memberof UnifiedMarket
+     */
+    up?: MarketOutcome;
+    /**
+     * 
+     * @type {MarketOutcome}
+     * @memberof UnifiedMarket
+     */
+    down?: MarketOutcome;
 }
 
 /**
@@ -137,6 +161,10 @@ export function UnifiedMarketFromJSONTyped(json: any, ignoreDiscriminator: boole
         'image': json['image'] == null ? undefined : json['image'],
         'category': json['category'] == null ? undefined : json['category'],
         'tags': json['tags'] == null ? undefined : json['tags'],
+        'yes': json['yes'] == null ? undefined : MarketOutcomeFromJSON(json['yes']),
+        'no': json['no'] == null ? undefined : MarketOutcomeFromJSON(json['no']),
+        'up': json['up'] == null ? undefined : MarketOutcomeFromJSON(json['up']),
+        'down': json['down'] == null ? undefined : MarketOutcomeFromJSON(json['down']),
     };
 }
 
@@ -164,6 +192,10 @@ export function UnifiedMarketToJSONTyped(value?: UnifiedMarket | null, ignoreDis
         'image': value['image'],
         'category': value['category'],
         'tags': value['tags'],
+        'yes': MarketOutcomeToJSON(value['yes']),
+        'no': MarketOutcomeToJSON(value['no']),
+        'up': MarketOutcomeToJSON(value['up']),
+        'down': MarketOutcomeToJSON(value['down']),
     };
 }
 

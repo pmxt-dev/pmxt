@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-01-29
+
+### Added
+- **Unified Semantic Shortcuts**: Introduced convenience properties for binary markets across all SDKs (Python and TypeScript).
+  - **New Properties**: `market.yes`, `market.no`, `market.up`, and `market.down`.
+  - **Intelligent Mapping**: Implemented shared core logic to automatically identify "Yes" vs "No" outcomes based on labels and common patterns (e.g., "Not X" pairs).
+  - **Expressive Aliases**: Added `.up` and `.down` as semantic aliases for `.yes` and `.no` to improve readability for directional markets.
+
+### Improved
+- **Core Architecture**: Extracted market normalization logic into a shared utility to ensure absolute parity between exchange implementations.
+- **SDK Parity**: Updated both auto-generated and handcrafted portions of the Python and TypeScript SDKs to expose the new fields with full type hinting.
+
 ## [1.1.4] - 2026-01-27
 
 ### Fixed

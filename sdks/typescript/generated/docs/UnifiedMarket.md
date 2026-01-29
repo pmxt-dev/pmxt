@@ -19,6 +19,10 @@ Name | Type
 `image` | string
 `category` | string
 `tags` | Array&lt;string&gt;
+`yes` | [MarketOutcome](MarketOutcome.md)
+`no` | [MarketOutcome](MarketOutcome.md)
+`up` | [MarketOutcome](MarketOutcome.md)
+`down` | [MarketOutcome](MarketOutcome.md)
 
 ## Example
 
@@ -40,6 +44,10 @@ const example = {
   "image": null,
   "category": null,
   "tags": null,
+  "yes": null,
+  "no": null,
+  "up": null,
+  "down": null,
 } satisfies UnifiedMarket
 
 console.log(example)

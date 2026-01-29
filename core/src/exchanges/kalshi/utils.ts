@@ -1,4 +1,5 @@
 import { UnifiedMarket, MarketOutcome, CandleInterval } from '../../types';
+import { addBinaryOutcomes } from '../../utils/market-utils';
 
 export const KALSHI_API_URL = "https://api.elections.kalshi.com/trade-api/v2/events";
 export const KALSHI_SERIES_URL = "https://api.elections.kalshi.com/trade-api/v2/series";
@@ -60,7 +61,7 @@ export function mapMarketToUnified(event: any, market: any): UnifiedMarket | nul
         }
     }
 
-    return {
+    const um = {
         id: market.ticker,
         title: event.title,
         description: market.rules_primary || market.rules_secondary || "",
@@ -73,7 +74,10 @@ export function mapMarketToUnified(event: any, market: any): UnifiedMarket | nul
         url: `https://kalshi.com/events/${event.event_ticker}`,
         category: event.category,
         tags: unifiedTags
-    };
+    } as UnifiedMarket;
+
+    addBinaryOutcomes(um);
+    return um;
 }
 
 export function mapIntervalToKalshi(interval: CandleInterval): number {

@@ -70,6 +70,18 @@ export interface UnifiedMarket {
 
     /** Market tags */
     tags?: string[];
+
+    /** Convenience access to the Yes outcome for binary markets. */
+    yes?: MarketOutcome;
+
+    /** Convenience access to the No outcome for binary markets. */
+    no?: MarketOutcome;
+
+    /** Convenience access to the Up outcome for binary markets. */
+    up?: MarketOutcome;
+
+    /** Convenience access to the Down outcome for binary markets. */
+    down?: MarketOutcome;
 }
 
 /**

@@ -30,6 +30,12 @@ export interface UnifiedMarket {
 
     category?: string;
     tags?: string[];
+
+    // Convenience getters for binary markets
+    yes?: MarketOutcome;
+    no?: MarketOutcome;
+    up?: MarketOutcome;
+    down?: MarketOutcome;
 }
 
 export type CandleInterval = '1m' | '5m' | '15m' | '1h' | '6h' | '1d';

@@ -1,6 +1,6 @@
 {
   "name": "pmxtjs",
-  "version": "1.0.0-b4",
+  "version": "1.2.0",
   "description": "Unified prediction market data API - The ccxt for prediction markets",
   "author": "PMXT Contributors",
   "repository": {

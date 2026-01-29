@@ -48,6 +48,14 @@ function convertMarket(raw: any): UnifiedMarket {
         metadata: o.metadata,
     }));
 
+    const convertOutcome = (o: any) => o ? ({
+        id: o.id,
+        label: o.label,
+        price: o.price,
+        priceChange24h: o.priceChange24h,
+        metadata: o.metadata,
+    }) : undefined;
+
     return {
         id: raw.id,
         title: raw.title,
@@ -62,8 +70,13 @@ function convertMarket(raw: any): UnifiedMarket {
         image: raw.image,
         category: raw.category,
         tags: raw.tags,
+        yes: convertOutcome(raw.yes),
+        no: convertOutcome(raw.no),
+        up: convertOutcome(raw.up),
+        down: convertOutcome(raw.down),
     };
 }
+
 
 function convertCandle(raw: any): PriceCandle {
     return {

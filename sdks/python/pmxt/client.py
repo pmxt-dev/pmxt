@@ -38,18 +38,20 @@ from .models import (
 from .server_manager import ServerManager
 
 
+def _convert_outcome(raw: Dict[str, Any]) -> MarketOutcome:
+    """Convert raw API response to MarketOutcome."""
+    return MarketOutcome(
+        id=raw.get("id"),
+        label=raw.get("label"),
+        price=raw.get("price"),
+        price_change_24h=raw.get("priceChange24h"),
+        metadata=raw.get("metadata"),
+    )
+
+
 def _convert_market(raw: Dict[str, Any]) -> UnifiedMarket:
     """Convert raw API response to UnifiedMarket."""
-    outcomes = [
-        MarketOutcome(
-            id=o.get("id"),
-            label=o.get("label"),
-            price=o.get("price"),
-            price_change_24h=o.get("priceChange24h"),
-            metadata=o.get("metadata"),
-        )
-        for o in raw.get("outcomes", [])
-    ]
+    outcomes = [_convert_outcome(o) for o in raw.get("outcomes", [])]
     
     return UnifiedMarket(
         id=raw.get("id"),
@@ -65,6 +67,10 @@ def _convert_market(raw: Dict[str, Any]) -> UnifiedMarket:
         image=raw.get("image"),
         category=raw.get("category"),
         tags=raw.get("tags"),
+        yes=_convert_outcome(raw["yes"]) if raw.get("yes") else None,
+        no=_convert_outcome(raw["no"]) if raw.get("no") else None,
+        up=_convert_outcome(raw["up"]) if raw.get("up") else None,
+        down=_convert_outcome(raw["down"]) if raw.get("down") else None,
     )
 
 

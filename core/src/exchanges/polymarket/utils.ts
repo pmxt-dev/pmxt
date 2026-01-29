@@ -1,4 +1,5 @@
 import { UnifiedMarket, MarketOutcome, CandleInterval } from '../../types';
+import { addBinaryOutcomes } from '../../utils/market-utils';
 
 export const GAMMA_API_URL = 'https://gamma-api.polymarket.com/events';
 export const CLOB_API_URL = 'https://clob.polymarket.com';
@@ -69,7 +70,7 @@ export function mapMarketToUnified(event: any, market: any, options: { useQuesti
         });
     }
 
-    return {
+    const um = {
         id: market.id,
         title: market.question ? `${event.title} - ${market.question}` : event.title,
         description: market.description || event.description,
@@ -83,7 +84,10 @@ export function mapMarketToUnified(event: any, market: any, options: { useQuesti
         image: event.image || market.image || `https://polymarket.com/api/og?slug=${event.slug}`,
         category: event.category || event.tags?.[0]?.label,
         tags: event.tags?.map((t: any) => t.label) || []
-    };
+    } as UnifiedMarket;
+
+    addBinaryOutcomes(um);
+    return um;
 }
 
 export function mapIntervalToFidelity(interval: CandleInterval): number {

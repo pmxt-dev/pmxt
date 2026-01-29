@@ -1,4 +1,4 @@
-# pmxt [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=The%20ccxt%20for%20prediction%20markets.&url=https://github.com/qoery-com/pmxt&hashtags=predictionmarkets,trading)
+# pmxt [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=The%20ccxt%20for%20prediction%20markets.&url=https://github.com/pmxt-dev/pmxt&hashtags=predictionmarkets,trading)
 
 **The ccxt for prediction markets.** A unified API for accessing prediction market data across multiple exchanges.
 
@@ -11,15 +11,15 @@
 <a href="https://www.producthunt.com/products/ccxt-for-prediction-markets?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-ccxt-for-prediction-markets" target="_blank" rel="noopener noreferrer"><img alt="CCXT for Prediction Markets - A unified API for prediction market data across exchanges. | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1060549&amp;theme=light&amp;t=1768206672608"></a>
 </td>
 <td>
-<img src="https://img.shields.io/github/watchers/qoery-com/pmxt?style=social" alt="GitHub watchers">
+<img src="https://img.shields.io/github/watchers/pmxt-dev/pmxt?style=social" alt="GitHub watchers">
 </td>
 <td>
-<a href="https://github.com/qoery-com/pmxt"><img src="https://img.shields.io/badge/downloads-10.6k-blue" alt="Total Downloads"></a>
+<a href="https://github.com/pmxt-dev/pmxt"><img src="https://img.shields.io/badge/downloads-10.6k-blue" alt="Total Downloads"></a>
 </td>
 </tr>
 <tr>
 <td>
-<img src="https://img.shields.io/github/forks/qoery-com/pmxt?style=social" alt="GitHub forks">
+<img src="https://img.shields.io/github/forks/pmxt-dev/pmxt?style=social" alt="GitHub forks">
 </td>
 <td>
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
@@ -27,7 +27,7 @@
 </tr>
 <tr>
 <td>
-<a href="https://github.com/qoery-com/pmxt/stargazers"><img src="https://img.shields.io/github/stars/qoery-com/pmxt?refresh=1" alt="GitHub stars"></a>
+<a href="https://github.com/pmxt-dev/pmxt/stargazers"><img src="https://img.shields.io/github/stars/pmxt-dev/pmxt?refresh=1" alt="GitHub stars"></a>
 </td>
 <td>
 <a href="https://www.npmjs.com/package/pmxtjs">
@@ -166,4 +166,4 @@ Check out the directory for more use cases:
 
 
 
-[![Stargazers repo roster for @qoery-com/pmxt](https://reporoster.com/stars/qoery-com/pmxt)](https://github.com/qoery-com/pmxt/stargazers)
+[![Stargazers repo roster for @pmxt-dev/pmxt](https://reporoster.com/stars/pmxt-dev/pmxt)](https://github.com/pmxt-dev/pmxt/stargazers)

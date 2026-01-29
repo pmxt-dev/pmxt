@@ -603,6 +603,84 @@ paths:
                         items:
                           $ref: '#/components/schemas/Balance'
 
+  /api/{exchange}/getExecutionPrice:
+    post:
+      summary: Get Execution Price
+      operationId: getExecutionPrice
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [args]
+              properties:
+                args:
+                  type: array
+                  minItems: 3
+                  maxItems: 3
+                  description: "[orderBook, side, amount]"
+                  items:
+                    oneOf:
+                      - $ref: '#/components/schemas/OrderBook'
+                      - type: string
+                        enum: [buy, sell]
+                      - type: number
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+      responses:
+        '200':
+          description: Average execution price
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: number
+
+  /api/{exchange}/getExecutionPriceDetailed:
+    post:
+      summary: Get Detailed Execution Price
+      operationId: getExecutionPriceDetailed
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [args]
+              properties:
+                args:
+                  type: array
+                  minItems: 3
+                  maxItems: 3
+                  description: "[orderBook, side, amount]"
+                  items:
+                    oneOf:
+                      - $ref: '#/components/schemas/OrderBook'
+                      - type: string
+                        enum: [buy, sell]
+                      - type: number
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+      responses:
+        '200':
+          description: Detailed execution result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ExecutionPriceResult'
+
 components:
   parameters:
     ExchangeParam:
@@ -859,6 +937,16 @@ components:
           type: number
         locked:
           type: number
+
+    ExecutionPriceResult:
+      type: object
+      properties:
+        price:
+          type: number
+        filledAmount:
+          type: number
+        fullyFilled:
+          type: boolean
 
     # -------------------------------------------------------------------------
     # Input Parameter Object Schemas

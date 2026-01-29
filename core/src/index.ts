@@ -1,5 +1,6 @@
 export * from './BaseExchange';
 export * from './types';
+export * from './utils/math';
 export * from './exchanges/polymarket';
 export * from './exchanges/kalshi';
 export * from './server/app';

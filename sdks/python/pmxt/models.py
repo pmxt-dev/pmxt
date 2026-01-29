@@ -218,6 +218,20 @@ class OrderBook:
 
 
 @dataclass
+class ExecutionPriceResult:
+    """Result of an execution price calculation."""
+    
+    price: float
+    """The volume-weighted average price"""
+    
+    filled_amount: float
+    """The actual amount that can be filled"""
+    
+    fully_filled: bool
+    """Whether the full requested amount can be filled"""
+
+
+@dataclass
 class Trade:
     """A historical trade."""
     

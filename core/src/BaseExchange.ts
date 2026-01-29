@@ -1,4 +1,5 @@
 import { UnifiedMarket, UnifiedEvent, PriceCandle, CandleInterval, OrderBook, Trade, Order, Position, Balance, CreateOrderParams } from './types';
+import { getExecutionPrice, getExecutionPriceDetailed, ExecutionPriceResult } from './utils/math';
 
 export interface MarketFilterParams {
     limit?: number;
@@ -136,6 +137,18 @@ export abstract class PredictionMarketExchange {
      */
     async fetchBalance(): Promise<Balance[]> {
         throw new Error("Method fetchBalance not implemented.");
+    }
+
+    getExecutionPrice(orderBook: OrderBook, side: 'buy' | 'sell', amount: number): number {
+        return getExecutionPrice(orderBook, side, amount);
+    }
+
+    getExecutionPriceDetailed(
+        orderBook: OrderBook,
+        side: 'buy' | 'sell',
+        amount: number
+    ): ExecutionPriceResult {
+        return getExecutionPriceDetailed(orderBook, side, amount);
     }
 
     // ----------------------------------------------------------------------------

@@ -36,6 +36,7 @@ import {
     CreateOrderParams,
     SearchIn,
     UnifiedEvent,
+    ExecutionPriceResult,
 } from "./models.js";
 
 import { ServerManager } from "./server-manager.js";
@@ -868,6 +869,67 @@ export abstract class Exchange {
             return data.map(convertBalance);
         } catch (error) {
             throw new Error(`Failed to fetch balance: ${error}`);
+        }
+    }
+
+    /**
+     * Calculate the average execution price for a given amount by walking the order book.
+     * Uses the sidecar server for calculation to ensure consistency.
+     * 
+     * @param orderBook - The current order book
+     * @param side - 'buy' or 'sell'
+     * @param amount - The amount to execute
+     * @returns The volume-weighted average price, or 0 if insufficient liquidity
+     */
+    async getExecutionPrice(orderBook: OrderBook, side: 'buy' | 'sell', amount: number): Promise<number> {
+        const result = await this.getExecutionPriceDetailed(orderBook, side, amount);
+        return result.fullyFilled ? result.price : 0;
+    }
+
+    /**
+     * Calculate detailed execution price information.
+     * Uses the sidecar server for calculation to ensure consistency.
+     * 
+     * @param orderBook - The current order book
+     * @param side - 'buy' or 'sell'
+     * @param amount - The amount to execute
+     * @returns Detailed execution result
+     */
+    async getExecutionPriceDetailed(
+        orderBook: OrderBook,
+        side: 'buy' | 'sell',
+        amount: number
+    ): Promise<ExecutionPriceResult> {
+        await this.initPromise;
+        try {
+            const body: any = {
+                args: [orderBook, side, amount]
+            };
+            const credentials = this.getCredentials();
+            if (credentials) {
+                body.credentials = credentials;
+            }
+
+            const url = `${this.config.basePath}/api/${this.exchangeName}/getExecutionPriceDetailed`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.config.headers
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error?.message || response.statusText);
+            }
+
+            const json = await response.json();
+            return this.handleResponse(json);
+        } catch (error) {
+            throw new Error(`Failed to get execution price: ${error}`);
         }
     }
 }

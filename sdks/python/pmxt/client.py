@@ -7,9 +7,10 @@ OpenAPI client, matching the JavaScript API exactly.
 
 import os
 import sys
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from datetime import datetime
 from abc import ABC, abstractmethod
+import json
 
 # Add generated client to path
 _GENERATED_PATH = os.path.join(os.path.dirname(__file__), "..", "generated")
@@ -35,6 +36,7 @@ from .models import (
     MarketFilterParams,
     HistoryFilterParams,
     CreateOrderParams,
+    ExecutionPriceResult,
 )
 from .server_manager import ServerManager
 
@@ -166,6 +168,15 @@ def _convert_balance(raw: Dict[str, Any]) -> Balance:
         total=raw.get("total"),
         available=raw.get("available"),
         locked=raw.get("locked"),
+    )
+
+
+def _convert_execution_result(raw: Dict[str, Any]) -> ExecutionPriceResult:
+    """Convert raw API response to ExecutionPriceResult."""
+    return ExecutionPriceResult(
+        price=raw.get("price", 0),
+        filled_amount=raw.get("filledAmount", 0),
+        fully_filled=raw.get("fullyFilled", False),
     )
 
 
@@ -830,6 +841,77 @@ class Exchange(ABC):
             return [_convert_balance(b) for b in data]
         except ApiException as e:
             raise Exception(f"Failed to fetch balance: {e}")
+
+    def get_execution_price(
+        self,
+        order_book: OrderBook,
+        side: Literal["buy", "sell"],
+        amount: float
+    ) -> float:
+        """
+        Calculate the average execution price for a given amount.
+        
+        Args:
+            order_book: The current order book
+            side: "buy" or "sell"
+            amount: The amount to execute
+            
+        Returns:
+            The volume-weighted average price, or 0 if insufficient liquidity
+        """
+        result = self.get_execution_price_detailed(order_book, side, amount)
+        return result.price if result.fully_filled else 0
+
+    def get_execution_price_detailed(
+        self,
+        order_book: OrderBook,
+        side: Literal["buy", "sell"],
+        amount: float
+    ) -> ExecutionPriceResult:
+        """
+        Calculate detailed execution price information.
+        
+        Args:
+            order_book: The current order book
+            side: "buy" or "sell"
+            amount: The amount to execute
+            
+        Returns:
+            Detailed execution result
+        """
+        try:
+            # Convert order_book to dict for API call
+            bids = [{"price": b.price, "size": b.size} for b in order_book.bids]
+            asks = [{"price": a.price, "size": a.size} for a in order_book.asks]
+            ob_dict = {"bids": bids, "asks": asks, "timestamp": order_book.timestamp}
+
+            body = {
+                "args": [ob_dict, side, amount]
+            }
+            
+            creds = self._get_credentials_dict()
+            if creds:
+                body["credentials"] = creds
+                
+            url = f"{self._api_client.configuration.host}/api/{self.exchange_name}/getExecutionPriceDetailed"
+            
+            headers = {"Content-Type": "application/json", "Accept": "application/json"}
+            headers.update(self._api_client.default_headers)
+            
+            response = self._api_client.call_api(
+                method="POST",
+                url=url,
+                body=body,
+                header_params=headers
+            )
+            
+            response.read()
+            data_json = json.loads(response.data)
+            
+            data = self._handle_response(data_json)
+            return _convert_execution_result(data)
+        except Exception as e:
+            raise Exception(f"Failed to get execution price: {e}")
 
 
 class Polymarket(Exchange):

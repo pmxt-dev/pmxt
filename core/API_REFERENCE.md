@@ -129,6 +129,29 @@ const trades = await kalshi.fetchTrades('FED-25JAN', {
 
 ---
 
+## Helper Methods
+
+### `getExecutionPrice(orderBook, side, amount)`
+Calculate the volume-weighted average price for a given amount. Returns `0` if there is insufficient liquidity to fully fill the amount.
+
+```typescript
+const orderBook = await polymarket.fetchOrderBook(outcomeId);
+const price = await polymarket.getExecutionPrice(orderBook, 'buy', 100);
+console.log(`Average price for 100 shares: ${price}`);
+```
+
+### `getExecutionPriceDetailed(orderBook, side, amount)`
+Calculate detailed execution price information, including partial fills.
+
+```typescript
+const detailed = await polymarket.getExecutionPriceDetailed(orderBook, 'buy', 100);
+console.log(`Average Price: ${detailed.price}`);
+console.log(`Filled Amount: ${detailed.filledAmount}`);
+console.log(`Fully Filled: ${detailed.fullyFilled}`);
+```
+
+---
+
 ## Data Models
 
 ### `UnifiedMarket`
@@ -195,6 +218,12 @@ interface Trade {
   price: number;           // 0.0 to 1.0
   amount: number;
   side: 'buy' | 'sell' | 'unknown';
+}
+
+interface ExecutionPriceResult {
+  price: number;           // Average execution price
+  filledAmount: number;    // Amount filled (shares)
+  fullyFilled: boolean;    // If the requested amount was met
 }
 ```
 

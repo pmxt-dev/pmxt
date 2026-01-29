@@ -133,6 +133,20 @@ export interface OrderBook {
 }
 
 /**
+ * Result of an execution price calculation.
+ */
+export interface ExecutionPriceResult {
+    /** The volume-weighted average price */
+    price: number;
+
+    /** The actual amount that can be filled */
+    filledAmount: number;
+
+    /** Whether the full requested amount can be filled */
+    fullyFilled: boolean;
+}
+
+/**
  * A historical trade.
  */
 export interface Trade {

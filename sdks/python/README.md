@@ -126,6 +126,8 @@ for pos in positions:
 - `fetch_ohlcv(outcome_id, params)` - Get historical price candles
 - `fetch_order_book(outcome_id)` - Get current order book
 - `fetch_trades(outcome_id, params)` - Get trade history
+- `get_execution_price(order_book, side, amount)` - Get execution price
+- `get_execution_price_detailed(order_book, side, amount)` - Get detailed execution info
 
 ### Trading Methods (require authentication)
 

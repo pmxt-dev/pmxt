@@ -61,6 +61,17 @@
 
 Different prediction market platforms have different APIs, data formats, and conventions. pmxt provides a single, consistent interface to work with all of them.
 
+### Supported Exchanges
+
+<p align="center">
+  <img src="https://polymarket.com/favicon.ico" alt="Polymarket" width="24" height="24"> <b>Polymarket</b>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://kalshi.com/favicon.ico" alt="Kalshi" width="24" height="24"> <b>Kalshi</b>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://limitless.exchange/assets/images/logo.svg" alt="Limitless" width="24" height="24"> <b>Limitless</b>
+</p>
+
+
 ## Installation
 
 Ensure that [`Node.js`](https://nodejs.org) is installed and the `node` command is available on your PATH.
@@ -114,12 +125,6 @@ const warsh = fedEvent.searchMarkets('Kevin Warsh')[0];
 
 console.log(`Price: ${warsh.yes?.price}`);
 ```
-
-## Supported Exchanges
-
-- Polymarket
-- Kalshi
-- Limitless
 
 ## Trading
 pmxt supports unified trading across exchanges.

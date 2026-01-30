@@ -71,16 +71,8 @@ pip install pmxt
 ```
 
 ### Node.js
-Note: Installing the following npm package isn't strictly necessary when using the Python API since the `pmxt`
-pip package already includes the `pmxt-server` and the Python API will use it automatically.
-
-#### Install locally
 ```bash
 npm install pmxtjs
-```
-#### Install globally
-```bash
-npm -g install pmxtjs
 ```
 
 ## Quickstart

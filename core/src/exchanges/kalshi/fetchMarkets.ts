@@ -110,10 +110,11 @@ export async function fetchMarkets(params?: MarketFilterParams): Promise<Unified
             events = cachedEvents;
             seriesMap = cachedSeriesMap;
         } else {
-            // Fetch ALL active markets to enable client-side pagination and sorting
-            // We set a high limit to capture the entire active market set
-            // Kalshi active markets are generally in the hundreds, manageable in memory
-            const fetchLimit = 1000;
+            // Optimize fetch limit based on request parameters
+            // If sorting is required (e.g. by volume), we need to fetch a larger set (or all) to sort correctly.
+            // If no sorting is requested, we only need to fetch enough to satisfy the limit.
+            const isSorted = params?.sort && (params.sort === 'volume' || params.sort === 'liquidity');
+            const fetchLimit = isSorted ? 1000 : limit;
 
             const [allEvents, fetchedSeriesMap] = await Promise.all([
                 fetchActiveEvents(fetchLimit),
@@ -123,10 +124,16 @@ export async function fetchMarkets(params?: MarketFilterParams): Promise<Unified
             events = allEvents;
             seriesMap = fetchedSeriesMap;
 
-            // Cache the FULL dataset
-            cachedEvents = allEvents;
-            cachedSeriesMap = fetchedSeriesMap;
-            lastCacheTime = now;
+            events = allEvents;
+            seriesMap = fetchedSeriesMap;
+
+            // Cache the dataset ONLY if we fetched a comprehensive set (intended for global sorting/pagination)
+            // If we only fetched a partial set (e.g. limit=5), we shouldn't cache it as the "full" logic assumes we have everything.
+            if (fetchLimit >= 1000) {
+                cachedEvents = allEvents;
+                cachedSeriesMap = fetchedSeriesMap;
+                lastCacheTime = now;
+            }
         }
 
         // Extract ALL markets from all events

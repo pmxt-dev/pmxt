@@ -976,3 +976,25 @@ export class Kalshi extends Exchange {
         super("kalshi", options);
     }
 }
+
+/**
+ * Limitless exchange client.
+ * 
+ * @example
+ * ```typescript
+ * // Public data (no auth)
+ * const limitless = new Limitless();
+ * const markets = await limitless.searchMarkets("Trump");
+ * 
+ * // Trading (requires auth)
+ * const limitless = new Limitless({
+ *   privateKey: process.env.LIMITLESS_PRIVATE_KEY
+ * });
+ * const balance = await limitless.fetchBalance();
+ * ```
+ */
+export class Limitless extends Exchange {
+    constructor(options: Omit<ExchangeOptions, "apiKey"> = {}) {
+        super("limitless", options);
+    }
+}

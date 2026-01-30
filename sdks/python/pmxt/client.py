@@ -990,3 +990,39 @@ class Kalshi(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
         )
+
+
+class Limitless(Exchange):
+    """
+    Limitless exchange client.
+    
+    Example:
+        >>> # Public data (no auth)
+        >>> limitless = Limitless()
+        >>> markets = limitless.search_markets("Trump")
+        >>> 
+        >>> # Trading (requires auth)
+        >>> limitless = Limitless(private_key=os.getenv("LIMITLESS_PRIVATE_KEY"))
+        >>> balance = limitless.fetch_balance()
+    """
+    
+    def __init__(
+        self,
+        private_key: Optional[str] = None,
+        base_url: str = "http://localhost:3847",
+        auto_start_server: bool = True,
+    ):
+        """
+        Initialize Limitless client.
+        
+        Args:
+            private_key: Ethereum private key (required for trading)
+            base_url: Base URL of the PMXT sidecar server
+            auto_start_server: Automatically start server if not running (default: True)
+        """
+        super().__init__(
+            exchange_name="limitless",
+            private_key=private_key,
+            base_url=base_url,
+            auto_start_server=auto_start_server,
+        )

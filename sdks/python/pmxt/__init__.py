@@ -16,7 +16,7 @@ Example:
     >>> print(markets[0].title)
 """
 
-from .client import Polymarket, Kalshi, Exchange
+from .client import Polymarket, Kalshi, Limitless, Exchange
 from .server_manager import ServerManager
 from .models import (
     UnifiedMarket,
@@ -38,6 +38,7 @@ __all__ = [
     # Exchanges
     "Polymarket",
     "Kalshi",
+    "Limitless",
     "Exchange",
     # Server Management
     "ServerManager",

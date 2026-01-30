@@ -3,21 +3,20 @@ import pmxt from 'pmxtjs';
 const main = async () => {
     // Kalshi
     const kalshi = new pmxt.Kalshi();
-    const kMarkets = await kalshi.getMarketsBySlug('KXFEDCHAIRNOM-29');
-    const kWarsh = kMarkets.find(m => m.outcomes[0]?.label === 'Kevin Warsh');
-    if (kWarsh) {
-        const kTrades = await kalshi.fetchTrades(kWarsh.id, { limit: 10, resolution: '1m' });
-        console.log('Kalshi:', kTrades);
-    }
+    const kEvent = (await kalshi.searchEvents('Fed Chair'))[0];
+    const kMarket = kEvent.searchMarkets('Kevin Warsh')[0];
+
+    const kTrades = await kalshi.fetchTrades(kMarket.yes!.id, { limit: 10, resolution: '1m' });
+    console.log('Kalshi:', kTrades);
 
     // Polymarket
     const poly = new pmxt.Polymarket();
-    const pMarkets = await poly.getMarketsBySlug('who-will-trump-nominate-as-fed-chair');
-    const pWarsh = pMarkets.find(m => m.outcomes[0]?.label === 'Kevin Warsh');
-    if (pWarsh && pWarsh.outcomes[0]) {
-        const pTrades = await poly.fetchTrades(pWarsh.outcomes[0].metadata.clobTokenId, { limit: 10, resolution: '1m' });
-        console.log('Polymarket:', pTrades);
-    }
+    const pEvent = (await poly.searchEvents('Fed Chair'))[0];
+    const pMarket = pEvent.searchMarkets('Kevin Warsh')[0];
+
+    // Use .yes.id for convenience
+    const pTrades = await poly.fetchTrades(pMarket.yes!.id, { limit: 10, resolution: '1m' });
+    console.log('Polymarket:', pTrades);
 };
 
 main();

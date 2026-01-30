@@ -1,12 +1,6 @@
 import pmxt from '../../src';
 
 async function run() {
-    const ticker = "KXSERIEAGAME-26JAN25JUVNAP-JUV";
-    const title = "Juventus vs Napoli (Juventus Win)";
-
-    console.log(`Watching equilibrium for: ${title}`);
-    console.log(`Ticker: ${ticker}\n`);
-
     const api = new pmxt.kalshi({
         credentials: {
             apiKey: process.env.KALSHI_API_KEY,
@@ -14,12 +8,23 @@ async function run() {
         }
     });
 
+    console.log("Searching for Event: Serie A...");
+    const events = await api.searchEvents("Serie A");
+    const event = events[0];
+
+    console.log("Searching for Market: Juventus vs Napoli...");
+    const market = event.searchMarkets("Juventus vs Napoli")[0];
+    const ticker = market.id;
+
+    console.log(`Watching equilibrium for: ${market.title}`);
+    console.log(`Ticker: ${ticker}\n`);
+
     try {
         while (true) {
             const book = await api.watchOrderBook(ticker);
 
             console.clear();
-            console.log(`Market: ${title}`);
+            console.log(`Market: ${market.title}`);
             console.log(`Ticker: ${ticker} | Time: ${new Date().toLocaleTimeString()}\n`);
 
             console.log("--- ASKS (Sellers) ---");

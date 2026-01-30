@@ -18,11 +18,18 @@ def run():
         private_key=private_key
     )
     
-    # Juventus vs Napoli (Juventus Win)
-    ticker = "KXSERIEAGAME-26JAN25JUVNAP-JUV"
-    title = "Juventus vs Napoli (Juventus Win)"
-
-    print(f"Watching equilibrium for: {title}")
+    # Search for market
+    print("Searching for Event: Serie A...")
+    events = api.search_events("Serie A")
+    event = events[0]
+    
+    print("Searching for Market: Juventus vs Napoli...")
+    market = event.search_markets("Juventus vs Napoli")[0]
+    
+    # For now, Kalshi markets are 1:1 with tickers in pmxt models
+    ticker = market.id
+    
+    print(f"Watching equilibrium for: {market.title}")
     print(f"Ticker: {ticker}\n")
 
     try:

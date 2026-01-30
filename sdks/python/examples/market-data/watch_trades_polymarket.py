@@ -1,22 +1,20 @@
 import pmxt
-import json
-import urllib.request
-from datetime import datetime
 import time
+from datetime import datetime
 
 def run():
     api = pmxt.Polymarket()
     
-    # Search for the Rick Rieder market
-    print("Searching for Rick Rieder market...")
-    markets = api.search_markets("Rick Rieder")
-    market = next((m for m in markets if "Rick Rieder" in m.title and "Fed" in m.title), None)
+    # 1. Search for the broad Event
+    print("Searching for Event: Fed Chair...")
+    events = api.search_events("Who will Trump nominate as Fed Chair?")
+    event = events[0]
+    print(f"Found Event: {event.title}")
     
-    if not market:
-        print("Market not found")
-        return
-    
-    outcome = market.outcomes[0]  # YES outcome
+    # 2. Search for the specific Market within that event
+    print("Searching for Market: Kevin Warsh...")
+    market = event.search_markets("Kevin Warsh")[0]
+    outcome = market.yes
     asset_id = outcome.id
 
     print(f"Watching trades for: {market.title}")

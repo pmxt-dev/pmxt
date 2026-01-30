@@ -1,21 +1,31 @@
 import pmxt from '../../src';
 
 async function run() {
-    const assetId = "16206267440377108972343351482425564384973031696941663558076310969498822538172";
-    const title = "Will Trump nominate Rick Rieder as the next Fed chair?";
-
-    console.log(`Watching equilibrium for: ${title}`);
-    console.log(`Outcome: YES (Asset ID: ${assetId})\n`);
-
     const api = new pmxt.polymarket();
+
+    // 1. Search for the broad Event
+    console.log("Searching for Event: Fed Chair...");
+    const events = await api.searchEvents("Who will Trump nominate as Fed Chair?");
+    const event = events[0];
+
+    // 2. Search for the specific Market within that event
+    console.log("Searching for Market: Kevin Warsh...");
+    const markets = event.searchMarkets("Kevin Warsh");
+
+    const market = markets[0];
+    const outcome = market.yes!; // Convenience access
+    const assetId = outcome.id;
+
+    console.log(`Watching equilibrium for: ${market.title}`);
+    console.log(`Outcome: ${outcome.label} (Asset ID: ${assetId})\n`);
 
     try {
         while (true) {
             const book = await api.watchOrderBook(assetId);
 
             console.clear();
-            console.log(`Market: ${title}`);
-            console.log(`Outcome: YES | Time: ${new Date().toLocaleTimeString()}\n`);
+            console.log(`Market: ${market.title}`);
+            console.log(`Outcome: ${outcome.label} | Time: ${new Date().toLocaleTimeString()}\n`);
 
             console.log("--- ASKS (Sellers) ---");
             const topAsks = book.asks.slice(0, 5).reverse();

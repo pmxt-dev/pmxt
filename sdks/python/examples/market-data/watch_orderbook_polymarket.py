@@ -4,13 +4,21 @@ from datetime import datetime
 import time
 
 def run():
-    asset_id = "16206267440377108972343351482425564384973031696941663558076310969498822538172"
-    question = "Will Trump nominate Rick Rieder as the next Fed chair?"
-
-    print(f"Watching equilibrium for: {question}")
-    print(f"Outcome: YES (Asset ID: {asset_id})\n")
-
     api = pmxt.Polymarket()
+
+    # 1. Search for the broad Event
+    print("Searching for Event: Fed Chair...")
+    events = api.search_events("Who will Trump nominate as Fed Chair?")
+    event = events[0]
+    
+    # 2. Search for the specific Market within that event
+    print("Searching for Market: Kevin Warsh...")
+    market = event.search_markets("Kevin Warsh")[0]
+    outcome = market.yes
+    asset_id = outcome.id
+
+    print(f"Watching equilibrium for: {market.title}")
+    print(f"Outcome: {outcome.label} (Asset ID: {asset_id})\n")
 
     while True:
         try:
@@ -19,8 +27,8 @@ def run():
             # Clear screen (cross-platform)
             os.system('cls' if os.name == 'nt' else 'clear')
             
-            print(f"Market: {question}")
-            print(f"Outcome: YES | Time: {datetime.now().strftime('%H:%M:%S')}\n")
+            print(f"Market: {market.title}")
+            print(f"Outcome: {outcome.label} | Time: {datetime.now().strftime('%H:%M:%S')}\n")
 
             print("--- ASKS (Sellers) ---")
             top_asks = book.asks[:5]

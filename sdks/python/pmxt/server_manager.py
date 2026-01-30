@@ -209,15 +209,19 @@ class ServerManager:
         Start the server using the pmxt-ensure-server launcher.
         """
         # 1. Check for bundled server (PRODUCTION - installed via pip)
-        bundled_launcher = Path(__file__).parent / '_server' / 'bin' / 'pmxt-ensure-server'
-        
+        launcher_filename = 'pmxt-ensure-server'
+        if os.name == "nt": # Check if running Windows
+            launcher_filename += ".js"
+
+        bundled_launcher = Path(__file__).parent / '_server' / 'bin' / launcher_filename
+
         # 2. Check for monorepo structure (DEVELOPMENT)
         current_file = Path(__file__).resolve()
-        local_launcher = current_file.parent.parent.parent.parent / 'core' / 'bin' / 'pmxt-ensure-server'
-        
+        local_launcher = current_file.parent.parent.parent.parent / 'core' / 'bin' / launcher_filename
+
         # 3. Check PATH (GLOBAL INSTALL)
-        path_launcher = shutil.which('pmxt-ensure-server')
-        
+        path_launcher = shutil.which(launcher_filename)
+
         # Priority order: bundled > local dev > PATH
         if bundled_launcher.exists():
             launcher = str(bundled_launcher)
@@ -235,7 +239,7 @@ class ServerManager:
         
         # Call the launcher
         try:
-            # If it's a JS file and we are calling it directly, might need node
+            # If it's a JS file, and we are calling it directly, might need node
             cmd = [launcher]
             if launcher.endswith('.js') or not os.access(launcher, os.X_OK):
                 cmd = ['node', launcher]

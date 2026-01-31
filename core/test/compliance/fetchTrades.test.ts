@@ -1,10 +1,35 @@
-import { exchangeClasses, validateTrade } from './shared';
+import { exchangeClasses, validateTrade, getMockCredentials } from './shared';
+import axios from 'axios';
 
 describe('Compliance: fetchTrades', () => {
     test.each(exchangeClasses)('$name should comply with fetchTrades standards', async ({ name, cls }) => {
-        const exchange = new cls();
+        let exchange: any;
 
         try {
+            // Initialize with real credentials if available, otherwise use lazily generated dummies
+            // This is required for Polymarket/Limitless trades which might be auth-restricted
+            const mockCreds = getMockCredentials();
+
+            try {
+                if (name === 'PolymarketExchange') {
+                    const pk = process.env.POLYMARKET_PRIVATE_KEY || mockCreds.ethPrivateKey;
+                    exchange = new cls({ privateKey: pk });
+                } else if (name === 'KalshiExchange') {
+                    exchange = new cls({
+                        apiKey: process.env.KALSHI_API_KEY || "dummy_api_key",
+                        privateKey: process.env.KALSHI_PRIVATE_KEY || mockCreds.kalshiPrivateKey
+                    });
+                } else if (name === 'LimitlessExchange') {
+                    const pk = process.env.LIMITLESS_PRIVATE_KEY || mockCreds.ethPrivateKey;
+                    exchange = new cls({ privateKey: pk });
+                } else {
+                    exchange = new cls();
+                }
+            } catch (e) {
+                console.warn(`Error initializing ${name} for trades:`, e);
+                exchange = new cls(); // Fallback to public if init fails
+            }
+
             console.info(`[Compliance] Testing ${name}.fetchTrades`);
 
             // 1. Get a market to find an outcome ID
@@ -16,40 +41,32 @@ describe('Compliance: fetchTrades', () => {
             let trades: any[] = [];
             let testedOutcomeId = '';
 
-            // Try to find an outcome with trades
+            // Try to find an outcome with trades (real network)
             for (const market of markets) {
                 for (const outcome of market.outcomes) {
                     try {
-                        console.info(`[Compliance] ${name}: fetching trades for outcome ${outcome.id} (${outcome.label})`);
-                        trades = await exchange.fetchTrades(outcome.id, { resolution: '1h', limit: 10 });
-
+                        trades = await exchange.fetchTrades(outcome.id, { limit: 10 });
                         if (trades && trades.length > 0) {
                             testedOutcomeId = outcome.id;
                             break;
                         }
-                    } catch (error: any) {
-                        console.warn(`[Compliance] ${name}: Failed to fetch trades for outcome ${outcome.id}: ${error.message}`);
+                    } catch (error) {
+                        // Skip and try next
                     }
                 }
                 if (testedOutcomeId) break;
             }
 
-            // If we still don't have trades, try the first one we got (even if empty)
-            if (!testedOutcomeId && markets.length > 0 && markets[0].outcomes.length > 0) {
-                const firstOutcome = markets[0].outcomes[0];
-                trades = await exchange.fetchTrades(firstOutcome.id, { resolution: '1h', limit: 10 });
-                testedOutcomeId = firstOutcome.id;
+            // 2. Verify trades result
+            if (trades.length === 0) {
+                throw new Error(`${name}: No trades found on live markets and mocking is disabled.`);
             }
 
-            // Verify trades is returned (can be empty if market is new, but structure must match)
             expect(Array.isArray(trades)).toBe(true);
+            expect(trades.length).toBeGreaterThan(0);
 
-            if (trades.length > 0) {
-                for (const trade of trades) {
-                    validateTrade(trade, name, testedOutcomeId);
-                }
-            } else {
-                console.info(`[Compliance] ${name}: No trades found for outcome ${testedOutcomeId}, but structure is valid.`);
+            for (const trade of trades) {
+                validateTrade(trade, name, testedOutcomeId);
             }
 
         } catch (error: any) {

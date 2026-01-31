@@ -12,19 +12,19 @@ This document details the feature support and compliance status for each exchang
 | | `getMarketsBySlug` | ✅ | ✅ | ✅ |
 | | `searchEvents` | ✅ | ✅ | ✅ |
 | **Public Data** | `fetchOHLCV` | ✅ | ✅ | ❌ |
-| | `fetchOrderBook` | ✅ | ✅ | ✅ |
+| | `fetchOrderBook` | ❌ | ✅ | ❌ |
 | | `fetchTrades` | ⚠️* | ✅ | ⚠️* | - *Requires API Key / Authentication to fetch public trade history.
-| **Private Data** | `fetchBalance` | ⚠️ | ⚠️ | ⚠️ |
-| | `fetchPositions` | ⚠️ | ⚠️ | ⚠️ |
-| **Trading** | `createOrder` | ⚠️ | ⚠️ | ⚠️ |
-| | `cancelOrder` | ⚠️ | ⚠️ | ⚠️ |
-| | `fetchOrder` | ⚠️ | ⚠️ | ⚠️ |
-| | `fetchOpenOrders` | ⚠️ | ⚠️ | ⚠️ |
+| **Private Data** | `fetchBalance` | ✅ | ✅ | ✅ |
+| | `fetchPositions` | ✅ | ✅ | ✅ |
+| **Trading** | `createOrder` | ✅ | ✅ | ✅ |
+| | `cancelOrder` | ✅ | ✅ | ✅ |
+| | `fetchOrder` | ❌* | ✅ | ❌* | - *Status casing mismatch (returns UPPERCASE)
+| | `fetchOpenOrders` | ✅ | ✅ | ✅ |
 | **Calculations** | `getExecutionPrice` | ✅ | ✅ | ✅ |
 | | `getExecutionPriceDetailed` | ✅ | ✅ | ✅ |
 | **Real-time** | `watchOrderBook` | ✅ | ⚠️* | ❌ | - *Requires Authentication / WebSocket doesn't exist
 | | `watchTrades` | ✅ | ✅ | ❌ | - Limitless not supported
-| **Lifecycle** | `close` | ⚠️ | ⚠️ | ⚠️ |
+
 
 ## Legend
 - ✅ Compliance Verified (Strict Test Passed)

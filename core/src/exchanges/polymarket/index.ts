@@ -233,7 +233,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
                 type: order.order_type === 'GTC' ? 'limit' : 'market',
                 price: parseFloat(order.price),
                 amount: parseFloat(order.original_size),
-                status: order.status as any, // Needs precise mapping
+                status: (typeof order.status === 'string' ? order.status.toLowerCase() : order.status) as any,
                 filled: parseFloat(order.size_matched),
                 remaining: parseFloat(order.original_size) - parseFloat(order.size_matched),
                 timestamp: order.created_at * 1000

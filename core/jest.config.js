@@ -1,16 +1,13 @@
-const { createDefaultPreset } = require("ts-jest");
 
-const tsJestTransformCfg = createDefaultPreset().transform;
-
-/** @type {import("jest").Config} **/
 module.exports = {
-  testEnvironment: "node",
+  preset: 'ts-jest',
+  testEnvironment: 'node',
   transform: {
-    ...tsJestTransformCfg,
-    "^.+\\.jsx?$": "ts-jest",
+    '^.+\\.tsx?$': ['ts-jest', { isolatedModules: true }],
+    '^.+\\.jsx?$': ['ts-jest', { isolatedModules: true }],
   },
   transformIgnorePatterns: [
-    "node_modules/(?!(@polymarket|ethers|@ethersproject)/)"
+    "node_modules/(?!(@polymarket|ethers|@ethersproject|axios)/)"
   ],
   testPathIgnorePatterns: ["/node_modules/", "/dist/"],
 };

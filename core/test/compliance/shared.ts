@@ -1,5 +1,6 @@
 import * as pmxt from '../../src';
-import { UnifiedEvent, UnifiedMarket, MarketOutcome, PriceCandle, OrderBook, Trade } from '../../src/types';
+import { UnifiedEvent, UnifiedMarket, MarketOutcome, PriceCandle, OrderBook, Trade, Position, Order } from '../../src/types';
+import { generateKeyPairSync } from 'crypto';
 
 /**
  * PMXT Compliance Shared Validation Logic
@@ -209,3 +210,88 @@ export function validateTrade(trade: Trade, exchangeName: string, outcomeId: str
     expect(['buy', 'sell', 'unknown']).toContain(trade.side);
 }
 
+export function validatePosition(position: Position, exchangeName: string) {
+    const errorPrefix = `[${exchangeName} Position: ${position.marketId}]`;
+
+    expect(position.marketId).toBeDefined();
+    expect(typeof position.marketId).toBe('string');
+
+    expect(position.outcomeId).toBeDefined();
+    expect(typeof position.outcomeId).toBe('string');
+
+    expect(position.outcomeLabel).toBeDefined();
+    expect(typeof position.outcomeLabel).toBe('string');
+
+    expect(typeof position.size).toBe('number');
+    // Size can be anything, but usually non-zero if it's a position
+
+    expect(typeof position.entryPrice).toBe('number');
+    expect(position.entryPrice).toBeGreaterThanOrEqual(0);
+
+    expect(typeof position.currentPrice).toBe('number');
+    expect(position.currentPrice).toBeGreaterThanOrEqual(0);
+
+    expect(typeof position.unrealizedPnL).toBe('number');
+}
+
+export function validateOrder(order: Order, exchangeName: string) {
+    const errorPrefix = `[${exchangeName} Order: ${order.id}]`;
+
+    expect(order.id).toBeDefined();
+    expect(typeof order.id).toBe('string');
+
+    expect(order.marketId).toBeDefined();
+    expect(typeof order.marketId).toBe('string');
+
+    expect(order.outcomeId).toBeDefined();
+    expect(typeof order.outcomeId).toBe('string');
+
+    expect(['buy', 'sell']).toContain(order.side);
+    expect(['market', 'limit']).toContain(order.type);
+
+    if (order.type === 'limit') {
+        expect(typeof order.price).toBe('number');
+        expect(order.price).toBeGreaterThanOrEqual(0);
+        expect(order.price).toBeLessThanOrEqual(1);
+    }
+
+    expect(typeof order.amount).toBe('number');
+    expect(order.amount).toBeGreaterThan(0);
+
+    expect(['pending', 'open', 'filled', 'cancelled', 'rejected']).toContain(order.status);
+
+    expect(typeof order.filled).toBe('number');
+    expect(order.filled).toBeGreaterThanOrEqual(0);
+
+    expect(typeof order.remaining).toBe('number');
+    expect(order.remaining).toBeGreaterThanOrEqual(0);
+
+    expect(typeof order.timestamp).toBe('number');
+    expect(order.timestamp).toBeGreaterThan(0);
+}
+
+// ----------------------------------------------------------------------------
+// Mock Credentials Helper
+// ----------------------------------------------------------------------------
+
+let cachedRsaKey: string | undefined;
+
+export function getMockCredentials() {
+    // 1. Ethereum Private Key (random 32 bytes hex)
+    const ethPrivateKey = "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318";
+
+    // 2. RSA Private Key (Lazy generation to save time)
+    if (!cachedRsaKey) {
+        const { privateKey } = generateKeyPairSync('rsa', {
+            modulusLength: 2048,
+            publicKeyEncoding: { type: 'spki', format: 'pem' },
+            privateKeyEncoding: { type: 'pkcs1', format: 'pem' }
+        });
+        cachedRsaKey = privateKey;
+    }
+
+    return {
+        ethPrivateKey,
+        kalshiPrivateKey: cachedRsaKey
+    };
+}

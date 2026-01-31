@@ -27,6 +27,20 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
           
+          # Detect force release (skip tests)
+          # We strip the 'f' suffix for the actual version
+          if [[ "$VERSION" == *f ]]; then
+            echo "skip_tests=true" >> $GITHUB_OUTPUT
+            echo "Force release detected (tag ends in 'f') - skipping tests"
+            VERSION=${VERSION%f}
+          else
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
+            echo "Normal release - running tests"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Final publish version: $VERSION"
+
           # Detect if this is a pre-release (beta, alpha, rc)
           if [[ "$VERSION" =~ (alpha|beta|rc|a|b) ]]; then
             echo "npm_tag=beta" >> $GITHUB_OUTPUT
@@ -56,6 +70,7 @@ jobs:
           timeout 30 bash -c 'until curl -s http://localhost:3847/health > /dev/null; do sleep 1; done'
 
       - name: Run Tests (All Workspaces)
+        if: steps.get_version.outputs.skip_tests != 'true'
         run: npm test --workspaces
         
       - name: Build (All Workspaces)
@@ -89,6 +104,18 @@ jobs:
         id: get_version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
+          
+          # Detect force release (skip tests)
+          # We strip the 'f' suffix for the actual version
+          if [[ "$VERSION" == *f ]]; then
+            echo "skip_tests=true" >> $GITHUB_OUTPUT
+            echo "Force release detected (tag ends in 'f') - skipping tests"
+            VERSION=${VERSION%f}
+          else
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
+            echo "Normal release - running tests"
+          fi
+          
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
       
@@ -105,6 +132,7 @@ jobs:
         working-directory: sdks/python
 
       - name: Run tests
+        if: steps.get_version.outputs.skip_tests != 'true'
         run: |
           npm run build --workspace=pmxt-core
           npm run server --workspace=pmxt-core &

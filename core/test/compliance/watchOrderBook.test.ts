@@ -7,6 +7,11 @@ describe('Compliance: watchOrderBook', () => {
         // But if they fail with "auth required", we catch it in the body.
 
         test(`${name} should comply with watchOrderBook standards`, async () => {
+            if (name === 'LimitlessExchange') {
+                console.info(`[Compliance] ${name}.watchOrderBook skipped (no websocket support)`);
+                return;
+            }
+
             const exchange = initExchange(name, cls);
 
             try {

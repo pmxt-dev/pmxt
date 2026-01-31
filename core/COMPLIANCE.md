@@ -22,8 +22,8 @@ This document details the feature support and compliance status for each exchang
 | | `fetchOpenOrders` | ✅ | ✅ | ✅ | Verified (Empty results pass for private data) |
 | **Calculations** | `getExecutionPrice` | ✅ | ✅ | ✅ | |
 | | `getExecutionPriceDetailed` | ✅ | ✅ | ✅ | |
-| **Real-time** | `watchOrderBook` | ✅ | ✅ | ❌ | Limitless not supported |
-| | `watchTrades` | ✅ | ✅ | ❌ | Limitless not supported |
+| **Real-time** | `watchOrderBook` | ✅ | ✅ | ⚠️ | Limitless not Implemented (No websocket support) |
+| | `watchTrades` | ✅ | ✅ | ⚠️ |  Limitless not Implemented (No websocket support) |
 
 ## Legend
 - ✅ Compliance Verified (Strict Test Passed)

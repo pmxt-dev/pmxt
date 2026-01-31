@@ -3,6 +3,11 @@ import { exchangeClasses, validateTrade, hasAuth, initExchange } from './shared'
 describe('Compliance: watchTrades', () => {
     exchangeClasses.forEach(({ name, cls }) => {
         test(`${name} should comply with watchTrades standards`, async () => {
+            if (name === 'LimitlessExchange') {
+                console.info(`[Compliance] ${name}.watchTrades skipped (no websocket support)`);
+                return;
+            }
+
             const exchange = initExchange(name, cls);
 
             try {

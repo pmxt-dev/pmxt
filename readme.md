@@ -71,7 +71,7 @@ Different prediction market platforms have different APIs, data formats, and con
   <img src="https://limitless.exchange/assets/images/logo.svg" alt="Limitless" width="24" height="24"> <b>Limitless</b>
 </p>
 
-For a detailed breakdown of supported methods and compliance status, see [Feature Support & Compliance](core/COMPLIANCE.md).
+[Feature Support & Compliance](core/COMPLIANCE.md).
 
 
 ## Installation

@@ -4,27 +4,27 @@ This document details the feature support and compliance status for each exchang
 
 ## Functions Status
 
-| Category | Function | Polymarket | Kalshi | Limitless |
-| :--- | :--- | :---: | :---: | :---: |
-| **Identity** | `name` | ✅ | ✅ | ✅ |
-| **Market Data** | `fetchMarkets` | ✅ | ✅ | ❌ |
-| | `searchMarkets` | ✅ | ✅ | ✅ |
-| | `getMarketsBySlug` | ✅ | ✅ | ✅ |
-| | `searchEvents` | ✅ | ✅ | ✅ |
-| **Public Data** | `fetchOHLCV` | ✅ | ✅ | ❌ |
-| | `fetchOrderBook` | ❌ | ✅ | ❌ |
-| | `fetchTrades` | ⚠️* | ✅ | ⚠️* | - *Requires API Key / Authentication to fetch public trade history.
-| **Private Data** | `fetchBalance` | ✅ | ✅ | ✅ |
-| | `fetchPositions` | ✅ | ✅ | ✅ |
-| **Trading** | `createOrder` | ✅ | ✅ | ✅ |
-| | `cancelOrder` | ✅ | ✅ | ✅ |
-| | `fetchOrder` | ❌* | ✅ | ❌* | - *Status casing mismatch (returns UPPERCASE)
-| | `fetchOpenOrders` | ✅ | ✅ | ✅ |
-| **Calculations** | `getExecutionPrice` | ✅ | ✅ | ✅ |
-| | `getExecutionPriceDetailed` | ✅ | ✅ | ✅ |
-| **Real-time** | `watchOrderBook` | ✅ | ⚠️* | ❌ | - *Requires Authentication / WebSocket doesn't exist
-| | `watchTrades` | ✅ | ✅ | ❌ | - Limitless not supported
-
+| Category | Function | Polymarket | Kalshi | Limitless | Notes |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Identity** | `name` | ✅ | ✅ | ✅ | |
+| **Market Data** | `fetchMarkets` | ✅ | ✅ | ❌ | |
+| | `searchMarkets` | ✅ | ✅ | ✅ | |
+| | `getMarketsBySlug` | ✅ | ✅ | ✅ | |
+| | `searchEvents` | ✅ | ✅ | ✅ | |
+| **Public Data** | `fetchOHLCV` | ✅ | ✅ | ❌ | |
+| | `fetchOrderBook` | ✅ | ✅ | ✅ | |
+| | `fetchTrades` | ⚠️ | ✅ | ⚠️ | Requires API Key / Authentication to fetch public trade history |
+| **Private Data** | `fetchBalance` | ✅ | ✅ | ✅ | |
+| | `fetchPositions` | ✅ | ✅ | ✅ | |
+| **Trading** | `createOrder` | ✅ | ✅ | ✅ | |
+| | `cancelOrder` | ✅ | ✅ | ✅ | |
+| | `fetchOrder` | ❌ | ✅ | ❌ | Status casing mismatch (returns UPPERCASE) |
+| | `fetchOpenOrders` | ✅ | ✅ | ✅ | |
+| **Calculations** | `getExecutionPrice` | ✅ | ✅ | ✅ | |
+| | `getExecutionPriceDetailed` | ✅ | ✅ | ✅ | |
+| **Real-time** | `watchOrderBook` | ✅ | ⚠️ | ❌ | Requires Authentication / WebSocket doesn't exist |
+| | `watchTrades` | ✅ | ✅ | ❌ | Limitless not supported |
+| **Lifecycle** | `close` | ⚠️ | ⚠️ | ⚠️ | |
 
 ## Legend
 - ✅ Compliance Verified (Strict Test Passed)

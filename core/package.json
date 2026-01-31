@@ -25,7 +25,7 @@
     "clean": "rm -rf dist",
     "prebuild": "npm run clean",
     "build": "tsc",
-    "bundle:server": "esbuild dist/server/index.js --bundle --platform=node --target=node18 --outfile=dist/server/bundled.js --external:fsevents",
+    "bundle:server": "npm run build && esbuild dist/server/index.js --bundle --platform=node --target=node18 --outfile=dist/server/bundled.js --external:fsevents",
     "test": "jest -c jest.config.js",
     "server": "tsx watch src/server/index.ts",
     "server:prod": "node dist/server/index.js",

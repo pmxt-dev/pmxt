@@ -33,3 +33,14 @@ This document details the feature support and compliance status for each exchang
 
 ## Compliance Policy
 - **Failure over Warning**: Tests must fail if no relevant data (markets, events, candles) is found. This ensures that we catch API breakages or unexpected empty responses.
+
+## Tests with authentication
+requires a dotenv in the root dir with
+```
+POLYMARKET_PRIVATE_KEY=0x...
+# Kalshi
+KALSHI_API_KEY=...
+KALSHI_PRIVATE_KEY=... (RSA Private Key)
+# Limitless
+LIMITLESS_PRIVATE_KEY=0x...
+```

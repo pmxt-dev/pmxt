@@ -1,50 +1,31 @@
-import { exchangeClasses, validateOrder } from './shared';
+import { exchangeClasses, validateOrder, hasAuth, initExchange } from './shared';
 
 describe('Compliance: fetchOpenOrders', () => {
-    test.each(exchangeClasses)('$name should comply with fetchOpenOrders standards', async ({ name, cls }) => {
-        let exchange: any;
+    exchangeClasses.forEach(({ name, cls }) => {
+        const testFn = hasAuth(name) ? test : test.skip;
 
-        try {
-            if (name === 'PolymarketExchange') {
-                const pk = process.env.POLYMARKET_PRIVATE_KEY;
-                if (pk) {
-                    exchange = new cls({ privateKey: pk });
-                } else {
-                    exchange = new cls();
+        testFn(`${name} should comply with fetchOpenOrders standards`, async () => {
+            const exchange = initExchange(name, cls);
+
+            try {
+                console.info(`[Compliance] Testing ${name}.fetchOpenOrders`);
+
+                const orders = await exchange.fetchOpenOrders();
+
+                expect(Array.isArray(orders)).toBe(true);
+
+                for (const order of orders) {
+                    validateOrder(order, name);
                 }
-            } else if (name === 'KalshiExchange') {
-                exchange = new cls({
-                    apiKey: process.env.KALSHI_API_KEY,
-                    privateKey: process.env.KALSHI_PRIVATE_KEY
-                });
-            } else if (name === 'LimitlessExchange') {
-                const pk = process.env.LIMITLESS_PRIVATE_KEY;
-                if (pk) {
-                    exchange = new cls({ privateKey: pk });
-                } else {
-                    exchange = new cls();
+
+            } catch (error: any) {
+                const msg = error.message.toLowerCase();
+                if (msg.includes('not implemented')) {
+                    console.info(`[Compliance] ${name}.fetchOpenOrders not implemented.`);
+                    return;
                 }
-            } else {
-                exchange = new cls();
+                throw error;
             }
-
-            console.info(`[Compliance] Testing ${name}.fetchOpenOrders`);
-
-            const orders = await exchange.fetchOpenOrders();
-
-            expect(Array.isArray(orders)).toBe(true);
-
-            for (const order of orders) {
-                validateOrder(order, name);
-            }
-
-        } catch (error: any) {
-            const msg = error.message.toLowerCase();
-            if (msg.includes('not implemented')) {
-                console.info(`[Compliance] ${name}.fetchOpenOrders not implemented.`);
-                return;
-            }
-            throw error;
-        }
-    }, 60000);
+        }, 60000);
+    });
 });

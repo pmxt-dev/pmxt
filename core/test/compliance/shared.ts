@@ -1,9 +1,24 @@
 import * as pmxt from '../../src';
 import { UnifiedEvent, UnifiedMarket, MarketOutcome, PriceCandle, OrderBook, Trade, Position, Order } from '../../src/types';
 import { generateKeyPairSync } from 'crypto';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load .env from root
+dotenv.config({ path: path.join(__dirname, '../../../.env') });
 
 /**
  * PMXT Compliance Shared Validation Logic
+ * 
+ * TO RUN TESTS WITH AUTHENTICATION:
+ * Add the following to a .env file in the repository root:
+ * 
+ * POLYMARKET_PRIVATE_KEY=your_eth_private_key
+ * KALSHI_API_KEY=your_kalshi_api_key
+ * KALSHI_PRIVATE_KEY=your_kalshi_rsa_private_key
+ * LIMITLESS_PRIVATE_KEY=your_eth_private_key
+ * 
+ * If these keys are missing, tests requiring authentication will be automatically skipped.
  */
 
 export const exchangeClasses = Object.entries(pmxt)
@@ -294,4 +309,45 @@ export function getMockCredentials() {
         ethPrivateKey,
         kalshiPrivateKey: cachedRsaKey
     };
+}
+
+/**
+ * Checks if authentication credentials for a specific exchange are present in the environment.
+ * Required variables:
+ * - Polymarket: POLYMARKET_PRIVATE_KEY
+ * - Kalshi: KALSHI_API_KEY, KALSHI_PRIVATE_KEY
+ * - Limitless: LIMITLESS_PRIVATE_KEY
+ */
+export function hasAuth(exchangeName: string): boolean {
+    const polyPk = process.env.POLYMARKET_PRIVATE_KEY?.trim();
+    const kalshiKey = process.env.KALSHI_API_KEY?.trim();
+    const kalshiPk = process.env.KALSHI_PRIVATE_KEY?.trim();
+    const limitlessPk = process.env.LIMITLESS_PRIVATE_KEY?.trim();
+
+    if (exchangeName === 'PolymarketExchange') {
+        return !!polyPk && polyPk.length > 10;
+    }
+    if (exchangeName === 'KalshiExchange') {
+        return !!(kalshiKey && kalshiPk) && kalshiKey.length > 5;
+    }
+    if (exchangeName === 'LimitlessExchange') {
+        return !!limitlessPk && limitlessPk.length > 10;
+    }
+    return false;
+}
+
+export function initExchange(name: string, cls: any) {
+    if (name === 'PolymarketExchange') {
+        return new cls({ privateKey: process.env.POLYMARKET_PRIVATE_KEY?.trim() });
+    }
+    if (name === 'KalshiExchange') {
+        return new cls({
+            apiKey: process.env.KALSHI_API_KEY?.trim(),
+            privateKey: process.env.KALSHI_PRIVATE_KEY?.trim()
+        });
+    }
+    if (name === 'LimitlessExchange') {
+        return new cls({ privateKey: process.env.LIMITLESS_PRIVATE_KEY?.trim() });
+    }
+    return new cls();
 }

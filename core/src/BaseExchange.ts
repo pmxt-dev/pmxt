@@ -25,7 +25,7 @@ export interface ExchangeCredentials {
     privateKey?: string;  // Required for Polymarket L1 auth
 
     // Polymarket-specific L2 fields
-    signatureType?: number;  // 0 = EOA, 1 = Poly Proxy, 2 = Gnosis Safe
+    signatureType?: number | string;  // 0 = EOA, 1 = Poly Proxy, 2 = Gnosis Safe (Can also use 'eoa', 'polyproxy', 'gnosis_safe')
     funderAddress?: string;  // The address funding the trades (defaults to signer address)
 }
 

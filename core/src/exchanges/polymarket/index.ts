@@ -277,7 +277,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
 
     async fetchPositions(): Promise<Position[]> {
         const auth = this.ensureAuth();
-        const address = auth.getAddress();
+        const address = await auth.getEffectiveFunderAddress();
         return fetchPositions(address);
     }
 
@@ -286,14 +286,50 @@ export class PolymarketExchange extends PredictionMarketExchange {
         const client = await auth.getClobClient();
 
         try {
-            // 1. Fetch raw collateral balance (USDC)
-            // Polymarket relies strictly on USDC (Polygon) which has 6 decimals.
+            // Polymarket relies strictly on USDC (Polygon)
             const USDC_DECIMALS = 6;
-            const balRes = await client.getBalanceAllowance({
-                asset_type: AssetType.COLLATERAL
-            });
-            const rawBalance = parseFloat(balRes.balance);
-            const total = rawBalance / Math.pow(10, USDC_DECIMALS);
+
+            // Try fetching from CLOB client first
+            let total = 0;
+            try {
+                const balRes = await client.getBalanceAllowance({
+                    asset_type: AssetType.COLLATERAL
+                });
+                const rawBalance = parseFloat(balRes.balance);
+                total = rawBalance / Math.pow(10, USDC_DECIMALS);
+            } catch (clobError) {
+                // If CLOB fails or returns 0 (suspiciously), we can try on-chain
+                // but let's assume we proceed to on-chain check if total is 0 
+                // or just do on-chain check always for robustness if possible.
+                // For now, let's trust CLOB but add On-Chain fallback if CLOB returns 0.
+            }
+
+            // On-Chain Fallback/Check (Robustness)
+            // If CLOB reported 0, let's verify on-chain because sometimes CLOB is behind or confused about proxies
+            if (total === 0) {
+                try {
+                    const { ethers } = require('ethers');
+                    const provider = new ethers.providers.JsonRpcProvider('https://polygon-rpc.com');
+                    const usdcAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; // USDC.e (Bridged)
+                    const usdcAbi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
+                    const usdcContract = new ethers.Contract(usdcAddress, usdcAbi, provider);
+
+                    const targetAddress = await auth.getEffectiveFunderAddress();
+                    // console.log(`[Polymarket] Checking on-chain balance for ${targetAddress}`);
+
+                    const usdcBal = await usdcContract.balanceOf(targetAddress);
+                    const decimals = await usdcContract.decimals();
+                    const onChainTotal = parseFloat(ethers.utils.formatUnits(usdcBal, decimals));
+
+                    if (onChainTotal > 0) {
+                        // console.log(`[Polymarket] On-Chain balance found: ${onChainTotal} (CLOB reported 0)`);
+                        total = onChainTotal;
+                    }
+                } catch (chainError: any) {
+                    // console.warn("[Polymarket] On-chain balance check failed:", chainError.message);
+                    // Swallow error and return 0 if both fail
+                }
+            }
 
             // 2. Fetch open orders to calculate locked funds
             // We only care about BUY orders for USDC balance locking

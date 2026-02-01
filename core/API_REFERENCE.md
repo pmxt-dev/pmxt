@@ -316,7 +316,9 @@ Requires your **Polygon Private Key**. See [Setup Guide](https://github.com/qoer
 import pmxt from 'pmxtjs';
 
 const polymarket = new pmxt.Polymarket({
-  privateKey: process.env.POLYMARKET_PRIVATE_KEY
+  privateKey: process.env.POLYMARKET_PRIVATE_KEY,
+  funderAddress: process.env.POLYMARKET_PROXY_ADDRESS, // Optional: Proxy address
+  signatureType: 'gnosis-safe' // 'eoa' | 'poly-proxy' | 'gnosis-safe'
 });
 ```
 

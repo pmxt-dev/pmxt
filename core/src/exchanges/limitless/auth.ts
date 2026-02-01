@@ -82,6 +82,29 @@ export class LimitlessAuth {
     }
 
     /**
+     * Maps human-readable signature type names to their numeric values.
+     */
+    private mapSignatureType(type: number | string | undefined | null): number {
+        if (type === undefined || type === null) return 0;
+        if (typeof type === 'number') return type;
+
+        const normalized = type.toLowerCase().replace(/[^a-z0-9]/g, '');
+        switch (normalized) {
+            case 'eoa':
+                return 0;
+            case 'polyproxy':
+            case 'polymarketproxy':
+                return 1;
+            case 'gnosissafe':
+            case 'safe':
+                return 2;
+            default:
+                const parsed = parseInt(normalized);
+                return isNaN(parsed) ? 0 : parsed;
+        }
+    }
+
+    /**
      * Get an authenticated CLOB client for L2 operations (trading).
      * This client can place orders, cancel orders, query positions, etc.
      */
@@ -95,7 +118,7 @@ export class LimitlessAuth {
         const apiCreds = await this.getApiCredentials();
 
         // Determine signature type (default to EOA = 0)
-        const signatureType = this.credentials.signatureType ?? 0;
+        const signatureType = this.mapSignatureType(this.credentials.signatureType);
 
         // Determine funder address (defaults to signer's address)
         const funderAddress = this.credentials.funderAddress ?? this.signer!.address;
@@ -106,7 +129,7 @@ export class LimitlessAuth {
             BASE_CHAIN_ID as any,
             this.signer,
             apiCreds,
-            signatureType,
+            signatureType as any,
             funderAddress
         );
 

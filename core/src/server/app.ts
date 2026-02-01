@@ -72,12 +72,15 @@ export async function startServer(port: number, accessToken: string) {
 
     // Error handler
     app.use((error: any, req: Request, res: Response, next: NextFunction) => {
-        console.error('Error:', error);
+        console.error('API Error:', error);
+        if (error.stack) {
+            console.error(error.stack);
+        }
         res.status(error.status || 500).json({
             success: false,
             error: {
                 message: error.message || 'Internal server error',
-                // stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             }
         });
     });
@@ -92,7 +95,9 @@ function createExchange(name: string, credentials?: ExchangeCredentials) {
                 privateKey: credentials?.privateKey || process.env.POLYMARKET_PK || process.env.POLYMARKET_PRIVATE_KEY,
                 apiKey: credentials?.apiKey || process.env.POLYMARKET_API_KEY,
                 apiSecret: credentials?.apiSecret || process.env.POLYMARKET_API_SECRET,
-                passphrase: credentials?.passphrase || process.env.POLYMARKET_PASSPHRASE
+                passphrase: credentials?.passphrase || process.env.POLYMARKET_PASSPHRASE,
+                funderAddress: credentials?.funderAddress,
+                signatureType: credentials?.signatureType
             });
         case 'limitless':
             return new LimitlessExchange({

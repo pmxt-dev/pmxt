@@ -145,7 +145,9 @@ import pmxt
 import os
 
 exchange = pmxt.Polymarket(
-    private_key=os.getenv('POLYMARKET_PRIVATE_KEY')
+    private_key=os.getenv('POLYMARKET_PRIVATE_KEY'),
+    proxy_address=os.getenv('POLYMARKET_PROXY_ADDRESS'), # Optional: For proxy trading
+    signature_type='gnosis-safe'
 )
 
 # 1. Check Balance

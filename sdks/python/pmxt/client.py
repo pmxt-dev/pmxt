@@ -195,6 +195,8 @@ class Exchange(ABC):
         private_key: Optional[str] = None,
         base_url: str = "http://localhost:3847",
         auto_start_server: bool = True,
+        proxy_address: Optional[str] = None,
+        signature_type: Optional[Any] = None,
     ):
         """
         Initialize an exchange client.
@@ -209,6 +211,8 @@ class Exchange(ABC):
         self.exchange_name = exchange_name.lower()
         self.api_key = api_key
         self.private_key = private_key
+        self.proxy_address = proxy_address
+        self.signature_type = signature_type
         
         # Initialize server manager
         self._server_manager = ServerManager(base_url)
@@ -264,6 +268,10 @@ class Exchange(ABC):
             creds["apiKey"] = self.api_key
         if self.private_key:
             creds["privateKey"] = self.private_key
+        if self.proxy_address:
+            creds["funderAddress"] = self.proxy_address
+        if self.signature_type is not None:
+            creds["signatureType"] = self.signature_type
         return creds if creds else None
     
     # Market Data Methods
@@ -933,6 +941,8 @@ class Polymarket(Exchange):
         private_key: Optional[str] = None,
         base_url: str = "http://localhost:3847",
         auto_start_server: bool = True,
+        proxy_address: Optional[str] = None,
+        signature_type: Optional[Any] = None,
     ):
         """
         Initialize Polymarket client.
@@ -941,12 +951,16 @@ class Polymarket(Exchange):
             private_key: Polygon private key (required for trading)
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
+            proxy_address: Optional Polymarket Proxy/Smart Wallet address
+            signature_type: Optional signature type (0=EOA, 1=Proxy)
         """
         super().__init__(
             exchange_name="polymarket",
             private_key=private_key,
             base_url=base_url,
             auto_start_server=auto_start_server,
+            proxy_address=proxy_address,
+            signature_type=signature_type,
         )
 
 

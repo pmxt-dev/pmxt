@@ -203,6 +203,21 @@ export class ServerManager {
         return false;
     }
 
+    /**
+     * Stop the currently running server.
+     */
+    async stop(): Promise<void> {
+        await this.killOldServer();
+    }
+
+    /**
+     * Restart the server.
+     */
+    async restart(): Promise<void> {
+        await this.stop();
+        await this.ensureServerRunning();
+    }
+
     private async killOldServer(): Promise<void> {
         const info = this.getServerInfo();
         if (info && info.pid) {

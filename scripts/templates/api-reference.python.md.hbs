@@ -26,6 +26,30 @@ print(markets[0].title)
 
 ---
 
+## Server Management
+
+The SDK provides global functions to manage the background sidecar server. This is useful for clearing state, resolving "port busy" errors, or ensuring a clean slate in interactive environments like Jupyter.
+
+### `stop_server`
+
+Stop the background PMXT sidecar server and clean up lock files.
+
+```python
+import pmxt
+pmxt.stop_server()
+```
+
+### `restart_server`
+
+Restart the background PMXT sidecar server. Equivalent to calling `stop_server()` followed by a fresh start.
+
+```python
+import pmxt
+pmxt.restart_server()
+```
+
+---
+
 ## Methods
 
 {{#each methods}}

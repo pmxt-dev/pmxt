@@ -130,8 +130,25 @@ class ServerManager:
             
         return False
 
+    def stop(self) -> None:
+        """
+        Stop the currently running server.
+        
+        This reads the lock file to find the process ID and sends a SIGTERM.
+        """
+        self._kill_old_server()
+
+    def restart(self) -> None:
+        """
+        Restart the server.
+        
+        Stops the current server if running, and starts a fresh one.
+        """
+        self.stop()
+        self.ensure_server_running()
+
     def _kill_old_server(self) -> None:
-        """Kill the currently running server."""
+        """Kill the currently running server (Internal)."""
         server_info = self.get_server_info()
         if server_info and 'pid' in server_info:
             import signal

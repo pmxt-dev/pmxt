@@ -33,6 +33,22 @@ from .models import (
     CreateOrderParams,
 )
 
+
+# Global server management functions
+_default_manager = ServerManager()
+
+def stop_server():
+    """
+    Stop the background PMXT sidecar server.
+    """
+    _default_manager.stop()
+
+def restart_server():
+    """
+    Restart the background PMXT sidecar server.
+    """
+    _default_manager.restart()
+
 __version__ = "1.0.0b4"
 __all__ = [
     # Exchanges
@@ -42,6 +58,8 @@ __all__ = [
     "Exchange",
     # Server Management
     "ServerManager",
+    "stop_server",
+    "restart_server",
     # Data Models
     "UnifiedMarket",
     "MarketOutcome",

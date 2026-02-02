@@ -26,6 +26,31 @@ console.log(markets[0].title);
 
 ---
 
+## Server Management
+
+The SDK provides global functions to manage the background sidecar server. This is useful for clearing state or
+resolving "port busy" errors.
+
+### `stopServer`
+
+Stop the background PMXT sidecar server and clean up lock files.
+
+```typescript
+import pmxt from 'pmxtjs';
+await pmxt.stopServer();
+```
+
+### `restartServer`
+
+Restart the background PMXT sidecar server. Equivalent to calling `stopServer()` followed by a fresh start.
+
+```typescript
+import pmxt from 'pmxtjs';
+await pmxt.restartServer();
+```
+
+---
+
 ## Methods
 
 ### `fetchMarkets`
@@ -38,26 +63,26 @@ Fetch Markets
 
 ```typescript
 async fetchMarkets(params?: MarketFilterParams): Promise<UnifiedMarket[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `params` (MarketFilterParams) - **Optional**: Filter parameters
+  - `params` (MarketFilterParams) - **Optional**: Filter parameters
 
-**Returns:** `Promise<UnifiedMarket[]>` - List of unified markets
+  **Returns:** `Promise<UnifiedMarket[]>` - List of unified markets
 
-**Example:**
+    **Example:**
 
-```typescript
-const markets &#x3D; await polymarket.fetchMarkets({ 
+    ```typescript
+    const markets &#x3D; await polymarket.fetchMarkets({ 
   limit: 20, 
   offset: 0,
   sort: &#x27;volume&#x27; // &#x27;volume&#x27; | &#x27;liquidity&#x27; | &#x27;newest&#x27;
 });
-```
+    ```
 
 
----
+    ---
 ### `searchMarkets`
 
 Search Markets
@@ -68,26 +93,26 @@ Search for markets by title or description.
 
 ```typescript
 async searchMarkets(query: string, params?: MarketFilterParams): Promise<UnifiedMarket[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `query` (string): Search query
-- `params` (MarketFilterParams) - **Optional**: Filter parameters
+  - `query` (string): Search query
+  - `params` (MarketFilterParams) - **Optional**: Filter parameters
 
-**Returns:** `Promise<UnifiedMarket[]>` - Search results
+  **Returns:** `Promise<UnifiedMarket[]>` - Search results
 
-**Example:**
+    **Example:**
 
-```typescript
-const results &#x3D; await kalshi.searchMarkets(&#x27;Fed rates&#x27;, { 
+    ```typescript
+    const results &#x3D; await kalshi.searchMarkets(&#x27;Fed rates&#x27;, { 
   limit: 10,
   searchIn: &#x27;title&#x27; // &#x27;title&#x27; (default) | &#x27;description&#x27; | &#x27;both&#x27;
 });
-```
+    ```
 
 
----
+    ---
 ### `getMarketsBySlug`
 
 Get Market by Slug
@@ -98,26 +123,26 @@ Get Market by Slug
 
 ```typescript
 async getMarketsBySlug(): Promise<UnifiedMarket[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- None
+  - None
 
-**Returns:** `Promise<UnifiedMarket[]>` - Targeted market
+  **Returns:** `Promise<UnifiedMarket[]>` - Targeted market
 
-**Example:**
+    **Example:**
 
-```typescript
-// Polymarket: use URL slug
+    ```typescript
+    // Polymarket: use URL slug
 const polyMarkets &#x3D; await polymarket.getMarketsBySlug(&#x27;who-will-trump-nominate-as-fed-chair&#x27;);
 
 // Kalshi: use market ticker (auto-uppercased)
 const kalshiMarkets &#x3D; await kalshi.getMarketsBySlug(&#x27;KXFEDCHAIRNOM-29&#x27;);
-```
+    ```
 
 
----
+    ---
 ### `searchEvents`
 
 Search Events
@@ -128,25 +153,25 @@ Search for events (groups of related markets) by title or description.
 
 ```typescript
 async searchEvents(query: string, params?: MarketFilterParams): Promise<UnifiedEvent[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `query` (string): Search query
-- `params` (MarketFilterParams) - **Optional**: Filter parameters
+  - `query` (string): Search query
+  - `params` (MarketFilterParams) - **Optional**: Filter parameters
 
-**Returns:** `Promise<UnifiedEvent[]>` - Search results
+  **Returns:** `Promise<UnifiedEvent[]>` - Search results
 
-**Example:**
+    **Example:**
 
-```typescript
-const events &#x3D; await polymarket.searchEvents(&#x27;Fed Chair&#x27;);
+    ```typescript
+    const events &#x3D; await polymarket.searchEvents(&#x27;Fed Chair&#x27;);
 // Find specific market within event
 const warsh &#x3D; events[0].searchMarkets(&#x27;Kevin Warsh&#x27;)[0];
-```
+    ```
 
 
----
+    ---
 ### `fetchOHLCV`
 
 Fetch OHLCV Candles
@@ -157,19 +182,19 @@ Fetch OHLCV Candles
 
 ```typescript
 async fetchOHLCV(id: string, params?: HistoryFilterParams): Promise<PriceCandle[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `id` (string): id
-- `params` (HistoryFilterParams) - **Optional**: Filter parameters
+  - `id` (string): id
+  - `params` (HistoryFilterParams) - **Optional**: Filter parameters
 
-**Returns:** `Promise<PriceCandle[]>` - Historical prices
+  **Returns:** `Promise<PriceCandle[]>` - Historical prices
 
-**Example:**
+    **Example:**
 
-```typescript
-const markets &#x3D; await polymarket.searchMarkets(&#x27;Trump&#x27;);
+    ```typescript
+    const markets &#x3D; await polymarket.searchMarkets(&#x27;Trump&#x27;);
 const outcomeId &#x3D; markets[0].outcomes[0].id; // Get the outcome ID
 
 const candles &#x3D; await polymarket.fetchOHLCV(outcomeId, {
@@ -178,14 +203,14 @@ const candles &#x3D; await polymarket.fetchOHLCV(outcomeId, {
   end: new Date(&#x27;2024-01-31&#x27;),
   limit: 100
 });
-```
+    ```
 
-**Notes:**
-**CRITICAL**: Use &#x60;outcome.id&#x60;, not &#x60;market.id&#x60;.
-- **Polymarket**: &#x60;outcome.id&#x60; is the CLOB Token ID
-- **Kalshi**: &#x60;outcome.id&#x60; is the Market Ticker
+    **Notes:**
+    **CRITICAL**: Use &#x60;outcome.id&#x60;, not &#x60;market.id&#x60;.
+    - **Polymarket**: &#x60;outcome.id&#x60; is the CLOB Token ID
+    - **Kalshi**: &#x60;outcome.id&#x60; is the Market Ticker
 
----
+    ---
 ### `fetchOrderBook`
 
 Fetch Order Book
@@ -196,24 +221,24 @@ Fetch Order Book
 
 ```typescript
 async fetchOrderBook(): Promise<OrderBook>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- None
+  - None
 
-**Returns:** `Promise<OrderBook>` - Current order book
+  **Returns:** `Promise<OrderBook>` - Current order book
 
-**Example:**
+    **Example:**
 
-```typescript
-const orderBook &#x3D; await kalshi.fetchOrderBook(&#x27;FED-25JAN&#x27;);
+    ```typescript
+    const orderBook &#x3D; await kalshi.fetchOrderBook(&#x27;FED-25JAN&#x27;);
 console.log(&#x27;Best bid:&#x27;, orderBook.bids[0].price);
 console.log(&#x27;Best ask:&#x27;, orderBook.asks[0].price);
-```
+    ```
 
 
----
+    ---
 ### `fetchTrades`
 
 Fetch Trades
@@ -224,28 +249,28 @@ Fetch Trades
 
 ```typescript
 async fetchTrades(id: string, params?: HistoryFilterParams): Promise<Trade[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `id` (string): id
-- `params` (HistoryFilterParams) - **Optional**: Filter parameters
+  - `id` (string): id
+  - `params` (HistoryFilterParams) - **Optional**: Filter parameters
 
-**Returns:** `Promise<Trade[]>` - Recent trades
+  **Returns:** `Promise<Trade[]>` - Recent trades
 
-**Example:**
+    **Example:**
 
-```typescript
-const trades &#x3D; await kalshi.fetchTrades(&#x27;FED-25JAN&#x27;, {
+    ```typescript
+    const trades &#x3D; await kalshi.fetchTrades(&#x27;FED-25JAN&#x27;, {
   resolution: &#x27;1h&#x27;,
   limit: 100
 });
-```
+    ```
 
-**Notes:**
-**Note**: Polymarket requires API key. Use &#x60;fetchOHLCV&#x60; for public historical data.
+    **Notes:**
+    **Note**: Polymarket requires API key. Use &#x60;fetchOHLCV&#x60; for public historical data.
 
----
+    ---
 ### `watchOrderBook`
 
 Watch Order Book (WebSocket Stream)
@@ -257,23 +282,23 @@ Subscribe to real-time order book updates via WebSocket. Returns a promise that 
 
 ```typescript
 async watchOrderBook(outcomeId: string, limit?: any): Promise<OrderBook>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `outcomeId` (string): outcomeId
-- `limit` (any) - **Optional**: limit
+  - `outcomeId` (string): outcomeId
+  - `limit` (any) - **Optional**: limit
 
-**Returns:** `Promise<OrderBook>` - Next order book update
+  **Returns:** `Promise<OrderBook>` - Next order book update
 
-**Example:**
+    **Example:**
 
-```typescript
-// No example available
-```
+    ```typescript
+    // No example available
+    ```
 
 
----
+    ---
 ### `watchTrades`
 
 Watch Trades (WebSocket Stream)
@@ -285,24 +310,24 @@ Subscribe to real-time trade updates via WebSocket. Returns a promise that resol
 
 ```typescript
 async watchTrades(outcomeId: string, since?: any, limit?: any): Promise<Trade[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `outcomeId` (string): outcomeId
-- `since` (any) - **Optional**: since
-- `limit` (any) - **Optional**: limit
+  - `outcomeId` (string): outcomeId
+  - `since` (any) - **Optional**: since
+  - `limit` (any) - **Optional**: limit
 
-**Returns:** `Promise<Trade[]>` - Next trade update(s)
+  **Returns:** `Promise<Trade[]>` - Next trade update(s)
 
-**Example:**
+    **Example:**
 
-```typescript
-// No example available
-```
+    ```typescript
+    // No example available
+    ```
 
 
----
+    ---
 ### `createOrder`
 
 Create Order
@@ -313,18 +338,18 @@ Create Order
 
 ```typescript
 async createOrder(params?: CreateOrderParams): Promise<Order>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `params` (CreateOrderParams) - **Optional**: Filter parameters
+  - `params` (CreateOrderParams) - **Optional**: Filter parameters
 
-**Returns:** `Promise<Order>` - Order created
+  **Returns:** `Promise<Order>` - Order created
 
-**Example:**
+    **Example:**
 
-```typescript
-// Limit Order Example
+    ```typescript
+    // Limit Order Example
 const order &#x3D; await polymarket.createOrder({
   marketId: &#x27;663583&#x27;,
   outcomeId: &#x27;10991849228756847439673778874175365458450913336396982752046655649803657501964&#x27;,
@@ -344,10 +369,10 @@ const order &#x3D; await kalshi.createOrder({
   type: &#x27;market&#x27;,
   amount: 5          // Price not needed for market orders
 });
-```
+    ```
 
 
----
+    ---
 ### `cancelOrder`
 
 Cancel Order
@@ -358,23 +383,23 @@ Cancel Order
 
 ```typescript
 async cancelOrder(): Promise<Order>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- None
+  - None
 
-**Returns:** `Promise<Order>` - Order cancelled
+  **Returns:** `Promise<Order>` - Order cancelled
 
-**Example:**
+    **Example:**
 
-```typescript
-const cancelledOrder &#x3D; await polymarket.cancelOrder(&#x27;order-123&#x27;);
+    ```typescript
+    const cancelledOrder &#x3D; await polymarket.cancelOrder(&#x27;order-123&#x27;);
 console.log(cancelledOrder.status); // &#x27;cancelled&#x27;
-```
+    ```
 
 
----
+    ---
 ### `fetchOrder`
 
 Fetch Order
@@ -385,23 +410,23 @@ Fetch Order
 
 ```typescript
 async fetchOrder(): Promise<Order>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- None
+  - None
 
-**Returns:** `Promise<Order>` - Order details
+  **Returns:** `Promise<Order>` - Order details
 
-**Example:**
+    **Example:**
 
-```typescript
-const order &#x3D; await kalshi.fetchOrder(&#x27;order-456&#x27;);
+    ```typescript
+    const order &#x3D; await kalshi.fetchOrder(&#x27;order-456&#x27;);
 console.log(&#x60;Filled: ${order.filled}/${order.amount}&#x60;);
-```
+    ```
 
 
----
+    ---
 ### `fetchOpenOrders`
 
 Fetch Open Orders
@@ -412,18 +437,18 @@ Fetch Open Orders
 
 ```typescript
 async fetchOpenOrders(): Promise<Order[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- None
+  - None
 
-**Returns:** `Promise<Order[]>` - List of open orders
+  **Returns:** `Promise<Order[]>` - List of open orders
 
-**Example:**
+    **Example:**
 
-```typescript
-// All open orders
+    ```typescript
+    // All open orders
 const allOrders &#x3D; await polymarket.fetchOpenOrders();
 
 // Open orders for specific market
@@ -432,10 +457,10 @@ const marketOrders &#x3D; await kalshi.fetchOpenOrders(&#x27;FED-25JAN&#x27;);
 allOrders.forEach(order &#x3D;&gt; {
   console.log(&#x60;${order.side} ${order.amount} @ ${order.price}&#x60;);
 });
-```
+    ```
 
 
----
+    ---
 ### `fetchPositions`
 
 Fetch Positions
@@ -446,26 +471,26 @@ Fetch Positions
 
 ```typescript
 async fetchPositions(): Promise<Position[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- None
+  - None
 
-**Returns:** `Promise<Position[]>` - User positions
+  **Returns:** `Promise<Position[]>` - User positions
 
-**Example:**
+    **Example:**
 
-```typescript
-const positions &#x3D; await kalshi.fetchPositions();
+    ```typescript
+    const positions &#x3D; await kalshi.fetchPositions();
 positions.forEach(pos &#x3D;&gt; {
   console.log(&#x60;${pos.outcomeLabel}: ${pos.size} @ $${pos.entryPrice}&#x60;);
   console.log(&#x60;Unrealized P&amp;L: $${pos.unrealizedPnL}&#x60;);
 });
-```
+    ```
 
 
----
+    ---
 ### `fetchBalance`
 
 Fetch Balance
@@ -476,24 +501,24 @@ Fetch Balance
 
 ```typescript
 async fetchBalance(): Promise<Balance[]>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- None
+  - None
 
-**Returns:** `Promise<Balance[]>` - Account balances
+  **Returns:** `Promise<Balance[]>` - Account balances
 
-**Example:**
+    **Example:**
 
-```typescript
-const balances &#x3D; await polymarket.fetchBalance();
+    ```typescript
+    const balances &#x3D; await polymarket.fetchBalance();
 console.log(balances);
 // [{ currency: &#x27;USDC&#x27;, total: 1000, available: 950, locked: 50 }]
-```
+    ```
 
 
----
+    ---
 ### `getExecutionPrice`
 
 Get Execution Price
@@ -504,24 +529,24 @@ Get Execution Price
 
 ```typescript
 async getExecutionPrice(orderBook: string, side: OrderBook, amount: OrderBook): Promise<any>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `orderBook` (string): orderBook
-- `side` (OrderBook): side
-- `amount` (OrderBook): amount
+  - `orderBook` (string): orderBook
+  - `side` (OrderBook): side
+  - `amount` (OrderBook): amount
 
-**Returns:** `Promise<any>` - Average execution price
+  **Returns:** `Promise<any>` - Average execution price
 
-**Example:**
+    **Example:**
 
-```typescript
-// No example available
-```
+    ```typescript
+    // No example available
+    ```
 
 
----
+    ---
 ### `getExecutionPriceDetailed`
 
 Get Detailed Execution Price
@@ -532,29 +557,29 @@ Get Detailed Execution Price
 
 ```typescript
 async getExecutionPriceDetailed(orderBook: string, side: OrderBook, amount: OrderBook): Promise<ExecutionPriceResult>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-- `orderBook` (string): orderBook
-- `side` (OrderBook): side
-- `amount` (OrderBook): amount
+  - `orderBook` (string): orderBook
+  - `side` (OrderBook): side
+  - `amount` (OrderBook): amount
 
-**Returns:** `Promise<ExecutionPriceResult>` - Detailed execution result
+  **Returns:** `Promise<ExecutionPriceResult>` - Detailed execution result
 
-**Example:**
+    **Example:**
 
-```typescript
-// No example available
-```
+    ```typescript
+    // No example available
+    ```
 
 
----
+    ---
 
-## Complete Trading Workflow
+    ## Complete Trading Workflow
 
-```typescript
-import pmxt from &#x27;pmxtjs&#x27;;
+    ```typescript
+    import pmxt from &#x27;pmxtjs&#x27;;
 
 const exchange &#x3D; new pmxt.Polymarket({
   privateKey: process.env.POLYMARKET_PRIVATE_KEY
@@ -597,266 +622,266 @@ const positions &#x3D; await exchange.fetchPositions();
 positions.forEach(pos &#x3D;&gt; {
   console.log(&#x60;${pos.outcomeLabel}: ${pos.unrealizedPnL &gt; 0 ? &#x27;+&#x27; : &#x27;&#x27;}$${pos.unrealizedPnL.toFixed(2)}&#x60;);
 });
-```
-
-## Data Models
-
-### `UnifiedMarket`
-
-
-
-```typescript
-interface UnifiedMarket {
-  id: string; // 
-  title: string; // 
-  description: string; // 
-  outcomes: MarketOutcome[]; // 
-  resolutionDate: string; // 
-  volume24h: number; // 
-  volume: number; // 
-  liquidity: number; // 
-  openInterest: number; // 
-  url: string; // 
-  image: string; // 
-  category: string; // 
-  tags: string[]; // 
-  yes: MarketOutcome; // 
-  no: MarketOutcome; // 
-  up: MarketOutcome; // 
-  down: MarketOutcome; // 
-}
-```
-
----
-### `MarketOutcome`
-
-
-
-```typescript
-interface MarketOutcome {
-  id: string; // 
-  label: string; // 
-  price: number; // 
-  priceChange24h: number; // 
-  metadata: object; // Exchange-specific metadata (e.g., clobTokenId for Polymarket)
-}
-```
-
----
-### `UnifiedEvent`
-
-A grouped collection of related markets (e.g., &quot;Who will be Fed Chair?&quot; contains multiple candidate markets)
-
-```typescript
-interface UnifiedEvent {
-  id: string; // 
-  title: string; // 
-  description: string; // 
-  slug: string; // 
-  markets: UnifiedMarket[]; // 
-  url: string; // 
-  image: string; // 
-  category: string; // 
-  tags: string[]; // 
-}
-```
-
----
-### `PriceCandle`
-
-
-
-```typescript
-interface PriceCandle {
-  timestamp: number; // 
-  open: number; // 
-  high: number; // 
-  low: number; // 
-  close: number; // 
-  volume: number; // 
-}
-```
-
----
-### `OrderBook`
-
-
-
-```typescript
-interface OrderBook {
-  bids: OrderLevel[]; // 
-  asks: OrderLevel[]; // 
-  timestamp: number; // 
-}
-```
-
----
-### `OrderLevel`
-
-
-
-```typescript
-interface OrderLevel {
-  price: number; // 
-  size: number; // 
-}
-```
-
----
-### `Trade`
-
-
-
-```typescript
-interface Trade {
-  id: string; // 
-  price: number; // 
-  amount: number; // 
-  side: string; // 
-  timestamp: number; // 
-}
-```
-
----
-### `Order`
-
-
-
-```typescript
-interface Order {
-  id: string; // 
-  marketId: string; // 
-  outcomeId: string; // 
-  side: string; // 
-  type: string; // 
-  price: number; // 
-  amount: number; // 
-  status: string; // 
-  filled: number; // 
-  remaining: number; // 
-  timestamp: number; // 
-  fee: number; // 
-}
-```
-
----
-### `Position`
-
-
-
-```typescript
-interface Position {
-  marketId: string; // 
-  outcomeId: string; // 
-  outcomeLabel: string; // 
-  size: number; // 
-  entryPrice: number; // 
-  currentPrice: number; // 
-  unrealizedPnL: number; // 
-  realizedPnL: number; // 
-}
-```
-
----
-### `Balance`
-
-
-
-```typescript
-interface Balance {
-  currency: string; // 
-  total: number; // 
-  available: number; // 
-  locked: number; // 
-}
-```
-
----
-### `ExecutionPriceResult`
-
-
-
-```typescript
-interface ExecutionPriceResult {
-  price: number; // 
-  filledAmount: number; // 
-  fullyFilled: boolean; // 
-}
-```
-
----
-### `ExchangeCredentials`
-
-Optional authentication credentials for exchange operations
-
-```typescript
-interface ExchangeCredentials {
-  apiKey: string; // API key for the exchange
-  privateKey: string; // Private key for signing transactions
-  apiSecret: string; // API secret (if required by exchange)
-  passphrase: string; // Passphrase (if required by exchange)
-  funderAddress: string; // The address funding the trades (Proxy address)
-  signatureType: any; // Signature type (0&#x3D;EOA, 1&#x3D;Poly Proxy, 2&#x3D;Gnosis Safe, or names like &#x27;gnosis_safe&#x27;)
-}
-```
-
----
-
-## Filter Parameters
-
-### `BaseRequest`
-
-Base request structure with optional credentials
-
-```typescript
-interface BaseRequest {
-  credentials?: ExchangeCredentials; // 
-}
-```
-
----
-### `MarketFilterParams`
-
-
-
-```typescript
-interface MarketFilterParams {
-  limit?: number; // 
-  offset?: number; // 
-  sort?: string; // 
-  searchIn?: string; // 
-}
-```
-
----
-### `HistoryFilterParams`
-
-
-
-```typescript
-interface HistoryFilterParams {
-  resolution: string; // 
-  start?: string; // 
-  end?: string; // 
-  limit?: number; // 
-}
-```
-
----
-### `CreateOrderParams`
-
-
-
-```typescript
-interface CreateOrderParams {
-  marketId: string; // 
-  outcomeId: string; // 
-  side: string; // 
-  type: string; // 
-  amount: number; // 
-  price?: number; // 
-  fee?: number; // 
-}
-```
-
----
+    ```
+
+    ## Data Models
+
+    ### `UnifiedMarket`
+
+    
+
+    ```typescript
+    interface UnifiedMarket {
+    id: string; // 
+    title: string; // 
+    description: string; // 
+    outcomes: MarketOutcome[]; // 
+    resolutionDate: string; // 
+    volume24h: number; // 
+    volume: number; // 
+    liquidity: number; // 
+    openInterest: number; // 
+    url: string; // 
+    image: string; // 
+    category: string; // 
+    tags: string[]; // 
+    yes: MarketOutcome; // 
+    no: MarketOutcome; // 
+    up: MarketOutcome; // 
+    down: MarketOutcome; // 
+    }
+    ```
+
+    ---
+    ### `MarketOutcome`
+
+    
+
+    ```typescript
+    interface MarketOutcome {
+    id: string; // 
+    label: string; // 
+    price: number; // 
+    priceChange24h: number; // 
+    metadata: object; // Exchange-specific metadata (e.g., clobTokenId for Polymarket)
+    }
+    ```
+
+    ---
+    ### `UnifiedEvent`
+
+    A grouped collection of related markets (e.g., &quot;Who will be Fed Chair?&quot; contains multiple candidate markets)
+
+    ```typescript
+    interface UnifiedEvent {
+    id: string; // 
+    title: string; // 
+    description: string; // 
+    slug: string; // 
+    markets: UnifiedMarket[]; // 
+    url: string; // 
+    image: string; // 
+    category: string; // 
+    tags: string[]; // 
+    }
+    ```
+
+    ---
+    ### `PriceCandle`
+
+    
+
+    ```typescript
+    interface PriceCandle {
+    timestamp: number; // 
+    open: number; // 
+    high: number; // 
+    low: number; // 
+    close: number; // 
+    volume: number; // 
+    }
+    ```
+
+    ---
+    ### `OrderBook`
+
+    
+
+    ```typescript
+    interface OrderBook {
+    bids: OrderLevel[]; // 
+    asks: OrderLevel[]; // 
+    timestamp: number; // 
+    }
+    ```
+
+    ---
+    ### `OrderLevel`
+
+    
+
+    ```typescript
+    interface OrderLevel {
+    price: number; // 
+    size: number; // 
+    }
+    ```
+
+    ---
+    ### `Trade`
+
+    
+
+    ```typescript
+    interface Trade {
+    id: string; // 
+    price: number; // 
+    amount: number; // 
+    side: string; // 
+    timestamp: number; // 
+    }
+    ```
+
+    ---
+    ### `Order`
+
+    
+
+    ```typescript
+    interface Order {
+    id: string; // 
+    marketId: string; // 
+    outcomeId: string; // 
+    side: string; // 
+    type: string; // 
+    price: number; // 
+    amount: number; // 
+    status: string; // 
+    filled: number; // 
+    remaining: number; // 
+    timestamp: number; // 
+    fee: number; // 
+    }
+    ```
+
+    ---
+    ### `Position`
+
+    
+
+    ```typescript
+    interface Position {
+    marketId: string; // 
+    outcomeId: string; // 
+    outcomeLabel: string; // 
+    size: number; // 
+    entryPrice: number; // 
+    currentPrice: number; // 
+    unrealizedPnL: number; // 
+    realizedPnL: number; // 
+    }
+    ```
+
+    ---
+    ### `Balance`
+
+    
+
+    ```typescript
+    interface Balance {
+    currency: string; // 
+    total: number; // 
+    available: number; // 
+    locked: number; // 
+    }
+    ```
+
+    ---
+    ### `ExecutionPriceResult`
+
+    
+
+    ```typescript
+    interface ExecutionPriceResult {
+    price: number; // 
+    filledAmount: number; // 
+    fullyFilled: boolean; // 
+    }
+    ```
+
+    ---
+    ### `ExchangeCredentials`
+
+    Optional authentication credentials for exchange operations
+
+    ```typescript
+    interface ExchangeCredentials {
+    apiKey: string; // API key for the exchange
+    privateKey: string; // Private key for signing transactions
+    apiSecret: string; // API secret (if required by exchange)
+    passphrase: string; // Passphrase (if required by exchange)
+    funderAddress: string; // The address funding the trades (Proxy address)
+    signatureType: any; // Signature type (0&#x3D;EOA, 1&#x3D;Poly Proxy, 2&#x3D;Gnosis Safe, or names like &#x27;gnosis_safe&#x27;)
+    }
+    ```
+
+    ---
+
+    ## Filter Parameters
+
+    ### `BaseRequest`
+
+    Base request structure with optional credentials
+
+    ```typescript
+    interface BaseRequest {
+    credentials?: ExchangeCredentials; // 
+    }
+    ```
+
+    ---
+    ### `MarketFilterParams`
+
+    
+
+    ```typescript
+    interface MarketFilterParams {
+    limit?: number; // 
+    offset?: number; // 
+    sort?: string; // 
+    searchIn?: string; // 
+    }
+    ```
+
+    ---
+    ### `HistoryFilterParams`
+
+    
+
+    ```typescript
+    interface HistoryFilterParams {
+    resolution: string; // 
+    start?: string; // 
+    end?: string; // 
+    limit?: number; // 
+    }
+    ```
+
+    ---
+    ### `CreateOrderParams`
+
+    
+
+    ```typescript
+    interface CreateOrderParams {
+    marketId: string; // 
+    outcomeId: string; // 
+    side: string; // 
+    type: string; // 
+    amount: number; // 
+    price?: number; // 
+    fee?: number; // 
+    }
+    ```
+
+    ---

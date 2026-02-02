@@ -28,12 +28,24 @@ export { ServerManager } from "./pmxt/server-manager.js";
 export type * from "./pmxt/models.js";
 
 
+const defaultManager = new ServerManager();
+
+async function stopServer(): Promise<void> {
+    await defaultManager.stop();
+}
+
+async function restartServer(): Promise<void> {
+    await defaultManager.restart();
+}
+
 const pmxt = {
     Exchange,
     Polymarket,
     Kalshi,
     Limitless,
     ServerManager,
+    stopServer,
+    restartServer,
     ...models
 };
 

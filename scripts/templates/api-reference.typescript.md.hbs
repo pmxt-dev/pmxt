@@ -26,6 +26,31 @@ console.log(markets[0].title);
 
 ---
 
+## Server Management
+
+The SDK provides global functions to manage the background sidecar server. This is useful for clearing state or
+resolving "port busy" errors.
+
+### `stopServer`
+
+Stop the background PMXT sidecar server and clean up lock files.
+
+```typescript
+import pmxt from 'pmxtjs';
+await pmxt.stopServer();
+```
+
+### `restartServer`
+
+Restart the background PMXT sidecar server. Equivalent to calling `stopServer()` followed by a fresh start.
+
+```typescript
+import pmxt from 'pmxtjs';
+await pmxt.restartServer();
+```
+
+---
+
 ## Methods
 
 {{#each methods}}
@@ -39,74 +64,74 @@ console.log(markets[0].title);
 
 ```typescript
 async {{this.name}}({{tsParams this.params}}): Promise<{{tsType this.returns.type}}>
-```
+  ```
 
-**Parameters:**
+  **Parameters:**
 
-{{#if this.params}}
-{{#each this.params}}
-- `{{this.name}}` ({{tsType this.type}}){{#if this.optional}} - **Optional**{{/if}}: {{this.description}}
-{{/each}}
-{{else}}
-- None
-{{/if}}
+  {{#if this.params}}
+  {{#each this.params}}
+  - `{{this.name}}` ({{tsType this.type}}){{#if this.optional}} - **Optional**{{/if}}: {{this.description}}
+  {{/each}}
+  {{else}}
+  - None
+  {{/if}}
 
-**Returns:** `Promise<{{tsType this.returns.type}}>` - {{this.returns.description}}
+  **Returns:** `Promise<{{tsType this.returns.type}}>` - {{this.returns.description}}
 
-**Example:**
+    **Example:**
 
-```typescript
-{{this.example}}
-```
+    ```typescript
+    {{this.example}}
+    ```
 
-{{#if this.notes}}
-**Notes:**
-{{#each this.notes}}
-{{this}}
-{{/each}}
-{{/if}}
+    {{#if this.notes}}
+    **Notes:**
+    {{#each this.notes}}
+    {{this}}
+    {{/each}}
+    {{/if}}
 
----
-{{/each}}
+    ---
+    {{/each}}
 
-## Complete Trading Workflow
+    ## Complete Trading Workflow
 
-```typescript
-{{workflowExample}}
-```
+    ```typescript
+    {{workflowExample}}
+    ```
 
-## Data Models
+    ## Data Models
 
-{{#each dataModels}}
-### `{{this.name}}`
+    {{#each dataModels}}
+    ### `{{this.name}}`
 
-{{this.description}}
+    {{this.description}}
 
-```typescript
-interface {{this.name}} {
-{{#each this.fields}}
-  {{this.name}}: {{tsType this.type}}; // {{this.description}}
-{{/each}}
-}
-```
+    ```typescript
+    interface {{this.name}} {
+    {{#each this.fields}}
+    {{this.name}}: {{tsType this.type}}; // {{this.description}}
+    {{/each}}
+    }
+    ```
 
----
-{{/each}}
+    ---
+    {{/each}}
 
-## Filter Parameters
+    ## Filter Parameters
 
-{{#each filterModels}}
-### `{{this.name}}`
+    {{#each filterModels}}
+    ### `{{this.name}}`
 
-{{this.description}}
+    {{this.description}}
 
-```typescript
-interface {{this.name}} {
-{{#each this.fields}}
-  {{this.name}}{{tsOptional this.required}}: {{tsType this.type}}; // {{this.description}}
-{{/each}}
-}
-```
+    ```typescript
+    interface {{this.name}} {
+    {{#each this.fields}}
+    {{this.name}}{{tsOptional this.required}}: {{tsType this.type}}; // {{this.description}}
+    {{/each}}
+    }
+    ```
 
----
-{{/each}}
+    ---
+    {{/each}}

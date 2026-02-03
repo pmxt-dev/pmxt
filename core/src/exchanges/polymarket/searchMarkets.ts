@@ -1,6 +1,7 @@
 import { MarketFilterParams } from '../../BaseExchange';
 import { UnifiedMarket } from '../../types';
 import { fetchMarkets as fetchMarketsFn } from './fetchMarkets';
+import { polymarketErrorMapper } from './errors';
 
 export async function searchMarkets(query: string, params?: MarketFilterParams): Promise<UnifiedMarket[]> {
     // Polymarket Gamma API doesn't support native search
@@ -31,8 +32,7 @@ export async function searchMarkets(query: string, params?: MarketFilterParams):
         const limit = params?.limit || 20;
         return filtered.slice(0, limit);
 
-    } catch (error) {
-        console.error("Error searching Polymarket data:", error);
-        return [];
+    } catch (error: any) {
+        throw polymarketErrorMapper.mapError(error);
     }
 }

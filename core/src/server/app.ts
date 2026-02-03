@@ -4,6 +4,7 @@ import { PolymarketExchange } from '../exchanges/polymarket';
 import { LimitlessExchange } from '../exchanges/limitless';
 import { KalshiExchange } from '../exchanges/kalshi';
 import { ExchangeCredentials } from '../BaseExchange';
+import { BaseError } from '../errors';
 
 // Singleton instances for local usage (when no credentials provided)
 const defaultExchanges: Record<string, any> = {
@@ -76,6 +77,38 @@ export async function startServer(port: number, accessToken: string) {
         if (error.stack) {
             console.error(error.stack);
         }
+
+        // Handle BaseError instances with full context
+        if (error instanceof BaseError) {
+            const errorResponse: any = {
+                success: false,
+                error: {
+                    message: error.message,
+                    code: error.code,
+                    retryable: error.retryable
+                }
+            };
+
+            // Add exchange context if available
+            if (error.exchange) {
+                errorResponse.error.exchange = error.exchange;
+            }
+
+            // Add retryAfter for rate limit errors
+            if ('retryAfter' in error && error.retryAfter !== undefined) {
+                errorResponse.error.retryAfter = error.retryAfter;
+            }
+
+            // Add stack trace in development
+            if (process.env.NODE_ENV === 'development') {
+                errorResponse.error.stack = error.stack;
+            }
+
+            res.status(error.status).json(errorResponse);
+            return;
+        }
+
+        // Handle generic errors
         res.status(error.status || 500).json({
             success: false,
             error: {

@@ -2,6 +2,7 @@ import { ClobClient } from '@polymarket/clob-client';
 import type { ApiKeyCreds } from '@polymarket/clob-client';
 import { Wallet } from 'ethers';
 import { ExchangeCredentials } from '../../BaseExchange';
+import { limitlessErrorMapper } from './errors';
 
 const LIMITLESS_HOST = 'https://api.limitless.exchange';
 const BASE_CHAIN_ID = 8453;
@@ -68,8 +69,7 @@ export class LimitlessAuth {
             try {
                 creds = await l1Client.createApiKey();
             } catch (createError: any) {
-                console.error('Failed to both derive and create API key:', createError?.message || createError);
-                throw new Error('Authentication failed: Could not create or derive API key.');
+                throw limitlessErrorMapper.mapError(createError);
             }
         }
 

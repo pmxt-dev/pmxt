@@ -3,6 +3,7 @@ import { HistoryFilterParams } from '../../BaseExchange';
 import { PriceCandle } from '../../types';
 import { mapIntervalToKalshi } from './utils';
 import { validateIdFormat } from '../../utils/validation';
+import { kalshiErrorMapper } from './errors';
 
 export async function fetchOHLCV(id: string, params: HistoryFilterParams): Promise<PriceCandle[]> {
     validateIdFormat(id, 'OHLCV');
@@ -93,11 +94,6 @@ export async function fetchOHLCV(id: string, params: HistoryFilterParams): Promi
         }
         return mappedCandles;
     } catch (error: any) {
-        if (axios.isAxiosError(error) && error.response) {
-            const apiError = error.response.data?.error || error.response.data?.message || "Unknown API Error";
-            throw new Error(`Kalshi History API Error (${error.response.status}): ${apiError}. Used Ticker: ${id}`);
-        }
-        console.error(`Unexpected error fetching Kalshi history for ${id}:`, error);
-        throw error;
+        throw kalshiErrorMapper.mapError(error);
     }
 }

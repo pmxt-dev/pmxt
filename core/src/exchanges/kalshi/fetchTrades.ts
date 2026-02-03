@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { HistoryFilterParams } from '../../BaseExchange';
 import { Trade } from '../../types';
+import { kalshiErrorMapper } from './errors';
 
 export async function fetchTrades(id: string, params: HistoryFilterParams): Promise<Trade[]> {
     try {
@@ -21,8 +22,7 @@ export async function fetchTrades(id: string, params: HistoryFilterParams): Prom
             amount: t.count,
             side: t.taker_side === 'yes' ? 'buy' : 'sell'
         }));
-    } catch (error) {
-        console.error(`Error fetching Kalshi trades for ${id}:`, error);
-        return [];
+    } catch (error: any) {
+        throw kalshiErrorMapper.mapError(error);
     }
 }

@@ -3,6 +3,7 @@ import { HistoryFilterParams } from '../../BaseExchange';
 import { PriceCandle } from '../../types';
 import { LIMITLESS_API_URL, mapIntervalToFidelity } from './utils';
 import { validateIdFormat } from '../../utils/validation';
+import { limitlessErrorMapper } from './errors';
 
 /**
  * Fetch historical price data (candles) for a specific market.
@@ -53,7 +54,6 @@ export async function fetchOHLCV(id: string, params: HistoryFilterParams): Promi
         return candles;
 
     } catch (error: any) {
-        console.error(`Error fetching Limitless history for ${id}:`, error.message);
-        return [];
+        throw limitlessErrorMapper.mapError(error);
     }
 }

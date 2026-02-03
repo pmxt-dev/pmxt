@@ -2,6 +2,7 @@ import { MarketFilterParams } from '../../BaseExchange';
 import { UnifiedEvent, UnifiedMarket } from '../../types';
 import axios from 'axios';
 import { KALSHI_API_URL, mapMarketToUnified } from './utils';
+import { kalshiErrorMapper } from './errors';
 
 export async function searchEvents(query: string, params?: MarketFilterParams): Promise<UnifiedEvent[]> {
     try {
@@ -55,8 +56,7 @@ export async function searchEvents(query: string, params?: MarketFilterParams): 
         const limit = params?.limit || 20;
         return unifiedEvents.slice(0, limit);
 
-    } catch (error) {
-        console.error("Error searching Kalshi events:", error);
-        return [];
+    } catch (error: any) {
+        throw kalshiErrorMapper.mapError(error);
     }
 }

@@ -12,6 +12,8 @@ import { LimitlessAuth } from './auth';
 import { LimitlessClient } from './client';
 import { LimitlessWebSocket, LimitlessWebSocketConfig } from './websocket';
 import { Side } from '@polymarket/clob-client'; // Keep for type if needed, or remove if unused
+import { limitlessErrorMapper } from './errors';
+import { AuthenticationError } from '../../errors';
 
 // Re-export for external use
 export { LimitlessWebSocketConfig };
@@ -108,9 +110,10 @@ export class LimitlessExchange extends PredictionMarketExchange {
      */
     private ensureAuth(): LimitlessAuth {
         if (!this.auth) {
-            throw new Error(
+            throw new AuthenticationError(
                 'Trading operations require authentication. ' +
-                'Initialize LimitlessExchange with credentials: new LimitlessExchange({ privateKey: "0x..." })'
+                'Initialize LimitlessExchange with credentials: new LimitlessExchange({ privateKey: "0x..." })',
+                'Limitless'
             );
         }
         return this.auth;
@@ -161,8 +164,7 @@ export class LimitlessExchange extends PredictionMarketExchange {
             };
 
         } catch (error: any) {
-            console.error("Limitless createOrder failed:", error.response?.data || error.message);
-            throw error;
+            throw limitlessErrorMapper.mapError(error);
         }
     }
 
@@ -185,8 +187,7 @@ export class LimitlessExchange extends PredictionMarketExchange {
                 timestamp: Date.now()
             };
         } catch (error: any) {
-            console.error("Limitless cancelOrder failed:", error.response?.data || error.message);
-            throw error;
+            throw limitlessErrorMapper.mapError(error);
         }
     }
 
@@ -225,8 +226,7 @@ export class LimitlessExchange extends PredictionMarketExchange {
                 timestamp: Date.now() // API doesn't always return TS in summary
             }));
         } catch (error: any) {
-            console.error('Error fetching Limitless open orders:', error.message);
-            return [];
+            throw limitlessErrorMapper.mapError(error);
         }
     }
 
@@ -258,9 +258,7 @@ export class LimitlessExchange extends PredictionMarketExchange {
                 locked: 0
             }];
         } catch (error: any) {
-            // Fallback to 0 if fails, to avoid breaking everything
-            console.warn("fetchBalance failed via CLOB client", error.message);
-            return [{ currency: 'USDC', total: 0, available: 0, locked: 0 }];
+            throw limitlessErrorMapper.mapError(error);
         }
     }
 

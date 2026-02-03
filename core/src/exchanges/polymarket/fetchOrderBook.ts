@@ -2,6 +2,7 @@ import axios from 'axios';
 import { OrderBook } from '../../types';
 import { CLOB_API_URL } from './utils';
 import { validateIdFormat, validateOutcomeId } from '../../utils/validation';
+import { polymarketErrorMapper } from './errors';
 
 /**
  * Fetch the current order book for a specific token.
@@ -35,8 +36,7 @@ export async function fetchOrderBook(id: string): Promise<OrderBook> {
             timestamp: data.timestamp ? new Date(data.timestamp).getTime() : Date.now()
         };
 
-    } catch (error) {
-        console.error(`Error fetching Polymarket orderbook for ${id}:`, error);
-        return { bids: [], asks: [] };
+    } catch (error: any) {
+        throw polymarketErrorMapper.mapError(error);
     }
 }

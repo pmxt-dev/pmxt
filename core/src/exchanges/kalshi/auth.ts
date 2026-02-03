@@ -1,6 +1,7 @@
 
 import { ExchangeCredentials } from '../../BaseExchange';
 import * as crypto from 'crypto';
+import { kalshiErrorMapper } from './errors';
 
 /**
  * Manages Kalshi authentication using RSA-PSS signatures.
@@ -67,8 +68,7 @@ export class KalshiAuth {
 
             return signature;
         } catch (error: any) {
-            console.error('Error signing Kalshi request:', error);
-            throw new Error(`Failed to sign Kalshi request: ${error.message}`);
+            throw kalshiErrorMapper.mapError(error);
         }
     }
 }

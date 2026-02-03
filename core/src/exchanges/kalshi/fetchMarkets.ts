@@ -2,6 +2,7 @@ import axios from 'axios';
 import { MarketFilterParams } from '../../BaseExchange';
 import { UnifiedMarket } from '../../types';
 import { KALSHI_API_URL, KALSHI_SERIES_URL, mapMarketToUnified } from './utils';
+import { kalshiErrorMapper } from './errors';
 
 async function fetchActiveEvents(targetMarketCount?: number): Promise<any[]> {
     let allEvents: any[] = [];
@@ -54,9 +55,8 @@ async function fetchActiveEvents(targetMarketCount?: number): Promise<any[]> {
                 break;
             }
 
-        } catch (e) {
-            console.error(`Error fetching Kalshi page ${page}:`, e);
-            break;
+        } catch (e: any) {
+            throw kalshiErrorMapper.mapError(e);
         }
     } while (cursor && page < MAX_PAGES);
 
@@ -77,9 +77,8 @@ async function fetchSeriesMap(): Promise<Map<string, string[]>> {
         }
 
         return map;
-    } catch (e) {
-        console.error("Error fetching Kalshi series:", e);
-        return new Map();
+    } catch (e: any) {
+        throw kalshiErrorMapper.mapError(e);
     }
 }
 
@@ -167,8 +166,7 @@ export async function fetchMarkets(params?: MarketFilterParams): Promise<Unified
 
         return allMarkets.slice(offset, offset + limit);
 
-    } catch (error) {
-        console.error("Error fetching Kalshi data:", error);
-        return [];
+    } catch (error: any) {
+        throw kalshiErrorMapper.mapError(error);
     }
 }

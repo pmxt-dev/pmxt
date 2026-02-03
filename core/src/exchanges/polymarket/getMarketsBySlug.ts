@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { UnifiedMarket } from '../../types';
 import { GAMMA_API_URL, mapMarketToUnified } from './utils';
+import { polymarketErrorMapper } from './errors';
 
 /**
  * Fetch specific markets by their URL slug.
@@ -30,8 +31,7 @@ export async function getMarketsBySlug(slug: string): Promise<UnifiedMarket[]> {
         }
         return unifiedMarkets;
 
-    } catch (error) {
-        console.error(`Error fetching Polymarket slug ${slug}:`, error);
-        return [];
+    } catch (error: any) {
+        throw polymarketErrorMapper.mapError(error);
     }
 }

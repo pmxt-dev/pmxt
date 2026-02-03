@@ -3,6 +3,7 @@ import { HistoryFilterParams } from '../../BaseExchange';
 import { PriceCandle } from '../../types';
 import { CLOB_API_URL, mapIntervalToFidelity } from './utils';
 import { validateIdFormat, validateOutcomeId } from '../../utils/validation';
+import { polymarketErrorMapper } from './errors';
 
 /**
  * Fetch historical price data (OHLCV candles) for a specific token.
@@ -106,11 +107,6 @@ export async function fetchOHLCV(id: string, params: HistoryFilterParams): Promi
         return candles;
 
     } catch (error: any) {
-        if (axios.isAxiosError(error) && error.response) {
-            const apiError = error.response.data?.error || error.response.data?.message || "Unknown API Error";
-            throw new Error(`Polymarket History API Error (${error.response.status}): ${apiError}. Used ID: ${id}`);
-        }
-        console.error(`Unexpected error fetching Polymarket history for ${id}:`, error);
-        throw error;
+        throw polymarketErrorMapper.mapError(error);
     }
 }

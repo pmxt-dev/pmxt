@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { OrderBook } from '../../types';
 import { validateIdFormat } from '../../utils/validation';
+import { kalshiErrorMapper } from './errors';
 
 export async function fetchOrderBook(id: string): Promise<OrderBook> {
     validateIdFormat(id, 'OrderBook');
@@ -54,8 +55,7 @@ export async function fetchOrderBook(id: string): Promise<OrderBook> {
         asks.sort((a: any, b: any) => a.price - b.price);
 
         return { bids, asks, timestamp: Date.now() };
-    } catch (error) {
-        console.error(`Error fetching Kalshi orderbook for ${id}:`, error);
-        return { bids: [], asks: [] };
+    } catch (error: any) {
+        throw kalshiErrorMapper.mapError(error);
     }
 }

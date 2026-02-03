@@ -3,6 +3,7 @@ import type { ApiKeyCreds } from '@polymarket/clob-client';
 import { Wallet } from 'ethers';
 import axios from 'axios';
 import { ExchangeCredentials } from '../../BaseExchange';
+import { polymarketErrorMapper } from './errors';
 
 const POLYMARKET_HOST = 'https://clob.polymarket.com';
 const POLYGON_CHAIN_ID = 137;
@@ -77,9 +78,7 @@ export class PolymarketAuth {
                 creds = await l1Client.createApiKey();
                 console.log('[PolymarketAuth] createApiKey returned:', JSON.stringify(creds, null, 2));
             } catch (createError: any) {
-                const apiError = createError?.response?.data?.error || createError?.message || createError;
-                console.error('[PolymarketAuth] Failed to both derive and create API key. Create error:', apiError);
-                throw new Error(`Authentication failed: Could not create or derive API key. Latest error: ${apiError}`);
+                throw polymarketErrorMapper.mapError(createError);
             }
         }
 
@@ -125,7 +124,7 @@ export class PolymarketAuth {
                     signatureType: this.discoveredSignatureType as number
                 };
             }
-        } catch (error) {
+        } catch (error: any) {
             console.warn(`[PolymarketAuth] Could not auto-discover proxy for ${address}:`, error instanceof Error ? error.message : error);
         }
 

@@ -3,6 +3,7 @@ import { HistoryFilterParams } from '../../BaseExchange';
 import { Trade } from '../../types';
 import { DATA_API_URL } from './utils';
 import { validateIdFormat, validateOutcomeId } from '../../utils/validation';
+import { polymarketErrorMapper } from './errors';
 
 /**
  * Fetch raw trade history for a specific token.
@@ -50,13 +51,6 @@ export async function fetchTrades(id: string, params: HistoryFilterParams): Prom
         return mappedTrades;
 
     } catch (error: any) {
-        if (axios.isAxiosError(error)) {
-            // Log error but throw formatted
-            const apiError = error.response?.data?.error || error.response?.data?.message || error.message;
-            console.error(`[Polymarket] fetchTrades failed for ID ${id}: ${apiError}`);
-            throw new Error(`Polymarket Trades API Error: ${apiError}`);
-        }
-        console.error(`Unexpected error fetching Polymarket trades for ${id}:`, error);
-        throw error;
+        throw polymarketErrorMapper.mapError(error);
     }
 }

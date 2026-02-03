@@ -11,6 +11,8 @@ import { fetchPositions } from './fetchPositions';
 import { PolymarketAuth } from './auth';
 import { Side, OrderType, AssetType } from '@polymarket/clob-client';
 import { PolymarketWebSocket, PolymarketWebSocketConfig } from './websocket';
+import { polymarketErrorMapper } from './errors';
+import { AuthenticationError } from '../../errors';
 
 // Re-export for external use
 export { PolymarketWebSocketConfig };
@@ -92,45 +94,46 @@ export class PolymarketExchange extends PredictionMarketExchange {
      */
     private ensureAuth(): PolymarketAuth {
         if (!this.auth) {
-            throw new Error(
+            throw new AuthenticationError(
                 'Trading operations require authentication. ' +
-                'Initialize PolymarketExchange with credentials: new PolymarketExchange({ privateKey: "0x..." })'
+                'Initialize PolymarketExchange with credentials: new PolymarketExchange({ privateKey: "0x..." })',
+                'Polymarket'
             );
         }
         return this.auth;
     }
 
     async createOrder(params: CreateOrderParams): Promise<Order> {
-        const auth = this.ensureAuth();
-        const client = await auth.getClobClient();
-
-        // Map side to Polymarket enum
-        const side = params.side.toUpperCase() === 'BUY' ? Side.BUY : Side.SELL;
-
-        // For limit orders, price is required
-        if (params.type === 'limit' && !params.price) {
-            throw new Error('Price is required for limit orders');
-        }
-
-        // For market orders, use max slippage: 0.99 for BUY (willing to pay up to 99%), 0.01 for SELL (willing to accept down to 1%)
-        const price = params.price || (side === Side.BUY ? 0.99 : 0.01);
-
-        // Auto-detect tick size if not provided
-        let tickSize: string;
-        if (params.tickSize) {
-            tickSize = params.tickSize.toString();
-        } else {
-            // Fetch the order book to infer tick size from price levels
-            try {
-                const orderBook = await this.fetchOrderBook(params.outcomeId);
-                tickSize = this.inferTickSize(orderBook);
-            } catch (error) {
-                // Fallback to 0.01 if order book fetch fails (standard for Polymarket)
-                tickSize = "0.01";
-            }
-        }
-
         try {
+            const auth = this.ensureAuth();
+            const client = await auth.getClobClient();
+
+            // Map side to Polymarket enum
+            const side = params.side.toUpperCase() === 'BUY' ? Side.BUY : Side.SELL;
+
+            // For limit orders, price is required
+            if (params.type === 'limit' && !params.price) {
+                throw new Error('Price is required for limit orders');
+            }
+
+            // For market orders, use max slippage: 0.99 for BUY (willing to pay up to 99%), 0.01 for SELL (willing to accept down to 1%)
+            const price = params.price || (side === Side.BUY ? 0.99 : 0.01);
+
+            // Auto-detect tick size if not provided
+            let tickSize: string;
+            if (params.tickSize) {
+                tickSize = params.tickSize.toString();
+            } else {
+                // Fetch the order book to infer tick size from price levels
+                try {
+                    const orderBook = await this.fetchOrderBook(params.outcomeId);
+                    tickSize = this.inferTickSize(orderBook);
+                } catch (error) {
+                    // Fallback to 0.01 if order book fetch fails (standard for Polymarket)
+                    tickSize = "0.01";
+                }
+            }
+
             const orderArgs: any = {
                 tokenID: params.outcomeId,
                 price: price,
@@ -166,7 +169,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
                 timestamp: Date.now()
             };
         } catch (error: any) {
-            throw error;
+            throw polymarketErrorMapper.mapError(error);
         }
     }
 
@@ -206,10 +209,10 @@ export class PolymarketExchange extends PredictionMarketExchange {
     }
 
     async cancelOrder(orderId: string): Promise<Order> {
-        const auth = this.ensureAuth();
-        const client = await auth.getClobClient();
-
         try {
+            const auth = this.ensureAuth();
+            const client = await auth.getClobClient();
+
             await client.cancelOrder({ orderID: orderId });
 
             return {
@@ -225,15 +228,15 @@ export class PolymarketExchange extends PredictionMarketExchange {
                 timestamp: Date.now()
             };
         } catch (error: any) {
-            throw error;
+            throw polymarketErrorMapper.mapError(error);
         }
     }
 
     async fetchOrder(orderId: string): Promise<Order> {
-        const auth = this.ensureAuth();
-        const client = await auth.getClobClient();
-
         try {
+            const auth = this.ensureAuth();
+            const client = await auth.getClobClient();
+
             const order = await client.getOrder(orderId);
             if (!order || !order.id) {
                 const errorMsg = (order as any)?.error || 'Order not found (Invalid ID)';
@@ -253,15 +256,15 @@ export class PolymarketExchange extends PredictionMarketExchange {
                 timestamp: order.created_at * 1000
             };
         } catch (error: any) {
-            throw error;
+            throw polymarketErrorMapper.mapError(error);
         }
     }
 
     async fetchOpenOrders(marketId?: string): Promise<Order[]> {
-        const auth = this.ensureAuth();
-        const client = await auth.getClobClient();
-
         try {
+            const auth = this.ensureAuth();
+            const client = await auth.getClobClient();
+
             const orders = await client.getOpenOrders({
                 market: marketId
             });
@@ -280,22 +283,25 @@ export class PolymarketExchange extends PredictionMarketExchange {
                 timestamp: o.created_at * 1000
             }));
         } catch (error: any) {
-            console.error('Error fetching Polymarket open orders:', error);
-            return [];
+            throw polymarketErrorMapper.mapError(error);
         }
     }
 
     async fetchPositions(): Promise<Position[]> {
-        const auth = this.ensureAuth();
-        const address = await auth.getEffectiveFunderAddress();
-        return fetchPositions(address);
+        try {
+            const auth = this.ensureAuth();
+            const address = await auth.getEffectiveFunderAddress();
+            return fetchPositions(address);
+        } catch (error: any) {
+            throw polymarketErrorMapper.mapError(error);
+        }
     }
 
     async fetchBalance(): Promise<Balance[]> {
-        const auth = this.ensureAuth();
-        const client = await auth.getClobClient();
-
         try {
+            const auth = this.ensureAuth();
+            const client = await auth.getClobClient();
+
             // Polymarket relies strictly on USDC (Polygon)
             const USDC_DECIMALS = 6;
 
@@ -309,7 +315,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
                 total = rawBalance / Math.pow(10, USDC_DECIMALS);
             } catch (clobError) {
                 // If CLOB fails or returns 0 (suspiciously), we can try on-chain
-                // but let's assume we proceed to on-chain check if total is 0 
+                // but let's assume we proceed to on-chain check if total is 0
                 // or just do on-chain check always for robustness if possible.
                 // For now, let's trust CLOB but add On-Chain fallback if CLOB returns 0.
             }
@@ -363,7 +369,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
                 locked: locked
             }];
         } catch (error: any) {
-            throw error;
+            throw polymarketErrorMapper.mapError(error);
         }
     }
 

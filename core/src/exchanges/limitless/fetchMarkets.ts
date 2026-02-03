@@ -2,6 +2,7 @@ import axios from 'axios';
 import { MarketFilterParams } from '../../BaseExchange';
 import { UnifiedMarket } from '../../types';
 import { LIMITLESS_API_URL, mapMarketToUnified } from './utils';
+import { limitlessErrorMapper } from './errors';
 
 export async function fetchMarkets(params?: MarketFilterParams): Promise<UnifiedMarket[]> {
     const limit = params?.limit || 200;
@@ -41,7 +42,6 @@ export async function fetchMarkets(params?: MarketFilterParams): Promise<Unified
         return unifiedMarkets.slice(offset, offset + limit);
 
     } catch (error: any) {
-        console.error("Error fetching Limitless markets:", error.message);
-        return [];
+        throw limitlessErrorMapper.mapError(error);
     }
 }

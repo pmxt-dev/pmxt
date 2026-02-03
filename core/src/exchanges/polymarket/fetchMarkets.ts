@@ -2,6 +2,7 @@ import axios from 'axios';
 import { MarketFilterParams } from '../../BaseExchange';
 import { UnifiedMarket } from '../../types';
 import { GAMMA_API_URL, mapMarketToUnified } from './utils';
+import { polymarketErrorMapper } from './errors';
 
 export async function fetchMarkets(params?: MarketFilterParams): Promise<UnifiedMarket[]> {
     const limit = params?.limit || 200;  // Higher default for better coverage
@@ -38,7 +39,7 @@ export async function fetchMarkets(params?: MarketFilterParams): Promise<Unified
         const unifiedMarkets: UnifiedMarket[] = [];
 
         for (const event of events) {
-            // Each event is a container (e.g. "US Election"). 
+            // Each event is a container (e.g. "US Election").
             // It contains specific "markets" (e.g. "Winner", "Pop Vote").
             if (!event.markets) continue;
 
@@ -63,11 +64,10 @@ export async function fetchMarkets(params?: MarketFilterParams): Promise<Unified
             unifiedMarkets.sort((a, b) => b.volume24h - a.volume24h);
         }
 
-        // Respect limit strictly after flattening 
+        // Respect limit strictly after flattening
         return unifiedMarkets.slice(0, limit);
 
-    } catch (error) {
-        console.error("Error fetching Polymarket data:", error);
-        return [];
+    } catch (error: any) {
+        throw polymarketErrorMapper.mapError(error);
     }
 }

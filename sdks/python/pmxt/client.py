@@ -336,7 +336,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return [_convert_market(m) for m in data]
         except ApiException as e:
-            raise Exception(f"Failed to fetch markets: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to fetch markets: {self._extract_api_error(e)}") from None
 
     def fetch_events(self, query: Optional[str] = None, **kwargs) -> List[UnifiedEvent]:
         """
@@ -383,7 +383,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return [_convert_event(e) for e in data]
         except ApiException as e:
-            raise Exception(f"Failed to fetch events: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to fetch events: {self._extract_api_error(e)}") from None
 
     # ----------------------------------------------------------------------------
     # Filtering Methods
@@ -664,7 +664,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return [_convert_candle(c) for c in data]
         except ApiException as e:
-            raise Exception(f"Failed to fetch OHLCV: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to fetch OHLCV: {self._extract_api_error(e)}") from None
     
     def fetch_order_book(self, outcome_id: str) -> OrderBook:
         """
@@ -693,7 +693,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return _convert_order_book(data)
         except ApiException as e:
-            raise Exception(f"Failed to fetch order book: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to fetch order book: {self._extract_api_error(e)}") from None
     
     def fetch_trades(
         self,
@@ -742,7 +742,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return [_convert_trade(t) for t in data]
         except ApiException as e:
-            raise Exception(f"Failed to fetch trades: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to fetch trades: {self._extract_api_error(e)}") from None
     
     # WebSocket Streaming Methods
     
@@ -789,7 +789,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return _convert_order_book(data)
         except ApiException as e:
-            raise Exception(f"Failed to watch order book: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to watch order book: {self._extract_api_error(e)}") from None
     
     def watch_trades(
         self,
@@ -842,7 +842,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return [_convert_trade(t) for t in data]
         except ApiException as e:
-            raise Exception(f"Failed to watch trades: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to watch trades: {self._extract_api_error(e)}") from None
 
     def watch_prices(self, market_address: str, callback: Optional[Any] = None) -> Any:
         """
@@ -872,7 +872,7 @@ class Exchange(ABC):
             
             return self._handle_response(response.to_dict())
         except ApiException as e:
-            raise Exception(f"Failed to watch prices: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to watch prices: {self._extract_api_error(e)}") from None
 
     def watch_user_positions(self, callback: Optional[Any] = None) -> List[Position]:
         """
@@ -903,7 +903,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return [_convert_position(p) for p in data]
         except ApiException as e:
-            raise Exception(f"Failed to watch user positions: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to watch user positions: {self._extract_api_error(e)}") from None
 
     def watch_user_transactions(self, callback: Optional[Any] = None) -> Any:
         """
@@ -933,7 +933,7 @@ class Exchange(ABC):
             
             return self._handle_response(response.to_dict())
         except ApiException as e:
-            raise Exception(f"Failed to watch user transactions: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to watch user transactions: {self._extract_api_error(e)}") from None
     
     # Trading Methods (require authentication)
     
@@ -1002,7 +1002,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return _convert_order(data)
         except ApiException as e:
-            raise Exception(f"Failed to create order: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to create order: {self._extract_api_error(e)}") from None
     
     def cancel_order(self, order_id: str) -> Order:
         """
@@ -1032,7 +1032,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return _convert_order(data)
         except ApiException as e:
-            raise Exception(f"Failed to cancel order: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to cancel order: {self._extract_api_error(e)}") from None
     
     def fetch_order(self, order_id: str) -> Order:
         """
@@ -1062,7 +1062,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return _convert_order(data)
         except ApiException as e:
-            raise Exception(f"Failed to fetch order: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to fetch order: {self._extract_api_error(e)}") from None
     
     def fetch_open_orders(self, market_id: Optional[str] = None) -> List[Order]:
         """
@@ -1096,7 +1096,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return [_convert_order(o) for o in data]
         except ApiException as e:
-            raise Exception(f"Failed to fetch open orders: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to fetch open orders: {self._extract_api_error(e)}") from None
     
     # Account Methods
     
@@ -1125,7 +1125,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return [_convert_position(p) for p in data]
         except ApiException as e:
-            raise Exception(f"Failed to fetch positions: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to fetch positions: {self._extract_api_error(e)}") from None
     
     def fetch_balance(self) -> List[Balance]:
         """
@@ -1154,7 +1154,7 @@ class Exchange(ABC):
             data = self._handle_response(response.to_dict())
             return [_convert_balance(b) for b in data]
         except ApiException as e:
-            raise Exception(f"Failed to fetch balance: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to fetch balance: {self._extract_api_error(e)}") from None
 
     def get_execution_price(
         self,
@@ -1225,7 +1225,7 @@ class Exchange(ABC):
             data = self._handle_response(data_json)
             return _convert_execution_result(data)
         except Exception as e:
-            raise Exception(f"Failed to get execution price: {self._extract_api_error(e)}")
+            raise Exception(f"Failed to get execution price: {self._extract_api_error(e)}") from None
 
 
 class Polymarket(Exchange):

@@ -15,7 +15,7 @@ export async function fetchEvents(params: EventFetchParams): Promise<UnifiedEven
         const response = await axios.get(KALSHI_API_URL, { params: queryParams });
         const events = response.data.events || [];
 
-        const lowerQuery = params.query.toLowerCase();
+        const lowerQuery = (params?.query || '').toLowerCase();
 
         const filtered = events.filter((event: any) => {
             return (event.title || '').toLowerCase().includes(lowerQuery);

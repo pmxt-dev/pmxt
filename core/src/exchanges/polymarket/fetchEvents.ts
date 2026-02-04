@@ -20,7 +20,7 @@ export async function fetchEvents(params: EventFetchParams): Promise<UnifiedEven
         const events = response.data || [];
 
         // Client-side text filtering
-        const lowerQuery = params.query.toLowerCase();
+        const lowerQuery = (params?.query || '').toLowerCase();
         const searchIn = params?.searchIn || 'title';
 
         const filtered = events.filter((event: any) => {

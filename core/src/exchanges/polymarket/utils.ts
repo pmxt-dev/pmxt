@@ -60,7 +60,6 @@ export function mapMarketToUnified(event: any, market: any, options: { useQuesti
 
             const outcomeIdValue = clobTokenIds[index] || String(index);
             outcomes.push({
-                id: outcomeIdValue, // Use CLOB Token ID as the primary ID
                 outcomeId: outcomeIdValue,
                 label: outcomeLabel,
                 price: parseFloat(rawPrice) || 0,

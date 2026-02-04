@@ -31,14 +31,12 @@ export function mapMarketToUnified(event: any, market: any): UnifiedMarket | nul
 
     const outcomes: MarketOutcome[] = [
         {
-            id: market.ticker, // The actual market ticker (primary tradeable)
             outcomeId: market.ticker,
             label: candidateName || 'Yes',
             price: price,
             priceChange24h: priceChange
         },
         {
-            id: `${market.ticker}-NO`, // Virtual ID for the No outcome
             outcomeId: `${market.ticker}-NO`,
             label: candidateName ? `Not ${candidateName}` : 'No',
             price: 1 - price,

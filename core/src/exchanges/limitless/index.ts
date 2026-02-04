@@ -32,7 +32,7 @@ import { PortfolioFetcher, getContractAddress } from '@limitless-exchange/sdk';
 import { Contract, providers } from 'ethers';
 
 // Re-export for external use
-export { LimitlessWebSocketConfig };
+export type { LimitlessWebSocketConfig };
 
 export interface LimitlessExchangeOptions {
     credentials?: ExchangeCredentials;

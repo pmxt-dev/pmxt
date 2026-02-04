@@ -12,7 +12,7 @@ import { kalshiErrorMapper } from './errors';
 import { AuthenticationError } from '../../errors';
 
 // Re-export for external use
-export { KalshiWebSocketConfig };
+export type { KalshiWebSocketConfig };
 
 export interface KalshiExchangeOptions {
     credentials?: ExchangeCredentials;

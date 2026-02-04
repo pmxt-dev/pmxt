@@ -13,7 +13,7 @@ import { polymarketErrorMapper } from './errors';
 import { AuthenticationError } from '../../errors';
 
 // Re-export for external use
-export { PolymarketWebSocketConfig };
+export type { PolymarketWebSocketConfig };
 
 export interface PolymarketExchangeOptions {
     credentials?: ExchangeCredentials;

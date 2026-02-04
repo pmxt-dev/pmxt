@@ -6,7 +6,6 @@
 
 Name | Type
 ------------ | -------------
-`id` | string
 `marketId` | string
 `title` | string
 `description` | string
@@ -32,7 +31,6 @@ import type { UnifiedMarket } from 'pmxtjs'
 
 // TODO: Update the object below with actual values
 const example = {
-  "id": null,
   "marketId": null,
   "title": null,
   "description": null,

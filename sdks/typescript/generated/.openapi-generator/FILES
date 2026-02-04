@@ -31,6 +31,11 @@ docs/FetchPositions200Response.md
 docs/FetchPositionsRequest.md
 docs/FetchTrades200Response.md
 docs/FetchTradesRequest.md
+docs/FilterEventsRequest.md
+docs/FilterEventsRequestArgsInner.md
+docs/FilterMarketsRequest.md
+docs/FilterMarketsRequestArgsInner.md
+docs/FilterMarketsRequestArgsInnerOneOf.md
 docs/GetExecutionPrice200Response.md
 docs/GetExecutionPriceDetailed200Response.md
 docs/GetExecutionPriceRequest.md
@@ -85,6 +90,11 @@ src/models/FetchPositions200Response.ts
 src/models/FetchPositionsRequest.ts
 src/models/FetchTrades200Response.ts
 src/models/FetchTradesRequest.ts
+src/models/FilterEventsRequest.ts
+src/models/FilterEventsRequestArgsInner.ts
+src/models/FilterMarketsRequest.ts
+src/models/FilterMarketsRequestArgsInner.ts
+src/models/FilterMarketsRequestArgsInnerOneOf.ts
 src/models/GetExecutionPrice200Response.ts
 src/models/GetExecutionPriceDetailed200Response.ts
 src/models/GetExecutionPriceRequest.ts

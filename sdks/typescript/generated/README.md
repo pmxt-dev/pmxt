@@ -25,7 +25,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // CancelOrderRequest (optional)
     cancelOrderRequest: ...,
@@ -53,6 +53,7 @@ All URIs are relative to *http://localhost:3847*
 | Class | Method | HTTP request | Description
 | ----- | ------ | ------------ | -------------
 *DefaultApi* | [**cancelOrder**](docs/DefaultApi.md#cancelorderoperation) | **POST** /api/{exchange}/cancelOrder | Cancel Order
+*DefaultApi* | [**close**](docs/DefaultApi.md#close) | **POST** /api/{exchange}/close | Close WebSocket Connections
 *DefaultApi* | [**createOrder**](docs/DefaultApi.md#createorderoperation) | **POST** /api/{exchange}/createOrder | Create Order
 *DefaultApi* | [**fetchBalance**](docs/DefaultApi.md#fetchbalance) | **POST** /api/{exchange}/fetchBalance | Fetch Balance
 *DefaultApi* | [**fetchEvents**](docs/DefaultApi.md#fetcheventsoperation) | **POST** /api/{exchange}/fetchEvents | Fetch Events
@@ -63,6 +64,8 @@ All URIs are relative to *http://localhost:3847*
 *DefaultApi* | [**fetchOrderBook**](docs/DefaultApi.md#fetchorderbookoperation) | **POST** /api/{exchange}/fetchOrderBook | Fetch Order Book
 *DefaultApi* | [**fetchPositions**](docs/DefaultApi.md#fetchpositionsoperation) | **POST** /api/{exchange}/fetchPositions | Fetch Positions
 *DefaultApi* | [**fetchTrades**](docs/DefaultApi.md#fetchtradesoperation) | **POST** /api/{exchange}/fetchTrades | Fetch Trades
+*DefaultApi* | [**filterEvents**](docs/DefaultApi.md#filtereventsoperation) | **POST** /api/{exchange}/filterEvents | Filter Events
+*DefaultApi* | [**filterMarkets**](docs/DefaultApi.md#filtermarketsoperation) | **POST** /api/{exchange}/filterMarkets | Filter Markets
 *DefaultApi* | [**getExecutionPrice**](docs/DefaultApi.md#getexecutionpriceoperation) | **POST** /api/{exchange}/getExecutionPrice | Get Execution Price
 *DefaultApi* | [**getExecutionPriceDetailed**](docs/DefaultApi.md#getexecutionpricedetailed) | **POST** /api/{exchange}/getExecutionPriceDetailed | Get Detailed Execution Price
 *DefaultApi* | [**healthCheck**](docs/DefaultApi.md#healthcheck) | **GET** /health | Server Health Check
@@ -104,6 +107,11 @@ All URIs are relative to *http://localhost:3847*
 - [FetchPositionsRequest](docs/FetchPositionsRequest.md)
 - [FetchTrades200Response](docs/FetchTrades200Response.md)
 - [FetchTradesRequest](docs/FetchTradesRequest.md)
+- [FilterEventsRequest](docs/FilterEventsRequest.md)
+- [FilterEventsRequestArgsInner](docs/FilterEventsRequestArgsInner.md)
+- [FilterMarketsRequest](docs/FilterMarketsRequest.md)
+- [FilterMarketsRequestArgsInner](docs/FilterMarketsRequestArgsInner.md)
+- [FilterMarketsRequestArgsInnerOneOf](docs/FilterMarketsRequestArgsInnerOneOf.md)
 - [GetExecutionPrice200Response](docs/GetExecutionPrice200Response.md)
 - [GetExecutionPriceDetailed200Response](docs/GetExecutionPriceDetailed200Response.md)
 - [GetExecutionPriceRequest](docs/GetExecutionPriceRequest.md)

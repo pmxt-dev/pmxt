@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * PMXT Sidecar API
- * A unified local sidecar API for prediction markets (Polymarket, Kalshi). This API acts as a JSON-RPC-style gateway. Each endpoint corresponds to a specific method on the generic exchange implementation. 
+ * A unified local sidecar API for prediction markets (Polymarket, Kalshi, Limitless). This API acts as a JSON-RPC-style gateway. Each endpoint corresponds to a specific method on the generic exchange implementation. 
  *
  * The version of the OpenAPI document: 0.4.4
  * 
@@ -43,6 +43,30 @@ export interface MarketFilterParams {
      * @memberof MarketFilterParams
      */
     searchIn?: MarketFilterParamsSearchInEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof MarketFilterParams
+     */
+    query?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MarketFilterParams
+     */
+    slug?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof MarketFilterParams
+     */
+    page?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MarketFilterParams
+     */
+    similarityThreshold?: number;
 }
 
 
@@ -88,6 +112,10 @@ export function MarketFilterParamsFromJSONTyped(json: any, ignoreDiscriminator: 
         'offset': json['offset'] == null ? undefined : json['offset'],
         'sort': json['sort'] == null ? undefined : json['sort'],
         'searchIn': json['searchIn'] == null ? undefined : json['searchIn'],
+        'query': json['query'] == null ? undefined : json['query'],
+        'slug': json['slug'] == null ? undefined : json['slug'],
+        'page': json['page'] == null ? undefined : json['page'],
+        'similarityThreshold': json['similarityThreshold'] == null ? undefined : json['similarityThreshold'],
     };
 }
 
@@ -106,6 +134,10 @@ export function MarketFilterParamsToJSONTyped(value?: MarketFilterParams | null,
         'offset': value['offset'],
         'sort': value['sort'],
         'searchIn': value['searchIn'],
+        'query': value['query'],
+        'slug': value['slug'],
+        'page': value['page'],
+        'similarityThreshold': value['similarityThreshold'],
     };
 }
 

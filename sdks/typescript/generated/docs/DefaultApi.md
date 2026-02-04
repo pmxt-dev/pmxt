@@ -5,6 +5,7 @@ All URIs are relative to *http://localhost:3847*
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
 | [**cancelOrder**](DefaultApi.md#cancelorderoperation) | **POST** /api/{exchange}/cancelOrder | Cancel Order |
+| [**close**](DefaultApi.md#close) | **POST** /api/{exchange}/close | Close WebSocket Connections |
 | [**createOrder**](DefaultApi.md#createorderoperation) | **POST** /api/{exchange}/createOrder | Create Order |
 | [**fetchBalance**](DefaultApi.md#fetchbalance) | **POST** /api/{exchange}/fetchBalance | Fetch Balance |
 | [**fetchEvents**](DefaultApi.md#fetcheventsoperation) | **POST** /api/{exchange}/fetchEvents | Fetch Events |
@@ -15,6 +16,8 @@ All URIs are relative to *http://localhost:3847*
 | [**fetchOrderBook**](DefaultApi.md#fetchorderbookoperation) | **POST** /api/{exchange}/fetchOrderBook | Fetch Order Book |
 | [**fetchPositions**](DefaultApi.md#fetchpositionsoperation) | **POST** /api/{exchange}/fetchPositions | Fetch Positions |
 | [**fetchTrades**](DefaultApi.md#fetchtradesoperation) | **POST** /api/{exchange}/fetchTrades | Fetch Trades |
+| [**filterEvents**](DefaultApi.md#filtereventsoperation) | **POST** /api/{exchange}/filterEvents | Filter Events |
+| [**filterMarkets**](DefaultApi.md#filtermarketsoperation) | **POST** /api/{exchange}/filterMarkets | Filter Markets |
 | [**getExecutionPrice**](DefaultApi.md#getexecutionpriceoperation) | **POST** /api/{exchange}/getExecutionPrice | Get Execution Price |
 | [**getExecutionPriceDetailed**](DefaultApi.md#getexecutionpricedetailed) | **POST** /api/{exchange}/getExecutionPriceDetailed | Get Detailed Execution Price |
 | [**healthCheck**](DefaultApi.md#healthcheck) | **GET** /health | Server Health Check |
@@ -46,7 +49,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // CancelOrderRequest (optional)
     cancelOrderRequest: ...,
@@ -69,7 +72,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **cancelOrderRequest** | [CancelOrderRequest](CancelOrderRequest.md) |  | [Optional] |
 
 ### Return type
@@ -94,6 +97,76 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
 
+## close
+
+> BaseResponse close(exchange, watchUserPositionsRequest)
+
+Close WebSocket Connections
+
+Close all WebSocket connections and cleanup resources. Call this when you\&#39;re done streaming to properly release connections. 
+
+### Example
+
+```ts
+import {
+  Configuration,
+  DefaultApi,
+} from 'pmxtjs';
+import type { CloseRequest } from 'pmxtjs';
+
+async function example() {
+  console.log("🚀 Testing pmxtjs SDK...");
+  const api = new DefaultApi();
+
+  const body = {
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
+    exchange: exchange_example,
+    // WatchUserPositionsRequest (optional)
+    watchUserPositionsRequest: ...,
+  } satisfies CloseRequest;
+
+  try {
+    const data = await api.close(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
+| **watchUserPositionsRequest** | [WatchUserPositionsRequest](WatchUserPositionsRequest.md) |  | [Optional] |
+
+### Return type
+
+[**BaseResponse**](BaseResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | WebSocket connections closed successfully |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
 ## createOrder
 
 > CreateOrder200Response createOrder(exchange, createOrderRequest)
@@ -114,7 +187,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // CreateOrderRequest (optional)
     createOrderRequest: ...,
@@ -137,7 +210,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **createOrderRequest** | [CreateOrderRequest](CreateOrderRequest.md) |  | [Optional] |
 
 ### Return type
@@ -182,7 +255,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // FetchPositionsRequest (optional)
     fetchPositionsRequest: ...,
@@ -205,7 +278,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **fetchPositionsRequest** | [FetchPositionsRequest](FetchPositionsRequest.md) |  | [Optional] |
 
 ### Return type
@@ -250,7 +323,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // FetchEventsRequest (optional)
     fetchEventsRequest: ...,
@@ -273,7 +346,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **fetchEventsRequest** | [FetchEventsRequest](FetchEventsRequest.md) |  | [Optional] |
 
 ### Return type
@@ -318,7 +391,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // FetchMarketsRequest (optional)
     fetchMarketsRequest: ...,
@@ -341,7 +414,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **fetchMarketsRequest** | [FetchMarketsRequest](FetchMarketsRequest.md) |  | [Optional] |
 
 ### Return type
@@ -386,7 +459,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // FetchOHLCVRequest (optional)
     fetchOHLCVRequest: ...,
@@ -409,7 +482,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **fetchOHLCVRequest** | [FetchOHLCVRequest](FetchOHLCVRequest.md) |  | [Optional] |
 
 ### Return type
@@ -454,7 +527,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // FetchOpenOrdersRequest (optional)
     fetchOpenOrdersRequest: ...,
@@ -477,7 +550,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **fetchOpenOrdersRequest** | [FetchOpenOrdersRequest](FetchOpenOrdersRequest.md) |  | [Optional] |
 
 ### Return type
@@ -522,7 +595,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // CancelOrderRequest (optional)
     cancelOrderRequest: ...,
@@ -545,7 +618,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **cancelOrderRequest** | [CancelOrderRequest](CancelOrderRequest.md) |  | [Optional] |
 
 ### Return type
@@ -590,7 +663,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // FetchOrderBookRequest (optional)
     fetchOrderBookRequest: ...,
@@ -613,7 +686,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **fetchOrderBookRequest** | [FetchOrderBookRequest](FetchOrderBookRequest.md) |  | [Optional] |
 
 ### Return type
@@ -658,7 +731,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // FetchPositionsRequest (optional)
     fetchPositionsRequest: ...,
@@ -681,7 +754,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **fetchPositionsRequest** | [FetchPositionsRequest](FetchPositionsRequest.md) |  | [Optional] |
 
 ### Return type
@@ -726,7 +799,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // FetchTradesRequest (optional)
     fetchTradesRequest: ...,
@@ -749,7 +822,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **fetchTradesRequest** | [FetchTradesRequest](FetchTradesRequest.md) |  | [Optional] |
 
 ### Return type
@@ -774,6 +847,146 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
 
 
+## filterEvents
+
+> FetchEvents200Response filterEvents(exchange, filterEventsRequest)
+
+Filter Events
+
+Filter a list of events by criteria. Can filter by string query, structured criteria object, or custom filter function. 
+
+### Example
+
+```ts
+import {
+  Configuration,
+  DefaultApi,
+} from 'pmxtjs';
+import type { FilterEventsOperationRequest } from 'pmxtjs';
+
+async function example() {
+  console.log("🚀 Testing pmxtjs SDK...");
+  const api = new DefaultApi();
+
+  const body = {
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
+    exchange: exchange_example,
+    // FilterEventsRequest (optional)
+    filterEventsRequest: ...,
+  } satisfies FilterEventsOperationRequest;
+
+  try {
+    const data = await api.filterEvents(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
+| **filterEventsRequest** | [FilterEventsRequest](FilterEventsRequest.md) |  | [Optional] |
+
+### Return type
+
+[**FetchEvents200Response**](FetchEvents200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Filtered events |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## filterMarkets
+
+> FetchMarkets200Response filterMarkets(exchange, filterMarketsRequest)
+
+Filter Markets
+
+Filter a list of markets by criteria. Can filter by string query, structured criteria object, or custom filter function. 
+
+### Example
+
+```ts
+import {
+  Configuration,
+  DefaultApi,
+} from 'pmxtjs';
+import type { FilterMarketsOperationRequest } from 'pmxtjs';
+
+async function example() {
+  console.log("🚀 Testing pmxtjs SDK...");
+  const api = new DefaultApi();
+
+  const body = {
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
+    exchange: exchange_example,
+    // FilterMarketsRequest (optional)
+    filterMarketsRequest: ...,
+  } satisfies FilterMarketsOperationRequest;
+
+  try {
+    const data = await api.filterMarkets(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
+| **filterMarketsRequest** | [FilterMarketsRequest](FilterMarketsRequest.md) |  | [Optional] |
+
+### Return type
+
+[**FetchMarkets200Response**](FetchMarkets200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Filtered markets |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
 ## getExecutionPrice
 
 > GetExecutionPrice200Response getExecutionPrice(exchange, getExecutionPriceRequest)
@@ -794,7 +1007,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // GetExecutionPriceRequest (optional)
     getExecutionPriceRequest: ...,
@@ -817,7 +1030,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **getExecutionPriceRequest** | [GetExecutionPriceRequest](GetExecutionPriceRequest.md) |  | [Optional] |
 
 ### Return type
@@ -862,7 +1075,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // GetExecutionPriceRequest (optional)
     getExecutionPriceRequest: ...,
@@ -885,7 +1098,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **getExecutionPriceRequest** | [GetExecutionPriceRequest](GetExecutionPriceRequest.md) |  | [Optional] |
 
 ### Return type
@@ -989,7 +1202,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // WatchOrderBookRequest (optional)
     watchOrderBookRequest: ...,
@@ -1012,7 +1225,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **watchOrderBookRequest** | [WatchOrderBookRequest](WatchOrderBookRequest.md) |  | [Optional] |
 
 ### Return type
@@ -1057,7 +1270,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // WatchPricesRequest (optional)
     watchPricesRequest: ...,
@@ -1080,7 +1293,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **watchPricesRequest** | [WatchPricesRequest](WatchPricesRequest.md) |  | [Optional] |
 
 ### Return type
@@ -1127,7 +1340,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // WatchTradesRequest (optional)
     watchTradesRequest: ...,
@@ -1150,7 +1363,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **watchTradesRequest** | [WatchTradesRequest](WatchTradesRequest.md) |  | [Optional] |
 
 ### Return type
@@ -1195,7 +1408,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // WatchUserPositionsRequest (optional)
     watchUserPositionsRequest: ...,
@@ -1218,7 +1431,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **watchUserPositionsRequest** | [WatchUserPositionsRequest](WatchUserPositionsRequest.md) |  | [Optional] |
 
 ### Return type
@@ -1263,7 +1476,7 @@ async function example() {
   const api = new DefaultApi();
 
   const body = {
-    // 'polymarket' | 'kalshi' | The prediction market exchange to target.
+    // 'polymarket' | 'kalshi' | 'limitless' | The prediction market exchange to target.
     exchange: exchange_example,
     // WatchUserPositionsRequest (optional)
     watchUserPositionsRequest: ...,
@@ -1286,7 +1499,7 @@ example().catch(console.error);
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **exchange** | `polymarket`, `kalshi` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi] |
+| **exchange** | `polymarket`, `kalshi`, `limitless` | The prediction market exchange to target. | [Defaults to `undefined`] [Enum: polymarket, kalshi, limitless] |
 | **watchUserPositionsRequest** | [WatchUserPositionsRequest](WatchUserPositionsRequest.md) |  | [Optional] |
 
 ### Return type

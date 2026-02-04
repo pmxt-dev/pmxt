@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.2] - 2026-02-05
+
+### Fixed
+
+- **TypeScript SDK Build**: Fixed TypeScript compilation errors in generated SDK code caused by missing `instanceOf` function exports.
+  - Added automatic post-processing script to patch OpenAPI-generated code.
+  - Resolved `isolatedModules` TypeScript errors in core exchange modules (Kalshi, Limitless, Polymarket).
+  - Changed `export` to `export type` for WebSocket config type re-exports.
+- **CI/CD Pipeline**: Resolved build failures in GitHub Actions for npm package publishing.
+
+### Note
+
+- Version 2.0.1 remains valid for Python SDK (`pmxt`). This release (2.0.2) specifically addresses TypeScript SDK (`pmxtjs`) build issues.
+
 ## [2.0.1] - 2026-02-05
 
 ### Breaking Changes

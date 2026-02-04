@@ -10,6 +10,10 @@ Name | Type
 `offset` | number
 `sort` | string
 `searchIn` | string
+`query` | string
+`slug` | string
+`page` | number
+`similarityThreshold` | number
 
 ## Example
 
@@ -22,6 +26,10 @@ const example = {
   "offset": null,
   "sort": null,
   "searchIn": null,
+  "query": null,
+  "slug": null,
+  "page": null,
+  "similarityThreshold": null,
 } satisfies MarketFilterParams
 
 console.log(example)

@@ -1,6 +1,6 @@
 {
   "name": "pmxtjs",
-  "version": "1.7.0",
+  "version": "2.0.2",
   "description": "Unified prediction market data API - The ccxt for prediction markets",
   "author": "PMXT Contributors",
   "repository": {
@@ -27,7 +27,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "generate": "npm run generate:sdk:typescript --workspace=pmxt-core",
+    "generate": "npm run generate:sdk:typescript --workspace=pmxt-core && node scripts/fix-generated.js",
     "prebuild": "npm run clean",
     "build": "tsc && tsc -p tsconfig.esm.json && node scripts/fix-esm.js && echo '{ \"type\": \"module\" }' > dist/esm/package.json",
     "prepack": "npm run build",

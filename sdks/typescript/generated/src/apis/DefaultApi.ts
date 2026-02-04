@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * PMXT Sidecar API
- * A unified local sidecar API for prediction markets (Polymarket, Kalshi). This API acts as a JSON-RPC-style gateway. Each endpoint corresponds to a specific method on the generic exchange implementation. 
+ * A unified local sidecar API for prediction markets (Polymarket, Kalshi, Limitless). This API acts as a JSON-RPC-style gateway. Each endpoint corresponds to a specific method on the generic exchange implementation. 
  *
  * The version of the OpenAPI document: 0.4.4
  * 
@@ -34,6 +34,8 @@ import type {
   FetchPositionsRequest,
   FetchTrades200Response,
   FetchTradesRequest,
+  FilterEventsRequest,
+  FilterMarketsRequest,
   GetExecutionPrice200Response,
   GetExecutionPriceDetailed200Response,
   GetExecutionPriceRequest,
@@ -82,6 +84,10 @@ import {
     FetchTrades200ResponseToJSON,
     FetchTradesRequestFromJSON,
     FetchTradesRequestToJSON,
+    FilterEventsRequestFromJSON,
+    FilterEventsRequestToJSON,
+    FilterMarketsRequestFromJSON,
+    FilterMarketsRequestToJSON,
     GetExecutionPrice200ResponseFromJSON,
     GetExecutionPrice200ResponseToJSON,
     GetExecutionPriceDetailed200ResponseFromJSON,
@@ -103,6 +109,11 @@ import {
 export interface CancelOrderOperationRequest {
     exchange: CancelOrderOperationExchangeEnum;
     cancelOrderRequest?: CancelOrderRequest;
+}
+
+export interface CloseRequest {
+    exchange: CloseExchangeEnum;
+    watchUserPositionsRequest?: WatchUserPositionsRequest;
 }
 
 export interface CreateOrderOperationRequest {
@@ -153,6 +164,16 @@ export interface FetchPositionsOperationRequest {
 export interface FetchTradesOperationRequest {
     exchange: FetchTradesOperationExchangeEnum;
     fetchTradesRequest?: FetchTradesRequest;
+}
+
+export interface FilterEventsOperationRequest {
+    exchange: FilterEventsOperationExchangeEnum;
+    filterEventsRequest?: FilterEventsRequest;
+}
+
+export interface FilterMarketsOperationRequest {
+    exchange: FilterMarketsOperationExchangeEnum;
+    filterMarketsRequest?: FilterMarketsRequest;
 }
 
 export interface GetExecutionPriceOperationRequest {
@@ -232,6 +253,48 @@ export class DefaultApi extends runtime.BaseAPI {
      */
     async cancelOrder(requestParameters: CancelOrderOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CreateOrder200Response> {
         const response = await this.cancelOrderRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Close all WebSocket connections and cleanup resources. Call this when you\'re done streaming to properly release connections. 
+     * Close WebSocket Connections
+     */
+    async closeRaw(requestParameters: CloseRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BaseResponse>> {
+        if (requestParameters['exchange'] == null) {
+            throw new runtime.RequiredError(
+                'exchange',
+                'Required parameter "exchange" was null or undefined when calling close().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/api/{exchange}/close`;
+        urlPath = urlPath.replace(`{${"exchange"}}`, encodeURIComponent(String(requestParameters['exchange'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: WatchUserPositionsRequestToJSON(requestParameters['watchUserPositionsRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BaseResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Close all WebSocket connections and cleanup resources. Call this when you\'re done streaming to properly release connections. 
+     * Close WebSocket Connections
+     */
+    async close(requestParameters: CloseRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BaseResponse> {
+        const response = await this.closeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -636,6 +699,90 @@ export class DefaultApi extends runtime.BaseAPI {
     }
 
     /**
+     * Filter a list of events by criteria. Can filter by string query, structured criteria object, or custom filter function. 
+     * Filter Events
+     */
+    async filterEventsRaw(requestParameters: FilterEventsOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FetchEvents200Response>> {
+        if (requestParameters['exchange'] == null) {
+            throw new runtime.RequiredError(
+                'exchange',
+                'Required parameter "exchange" was null or undefined when calling filterEvents().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/api/{exchange}/filterEvents`;
+        urlPath = urlPath.replace(`{${"exchange"}}`, encodeURIComponent(String(requestParameters['exchange'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: FilterEventsRequestToJSON(requestParameters['filterEventsRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => FetchEvents200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Filter a list of events by criteria. Can filter by string query, structured criteria object, or custom filter function. 
+     * Filter Events
+     */
+    async filterEvents(requestParameters: FilterEventsOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FetchEvents200Response> {
+        const response = await this.filterEventsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Filter a list of markets by criteria. Can filter by string query, structured criteria object, or custom filter function. 
+     * Filter Markets
+     */
+    async filterMarketsRaw(requestParameters: FilterMarketsOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FetchMarkets200Response>> {
+        if (requestParameters['exchange'] == null) {
+            throw new runtime.RequiredError(
+                'exchange',
+                'Required parameter "exchange" was null or undefined when calling filterMarkets().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/api/{exchange}/filterMarkets`;
+        urlPath = urlPath.replace(`{${"exchange"}}`, encodeURIComponent(String(requestParameters['exchange'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: FilterMarketsRequestToJSON(requestParameters['filterMarketsRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => FetchMarkets200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Filter a list of markets by criteria. Can filter by string query, structured criteria object, or custom filter function. 
+     * Filter Markets
+     */
+    async filterMarkets(requestParameters: FilterMarketsOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FetchMarkets200Response> {
+        const response = await this.filterMarketsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Get Execution Price
      */
     async getExecutionPriceRaw(requestParameters: GetExecutionPriceOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GetExecutionPrice200Response>> {
@@ -955,15 +1102,26 @@ export class DefaultApi extends runtime.BaseAPI {
  */
 export const CancelOrderOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type CancelOrderOperationExchangeEnum = typeof CancelOrderOperationExchangeEnum[keyof typeof CancelOrderOperationExchangeEnum];
 /**
  * @export
  */
+export const CloseExchangeEnum = {
+    Polymarket: 'polymarket',
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
+} as const;
+export type CloseExchangeEnum = typeof CloseExchangeEnum[keyof typeof CloseExchangeEnum];
+/**
+ * @export
+ */
 export const CreateOrderOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type CreateOrderOperationExchangeEnum = typeof CreateOrderOperationExchangeEnum[keyof typeof CreateOrderOperationExchangeEnum];
 /**
@@ -971,7 +1129,8 @@ export type CreateOrderOperationExchangeEnum = typeof CreateOrderOperationExchan
  */
 export const FetchBalanceExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type FetchBalanceExchangeEnum = typeof FetchBalanceExchangeEnum[keyof typeof FetchBalanceExchangeEnum];
 /**
@@ -979,7 +1138,8 @@ export type FetchBalanceExchangeEnum = typeof FetchBalanceExchangeEnum[keyof typ
  */
 export const FetchEventsOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type FetchEventsOperationExchangeEnum = typeof FetchEventsOperationExchangeEnum[keyof typeof FetchEventsOperationExchangeEnum];
 /**
@@ -987,7 +1147,8 @@ export type FetchEventsOperationExchangeEnum = typeof FetchEventsOperationExchan
  */
 export const FetchMarketsOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type FetchMarketsOperationExchangeEnum = typeof FetchMarketsOperationExchangeEnum[keyof typeof FetchMarketsOperationExchangeEnum];
 /**
@@ -995,7 +1156,8 @@ export type FetchMarketsOperationExchangeEnum = typeof FetchMarketsOperationExch
  */
 export const FetchOHLCVOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type FetchOHLCVOperationExchangeEnum = typeof FetchOHLCVOperationExchangeEnum[keyof typeof FetchOHLCVOperationExchangeEnum];
 /**
@@ -1003,7 +1165,8 @@ export type FetchOHLCVOperationExchangeEnum = typeof FetchOHLCVOperationExchange
  */
 export const FetchOpenOrdersOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type FetchOpenOrdersOperationExchangeEnum = typeof FetchOpenOrdersOperationExchangeEnum[keyof typeof FetchOpenOrdersOperationExchangeEnum];
 /**
@@ -1011,7 +1174,8 @@ export type FetchOpenOrdersOperationExchangeEnum = typeof FetchOpenOrdersOperati
  */
 export const FetchOrderExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type FetchOrderExchangeEnum = typeof FetchOrderExchangeEnum[keyof typeof FetchOrderExchangeEnum];
 /**
@@ -1019,7 +1183,8 @@ export type FetchOrderExchangeEnum = typeof FetchOrderExchangeEnum[keyof typeof 
  */
 export const FetchOrderBookOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type FetchOrderBookOperationExchangeEnum = typeof FetchOrderBookOperationExchangeEnum[keyof typeof FetchOrderBookOperationExchangeEnum];
 /**
@@ -1027,7 +1192,8 @@ export type FetchOrderBookOperationExchangeEnum = typeof FetchOrderBookOperation
  */
 export const FetchPositionsOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type FetchPositionsOperationExchangeEnum = typeof FetchPositionsOperationExchangeEnum[keyof typeof FetchPositionsOperationExchangeEnum];
 /**
@@ -1035,15 +1201,35 @@ export type FetchPositionsOperationExchangeEnum = typeof FetchPositionsOperation
  */
 export const FetchTradesOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type FetchTradesOperationExchangeEnum = typeof FetchTradesOperationExchangeEnum[keyof typeof FetchTradesOperationExchangeEnum];
 /**
  * @export
  */
+export const FilterEventsOperationExchangeEnum = {
+    Polymarket: 'polymarket',
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
+} as const;
+export type FilterEventsOperationExchangeEnum = typeof FilterEventsOperationExchangeEnum[keyof typeof FilterEventsOperationExchangeEnum];
+/**
+ * @export
+ */
+export const FilterMarketsOperationExchangeEnum = {
+    Polymarket: 'polymarket',
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
+} as const;
+export type FilterMarketsOperationExchangeEnum = typeof FilterMarketsOperationExchangeEnum[keyof typeof FilterMarketsOperationExchangeEnum];
+/**
+ * @export
+ */
 export const GetExecutionPriceOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type GetExecutionPriceOperationExchangeEnum = typeof GetExecutionPriceOperationExchangeEnum[keyof typeof GetExecutionPriceOperationExchangeEnum];
 /**
@@ -1051,7 +1237,8 @@ export type GetExecutionPriceOperationExchangeEnum = typeof GetExecutionPriceOpe
  */
 export const GetExecutionPriceDetailedExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type GetExecutionPriceDetailedExchangeEnum = typeof GetExecutionPriceDetailedExchangeEnum[keyof typeof GetExecutionPriceDetailedExchangeEnum];
 /**
@@ -1059,7 +1246,8 @@ export type GetExecutionPriceDetailedExchangeEnum = typeof GetExecutionPriceDeta
  */
 export const WatchOrderBookOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type WatchOrderBookOperationExchangeEnum = typeof WatchOrderBookOperationExchangeEnum[keyof typeof WatchOrderBookOperationExchangeEnum];
 /**
@@ -1067,7 +1255,8 @@ export type WatchOrderBookOperationExchangeEnum = typeof WatchOrderBookOperation
  */
 export const WatchPricesOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type WatchPricesOperationExchangeEnum = typeof WatchPricesOperationExchangeEnum[keyof typeof WatchPricesOperationExchangeEnum];
 /**
@@ -1075,7 +1264,8 @@ export type WatchPricesOperationExchangeEnum = typeof WatchPricesOperationExchan
  */
 export const WatchTradesOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type WatchTradesOperationExchangeEnum = typeof WatchTradesOperationExchangeEnum[keyof typeof WatchTradesOperationExchangeEnum];
 /**
@@ -1083,7 +1273,8 @@ export type WatchTradesOperationExchangeEnum = typeof WatchTradesOperationExchan
  */
 export const WatchUserPositionsOperationExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type WatchUserPositionsOperationExchangeEnum = typeof WatchUserPositionsOperationExchangeEnum[keyof typeof WatchUserPositionsOperationExchangeEnum];
 /**
@@ -1091,6 +1282,7 @@ export type WatchUserPositionsOperationExchangeEnum = typeof WatchUserPositionsO
  */
 export const WatchUserTransactionsExchangeEnum = {
     Polymarket: 'polymarket',
-    Kalshi: 'kalshi'
+    Kalshi: 'kalshi',
+    Limitless: 'limitless'
 } as const;
 export type WatchUserTransactionsExchangeEnum = typeof WatchUserTransactionsExchangeEnum[keyof typeof WatchUserTransactionsExchangeEnum];

@@ -2,7 +2,7 @@
 /* eslint-disable */
 /**
  * PMXT Sidecar API
- * A unified local sidecar API for prediction markets (Polymarket, Kalshi). This API acts as a JSON-RPC-style gateway. Each endpoint corresponds to a specific method on the generic exchange implementation. 
+ * A unified local sidecar API for prediction markets (Polymarket, Kalshi, Limitless). This API acts as a JSON-RPC-style gateway. Each endpoint corresponds to a specific method on the generic exchange implementation. 
  *
  * The version of the OpenAPI document: 0.4.4
  * 
@@ -67,7 +67,7 @@ export function MarketOutcomeFromJSONTyped(json: any, ignoreDiscriminator: boole
         return json;
     }
     return {
-
+        
         'outcomeId': json['outcomeId'] == null ? undefined : json['outcomeId'],
         'label': json['label'] == null ? undefined : json['label'],
         'price': json['price'] == null ? undefined : json['price'],
@@ -86,7 +86,7 @@ export function MarketOutcomeToJSONTyped(value?: MarketOutcome | null, ignoreDis
     }
 
     return {
-
+        
         'outcomeId': value['outcomeId'],
         'label': value['label'],
         'price': value['price'],

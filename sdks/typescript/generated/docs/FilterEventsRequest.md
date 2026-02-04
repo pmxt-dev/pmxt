@@ -1,30 +1,24 @@
 
-# MarketOutcome
+# FilterEventsRequest
 
 
 ## Properties
 
 Name | Type
 ------------ | -------------
-`outcomeId` | string
-`label` | string
-`price` | number
-`priceChange24h` | number
-`metadata` | { [key: string]: any; }
+`args` | [Array&lt;FilterEventsRequestArgsInner&gt;](FilterEventsRequestArgsInner.md)
+`credentials` | [ExchangeCredentials](ExchangeCredentials.md)
 
 ## Example
 
 ```typescript
-import type { MarketOutcome } from 'pmxtjs'
+import type { FilterEventsRequest } from 'pmxtjs'
 
 // TODO: Update the object below with actual values
 const example = {
-  "outcomeId": null,
-  "label": null,
-  "price": null,
-  "priceChange24h": null,
-  "metadata": null,
-} satisfies MarketOutcome
+  "args": null,
+  "credentials": null,
+} satisfies FilterEventsRequest
 
 console.log(example)
 
@@ -33,7 +27,7 @@ const exampleJSON: string = JSON.stringify(example)
 console.log(exampleJSON)
 
 // Parse the JSON string back to an object
-const exampleParsed = JSON.parse(exampleJSON) as MarketOutcome
+const exampleParsed = JSON.parse(exampleJSON) as FilterEventsRequest
 console.log(exampleParsed)
 ```
 

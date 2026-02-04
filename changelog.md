@@ -2,6 +2,122 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-02-05
+
+### Breaking Changes
+
+- **Removed Deprecated Methods**: All previously deprecated methods have been removed as part of the v2.0.0 cleanup.
+  - `searchMarkets(query, params)`: Use `fetchMarkets({ query, ...params })` instead.
+  - `getMarketsBySlug(slug)`: Use `fetchMarkets({ slug })` instead.
+  - `searchEvents(query, params)`: Use `fetchEvents({ query, ...params })` instead.
+- **Removed Deprecated Fields**: Removed the deprecated `.id` field from `UnifiedMarket` and `MarketOutcome` models. Use `.marketId` and `.outcomeId` instead.
+- **Python SDK Signature Changes**: Refactored Python SDK to use direct keyword arguments instead of params dictionary.
+  - `fetch_ohlcv` and `fetch_trades` now use kwargs for cleaner API calls.
+  - All methods now follow the pattern: `method(arg1, arg2, key1=value1, key2=value2)` instead of `method(arg1, arg2, params={'key1': value1})`.
+
+### Added
+
+- **Limitless WebSocket Support**: Implemented real-time WebSocket streaming for Limitless exchange.
+  - Added `watchOrderBook` and `watchTrades` support for live market data.
+  - WebSocket connection management with automatic reconnection.
+- **Limitless On-Chain Balances**: Added on-chain balance fetching capability for Limitless exchange.
+  - Queries blockchain directly for accurate balance information.
+  - Integrated with Limitless SDK for seamless balance retrieval.
+- **Unified Error Handling System**: Implemented a comprehensive error handling system across all exchanges.
+  - Consistent error messages and status codes across Polymarket, Kalshi, and Limitless.
+  - Improved error mapping for better debugging and troubleshooting.
+  - More robust compliance tests with proper error detection.
+- **Polymarket Signing Updates**: Enhanced Polymarket initialization with new authentication options.
+  - Added `proxyAddress` parameter for explicit proxy wallet configuration.
+  - Added `signatureType` parameter with support for "gnosis-safe" (default), "polyproxy", and "eoa".
+  - Updated examples to demonstrate new signing methods.
+
+### Changed
+
+- **Migration to Unified API**: Completed migration to CCXT-style API patterns as outlined in `MIGRATION.md`.
+  - All exchanges now use consistent parameter patterns with unified `params` objects (TypeScript) or keyword arguments (Python).
+  - Improved API consistency across all supported exchanges.
+- **Updated Examples**: Refactored all examples in `examples/` directory to use v2.0.0 API patterns.
+  - Removed legacy method calls and deprecated patterns.
+  - Added examples demonstrating new Polymarket signing configuration.
+  - Updated models and data structures throughout.
+- **OpenAPI Documentation**: Updated OpenAPI specification to include:
+  - Limitless WebSocket endpoints and methods.
+  - Missing methods from previous versions.
+  - Corrected parameter definitions and response schemas.
+- **Limitless Documentation**: Improved Limitless exchange documentation with clearer setup instructions and API usage examples.
+
+### Fixed
+
+- **TypeScript Build Errors**: Resolved TypeScript compilation errors related to Limitless WebSocket implementation and server bundle generation.
+- **Python Error Parsing**: Fixed error parsing issues in the Python SDK that were causing incorrect error messages.
+- **Limitless Search Functionality**: Fixed semantic search parameters and query handling for Limitless markets.
+  - Corrected parameter mapping for search endpoints.
+  - Improved search result relevance and accuracy.
+- **Compliance Test Improvements**: Enhanced compliance test suite across all exchanges.
+  - Replaced deprecated `.id` with `.outcomeId` and `.marketId` in all tests.
+  - Improved error status and message detection for Kalshi `fetchOrder` tests.
+  - Updated `fetchOrderBook` tests and reduced Limitless logging noise.
+  - Increased `fetchMarkets` timeout to 120s for Kalshi to handle slower API responses.
+  - Changed market fetch limit to 25 for better test reliability.
+  - Fixed `fetchMarket` tests to properly handle Kalshi's data structure.
+- **Verbose Logging**: Removed excessive verbose logging from sidecar API, providing cleaner console output during normal operations.
+
+### Improved
+
+- **Error Handling Robustness**: Significantly improved error detection, mapping, and reporting across all exchanges.
+- **Test Reliability**: Enhanced compliance test suite with better timeout handling and more robust assertions.
+- **Code Quality**: Removed all deprecated code paths, resulting in cleaner and more maintainable codebase.
+- **Documentation Quality**: Updated README with authentication introduction and clearer getting started instructions.
+
+### Migration Guide
+
+For TypeScript users upgrading from v1.7.0:
+```typescript
+// v1.7.0 (deprecated methods)
+const markets = await exchange.searchMarkets("Trump", { limit: 10 });
+const market = await exchange.getMarketsBySlug("trump-wins-2024");
+
+// v2.0.0 (unified API)
+const markets = await exchange.fetchMarkets({ query: "Trump", limit: 10 });
+const market = await exchange.fetchMarkets({ slug: "trump-wins-2024" });
+
+// v1.7.0 (deprecated field)
+console.log(market.id);
+
+// v2.0.0 (use specific ID fields)
+console.log(market.marketId);
+console.log(outcome.outcomeId);
+```
+
+For Python users upgrading from v1.7.0:
+```python
+# v1.7.0 (params dictionary)
+candles = exchange.fetch_ohlcv(market_id, timeframe, params={'start': start_time})
+
+# v2.0.0 (keyword arguments)
+candles = exchange.fetch_ohlcv(market_id, timeframe, start=start_time)
+
+# v1.7.0 (deprecated field)
+print(market.id)
+
+# v2.0.0 (use specific ID fields)
+print(market.market_id)
+print(outcome.outcome_id)
+```
+
+Polymarket initialization with new signing options:
+```typescript
+// v2.0.0 (explicit proxy configuration)
+const poly = new Polymarket({
+  credentials: {
+    privateKey: "0x...",
+    proxyAddress: "0x...",  // Optional: your proxy wallet address
+    signatureType: "gnosis-safe"  // Optional: "gnosis-safe" (default), "polyproxy", or "eoa"
+  }
+});
+```
+
 ## [1.7.0] - 2026-02-03
 
 ### Added

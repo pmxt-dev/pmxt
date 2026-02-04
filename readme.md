@@ -154,7 +154,8 @@ exchange = pmxt.Kalshi(
 #### Limitless
 ```python
 exchange = pmxt.Limitless(
-    private_key=os.getenv('LIMITLESS_PRIVATE_KEY')
+    api_key=os.getenv('LIMITLESS_API_KEY'),
+    private_key=os.getenv('LIMITLESS_PRIVATE_KEY') # For order signing (EIP-712)
 )
 ```
 

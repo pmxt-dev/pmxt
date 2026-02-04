@@ -1159,13 +1159,14 @@ export class Kalshi extends Exchange {
  *
  * // Trading (requires auth)
  * const limitless = new Limitless({
+ *   apiKey: process.env.LIMITLESS_API_KEY,
  *   privateKey: process.env.LIMITLESS_PRIVATE_KEY
  * });
  * const balance = await limitless.fetchBalance();
  * ```
  */
 export class Limitless extends Exchange {
-    constructor(options: Omit<ExchangeOptions, "apiKey"> = {}) {
+    constructor(options: ExchangeOptions = {}) {
         super("limitless", options);
     }
 }

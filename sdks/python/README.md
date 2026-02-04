@@ -88,14 +88,14 @@ balances = poly.fetch_balance()
 print(f"Available: ${balances[0].available}")
 
 # Place order
-order = poly.create_order(pmxt.CreateOrderParams(
+order = poly.create_order(
     market_id="663583",
     outcome_id="10991849...",
     side="buy",
     type="limit",
     amount=10,
     price=0.55
-))
+)
 ```
 
 ### Kalshi

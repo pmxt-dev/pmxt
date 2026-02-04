@@ -9,7 +9,9 @@ If you're upgrading from v1.x to v2.0.0, use this checklist to ensure your code 
 - [ ] **Replace `event.searchMarkets(query)`** with `exchange.filterMarkets(event.markets, query)`
 - [ ] **Replace all `outcome.id`** with `outcome.outcomeId`
 - [ ] **Replace all `market.id`** with `market.marketId`
-- [ ] **Python: Replace `HistoryFilterParams`** with direct kwargs in `fetch_ohlcv()` and `fetch_trades()`
+- [ ] **Python: Remove all parameter wrapper classes** (`HistoryFilterParams`, `MarketFilterParams`, `EventFetchParams`, `CreateOrderParams`)
+- [ ] **Python: Update `create_order()` calls** to use direct arguments instead of `CreateOrderParams`
+- [ ] **Python: Update `fetch_markets()` and `fetch_events()` calls** to remove `params=` argument
 - [ ] **Verify all examples** use the new unified API (`fetchMarkets`, `fetchEvents`)
 - [ ] **Update error handling** to use new error classes (if relying on error types)
 
@@ -19,7 +21,7 @@ If you already migrated to the unified API in v1.7.0, you only need to:
 
 - [ ] **Replace `event.searchMarkets(query)`** with `exchange.filterMarkets(event.markets, query)`
 - [ ] **Replace `.id`** with `.outcomeId` / `.marketId`
-- [ ] **Python only: Replace `HistoryFilterParams`** with kwargs
+- [ ] **Python only: Remove all parameter wrapper classes** and use direct kwargs/arguments
 
 ### Quick Migration Example
 
@@ -43,12 +45,14 @@ events = poly.fetch_events(query='Fed Chair')
 market = events[0].search_markets('Kevin Warsh')[0]  #  Removed
 outcome_id = market.yes.id  #  Removed
 candles = poly.fetch_ohlcv(outcome_id, pmxt.HistoryFilterParams(resolution='1h', limit=100))  #  Removed
+order = poly.create_order(pmxt.CreateOrderParams(market_id='...', outcome_id='...', side='buy', type='limit', amount=10, price=0.5))  #  Removed
 
 # v2.0.0 Code
 events = poly.fetch_events(query='Fed Chair')
 market = poly.filter_markets(events[0].markets, 'Kevin Warsh')[0]  # ✅
 outcome_id = market.yes.outcome_id  # ✅
 candles = poly.fetch_ohlcv(outcome_id, resolution='1h', limit=100)  # ✅
+order = poly.create_order(market_id='...', outcome_id='...', side='buy', type='limit', amount=10, price=0.5)  # ✅
 ```
 
 ### Testing Your Migration

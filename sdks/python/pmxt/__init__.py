@@ -29,9 +29,6 @@ from .models import (
     Order,
     Position,
     Balance,
-    MarketFilterParams,
-    EventFetchParams,
-    CreateOrderParams,
 )
 
 
@@ -50,7 +47,7 @@ def restart_server():
     """
     _default_manager.restart()
 
-__version__ = "1.7.0"
+__version__ = "2.0.0"
 __all__ = [
     # Exchanges
     "Polymarket",
@@ -72,8 +69,4 @@ __all__ = [
     "Order",
     "Position",
     "Balance",
-    # Parameters
-    "MarketFilterParams",
-    "EventFetchParams",
-    "CreateOrderParams",
 ]

@@ -10,7 +10,7 @@ try:
     print("✓ Polymarket client initialized!")
     
     # Try a simple search
-    markets = poly.search_markets("Trump", pmxt.MarketFilterParams(limit=1))
+    markets = poly.fetch_markets(query="Trump", limit=1)
     if markets:
         print(f"✓ Search works! Found: {markets[0].title}")
     else:

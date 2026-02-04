@@ -61,22 +61,20 @@ Fetch Markets
 **Signature:**
 
 ```python
-def fetch_markets(query: Optional[str] = None, params: Optional[MarketFilterParams] = None, **kwargs) -> List[UnifiedMarket]:
+def fetch_markets(query: Optional[str] = None, **kwargs) -> List[UnifiedMarket]:
 ```
 
 **Parameters:**
 
-- `params` (MarketFilterParams) - **Optional**: Filter parameters
+- `query` (str) - **Optional**: Search keyword
+- `**kwargs` - **Optional**: Additional parameters (limit, offset, sort, search_in)
 
 **Returns:** `List[UnifiedMarket]` - List of unified markets
 
 **Example:**
 
 ```python
-markets = poly.fetch_markets(pmxt.MarketFilterParams(
-    limit=20,
-    sort='volume'  # 'volume' | 'liquidity' | 'newest'
-))
+markets = poly.fetch_markets(query="Trump", limit=20, sort='volume')
 ```
 
 
@@ -201,19 +199,20 @@ Fetch Events
 **Signature:**
 
 ```python
-def fetch_events(query: Optional[str] = None, params: Optional[EventFetchParams] = None, **kwargs) -> List[UnifiedEvent]:
+def fetch_events(query: Optional[str] = None, **kwargs) -> List[UnifiedEvent]:
 ```
 
 **Parameters:**
 
-- `params` (EventFetchParams) - **Optional**: Filter parameters
+- `query` (str) - **Optional**: Search keyword
+- `**kwargs` - **Optional**: Additional parameters (limit, offset, search_in)
 
 **Returns:** `List[UnifiedEvent]` - List of unified events
 
 **Example:**
 
 ```python
-# No example available
+events = poly.fetch_events(query="Election", limit=10)
 ```
 
 
@@ -362,12 +361,26 @@ Create Order
 **Signature:**
 
 ```python
-def create_order(params: Optional[CreateOrderParams] = None) -> Order:
+def create_order(
+    market_id: str,
+    outcome_id: str,
+    side: Literal["buy", "sell"],
+    type: Literal["market", "limit"],
+    amount: float,
+    price: Optional[float] = None,
+    fee: Optional[int] = None
+) -> Order:
 ```
 
 **Parameters:**
 
-- `params` (CreateOrderParams) - **Optional**: Filter parameters
+- `market_id` (str): Market ID
+- `outcome_id` (str): Outcome ID
+- `side` (Literal["buy", "sell"]): Order side
+- `type` (Literal["market", "limit"]): Order type
+- `amount` (float): Number of contracts
+- `price` (float) - **Optional**: Limit price (required for limit orders, 0.0-1.0)
+- `fee` (int) - **Optional**: Fee rate (e.g., 1000 for 0.1%)
 
 **Returns:** `Order` - Order created
 
@@ -375,25 +388,25 @@ def create_order(params: Optional[CreateOrderParams] = None) -> Order:
 
 ```python
 # Limit Order Example
-order = poly.create_order(pmxt.CreateOrderParams(
+order = poly.create_order(
     market_id='663583',
     outcome_id='109918492287...',
     side='buy',
     type='limit',
     amount=10,        # Number of contracts
     price=0.55        # Required for limit orders (0.0-1.0)
-))
+)
 
 print(f'Order {order.id}: {order.status}')
 
 # Market Order Example
-order = kalshi.create_order(pmxt.CreateOrderParams(
+order = kalshi.create_order(
     market_id='FED-25JAN',
     outcome_id='FED-25JAN-YES',
     side='sell',
     type='market',
     amount=5          # Price not needed for market orders
-))
+)
 ```
 
 
@@ -619,10 +632,11 @@ def search_markets() -> Any:
 **Example:**
 
 ```python
-results = kalshi.search_markets('Fed rates', pmxt.MarketFilterParams(
+results = kalshi.fetch_markets(
+    query='Fed rates',
     limit=10,
     search_in='title'  # 'title' (default) | 'description' | 'both'
-))
+)
 ```
 
 
@@ -771,19 +785,19 @@ if balances:
     print(f'Available: ${balance.available}')
 
 # 2. Search for a market
-markets = exchange.search_markets('Trump')
+markets = exchange.fetch_markets(query='Trump')
 market = markets[0]
 outcome = market.outcomes[0]
 
 # 3. Place a limit order
-order = exchange.create_order(pmxt.CreateOrderParams(
-    market_id=market.id,
-    outcome_id=outcome.id,
+order = exchange.create_order(
+    market_id=market.market_id,
+    outcome_id=outcome.outcome_id,
     side='buy',
     type='limit',
     amount=10,
     price=0.50
-))
+)
 
 print(f'Order placed: {order.id}')
 
@@ -1005,65 +1019,6 @@ api_secret: str # API secret (if required by exchange)
 passphrase: str # Passphrase (if required by exchange)
 funder_address: str # The address funding the trades (Proxy address)
 signature_type: Any # Signature type (0=EOA, 1=Poly Proxy, 2=Gnosis Safe, or names like 'gnosis_safe')
-```
-
----
-
-## Filter Parameters
-
-### `BaseRequest`
-
-Base request structure with optional credentials
-
-```python
-@dataclass
-class BaseRequest:
-credentials: ExchangeCredentials # 
-```
-
----
-### `MarketFilterParams`
-
-
-
-```python
-@dataclass
-class MarketFilterParams:
-limit: int # 
-offset: int # 
-sort: str # 
-search_in: str # 
-```
-
----
-### `EventFetchParams`
-
-
-
-```python
-@dataclass
-class EventFetchParams:
-query: str # 
-limit: int # 
-offset: int # 
-search_in: str # 
-```
-
----
-### `CreateOrderParams`
-
-
-
-```python
-@dataclass
-class CreateOrderParams:
-market_id: str # 
-outcome_id: str # 
-side: str # 
-type: str # 
-amount: float # 
-price: float # 
-fee: float # 
 ```
 
 ---

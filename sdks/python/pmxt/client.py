@@ -33,9 +33,6 @@ from .models import (
     Order,
     Position,
     Balance,
-    MarketFilterParams,
-    EventFetchParams,
-    CreateOrderParams,
     ExecutionPriceResult,
     MarketFilterCriteria,
     MarketFilterFunction,
@@ -280,36 +277,32 @@ class Exchange(ABC):
     
     # Market Data Methods
     
-    def fetch_markets(self, query: Optional[str] = None, params: Optional[MarketFilterParams] = None, **kwargs) -> List[UnifiedMarket]:
+    def fetch_markets(self, query: Optional[str] = None, **kwargs) -> List[UnifiedMarket]:
         """
         Get active markets from the exchange.
-        
+
         Args:
             query: Optional search keyword
-            params: Optional filter parameters
             **kwargs: Additional parameters (limit, offset, sort, search_in)
-            
+
         Returns:
             List of unified markets
-            
+
         Example:
-            >>> markets = exchange.fetch_markets("Trump", limit=20)
+            >>> markets = exchange.fetch_markets("Trump", limit=20, sort="volume")
         """
         try:
             body_dict = {"args": []}
-            
+
             # Prepare arguments
             search_params = {}
-            if params:
-                search_params = params.__dict__.copy()
-            
             if query:
                 search_params["query"] = query
-            
+
             # Add any extra keyword arguments
             for key, value in kwargs.items():
                 search_params[key] = value
-                
+
             if search_params:
                 body_dict["args"] = [search_params]
             
@@ -330,39 +323,33 @@ class Exchange(ABC):
         except ApiException as e:
             raise Exception(f"Failed to fetch markets: {e}")
 
-    def fetch_events(self, query: Optional[str] = None, params: Optional[EventFetchParams] = None, **kwargs) -> List[UnifiedEvent]:
+    def fetch_events(self, query: Optional[str] = None, **kwargs) -> List[UnifiedEvent]:
         """
         Fetch events with optional keyword search.
         Events group related markets together.
-        
+
         Args:
             query: Optional search keyword
-            params: Optional parameters for search and filtering
             **kwargs: Additional parameters (limit, offset, search_in)
-            
+
         Returns:
             List of unified events
-            
+
         Example:
             >>> events = exchange.fetch_events("Election", limit=10)
         """
         try:
             body_dict = {"args": []}
-            
+
             # Prepare arguments
             search_params = {}
-            if params:
-                search_params = params.__dict__.copy()
-            
             if query:
                 search_params["query"] = query
-            
+
             # Add any extra keyword arguments
             for key, value in kwargs.items():
-                # Convert camelCase to snake_case for the API if needed?
-                # Actually our models use snake_case which from_dict handles
                 search_params[key] = value
-                
+
             if search_params:
                 body_dict["args"] = [search_params]
             
@@ -935,39 +922,54 @@ class Exchange(ABC):
     
     # Trading Methods (require authentication)
     
-    def create_order(self, params: CreateOrderParams) -> Order:
+    def create_order(
+        self,
+        market_id: str,
+        outcome_id: str,
+        side: Literal["buy", "sell"],
+        type: Literal["market", "limit"],
+        amount: float,
+        price: Optional[float] = None,
+        fee: Optional[int] = None,
+    ) -> Order:
         """
         Create a new order.
-        
+
         Args:
-            params: Order parameters
-            
+            market_id: Market ID
+            outcome_id: Outcome ID
+            side: Order side (buy/sell)
+            type: Order type (market/limit)
+            amount: Number of contracts
+            price: Limit price (required for limit orders, 0.0-1.0)
+            fee: Optional fee rate (e.g., 1000 for 0.1%)
+
         Returns:
             Created order
-            
+
         Example:
-            >>> order = exchange.create_order(CreateOrderParams(
+            >>> order = exchange.create_order(
             ...     market_id="663583",
             ...     outcome_id="10991849...",
             ...     side="buy",
             ...     type="limit",
             ...     amount=10,
             ...     price=0.55
-            ... ))
+            ... )
         """
         try:
             params_dict = {
-                "marketId": params.market_id,
-                "outcomeId": params.outcome_id,
-                "side": params.side,
-                "type": params.type,
-                "amount": params.amount,
+                "marketId": market_id,
+                "outcomeId": outcome_id,
+                "side": side,
+                "type": type,
+                "amount": amount,
             }
-            if params.price is not None:
-                params_dict["price"] = params.price
-            if params.fee is not None:
-                params_dict["fee"] = params.fee
-            
+            if price is not None:
+                params_dict["price"] = price
+            if fee is not None:
+                params_dict["fee"] = fee
+
             request_body_dict = {"args": [params_dict]}
             
             # Add credentials if available

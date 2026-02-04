@@ -80,7 +80,9 @@ import os
 import pmxt
 
 poly = pmxt.Polymarket(
-    private_key=os.getenv("POLYMARKET_PRIVATE_KEY")
+    private_key=os.getenv("POLYMARKET_PRIVATE_KEY"),
+    proxy_address=os.getenv("POLYMARKET_PROXY_ADDRESS"),  # Optional
+    signature_type='gnosis-safe'  # 'eoa' | 'poly-proxy' | 'gnosis-safe' (default: 'gnosis-safe')
 )
 
 # Check balance

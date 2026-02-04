@@ -189,6 +189,12 @@ export interface ExchangeOptions {
 
     /** Automatically start server if not running (default: true) */
     autoStartServer?: boolean;
+
+    /** Optional Polymarket Proxy/Smart Wallet address */
+    proxyAddress?: string;
+
+    /** Optional signature type (0=EOA, 1=Proxy) */
+    signatureType?: number;
 }
 
 /**
@@ -201,6 +207,8 @@ export abstract class Exchange {
     protected exchangeName: string;
     protected apiKey?: string;
     protected privateKey?: string;
+    protected proxyAddress?: string;
+    protected signatureType?: number;
     protected api: DefaultApi;
     protected config: Configuration;
     protected serverManager: ServerManager;
@@ -210,6 +218,8 @@ export abstract class Exchange {
         this.exchangeName = exchangeName.toLowerCase();
         this.apiKey = options.apiKey;
         this.privateKey = options.privateKey;
+        this.proxyAddress = options.proxyAddress;
+        this.signatureType = options.signatureType;
 
         let baseUrl = options.baseUrl || "http://localhost:3847";
         const autoStartServer = options.autoStartServer !== false;
@@ -272,6 +282,8 @@ export abstract class Exchange {
         return {
             apiKey: this.apiKey,
             privateKey: this.privateKey,
+            funderAddress: this.proxyAddress,
+            signatureType: this.signatureType,
         };
     }
 
@@ -1082,9 +1094,29 @@ export abstract class Exchange {
  * const balance = await poly.fetchBalance();
  * ```
  */
+/**
+ * Options for initializing Polymarket client.
+ */
+export interface PolymarketOptions {
+    /** Private key for authentication (optional) */
+    privateKey?: string;
+
+    /** Base URL of the PMXT sidecar server */
+    baseUrl?: string;
+
+    /** Automatically start server if not running (default: true) */
+    autoStartServer?: boolean;
+
+    /** Optional Polymarket Proxy/Smart Wallet address */
+    proxyAddress?: string;
+
+    /** Optional signature type */
+    signatureType?: 'eoa' | 'poly-proxy' | 'gnosis-safe' | number;
+}
+
 export class Polymarket extends Exchange {
-    constructor(options: Omit<ExchangeOptions, "apiKey"> = {}) {
-        super("polymarket", options);
+    constructor(options: PolymarketOptions = {}) {
+        super("polymarket", options as ExchangeOptions);
     }
 }
 

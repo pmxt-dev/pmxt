@@ -23,7 +23,7 @@ import { Exchange, Polymarket, Kalshi, Limitless } from "./pmxt/client.js";
 import { ServerManager } from "./pmxt/server-manager.js";
 import * as models from "./pmxt/models.js";
 
-export { Exchange, Polymarket, Kalshi, Limitless } from "./pmxt/client.js";
+export { Exchange, Polymarket, Kalshi, Limitless, PolymarketOptions } from "./pmxt/client.js";
 export { ServerManager } from "./pmxt/server-manager.js";
 export type * from "./pmxt/models.js";
 

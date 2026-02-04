@@ -2,7 +2,11 @@ import os
 import pmxt
 
 def main():
-    client = pmxt.Polymarket(private_key=os.getenv("POLYMARKET_PRIVATE_KEY"))
+    client = pmxt.Polymarket(
+        private_key=os.getenv("POLYMARKET_PRIVATE_KEY"),
+        proxy_address=os.getenv("POLYMARKET_PROXY_ADDRESS"),
+        signature_type='gnosis-safe'
+    )
     
     # Replace with an actual order ID
     order_id = "YOUR_ORDER_ID"

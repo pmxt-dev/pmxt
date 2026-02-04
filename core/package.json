@@ -30,7 +30,7 @@
     "server": "tsx watch src/server/index.ts",
     "server:prod": "node dist/server/index.js",
     "generate:sdk:python": "npx @openapitools/openapi-generator-cli generate -i src/server/openapi.yaml -g python -o ../sdks/python/generated --package-name pmxt_internal --additional-properties=projectName=pmxt-internal,packageVersion=1.0.2,library=urllib3",
-    "generate:sdk:typescript": "npx @openapitools/openapi-generator-cli generate -i src/server/openapi.yaml -g typescript-fetch -o ../sdks/typescript/generated --additional-properties=npmName=pmxtjs,npmVersion=1.0.2,supportsES6=true,typescriptThreePlus=true",
+    "generate:sdk:typescript": "npx @openapitools/openapi-generator-cli generate -i src/server/openapi.yaml -g typescript-fetch -o ../sdks/typescript/generated --additional-properties=npmName=pmxtjs,npmVersion=1.0.2,supportsES6=true,typescriptThreePlus=true && node ../sdks/typescript/scripts/fix-generated.js",
     "generate:docs": "node ../scripts/generate-api-docs.js",
     "generate:sdk:all": "npm run generate:sdk:python && npm run generate:sdk:typescript && npm run generate:docs"
   },

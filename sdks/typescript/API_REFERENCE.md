@@ -117,9 +117,9 @@ const candles = await polymarket.fetchOHLCV(outcomeId, {
     ```
 
     **Notes:**
-    **CRITICAL**: Use `outcome.outcomeId` for trading operations.
-    - **Polymarket**: `outcome.outcomeId` is the CLOB Token ID
-    - **Kalshi**: `outcome.outcomeId` is the Market Ticker
+    **CRITICAL**: Use `outcome.id`, not `market.id`.
+    - **Polymarket**: `outcome.id` is the CLOB Token ID
+    - **Kalshi**: `outcome.id` is the Market Ticker
 
     ---
 ### `fetchOrderBook`
@@ -590,6 +590,105 @@ async getExecutionPriceDetailed(orderBook: string, side: OrderBook, amount: Orde
 
 
     ---
+### `filterMarkets`
+
+Filter Markets
+
+Filter a list of markets by criteria. Can filter by string query, structured criteria object, or custom filter function.
+
+
+**Signature:**
+
+```typescript
+async filterMarkets(markets: any, criteria: any): Promise<UnifiedMarket[]>
+  ```
+
+  **Parameters:**
+
+  - `markets` (any): markets
+  - `criteria` (any): criteria
+
+  **Returns:** `Promise<UnifiedMarket[]>` - Filtered markets
+
+    **Example:**
+
+    ```typescript
+    // Simple text search
+const filtered = poly.filterMarkets(markets, 'Trump');
+
+// Advanced criteria
+const undervalued = poly.filterMarkets(markets, {
+    text: 'Election',
+    volume24h: { min: 10000 },
+    price: { outcome: 'yes', max: 0.4 }
+});
+
+// Custom function
+const volatile = poly.filterMarkets(markets, m => 
+    m.yes?.priceChange24h < -0.1
+);
+    ```
+
+
+    ---
+### `filterEvents`
+
+Filter Events
+
+Filter a list of events by criteria. Can filter by string query, structured criteria object, or custom filter function.
+
+
+**Signature:**
+
+```typescript
+async filterEvents(events: any, criteria: any): Promise<UnifiedEvent[]>
+  ```
+
+  **Parameters:**
+
+  - `events` (any): events
+  - `criteria` (any): criteria
+
+  **Returns:** `Promise<UnifiedEvent[]>` - Filtered events
+
+    **Example:**
+
+    ```typescript
+    const filtered = poly.filterEvents(events, {
+    category: 'Politics',
+    marketCount: { min: 5 }
+});
+    ```
+
+
+    ---
+### `close`
+
+Close WebSocket Connections
+
+Close all WebSocket connections and cleanup resources. Call this when you're done streaming to properly release connections.
+
+
+**Signature:**
+
+```typescript
+async close(): Promise<any>
+  ```
+
+  **Parameters:**
+
+  - None
+
+  **Returns:** `Promise<any>` - WebSocket connections closed successfully
+
+    **Example:**
+
+    ```typescript
+    // No example available
+    ```
+
+
+    ---
 ### `searchMarkets`
 
 searchMarkets
@@ -647,76 +746,6 @@ const warsh = polymarket.filterMarkets(events[0].markets, 'Kevin Warsh')[0];
 
 
     ---
-### `filterMarkets`
-
-Filter a list of markets locally based on structured criteria or a custom function.
-
-Unlike search_markets which calls the exchange's search engine, filter_markets operates on a List/Array of markets that you already have in memory. This is much faster and supports complex logic like price ranges, volume thresholds, and custom lambda functions.
-
-**Signature:**
-
-```typescript
-async filterMarkets(markets: UnifiedMarket[], criteria: any): Promise<UnifiedMarket[]>
-  ```
-
-  **Parameters:**
-
-  - `markets` (UnifiedMarket[]): List of markets to filter
-  - `criteria` (any): Filter criteria (string, object, or function)
-
-  **Returns:** `Promise<UnifiedMarket[]>` - Filtered list of markets
-
-    **Example:**
-
-    ```typescript
-    // Simple text search
-const filtered = poly.filterMarkets(markets, 'Trump');
-
-// Advanced criteria
-const undervalued = poly.filterMarkets(markets, {
-    text: 'Election',
-    volume24h: { min: 10000 },
-    price: { outcome: 'yes', max: 0.4 }
-});
-
-// Custom function
-const volatile = poly.filterMarkets(markets, m => 
-    m.yes?.priceChange24h < -0.1
-);
-    ```
-
-
-    ---
-### `filterEvents`
-
-Filter a list of events locally.
-
-Filters a list of events based on category, tags, or the number of markets they contain.
-
-**Signature:**
-
-```typescript
-async filterEvents(events: UnifiedEvent[], criteria: any): Promise<UnifiedEvent[]>
-  ```
-
-  **Parameters:**
-
-  - `events` (UnifiedEvent[]): List of events to filter
-  - `criteria` (any): Filter criteria (string, object, or function)
-
-  **Returns:** `Promise<UnifiedEvent[]>` - Filtered list of events
-
-    **Example:**
-
-    ```typescript
-    const filtered = poly.filterEvents(events, {
-    category: 'Politics',
-    marketCount: { min: 5 }
-});
-    ```
-
-
-    ---
 ### `getMarketsBySlug`
 
 getMarketsBySlug
@@ -768,8 +797,8 @@ const outcome = market.outcomes[0];
 
 // 3. Place a limit order
 const order = await exchange.createOrder({
-  marketId: market.marketId,
-  outcomeId: outcome.outcomeId,
+  marketId: market.id,
+  outcomeId: outcome.id,
   side: 'buy',
   type: 'limit',
   amount: 10,
@@ -804,7 +833,6 @@ positions.forEach(pos => {
 
     ```typescript
     interface UnifiedMarket {
-    id: string; // DEPRECATED: Use marketId instead. Will be removed in v2.0
     marketId: string; // The unique identifier for this market
     title: string; // 
     description: string; // 
@@ -832,7 +860,6 @@ positions.forEach(pos => {
 
     ```typescript
     interface MarketOutcome {
-    id: string; // DEPRECATED: Use outcomeId instead. Will be removed in v2.0
     outcomeId: string; // Outcome ID for trading operations (CLOB Token ID for Polymarket, Market Ticker for Kalshi)
     label: string; // 
     price: number; // 
@@ -1024,6 +1051,10 @@ positions.forEach(pos => {
     offset?: number; // 
     sort?: string; // 
     searchIn?: string; // 
+    query?: string; // 
+    slug?: string; // 
+    page?: number; // 
+    similarityThreshold?: number; // 
     }
     ```
 

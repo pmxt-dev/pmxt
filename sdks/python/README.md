@@ -38,7 +38,8 @@ print(f"{outcome.label}: {outcome.price * 100:.1f}%")
 # Fetch historical data (use outcome.outcome_id!)
 candles = poly.fetch_ohlcv(
     outcome.outcome_id,
-    pmxt.HistoryFilterParams(resolution="1d", limit=30)
+    resolution="1d",
+    limit=30
 )
 
 # Get current order book

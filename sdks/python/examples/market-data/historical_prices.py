@@ -9,10 +9,11 @@ def main():
 
     # Use outcome.outcome_id for fetching historical data
     # (Polymarket: CLOB Token ID, Kalshi: Market Ticker)
-    history = api.fetch_ohlcv(market.yes.outcome_id, pmxt.HistoryFilterParams(
+    history = api.fetch_ohlcv(
+        market.yes.outcome_id,
         resolution='1h',
         limit=5
-    ))
+    )
     print(history)
 
 if __name__ == "__main__":

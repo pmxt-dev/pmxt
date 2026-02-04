@@ -9,6 +9,7 @@ If you're upgrading from v1.x to v2.0.0, use this checklist to ensure your code 
 - [ ] **Replace `event.searchMarkets(query)`** with `exchange.filterMarkets(event.markets, query)`
 - [ ] **Replace all `outcome.id`** with `outcome.outcomeId`
 - [ ] **Replace all `market.id`** with `market.marketId`
+- [ ] **Python: Replace `HistoryFilterParams`** with direct kwargs in `fetch_ohlcv()` and `fetch_trades()`
 - [ ] **Verify all examples** use the new unified API (`fetchMarkets`, `fetchEvents`)
 - [ ] **Update error handling** to use new error classes (if relying on error types)
 
@@ -18,9 +19,11 @@ If you already migrated to the unified API in v1.7.0, you only need to:
 
 - [ ] **Replace `event.searchMarkets(query)`** with `exchange.filterMarkets(event.markets, query)`
 - [ ] **Replace `.id`** with `.outcomeId` / `.marketId`
+- [ ] **Python only: Replace `HistoryFilterParams`** with kwargs
 
 ### Quick Migration Example
 
+**TypeScript:**
 ```typescript
 // v1.x Code
 const events = await poly.fetchEvents({ query: 'Fed Chair' });
@@ -31,6 +34,21 @@ const outcomeId = market.yes.id;  //  Removed
 const events = await poly.fetchEvents({ query: 'Fed Chair' });
 const market = poly.filterMarkets(events[0].markets, 'Kevin Warsh')[0];  // ✅
 const outcomeId = market.yes.outcomeId;  // ✅
+```
+
+**Python:**
+```python
+# v1.x Code
+events = poly.fetch_events(query='Fed Chair')
+market = events[0].search_markets('Kevin Warsh')[0]  #  Removed
+outcome_id = market.yes.id  #  Removed
+candles = poly.fetch_ohlcv(outcome_id, pmxt.HistoryFilterParams(resolution='1h', limit=100))  #  Removed
+
+# v2.0.0 Code
+events = poly.fetch_events(query='Fed Chair')
+market = poly.filter_markets(events[0].markets, 'Kevin Warsh')[0]  # ✅
+outcome_id = market.yes.outcome_id  # ✅
+candles = poly.fetch_ohlcv(outcome_id, resolution='1h', limit=100)  # ✅
 ```
 
 ### Testing Your Migration

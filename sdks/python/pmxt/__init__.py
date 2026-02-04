@@ -31,7 +31,6 @@ from .models import (
     Balance,
     MarketFilterParams,
     EventFetchParams,
-    HistoryFilterParams,
     CreateOrderParams,
 )
 
@@ -76,6 +75,5 @@ __all__ = [
     # Parameters
     "MarketFilterParams",
     "EventFetchParams",
-    "HistoryFilterParams",
     "CreateOrderParams",
 ]

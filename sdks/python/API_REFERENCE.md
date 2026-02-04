@@ -90,34 +90,44 @@ Fetch OHLCV Candles
 **Signature:**
 
 ```python
-def fetch_o_h_l_c_v(id: str, params: Optional[HistoryFilterParams] = None) -> List[PriceCandle]:
+def fetch_ohlcv(
+    outcome_id: str,
+    resolution: Optional[str] = None,
+    limit: Optional[int] = None,
+    start: Optional[datetime] = None,
+    end: Optional[datetime] = None
+) -> List[PriceCandle]:
 ```
 
 **Parameters:**
 
-- `id` (str): id
-- `params` (HistoryFilterParams) - **Optional**: Filter parameters
+- `outcome_id` (str): Outcome ID (from market.outcomes[].outcome_id)
+- `resolution` (str) - **Optional**: Candle resolution ('1m', '5m', '15m', '1h', '6h', '1d')
+- `limit` (int) - **Optional**: Maximum number of candles to return
+- `start` (datetime) - **Optional**: Start datetime for historical data
+- `end` (datetime) - **Optional**: End datetime for historical data
 
 **Returns:** `List[PriceCandle]` - Historical prices
 
 **Example:**
 
 ```python
-markets = poly.search_markets('Trump')
-outcome_id = markets[0].outcomes[0].id  # Get the outcome ID
+markets = poly.fetch_markets(query='Trump')
+outcome_id = markets[0].outcomes[0].outcome_id  # Get the outcome ID
 
-candles = poly.fetch_ohlcv(outcome_id, pmxt.HistoryFilterParams(
-    resolution='1h',  # '1m' | '5m' | '15m' | '1h' | '6h' | '1d'
+candles = poly.fetch_ohlcv(
+    outcome_id,
+    resolution='1h',
     start=datetime(2024, 1, 1),
     end=datetime(2024, 1, 31),
     limit=100
-))
+)
 ```
 
 **Notes:**
-**CRITICAL**: Use `outcome.id`, not `market.id`.
-- **Polymarket**: `outcome.id` is the CLOB Token ID
-- **Kalshi**: `outcome.id` is the Market Ticker
+**CRITICAL**: Use `outcome.outcome_id`, not `market.market_id`.
+- **Polymarket**: `outcome.outcome_id` is the CLOB Token ID
+- **Kalshi**: `outcome.outcome_id` is the Market Ticker
 
 ---
 ### `fetch_order_book`
@@ -157,23 +167,25 @@ Fetch Trades
 **Signature:**
 
 ```python
-def fetch_trades(id: str, params: Optional[HistoryFilterParams] = None) -> List[Trade]:
+def fetch_trades(
+    outcome_id: str,
+    limit: Optional[int] = None,
+    since: Optional[int] = None
+) -> List[Trade]:
 ```
 
 **Parameters:**
 
-- `id` (str): id
-- `params` (HistoryFilterParams) - **Optional**: Filter parameters
+- `outcome_id` (str): Outcome ID (from market.outcomes[].outcome_id)
+- `limit` (int) - **Optional**: Maximum number of trades to return
+- `since` (int) - **Optional**: Return trades since this timestamp (Unix milliseconds)
 
 **Returns:** `List[Trade]` - Recent trades
 
 **Example:**
 
 ```python
-trades = kalshi.fetch_trades('FED-25JAN', pmxt.HistoryFilterParams(
-    resolution='1h',
-    limit=100
-))
+trades = kalshi.fetch_trades(outcome_id, limit=100)
 ```
 
 **Notes:**
@@ -1035,20 +1047,6 @@ query: str #
 limit: int # 
 offset: int # 
 search_in: str # 
-```
-
----
-### `HistoryFilterParams`
-
-
-
-```python
-@dataclass
-class HistoryFilterParams:
-resolution: str # 
-start: str # 
-end: str # 
-limit: int # 
 ```
 
 ---

@@ -35,7 +35,6 @@ from .models import (
     Balance,
     MarketFilterParams,
     EventFetchParams,
-    HistoryFilterParams,
     CreateOrderParams,
     ExecutionPriceResult,
     MarketFilterCriteria,
@@ -603,38 +602,54 @@ class Exchange(ABC):
     def fetch_ohlcv(
         self,
         outcome_id: str,
-        params: HistoryFilterParams,
+        resolution: Optional[str] = None,
+        limit: Optional[int] = None,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
+        **kwargs
     ) -> List[PriceCandle]:
         """
         Get historical price candles.
-        
-        **CRITICAL**: Use outcome.id, not market.id.
-        - Polymarket: outcome.id is the CLOB Token ID
-        - Kalshi: outcome.id is the Market Ticker
-        
+
+        **CRITICAL**: Use outcome.outcome_id, not market.market_id.
+        - Polymarket: outcome.outcome_id is the CLOB Token ID
+        - Kalshi: outcome.outcome_id is the Market Ticker
+
         Args:
-            outcome_id: Outcome ID (from market.outcomes[].id)
-            params: History filter parameters
-            
+            outcome_id: Outcome ID (from market.outcomes[].outcome_id)
+            resolution: Candle resolution (e.g., "1h", "1d")
+            limit: Maximum number of candles to return
+            start: Start datetime for historical data
+            end: End datetime for historical data
+            **kwargs: Additional parameters
+
         Returns:
             List of price candles
-            
+
         Example:
-            >>> markets = exchange.search_markets("Trump")
-            >>> outcome_id = markets[0].outcomes[0].id
+            >>> markets = exchange.fetch_markets(query="Trump")
+            >>> outcome_id = markets[0].outcomes[0].outcome_id
             >>> candles = exchange.fetch_ohlcv(
             ...     outcome_id,
-            ...     HistoryFilterParams(resolution="1h", limit=100)
+            ...     resolution="1h",
+            ...     limit=100
             ... )
         """
         try:
-            params_dict = {"resolution": params.resolution}
-            if params.start:
-                params_dict["start"] = params.start.isoformat()
-            if params.end:
-                params_dict["end"] = params.end.isoformat()
-            if params.limit:
-                params_dict["limit"] = params.limit
+            params_dict = {}
+            if resolution:
+                params_dict["resolution"] = resolution
+            if start:
+                params_dict["start"] = start.isoformat()
+            if end:
+                params_dict["end"] = end.isoformat()
+            if limit:
+                params_dict["limit"] = limit
+
+            # Add any extra keyword arguments
+            for key, value in kwargs.items():
+                if key not in params_dict:
+                    params_dict[key] = value
             
             request_body_dict = {"args": [outcome_id, params_dict]}
             request_body = internal_models.FetchOHLCVRequest.from_dict(request_body_dict)
@@ -681,24 +696,38 @@ class Exchange(ABC):
     def fetch_trades(
         self,
         outcome_id: str,
-        params: HistoryFilterParams,
+        limit: Optional[int] = None,
+        since: Optional[int] = None,
+        **kwargs
     ) -> List[Trade]:
         """
         Get trade history for an outcome.
-        
+
         Note: Polymarket requires API key.
-        
+
         Args:
-            outcome_id: Outcome ID
-            params: History filter parameters
-            
+            outcome_id: Outcome ID (from market.outcomes[].outcome_id)
+            limit: Maximum number of trades to return
+            since: Return trades since this timestamp (Unix milliseconds)
+            **kwargs: Additional parameters
+
         Returns:
             List of trades
+
+        Example:
+            >>> trades = exchange.fetch_trades(outcome_id, limit=50)
         """
         try:
-            params_dict = {"resolution": params.resolution}
-            if params.limit:
-                params_dict["limit"] = params.limit
+            params_dict = {}
+            if limit:
+                params_dict["limit"] = limit
+            if since:
+                params_dict["since"] = since
+
+            # Add any extra keyword arguments
+            for key, value in kwargs.items():
+                if key not in params_dict:
+                    params_dict[key] = value
             
             request_body_dict = {"args": [outcome_id, params_dict]}
             request_body = internal_models.FetchTradesRequest.from_dict(request_body_dict)

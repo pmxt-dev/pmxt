@@ -65,7 +65,7 @@ def _convert_market(raw: Dict[str, Any]) -> UnifiedMarket:
         liquidity=raw.get("liquidity", 0),
         url=raw.get("url"),
         description=raw.get("description"),
-        resolution_date=None,  # TODO: Parse if present
+        resolution_date=datetime.fromisoformat(raw["resolutionDate"].replace("Z", "+00:00")) if raw.get("resolutionDate") else None,
         volume=raw.get("volume"),
         open_interest=raw.get("openInterest"),
         image=raw.get("image"),

@@ -8,6 +8,6 @@
     "scripts": {
         "server": "npm run server --workspace=pmxt-core",
         "generate": "npm run generate:sdk:all --workspace=pmxt-core",
-        "test": "npm test --workspace=pmxt-core && ./scripts/verify-all.sh"
+        "test": "./scripts/verify-all.sh"
     }
 }

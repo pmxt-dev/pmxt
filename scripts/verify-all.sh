@@ -1,11 +1,14 @@
-#!/bin/bash
-set -e
-
+#!/usr/bin/env bash
 # PMXT Verification Script
 # Ensures 100% certainty that SDKs work correctly with the Core Server.
 # This runs REAL integration tests with assertions, not just examples.
 
 echo "Starting PMXT Verification..."
+
+# Track failures correctly
+CORE_FAIL=0
+PYTHON_FAIL=0
+TS_FAIL=0
 
 # 1. Build Core
 echo "Building Core..."
@@ -20,6 +23,10 @@ if [ ! -d "node_modules" ] && [ ! -d "../node_modules" ]; then
 fi
 npm run build
 cd ..
+
+# 1.5 Run Core Unit/Compliance Tests
+echo "Running Core Tests..."
+npm test --workspace=pmxt-core || CORE_FAIL=1
 
 # 2. Ensure Server is Running
 echo "Starting/Checking Server..."
@@ -46,20 +53,19 @@ if [ -d "sdks/python" ]; then
         python3 -m pip install pytest pytest-asyncio --quiet 2>/dev/null || true
         
         # Run integration tests
-        if [ -f "tests/test_integration.py" ]; then
-            echo "Running pytest..."
-            python3 -m pytest tests/test_integration.py -v
+        if [ -d "tests" ]; then
+            echo "Running all Python tests..."
+            python3 -m pytest tests/ -v
             PYTHON_EXIT_CODE=$?
             
             if [ $PYTHON_EXIT_CODE -eq 0 ]; then
-                echo "Python SDK Integration Tests PASSED"
+                echo "Python SDK Tests PASSED"
             else
-                echo "Python SDK Integration Tests FAILED"
-                cd ../..
-                exit 1
+                echo "Python SDK Tests FAILED"
+                PYTHON_FAIL=1
             fi
         else
-            echo "Python integration tests not found"
+            echo "Python tests directory not found"
         fi
     else
         echo "python3 not found, skipping Python verification"
@@ -114,8 +120,7 @@ EOF
             echo "TypeScript SDK Integration Tests PASSED"
         else
             echo "TypeScript SDK Integration Tests FAILED"
-            cd ../..
-            exit 1
+            TS_FAIL=1
         fi
     else
         echo "TypeScript integration tests not found"
@@ -124,6 +129,17 @@ EOF
     cd ../..
 else
     echo "TypeScript SDK not found"
+fi
+
+if [ $CORE_FAIL -ne 0 ] || [ $PYTHON_FAIL -ne 0 ] || [ $TS_FAIL -ne 0 ]; then
+    echo ""
+    echo "========================================"
+    echo "VERIFICATION FAILED"
+    [ $CORE_FAIL -ne 0 ] && echo "- Core Tests: FAILED"
+    [ $PYTHON_FAIL -ne 0 ] && echo "- Python SDK Tests: FAILED"
+    [ $TS_FAIL -ne 0 ] && echo "- TypeScript SDK Tests: FAILED"
+    echo "========================================"
+    exit 1
 fi
 
 echo ""

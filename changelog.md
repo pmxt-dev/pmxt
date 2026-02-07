@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.7] - 2026-02-07
+
+### Fixed
+
+- **Python SDK**: Robust parsing for `resolution_date` in the `UnifiedMarket` model. The SDK now gracefully handles both ISO string formats (with "Z" or timezone offsets) and native `datetime` objects, preventing parsing errors for markets with irregular resolution data.
+
 ## [2.0.6f] - 2026-02-06
 
 ### Fixed

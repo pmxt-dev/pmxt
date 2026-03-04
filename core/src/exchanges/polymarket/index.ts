@@ -311,6 +311,28 @@ export class PolymarketExchange extends PredictionMarketExchange {
                 options.negRisk = params.negRisk;
             }
 
+            // Build-only mode: create and sign the order without submitting to the network
+            if (params.buildOnly) {
+                const signedOrder = await client.createOrder(orderArgs, options);
+                // Return the signed order data for the user to sign/broadcast themselves
+                // The orderHash may be a BigInt or other type, so we convert to string
+                const orderHash = signedOrder.orderHash ? String(signedOrder.orderHash) : 'unsigned';
+                return {
+                    id: orderHash,
+                    marketId: params.marketId,
+                    outcomeId: params.outcomeId,
+                    side: params.side,
+                    type: params.type,
+                    price: price,
+                    amount: params.amount,
+                    status: 'pending',
+                    filled: 0,
+                    remaining: params.amount,
+                    fee: params.fee,
+                    timestamp: Date.now(),
+                };
+            }
+
             const response = await client.createAndPostOrder(orderArgs, options);
 
             if (!response || !response.success) {

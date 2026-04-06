@@ -785,6 +785,13 @@ class Exchange(ABC):
             response = self._api_client.call_api(method="POST", url=url, body=body, header_params=headers)
             response.read()
             data = self._handle_response(json.loads(response.data))
+            if data is None:
+                return []
+            if isinstance(data, dict):
+                return [
+                    Balance(currency=k, total=v.get("total"), available=v.get("available"), locked=v.get("locked"))
+                    for k, v in data.items()
+                ]
             return [_convert_balance(e) for e in data]
         except Exception as e:
             raise self._parse_api_exception(e) from None

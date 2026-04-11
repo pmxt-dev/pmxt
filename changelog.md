@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.28.4] - 2026-04-11
+
+### Fixed
+
+- **Publish workflow docs commit failed on detached HEAD**: The v2.28.3 docs auto-commit step ran on a detached HEAD (tag checkout), causing `git commit --amend` to create a rootless commit containing the entire repo. Changed `actions/checkout` to explicitly check out `main` with full history (`fetch-depth: 0`) so the amend targets the actual tagged commit on the branch.
+
 ## [2.28.3] - 2026-04-11
 
 ### Fixed

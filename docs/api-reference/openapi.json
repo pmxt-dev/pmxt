@@ -6695,6 +6695,33 @@
           }
         }
       }
+    },
+    "/v0/temp": {
+      "get": {
+        "summary": "Temp test endpoint",
+        "description": "Temporary endpoint to verify the doc sync pipeline works.",
+        "operationId": "tempTest",
+        "tags": [
+          "Test"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

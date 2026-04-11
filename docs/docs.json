@@ -154,6 +154,7 @@
               "GET /v0/events",
               "GET /v0/events/{id}",
               "GET /v0/markets",
+              "GET /v0/temp",
               "GET /v0/markets/{id}"
             ]
           }

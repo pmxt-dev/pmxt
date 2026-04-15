@@ -463,7 +463,12 @@ export class LimitlessExchange extends PredictionMarketExchange {
 
     private async getAddressOnChainBalance(targetAddress: string): Promise<Balance[]> {
         // Query USDC balance directly from Base chain
-        const provider = new providers.JsonRpcProvider('https://mainnet.base.org');
+        // Static network avoids ethers v5 auto-detect (eth_chainId) which can throw
+        // noNetwork / NETWORK_ERROR on flaky public RPCs (#92).
+        const provider = new providers.JsonRpcProvider('https://mainnet.base.org', {
+            chainId: 8453,
+            name: 'base',
+        });
 
         // Get USDC contract address for Base
         const usdcAddress = getContractAddress('USDC');

@@ -636,7 +636,12 @@ export class PolymarketExchange extends PredictionMarketExchange {
         if (!ethers.utils.isAddress(address)) {
             throw new Error(`Invalid address: ${address}`);
         }
-        const provider = new ethers.providers.JsonRpcProvider('https://polygon-rpc.com');
+        // Static network avoids ethers v5 auto-detect (eth_chainId) which can throw
+        // noNetwork / NETWORK_ERROR on flaky public RPCs (#92).
+        const provider = new ethers.providers.JsonRpcProvider('https://polygon-rpc.com', {
+            chainId: 137,
+            name: 'matic',
+        });
         const usdcAddress = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'; // USDC.e (Bridged)
         const usdcAbi = [
             'function balanceOf(address) view returns (uint256)',

@@ -176,7 +176,10 @@ export class LimitlessClient {
         const ABI = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
         
         // Use a public RPC for Base
-        const provider = new providers.JsonRpcProvider('https://mainnet.base.org');
+        const provider = new providers.JsonRpcProvider('https://mainnet.base.org', {
+            chainId: 8453,
+            name: 'base',
+        });
         const contract = new Contract(USDC_ADDRESS, ABI, provider);
 
         const balance = await contract.balanceOf(this.signer.address);

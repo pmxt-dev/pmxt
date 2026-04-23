@@ -57,8 +57,11 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
         const children = raw.childMarkets || [];
         const results: UnifiedMarket[] = [];
 
+        const parentVolume24h = parseNumStr(raw.volume24h);
+        const perChildVolume24h = children.length > 0 ? parentVolume24h / children.length : 0;
+
         for (const child of children) {
-            const market = this.normalizeChildMarket(child, raw);
+            const market = this.normalizeChildMarket(child, raw, perChildVolume24h);
             if (market) results.push(market);
         }
 
@@ -267,6 +270,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
     private normalizeChildMarket(
         child: OpinionRawChildMarket,
         parent: OpinionRawMarket,
+        volume24h: number = 0,
     ): UnifiedMarket | null {
         if (!child) return null;
 
@@ -300,7 +304,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
             description: child.rules || '',
             outcomes: [yesOutcome, noOutcome],
             resolutionDate: new Date(toMillis(child.cutoffAt)),
-            volume24h: 0, // child markets do not have volume24h
+            volume24h,
             volume: parseNumStr(child.volume),
             liquidity: 0,
             url: `https://opinion.trade/market/${child.marketId}`,

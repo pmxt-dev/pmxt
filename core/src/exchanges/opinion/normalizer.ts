@@ -58,10 +58,14 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
         const results: UnifiedMarket[] = [];
 
         const parentVolume24h = parseNumStr(raw.volume24h);
-        const perChildVolume24h = children.length > 0 ? parentVolume24h / children.length : 0;
+        const totalChildVolume = children.reduce((sum, c) => sum + parseNumStr(c.volume), 0);
 
         for (const child of children) {
-            const market = this.normalizeChildMarket(child, raw, perChildVolume24h);
+            const childVolume = parseNumStr(child.volume);
+            const childVolume24h = totalChildVolume > 0
+                ? (childVolume / totalChildVolume) * parentVolume24h
+                : 0;
+            const market = this.normalizeChildMarket(child, raw, childVolume24h);
             if (market) results.push(market);
         }
 

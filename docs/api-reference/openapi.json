@@ -7562,6 +7562,1012 @@
           }
         ]
       }
+    },
+    "/v0/events": {
+      "get": {
+        "summary": "List events",
+        "description": "Returns a paginated list of unified prediction market events with nested markets and outcomes. Ordered by 24h volume descending.",
+        "operationId": "listEvents",
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Full-text search query (ILIKE on title/question and slug).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results to return.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of results to skip (for pagination).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "closed",
+            "in": "query",
+            "description": "Include closed/resolved items. Accepts \"true\", \"1\", or \"yes\".",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "sourceExchange",
+            "in": "query",
+            "description": "Filter by source exchange/venue name.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Filter by category.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "markets": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "marketId": {
+                                  "type": "string"
+                                },
+                                "eventId": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "image": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "category": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "nullable": true
+                                },
+                                "volume": {
+                                  "type": "number",
+                                  "nullable": true
+                                },
+                                "volume24h": {
+                                  "type": "number"
+                                },
+                                "liquidity": {
+                                  "type": "number"
+                                },
+                                "resolutionDate": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "nullable": true
+                                },
+                                "tickSize": {
+                                  "type": "number",
+                                  "nullable": true
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "contractAddress": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "outcomes": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "outcomeId": {
+                                        "type": "string"
+                                      },
+                                      "marketId": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "price": {
+                                        "type": "number",
+                                        "nullable": true
+                                      },
+                                      "priceChange24h": {
+                                        "type": "number",
+                                        "nullable": true
+                                      },
+                                      "metadata": {
+                                        "nullable": true
+                                      }
+                                    },
+                                    "required": [
+                                      "outcomeId",
+                                      "marketId",
+                                      "label"
+                                    ]
+                                  }
+                                }
+                              },
+                              "required": [
+                                "marketId",
+                                "title",
+                                "slug",
+                                "outcomes"
+                              ]
+                            }
+                          },
+                          "volume24h": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "volume": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "url": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "image": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "category": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "slug",
+                          "markets"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "offset": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "count",
+                        "limit",
+                        "offset"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit or monthly quota exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "plan": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "used": {
+                      "type": "integer"
+                    },
+                    "window": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "plan",
+                    "limit",
+                    "used"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v0/events/{id}": {
+      "get": {
+        "summary": "Get event by ID",
+        "description": "Returns a single unified event with its nested markets and outcomes.",
+        "operationId": "getEvent",
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "UUID of the event.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requested event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "markets": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "marketId": {
+                                "type": "string"
+                              },
+                              "eventId": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "slug": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "url": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "category": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "tags": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "nullable": true
+                              },
+                              "volume": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "volume24h": {
+                                "type": "number"
+                              },
+                              "liquidity": {
+                                "type": "number"
+                              },
+                              "resolutionDate": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
+                              "tickSize": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "status": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "contractAddress": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "outcomes": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "outcomeId": {
+                                      "type": "string"
+                                    },
+                                    "marketId": {
+                                      "type": "string"
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    },
+                                    "price": {
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "priceChange24h": {
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "metadata": {
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": [
+                                    "outcomeId",
+                                    "marketId",
+                                    "label"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "marketId",
+                              "title",
+                              "slug",
+                              "outcomes"
+                            ]
+                          }
+                        },
+                        "volume24h": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "volume": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "category": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "slug",
+                        "markets"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Event not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit or monthly quota exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "plan": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "used": {
+                      "type": "integer"
+                    },
+                    "window": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "plan",
+                    "limit",
+                    "used"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v0/markets": {
+      "get": {
+        "summary": "List markets",
+        "description": "Returns a paginated list of unified prediction markets with nested outcomes. Ordered by 24h volume descending.",
+        "operationId": "listMarkets",
+        "tags": [
+          "Markets"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Full-text search query (ILIKE on title/question and slug).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results to return.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of results to skip (for pagination).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "closed",
+            "in": "query",
+            "description": "Include closed/resolved items. Accepts \"true\", \"1\", or \"yes\".",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "sourceExchange",
+            "in": "query",
+            "description": "Filter by source exchange/venue name.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Filter by category.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of markets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "marketId": {
+                            "type": "string"
+                          },
+                          "eventId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "url": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "image": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "category": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "nullable": true
+                          },
+                          "volume": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "volume24h": {
+                            "type": "number"
+                          },
+                          "liquidity": {
+                            "type": "number"
+                          },
+                          "resolutionDate": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "tickSize": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "status": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "contractAddress": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "outcomes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "outcomeId": {
+                                  "type": "string"
+                                },
+                                "marketId": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "price": {
+                                  "type": "number",
+                                  "nullable": true
+                                },
+                                "priceChange24h": {
+                                  "type": "number",
+                                  "nullable": true
+                                },
+                                "metadata": {
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "outcomeId",
+                                "marketId",
+                                "label"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "marketId",
+                          "title",
+                          "slug",
+                          "outcomes"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "offset": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "count",
+                        "limit",
+                        "offset"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit or monthly quota exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "plan": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "used": {
+                      "type": "integer"
+                    },
+                    "window": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "plan",
+                    "limit",
+                    "used"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v0/markets/{id}": {
+      "get": {
+        "summary": "Get market by ID",
+        "description": "Returns a single unified market with its nested outcomes.",
+        "operationId": "getMarket",
+        "tags": [
+          "Markets"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "UUID of the market.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requested market.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "marketId": {
+                          "type": "string"
+                        },
+                        "eventId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "category": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "nullable": true
+                        },
+                        "volume": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "volume24h": {
+                          "type": "number"
+                        },
+                        "liquidity": {
+                          "type": "number"
+                        },
+                        "resolutionDate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "tickSize": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "contractAddress": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "outcomes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "outcomeId": {
+                                "type": "string"
+                              },
+                              "marketId": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "price": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "priceChange24h": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "metadata": {
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "outcomeId",
+                              "marketId",
+                              "label"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "marketId",
+                        "title",
+                        "slug",
+                        "outcomes"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Market not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit or monthly quota exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "plan": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "used": {
+                      "type": "integer"
+                    },
+                    "window": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "plan",
+                    "limit",
+                    "used"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

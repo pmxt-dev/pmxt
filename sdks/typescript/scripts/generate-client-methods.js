@@ -223,6 +223,7 @@ function typeNodeToTS(node, sf) {
         case ts.SyntaxKind.VoidKeyword: return 'void';
         case ts.SyntaxKind.AnyKeyword: return 'any';
         case ts.SyntaxKind.UndefinedKeyword: return 'undefined';
+        case ts.SyntaxKind.ArrayType: return `${typeNodeToTS(node.elementType, sf)}[]`;
         case ts.SyntaxKind.TypeReference: {
             const name = node.typeName.kind === ts.SyntaxKind.Identifier
                 ? node.typeName.text
@@ -313,7 +314,7 @@ function buildSignatureParams(params, sf) {
         // Widen outcome-ID parameters to also accept MarketOutcome objects
         if (OUTCOME_ID_PARAM_NAMES.has(name) && typeStr === 'string') {
             typeStr = 'string | MarketOutcome';
-        } else if (OUTCOME_IDS_PARAM_NAMES.has(name) && typeStr === 'string') {
+        } else if (OUTCOME_IDS_PARAM_NAMES.has(name) && typeStr === 'string[]') {
             typeStr = '(string | MarketOutcome)[]';
         }
         if (isOptional) return `${name}?: ${typeStr}`;
@@ -329,7 +330,7 @@ function buildArgsLines(params, sf) {
         const typeStr = p.type ? typeNodeToTS(p.type, sf) : 'any';
         // Resolve MarketOutcome -> string for outcome ID parameters
         const isOutcomeId = OUTCOME_ID_PARAM_NAMES.has(name) && typeStr === 'string';
-        const isOutcomeIds = OUTCOME_IDS_PARAM_NAMES.has(name) && typeStr === 'string';
+        const isOutcomeIds = OUTCOME_IDS_PARAM_NAMES.has(name) && typeStr === 'string[]';
         const value = isOutcomeId
             ? `resolveOutcomeId(${name})`
             : isOutcomeIds
@@ -357,7 +358,7 @@ function buildReturnLines(config) {
         case 'record':
             return [
                 `${i}const data = this.handleResponse(json);`,
-                `${i}const result: Record<string, UnifiedMarket> = {};`,
+                `${i}const result: ${config.returnTs} = {};`,
                 `${i}for (const [key, value] of Object.entries(data as any)) {`,
                 `${i}    result[key] = ${converter}(value);`,
                 `${i}}`,

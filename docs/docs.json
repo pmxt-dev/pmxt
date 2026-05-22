@@ -146,6 +146,7 @@
             "pages": [
               "api-reference/fetch-ohlcv",
               "GET /api/{exchange}/fetchOrderBook",
+              "POST /api/{exchange}/fetchOrderBooks",
               "GET /api/{exchange}/fetchTrades",
               "POST /api/{exchange}/getExecutionPrice",
               "POST /api/{exchange}/getExecutionPriceDetailed"
@@ -205,6 +206,9 @@
             "group": "Enterprise",
             "openapi": "api-reference/openapi-hosted.json",
             "pages": [
+              "sql",
+              "GET /v0/matched-markets",
+              "GET /v0/matched-prices",
               "POST /v0/sql"
             ]
           }

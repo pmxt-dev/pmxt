@@ -123,7 +123,7 @@ export class BaoziExchange extends PredictionMarketExchange {
         return [];
     }
 
-    async fetchOrderBook(outcomeId: string): Promise<OrderBook> {
+    async fetchOrderBook(outcomeId: string, _limit?: number, _params?: Record<string, any>): Promise<OrderBook> {
         const rawMarket = await this.fetcher.fetchRawOrderBook(outcomeId);
         return this.normalizer.normalizeOrderBook(rawMarket, outcomeId);
     }

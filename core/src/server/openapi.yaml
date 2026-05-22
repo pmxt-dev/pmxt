@@ -72,7 +72,25 @@ paths:
       summary: Fetch Markets
       operationId: fetchMarkets
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - baozi
+              - myriad
+              - opinion
+              - metaculus
+              - smarkets
+              - polymarket_us
+              - router
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: limit
           required: false
@@ -258,7 +276,25 @@ paths:
       summary: Fetch Events
       operationId: fetchEvents
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - baozi
+              - myriad
+              - opinion
+              - metaculus
+              - smarkets
+              - polymarket_us
+              - router
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: query
           required: false
@@ -582,7 +618,21 @@ paths:
       summary: Fetch OHLCV
       operationId: fetchOHLCV
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - baozi
+              - myriad
+              - opinion
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: outcomeId
           required: true
@@ -634,17 +684,34 @@ paths:
       summary: Fetch Order Book
       operationId: fetchOrderBook
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - baozi
+              - myriad
+              - opinion
+              - smarkets
+              - polymarket_us
+              - router
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: outcomeId
           required: true
           schema:
             type: string
         - in: query
-          name: side
+          name: limit
           required: false
           schema:
-            type: string
+            type: number
       responses:
         '200':
           description: Fetch Order Book response
@@ -657,15 +724,78 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/OrderBook'
+      description: Fetch the order book (bids/asks) for a specific outcome.
+  '/api/{exchange}/fetchOrderBooks':
+    post:
+      summary: Fetch Order Books
+      operationId: fetchOrderBooks
+      parameters:
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+          required: true
+          description: The prediction market exchange to target.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: FetchOrderBooksRequest
+              type: object
+              properties:
+                args:
+                  type: array
+                  maxItems: 1
+                  items:
+                    type: array
+                    items:
+                      type: string
+                  minItems: 1
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+              required:
+                - args
+      responses:
+        '200':
+          description: Fetch Order Books response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties:
+                          $ref: '#/components/schemas/OrderBook'
       description: >-
-        Fetch the current order book (bids/asks) for a specific outcome. Essential for calculating spread, depth, and
-        execution prices.
+        Batch variant of {@link fetchOrderBook}. Fetches order books for multiple outcomes in a single request where the
+        exchange supports it.
   '/api/{exchange}/fetchTrades':
     get:
       summary: Fetch Trades
       operationId: fetchTrades
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - baozi
+              - myriad
+              - smarkets
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: outcomeId
           required: true
@@ -711,7 +841,24 @@ paths:
       summary: Create Order
       operationId: createOrder
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - baozi
+              - myriad
+              - opinion
+              - metaculus
+              - smarkets
+              - polymarket_us
+          required: true
+          description: The prediction market exchange to target.
       requestBody:
         content:
           application/json:
@@ -747,7 +894,19 @@ paths:
       summary: Build Order
       operationId: buildOrder
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - opinion
+              - smarkets
+              - polymarket_us
+          required: true
+          description: The prediction market exchange to target.
       requestBody:
         content:
           application/json:
@@ -785,7 +944,19 @@ paths:
       summary: Submit Order
       operationId: submitOrder
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - opinion
+              - smarkets
+              - polymarket_us
+          required: true
+          description: The prediction market exchange to target.
       requestBody:
         content:
           application/json:
@@ -821,7 +992,22 @@ paths:
       summary: Cancel Order
       operationId: cancelOrder
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - opinion
+              - metaculus
+              - smarkets
+              - polymarket_us
+          required: true
+          description: The prediction market exchange to target.
       requestBody:
         content:
           application/json:
@@ -857,7 +1043,21 @@ paths:
       summary: Fetch Order
       operationId: fetchOrder
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - probable
+              - baozi
+              - opinion
+              - smarkets
+              - polymarket_us
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: orderId
           required: true
@@ -881,7 +1081,23 @@ paths:
       summary: Fetch Open Orders
       operationId: fetchOpenOrders
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - baozi
+              - myriad
+              - opinion
+              - smarkets
+              - polymarket_us
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: marketId
           required: false
@@ -907,7 +1123,22 @@ paths:
       summary: Fetch My Trades
       operationId: fetchMyTrades
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - myriad
+              - opinion
+              - smarkets
+              - polymarket_us
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: outcomeId
           required: false
@@ -965,7 +1196,18 @@ paths:
       summary: Fetch Closed Orders
       operationId: fetchClosedOrders
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - opinion
+              - smarkets
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: marketId
           required: false
@@ -1017,7 +1259,18 @@ paths:
       summary: Fetch All Orders
       operationId: fetchAllOrders
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - opinion
+              - smarkets
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: marketId
           required: false
@@ -1069,7 +1322,23 @@ paths:
       summary: Fetch Positions
       operationId: fetchPositions
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - baozi
+              - myriad
+              - opinion
+              - smarkets
+              - polymarket_us
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: address
           required: false
@@ -1095,7 +1364,22 @@ paths:
       summary: Fetch Balance
       operationId: fetchBalance
       parameters:
-        - $ref: '#/components/parameters/ExchangeParam'
+        - in: path
+          name: exchange
+          schema:
+            type: string
+            enum:
+              - polymarket
+              - kalshi
+              - kalshi-demo
+              - limitless
+              - probable
+              - baozi
+              - myriad
+              - smarkets
+              - polymarket_us
+          required: true
+          description: The prediction market exchange to target.
         - in: query
           name: address
           required: false
@@ -2473,6 +2757,9 @@ components:
           - metaculus
           - smarkets
           - polymarket_us
+          - gemini-titan
+          - hyperliquid
+          - mock
           - router
       required: true
       description: The prediction market exchange to target.
@@ -2737,6 +3024,9 @@ components:
         timestamp:
           type: number
           description: Unix timestamp in milliseconds when the snapshot was taken.
+        datetime:
+          type: string
+          description: ISO 8601 datetime string of the snapshot (CCXT-compatible).
       required:
         - bids
         - asks

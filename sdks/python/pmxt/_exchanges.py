@@ -365,8 +365,8 @@ class Smarkets(Exchange):
         )
 
 
-class Polymarket_us(Exchange):
-    """Polymarket_us exchange client."""
+class PolymarketUs(Exchange):
+    """PolymarketUs exchange client."""
 
     def __init__(
         self,
@@ -377,7 +377,7 @@ class Polymarket_us(Exchange):
         pmxt_api_key: Optional[str] = None,
     ):
         """
-        Initialize Polymarket_us client.
+        Initialize PolymarketUs client.
 
         Args:
             api_key: API key for authentication (optional)
@@ -390,6 +390,100 @@ class Polymarket_us(Exchange):
             exchange_name="polymarket_us",
             api_key=api_key,
             private_key=private_key,
+            base_url=base_url,
+            auto_start_server=auto_start_server,
+            pmxt_api_key=pmxt_api_key,
+        )
+
+
+class Hyperliquid(Exchange):
+    """Hyperliquid exchange client."""
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        private_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        auto_start_server: Optional[bool] = None,
+        pmxt_api_key: Optional[str] = None,
+    ):
+        """
+        Initialize Hyperliquid client.
+
+        Args:
+            api_key: API key for authentication (optional)
+            private_key: Private key for authentication (optional)
+            base_url: Base URL of the PMXT sidecar server
+            auto_start_server: Automatically start server if not running (default: True)
+            pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+        """
+        super().__init__(
+            exchange_name="hyperliquid",
+            api_key=api_key,
+            private_key=private_key,
+            base_url=base_url,
+            auto_start_server=auto_start_server,
+            pmxt_api_key=pmxt_api_key,
+        )
+
+
+class GeminiTitan(Exchange):
+    """GeminiTitan exchange client."""
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        api_secret: Optional[str] = None,
+        base_url: Optional[str] = None,
+        auto_start_server: Optional[bool] = None,
+        pmxt_api_key: Optional[str] = None,
+    ):
+        """
+        Initialize GeminiTitan client.
+
+        Args:
+            api_key: API key for authentication (optional)
+            api_secret: API secret for authentication (optional)
+            base_url: Base URL of the PMXT sidecar server
+            auto_start_server: Automatically start server if not running (default: True)
+            pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+        """
+        super().__init__(
+            exchange_name="gemini-titan",
+            api_key=api_key,
+            base_url=base_url,
+            auto_start_server=auto_start_server,
+            pmxt_api_key=pmxt_api_key,
+        )
+
+        self.api_secret = api_secret
+
+    def _get_credentials_dict(self) -> Optional[Dict[str, Any]]:
+        creds = super()._get_credentials_dict() or {}
+        if self.api_secret:
+            creds["apiSecret"] = self.api_secret
+        return creds if creds else None
+
+
+class Mock(Exchange):
+    """Mock exchange client."""
+
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        auto_start_server: Optional[bool] = None,
+        pmxt_api_key: Optional[str] = None,
+    ):
+        """
+        Initialize Mock client.
+
+        Args:
+            base_url: Base URL of the PMXT sidecar server
+            auto_start_server: Automatically start server if not running (default: True)
+            pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+        """
+        super().__init__(
+            exchange_name="mock",
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,

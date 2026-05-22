@@ -258,6 +258,8 @@ export interface ExchangeHas {
     fetchOHLCV: ExchangeCapability;
     /** Whether this exchange supports fetching the order book. */
     fetchOrderBook: ExchangeCapability;
+    /** Whether this exchange supports fetching multiple market order books. */
+    fetchOrderBooks: ExchangeCapability;
     /** Whether this exchange supports fetching public trades. */
     fetchTrades: ExchangeCapability;
     /** Whether this exchange supports creating orders. */
@@ -422,7 +424,18 @@ export abstract class PredictionMarketExchange {
         this.http = axios.create({
             headers: {
                 'User-Agent': `pmxt (https://github.com/pmxt-dev/pmxt)`
-            }
+            },
+            paramsSerializer: {
+                serialize: (params) => {
+                    const sp = new URLSearchParams();
+                    for (const [k, v] of Object.entries(params)) {
+                        if (v === undefined || v === null) continue;
+                        if (Array.isArray(v)) v.forEach((x) => sp.append(k, String(x)));
+                        else sp.append(k, String(v));
+                    }
+                    return sp.toString();
+                },
+            },
         });
         this._throttler = new Throttler({
             refillRate: 1 / this._rateLimit,
@@ -826,18 +839,38 @@ export abstract class PredictionMarketExchange {
     }
 
     /**
-     * Fetch the current order book (bids/asks) for a specific outcome.
-     * Essential for calculating spread, depth, and execution prices.
+     * Fetch the order book (bids/asks) for a specific outcome.
      *
      * @param outcomeId - The Outcome ID (outcomeId) or market slug
-     * @param side - Optional 'yes' or 'no' to explicitly indicate the
-     *   outcome side. Required for exchanges where the API returns a
-     *   single orderbook per market (e.g. Limitless) and the caller
-     *   passes a slug instead of a token ID.
-     * @returns Current order book with bids and asks
+     * @param limit - Max number of bid/ask levels to return (CCXT-style).
+     *   For range queries, limits the number of snapshots returned.
+     * @param params - Optional parameters:
+     *   - `side`: 'yes' or 'no' — explicitly indicate the outcome side
+     *     (required for exchanges like Limitless where the API returns a
+     *     single orderbook per market).
+     *   - `since`: Unix timestamp (ms) — fetch a historical snapshot from
+     *     the archive at or before this time (hosted API only).
+     *   - `until`: Unix timestamp (ms) — when combined with `since`,
+     *     returns an array of OrderBook snapshots between `since` and
+     *     `until` (hosted API only).
+     * @returns Order book with bids and asks. Returns OrderBook[] when
+     *   both `since` and `until` are provided.
      */
-    async fetchOrderBook(outcomeId: string, side?: 'yes' | 'no'): Promise<OrderBook> {
+    async fetchOrderBook(outcomeId: string, limit?: number, params?: Record<string, any>): Promise<OrderBook> {
         throw new Error("Method fetchOrderBook not implemented.");
+    }
+
+    /**
+     * Batch variant of {@link fetchOrderBook}. Fetches order books for
+     * multiple outcomes in a single request where the exchange supports it.
+     *
+     * @param outcomeIds - List of Outcome IDs (outcomeId). Each id must be in the
+     *   exchange's native format; market slugs are not accepted here.
+     * @returns A map keyed by the input id (preserving the caller's exact
+     *   string) to its order book. Throws `NotFound` if any id has no book.
+     */
+    async fetchOrderBooks(outcomeIds: string[]): Promise<Record<string, OrderBook>> {
+        throw new Error("Method fetchOrderBooks not implemented.");
     }
 
     /**
@@ -1334,7 +1367,7 @@ export abstract class PredictionMarketExchange {
      * Close all WebSocket connections and clean up resources.
      * Call this when you're done streaming to properly release connections.
      */
-    
+
     /**
      * Test method for auto-generation verification.
      */
@@ -1477,7 +1510,7 @@ export abstract class PredictionMarketExchange {
      * Provides a typed entry point so unified methods can delegate to the implicit API
      * without casting to `any` everywhere.
      */
-    protected async callApi(operationId: string, params?: Record<string, any>): Promise<any> {
+    protected async callApi(operationId: string, params?: Record<string, any> | any[]): Promise<any> {
         const method = (this as any)[operationId];
         if (typeof method !== 'function') {
             throw new Error(`Implicit API method "${operationId}" not found on ${this.name}`);
@@ -1535,9 +1568,10 @@ export abstract class PredictionMarketExchange {
         name: string,
         endpoint: ApiEndpoint,
         resolvedBaseUrl: string
-    ): (params?: Record<string, any>) => Promise<any> {
-        return async (params?: Record<string, any>): Promise<any> => {
-            const allParams = { ...(params || {}) };
+    ): (params?: Record<string, any> | any[]) => Promise<any> {
+        return async (params?: Record<string, any> | any[]): Promise<any> => {
+            const isArray = Array.isArray(params);
+            const allParams: Record<string, any> = isArray ? {} : { ...(params || {}) };
 
             // Substitute path parameters like {ticker} from params
             let resolvedPath = endpoint.path.replace(/\{([^}]+)\}/g, (_match, key) => {
@@ -1572,11 +1606,15 @@ export abstract class PredictionMarketExchange {
                         headers,
                     });
                 } else {
-                    // POST/PUT/PATCH: remaining params go to JSON body
+                    // POST/PUT/PATCH: array payloads go through as-is; object
+                    // payloads send remaining params.
+                    const body = isArray
+                        ? params
+                        : (Object.keys(allParams).length > 0 ? allParams : undefined);
                     response = await this.http.request({
                         method: method as any,
                         url,
-                        data: Object.keys(allParams).length > 0 ? allParams : undefined,
+                        data: body,
                         headers: { 'Content-Type': 'application/json', ...headers },
                     });
                 }
@@ -1594,7 +1632,7 @@ export abstract class PredictionMarketExchange {
 
     /** All keys that appear in ExchangeHas -- kept in sync via the exhaustive check below. */
     private static readonly _capabilityKeys: readonly (keyof ExchangeHas)[] = [
-        'fetchMarkets', 'fetchEvents', 'fetchOHLCV', 'fetchOrderBook',
+        'fetchMarkets', 'fetchEvents', 'fetchOHLCV', 'fetchOrderBook', 'fetchOrderBooks',
         'fetchTrades', 'createOrder', 'cancelOrder', 'fetchOrder',
         'fetchOpenOrders', 'fetchPositions', 'fetchBalance',
         'watchAddress', 'unwatchAddress', 'watchOrderBook', 'watchOrderBooks',
@@ -1608,7 +1646,7 @@ export abstract class PredictionMarketExchange {
     // ExchangeHas but is missing from _capabilityKeys above.
     private static readonly _exhaustiveCheck: Record<keyof ExchangeHas, true> = {
         fetchMarkets: true, fetchEvents: true, fetchOHLCV: true,
-        fetchOrderBook: true, fetchTrades: true, createOrder: true,
+        fetchOrderBook: true, fetchOrderBooks: true, fetchTrades: true, createOrder: true,
         cancelOrder: true, fetchOrder: true, fetchOpenOrders: true,
         fetchPositions: true, fetchBalance: true, watchAddress: true,
         unwatchAddress: true, watchOrderBook: true, watchOrderBooks: true, unwatchOrderBook: true,

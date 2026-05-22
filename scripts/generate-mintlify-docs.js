@@ -166,7 +166,7 @@ const ENDPOINT_GROUPS = [
     {
         name: 'Order Book & Trades',
         match: (opId) =>
-            /^(fetchOrderBook|fetchOHLCV|fetchTrades|getExecutionPrice|getExecutionPriceDetailed)$/.test(
+            /^(fetchOrderBook|fetchOrderBooks|fetchOHLCV|fetchTrades|getExecutionPrice|getExecutionPriceDetailed)$/.test(
                 opId
             ),
     },

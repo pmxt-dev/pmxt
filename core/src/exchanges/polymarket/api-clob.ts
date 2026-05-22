@@ -515,6 +515,26 @@ export const polymarketClobSpec = {
                 ]
             }
         },
+        "/balance-allowance/update": {
+            "get": {
+                "operationId": "updateBalanceAllowance",
+                "summary": "Update balance and allowance cache",
+                "tags": [
+                    "Balances"
+                ],
+                "description": "Refresh the CLOB backend's cached pUSD balance and allowance state after an API-only trader wraps USDC/USDC.e into pUSD or updates approvals. Polymarket CLOB V2 requires this sync before the exchange reflects the latest pUSD collateral state for order placement.\n",
+                "security": [
+                    {
+                        "L2Auth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/L2Headers"
+                    }
+                ]
+            }
+        },
         "/geoblock": {
             "get": {
                 "operationId": "getGeoblock",

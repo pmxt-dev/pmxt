@@ -193,7 +193,7 @@ export class KalshiExchange extends PredictionMarketExchange {
     return this.normalizer.normalizeOHLCV(rawCandles, params);
   }
 
-  async fetchOrderBook(outcomeId: string): Promise<OrderBook> {
+  async fetchOrderBook(outcomeId: string, _limit?: number, _params?: Record<string, any>): Promise<OrderBook> {
     validateIdFormat(outcomeId, "OrderBook");
     const raw = await this.fetcher.fetchRawOrderBook(outcomeId);
     return this.normalizer.normalizeOrderBook(raw, outcomeId);

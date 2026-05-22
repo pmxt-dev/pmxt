@@ -317,7 +317,7 @@ export class MockExchange extends PredictionMarketExchange {
         return limit !== undefined ? events.slice(offset, offset + limit) : events.slice(offset);
     }
 
-    override async fetchOrderBook(id: string): Promise<OrderBook> {
+    override async fetchOrderBook(id: string, _limit?: number, _params?: Record<string, any>): Promise<OrderBook> {
         const f = new SeededRng(id);
         const midPrice = round(f.float(0.1, 0.9), 3);
         const spread = round(f.float(0.005, 0.03), 3);

@@ -159,7 +159,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
         return this.normalizer.normalizeOHLCV(raw, params);
     }
 
-    async fetchOrderBook(outcomeId: string): Promise<OrderBook> {
+    async fetchOrderBook(outcomeId: string, _limit?: number, _params?: Record<string, any>): Promise<OrderBook> {
         validateIdFormat(outcomeId, 'OrderBook');
         validateOutcomeId(outcomeId, 'OrderBook');
         const raw = await this.fetcher.fetchRawOrderBook(outcomeId);

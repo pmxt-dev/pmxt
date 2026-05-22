@@ -826,17 +826,19 @@ export abstract class PredictionMarketExchange {
     }
 
     /**
-     * Fetch the current order book (bids/asks) for a specific outcome.
-     * Essential for calculating spread, depth, and execution prices.
+     * Fetch the order book (bids/asks) for a specific outcome.
      *
      * @param outcomeId - The Outcome ID (outcomeId) or market slug
-     * @param side - Optional 'yes' or 'no' to explicitly indicate the
-     *   outcome side. Required for exchanges where the API returns a
-     *   single orderbook per market (e.g. Limitless) and the caller
-     *   passes a slug instead of a token ID.
-     * @returns Current order book with bids and asks
+     * @param limit - Max number of bid/ask levels to return (CCXT-style).
+     * @param params - Optional parameters:
+     *   - `side`: 'yes' or 'no' — explicitly indicate the outcome side
+     *     (required for exchanges like Limitless where the API returns a
+     *     single orderbook per market).
+     *   - `since`: Unix timestamp (ms) — fetch a historical snapshot from
+     *     the archive at or before this time (hosted API only).
+     * @returns Order book with bids and asks
      */
-    async fetchOrderBook(outcomeId: string, side?: 'yes' | 'no'): Promise<OrderBook> {
+    async fetchOrderBook(outcomeId: string, limit?: number, params?: Record<string, any>): Promise<OrderBook> {
         throw new Error("Method fetchOrderBook not implemented.");
     }
 

@@ -107,7 +107,7 @@ export class MyriadExchange extends PredictionMarketExchange {
         return this.normalizer.normalizeOHLCV(rawMarket, params, parsedOutcomeId);
     }
 
-    async fetchOrderBook(outcomeId: string): Promise<OrderBook> {
+    async fetchOrderBook(outcomeId: string, _limit?: number, _params?: Record<string, any>): Promise<OrderBook> {
         const parts = outcomeId.split(':');
         if (parts.length >= 3) {
             const [networkId, marketId, oid] = parts;

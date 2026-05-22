@@ -14,6 +14,7 @@ Supported venues: `polymarket`, `kalshi`, `limitless`, `opinion`.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `outcomeId` | string | Yes | The outcome token ID to watch |
+| `limit` | number | No | Maximum number of price levels to return per side |
 
 ## Response
 
@@ -38,7 +39,7 @@ exchange = pmxt.Polymarket(pmxt_api_key="YOUR_PMXT_API_KEY")
 
 # Stream orderbook updates — each call returns the next snapshot
 while True:
-    book = exchange.watch_order_book("OUTCOME_ID")
+    book = exchange.watch_order_book("OUTCOME_ID", limit=10)
     if not book.bids or not book.asks:
         continue
     print(f"Best bid: {book.bids[0].price} ({book.bids[0].size} contracts)")
@@ -53,7 +54,7 @@ const exchange = new Polymarket({ pmxtApiKey: "YOUR_PMXT_API_KEY" });
 
 // Stream orderbook updates — each call returns the next snapshot
 while (true) {
-  const book = await exchange.watchOrderBook("OUTCOME_ID");
+  const book = await exchange.watchOrderBook("OUTCOME_ID", 10);
   if (!book.bids.length || !book.asks.length) continue;
   console.log(`Best bid: ${book.bids[0].price} (${book.bids[0].size} contracts)`);
   console.log(`Best ask: ${book.asks[0].price} (${book.asks[0].size} contracts)`);
@@ -63,7 +64,7 @@ while (true) {
 
 ```json WebSocket
 // → Subscribe
-{ "id": "req-1", "action": "subscribe", "method": "watchOrderBook", "args": ["OUTCOME_ID"] }
+{ "id": "req-1", "action": "subscribe", "method": "watchOrderBook", "args": ["OUTCOME_ID", 10] }
 
 // ← Subscription confirmed
 { "event": "subscribed", "id": "req-1" }

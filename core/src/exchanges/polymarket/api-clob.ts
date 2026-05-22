@@ -1,6 +1,6 @@
 /**
- * Auto-generated from /home/zihao/pmxt/core/specs/polymarket/PolymarketClobAPI.yaml
- * Generated at: 2026-05-10T23:00:51.405Z
+ * Auto-generated from /Users/samueltinnerholm/Documents/GitHub/pmxt/core/specs/polymarket/PolymarketClobAPI.yaml
+ * Generated at: 2026-05-22T18:49:00.795Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const polymarketClobSpec = {
@@ -522,7 +522,6 @@ export const polymarketClobSpec = {
                 "tags": [
                     "Balances"
                 ],
-                "description": "Refresh the CLOB backend's cached pUSD balance and allowance state after an API-only trader wraps USDC/USDC.e into pUSD or updates approvals. Polymarket CLOB V2 requires this sync before the exchange reflects the latest pUSD collateral state for order placement.\n",
                 "security": [
                     {
                         "L2Auth": []

@@ -1756,7 +1756,13 @@ class Exchange(ABC):
             # Transport-level failure -- fall back to HTTP
             return None
 
-    def watch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, limit: Optional[int] = None, **_compat_kwargs) -> OrderBook:
+    def watch_order_book(
+        self,
+        outcome_id: Union[str, "MarketOutcome"] = _UNSET,
+        limit: Optional[int] = None,
+        params: Optional[Dict[str, Any]] = None,
+        **_compat_kwargs,
+    ) -> OrderBook:
         """
         Watch real-time order book updates via WebSocket.
 
@@ -1769,6 +1775,7 @@ class Exchange(ABC):
         Args:
             outcome_id: Outcome ID to watch
             limit: Optional depth limit for order book
+            params: Optional exchange-specific parameters
 
         Returns:
             Next order book update
@@ -1785,6 +1792,10 @@ class Exchange(ABC):
         args: List[Any] = [outcome_id]
         if limit is not None:
             args.append(limit)
+        if params:
+            if limit is None:
+                args.append(None)
+            args.append(params)
 
         # Try WebSocket transport first
         ws_data = self._watch_via_ws("watchOrderBook", args)
@@ -1856,6 +1867,7 @@ class Exchange(ABC):
         self,
         outcome_ids: List[Union[str, "MarketOutcome"]] = _UNSET,
         limit: Optional[int] = None,
+        params: Optional[Dict[str, Any]] = None,
         **_compat_kwargs,
     ) -> Dict[str, OrderBook]:
         """
@@ -1872,6 +1884,7 @@ class Exchange(ABC):
             outcome_ids: List of outcome IDs (or MarketOutcome objects)
                 to watch simultaneously.
             limit: Optional depth limit for each order book.
+            params: Optional exchange-specific parameters.
 
         Returns:
             Dict mapping ticker string to OrderBook.
@@ -1899,6 +1912,10 @@ class Exchange(ABC):
         args: List[Any] = [resolved_ids]
         if limit is not None:
             args.append(limit)
+        if params:
+            if limit is None:
+                args.append(None)
+            args.append(params)
 
         # Try WebSocket transport first
         ws = self._get_or_create_ws()

@@ -775,13 +775,14 @@ Watch order book updates in real-time via WebSocket.
 **Signature:**
 
 ```typescript
-async watchOrderBook(outcomeId: string, limit?: number): Promise<OrderBook>
+async watchOrderBook(outcomeId: string, limit?: number, params: Record<string, any> = {}): Promise<OrderBook>
 ```
 
 **Parameters:**
 
 - `outcomeId` (string): The Outcome ID to watch
 - `limit` (number) - **Optional**: Optional limit for orderbook depth
+- `params` (object) - **Optional**: Optional exchange-specific parameters
 
 **Returns:** Promise<[OrderBook](#orderbook)> - Promise that resolves with the current orderbook state
 
@@ -801,7 +802,7 @@ Watch multiple order books simultaneously via WebSocket.
 **Signature:**
 
 ```typescript
-async watchOrderBooks(outcomeIds: string[], limit?: number): Promise<Record<string, OrderBook>>
+async watchOrderBooks(outcomeIds: string[], limit?: number, params: Record<string, any> = {}): Promise<Record<string, OrderBook>>
 ```
 
 **Parameters:**

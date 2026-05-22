@@ -224,7 +224,7 @@ export class GeminiTitanExchange extends PredictionMarketExchange {
         return this.geminiWs;
     }
 
-    async watchOrderBook(outcomeId: string): Promise<OrderBook> {
+    async watchOrderBook(outcomeId: string, _limit?: number, _params: Record<string, any> = {}): Promise<OrderBook> {
         const { instrumentSymbol } = fromOutcomeId(outcomeId);
         return this.ensureWebSocket().watchOrderBook(instrumentSymbol);
     }

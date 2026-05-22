@@ -451,7 +451,7 @@ export class LimitlessExchange extends PredictionMarketExchange {
     // WebSocket
     // ------------------------------------------------------------------------
 
-    async watchOrderBook(outcomeId: string, limit?: number): Promise<OrderBook> {
+    async watchOrderBook(outcomeId: string, limit?: number, _params: Record<string, any> = {}): Promise<OrderBook> {
         const slug = await this.resolveSlug(outcomeId);
         const ws = this.ensureWs();
         return ws.watchOrderBook(slug);

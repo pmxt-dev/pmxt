@@ -1281,9 +1281,10 @@ export abstract class PredictionMarketExchange {
      *
      * @param outcomeId - The Outcome ID to watch
      * @param limit - Optional limit for orderbook depth
+     * @param params - Optional exchange-specific parameters
      * @returns Promise that resolves with the current orderbook state
      */
-    async watchOrderBook(outcomeId: string, limit?: number): Promise<OrderBook> {
+    async watchOrderBook(outcomeId: string, limit?: number, params: Record<string, any> = {}): Promise<OrderBook> {
         throw new Error(`watchOrderBook() is not supported by ${this.name}`);
     }
 
@@ -1295,15 +1296,16 @@ export abstract class PredictionMarketExchange {
      *
      * @param outcomeIds - Array of Outcome IDs to watch
      * @param limit - Optional limit for orderbook depth
+     * @param params - Optional exchange-specific parameters
      * @returns Promise that resolves with order books keyed by ID
      */
-    async watchOrderBooks(outcomeIds: string[], limit?: number): Promise<Record<string, OrderBook>> {
+    async watchOrderBooks(outcomeIds: string[], limit?: number, params: Record<string, any> = {}): Promise<Record<string, OrderBook>> {
         // Default implementation: subscribe to each ID individually.
         // Exchanges with native batch support (e.g. Kalshi) override this
         // to send a single subscribe message for all tickers.
         const entries = await Promise.all(
             outcomeIds.map(async (oid): Promise<[string, OrderBook]> => {
-                const book = await this.watchOrderBook(oid, limit);
+                const book = await this.watchOrderBook(oid, limit, params);
                 return [oid, book];
             }),
         );

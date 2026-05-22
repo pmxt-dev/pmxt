@@ -457,7 +457,7 @@ export class ProbableExchange extends PredictionMarketExchange {
     // WebSocket Streaming (public, no auth needed)
     // --------------------------------------------------------------------------
 
-    async watchOrderBook(outcomeId: string, limit?: number): Promise<OrderBook> {
+    async watchOrderBook(outcomeId: string, limit?: number, _params: Record<string, any> = {}): Promise<OrderBook> {
         if (!this.ws) {
             this.ws = new ProbableWebSocket(this.wsConfig);
         }

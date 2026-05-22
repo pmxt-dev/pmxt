@@ -566,6 +566,12 @@
                     "type": "number",
                     "optional": true,
                     "description": "Optional limit for orderbook depth"
+                },
+                {
+                    "name": "params",
+                    "type": "Record<string, any>",
+                    "optional": true,
+                    "description": "Optional exchange-specific parameters"
                 }
             ],
             "returns": {
@@ -589,6 +595,12 @@
                     "type": "number",
                     "optional": true,
                     "description": "Optional limit for orderbook depth"
+                },
+                {
+                    "name": "params",
+                    "type": "Record<string, any>",
+                    "optional": true,
+                    "description": "Optional exchange-specific parameters"
                 }
             ],
             "returns": {

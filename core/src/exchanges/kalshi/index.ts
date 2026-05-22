@@ -350,7 +350,7 @@ export class KalshiExchange extends PredictionMarketExchange {
 
     private ws?: KalshiWebSocket;
 
-    async watchOrderBook(outcomeId: string, limit?: number): Promise<OrderBook> {
+    async watchOrderBook(outcomeId: string, limit?: number, _params: Record<string, any> = {}): Promise<OrderBook> {
         const auth = this.ensureAuth();
         if (!this.ws) {
             const wsConfigWithUrl: KalshiWebSocketConfig = {
@@ -363,7 +363,7 @@ export class KalshiExchange extends PredictionMarketExchange {
         return this.ws.watchOrderBook(marketTicker);
     }
 
-    async watchOrderBooks(outcomeIds: string[], limit?: number): Promise<Record<string, OrderBook>> {
+    async watchOrderBooks(outcomeIds: string[], limit?: number, _params: Record<string, any> = {}): Promise<Record<string, OrderBook>> {
         const auth = this.ensureAuth();
         if (!this.ws) {
             const wsConfigWithUrl: KalshiWebSocketConfig = {

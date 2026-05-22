@@ -243,7 +243,7 @@ export class MyriadExchange extends PredictionMarketExchange {
     // WebSocket (poll-based)
     // ------------------------------------------------------------------------
 
-    async watchOrderBook(outcomeId: string, _limit?: number): Promise<OrderBook> {
+    async watchOrderBook(outcomeId: string, _limit?: number, _params: Record<string, any> = {}): Promise<OrderBook> {
         this.ensureAuth();
         if (!this.ws) {
             this.ws = new MyriadWebSocket(

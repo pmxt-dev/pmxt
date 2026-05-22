@@ -532,7 +532,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
     // ----------------------------------------------------------------------------
 
 
-    async watchOrderBook(outcomeId: string, limit?: number): Promise<OrderBook> {
+    async watchOrderBook(outcomeId: string, limit?: number, _params: Record<string, any> = {}): Promise<OrderBook> {
         return this.ensureWs().watchOrderBook(outcomeId);
     }
 

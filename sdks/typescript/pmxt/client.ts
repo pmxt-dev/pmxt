@@ -1450,6 +1450,7 @@ export abstract class Exchange {
      * 
      * @param outcomeId - Outcome ID to watch
      * @param limit - Optional depth limit for order book
+     * @param params - Optional exchange-specific parameters
      * @returns Next order book update
      * 
      * @example
@@ -1462,12 +1463,18 @@ export abstract class Exchange {
      * }
      * ```
      */
-    async watchOrderBook(outcomeId: string | MarketOutcome, limit?: number): Promise<OrderBook> {
+    async watchOrderBook(outcomeId: string | MarketOutcome, limit?: number, params: Record<string, any> = {}): Promise<OrderBook> {
         await this.initPromise;
         const resolvedOutcomeId = resolveOutcomeId(outcomeId);
         const args: any[] = [resolvedOutcomeId];
         if (limit !== undefined) {
             args.push(limit);
+        }
+        if (Object.keys(params).length > 0) {
+            if (limit === undefined) {
+                args.push(undefined);
+            }
+            args.push(params);
         }
 
         // Try WebSocket transport first
@@ -1511,6 +1518,7 @@ export abstract class Exchange {
      *
      * @param outcomeIds - Array of outcome IDs (or MarketOutcome objects)
      * @param limit - Optional depth limit for each order book
+     * @param params - Optional exchange-specific parameters
      * @returns Record mapping ticker to OrderBook
      *
      * @example
@@ -1527,12 +1535,19 @@ export abstract class Exchange {
     async watchOrderBooks(
         outcomeIds: (string | MarketOutcome)[],
         limit?: number,
+        params: Record<string, any> = {},
     ): Promise<Record<string, OrderBook>> {
         await this.initPromise;
         const resolvedIds = outcomeIds.map(resolveOutcomeId);
         const args: any[] = [resolvedIds];
         if (limit !== undefined) {
             args.push(limit);
+        }
+        if (Object.keys(params).length > 0) {
+            if (limit === undefined) {
+                args.push(undefined);
+            }
+            args.push(params);
         }
 
         // Try WebSocket transport first

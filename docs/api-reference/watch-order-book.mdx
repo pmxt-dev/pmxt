@@ -14,6 +14,8 @@ Supported venues: `polymarket`, `kalshi`, `limitless`, `opinion`.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `outcomeId` | string | Yes | The outcome token ID to watch |
+| `limit` | number | No | Optional depth limit for the streamed order book |
+| `params` | object | No | Optional exchange-specific parameters |
 
 ## Response
 
@@ -53,7 +55,7 @@ const exchange = new Polymarket({ pmxtApiKey: "YOUR_PMXT_API_KEY" });
 
 // Stream orderbook updates — each call returns the next snapshot
 while (true) {
-  const book = await exchange.watchOrderBook("OUTCOME_ID");
+  const book = await exchange.watchOrderBook("OUTCOME_ID", 50);
   if (!book.bids.length || !book.asks.length) continue;
   console.log(`Best bid: ${book.bids[0].price} (${book.bids[0].size} contracts)`);
   console.log(`Best ask: ${book.asks[0].price} (${book.asks[0].size} contracts)`);

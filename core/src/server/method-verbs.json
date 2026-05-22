@@ -306,6 +306,11 @@
         "name": "limit",
         "kind": "number",
         "optional": true
+      },
+      {
+        "name": "params",
+        "kind": "object",
+        "optional": true
       }
     ]
   },
@@ -320,6 +325,11 @@
       {
         "name": "limit",
         "kind": "number",
+        "optional": true
+      },
+      {
+        "name": "params",
+        "kind": "object",
         "optional": true
       }
     ]

@@ -381,7 +381,7 @@ export class PolymarketUSExchange extends PredictionMarketExchange {
         return this.wsWrapper;
     }
 
-    override async watchOrderBook(outcomeId: string, _limit?: number): Promise<OrderBook> {
+    override async watchOrderBook(outcomeId: string, _limit?: number, _params: Record<string, any> = {}): Promise<OrderBook> {
         return this.run(() => this.ensureWs().watchOrderBook(outcomeId));
     }
 

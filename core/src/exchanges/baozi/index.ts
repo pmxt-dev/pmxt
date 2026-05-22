@@ -405,7 +405,7 @@ export class BaoziExchange extends PredictionMarketExchange {
     // WebSocket
     // -----------------------------------------------------------------------
 
-    async watchOrderBook(outcomeId: string): Promise<OrderBook> {
+    async watchOrderBook(outcomeId: string, _limit?: number, _params: Record<string, any> = {}): Promise<OrderBook> {
         if (!this.ws) {
             this.ws = new BaoziWebSocket();
         }

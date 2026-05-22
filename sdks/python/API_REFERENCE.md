@@ -745,13 +745,14 @@ Watch order book updates in real-time via WebSocket.
 **Signature:**
 
 ```python
-def watch_order_book(id: str, limit: Optional[float] = None) -> OrderBook:
+def watch_order_book(id: str, limit: Optional[float] = None, params: Optional[dict] = None) -> OrderBook:
 ```
 
 **Parameters:**
 
 - `id` (str): The Outcome ID to watch
 - `limit` (float) - **Optional**: Optional limit for orderbook depth
+- `params` (dict) - **Optional**: Optional exchange-specific parameters
 
 **Returns:** [OrderBook](#orderbook) - Promise that resolves with the current orderbook state
 

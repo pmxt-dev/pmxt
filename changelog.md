@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.43.0] - 2026-05-22
+
+### Added
+
+- **fetchOrderBook**: Historical order book support via `params.since` and `params.until`. CCXT-compatible signature `(outcomeId, limit?, params?)` across all exchanges and SDK.
+  - `{ since }` — single L2 snapshot at or before the given timestamp (hosted API only, backed by ClickHouse archive).
+  - `{ since, until }` — array of fully reconstructed L2 books from tick-level deltas. Default 100 snapshots, max 1000.
+  - Full reconstruction for all 4 archived venues: Polymarket (absolute deltas), Kalshi (additive deltas), Limitless, Opinion.
+- **OrderBook.datetime**: ISO 8601 datetime field on the `OrderBook` type (CCXT-compatible).
+
+### Changed
+
+- **fetchOrderBook** signature widened from `(outcomeId, side?)` to `(outcomeId, limit?, params?)`. Backwards compatible — `side` moved to `params.side`. All 14 exchange implementations, Router, and SDK updated.
+- SDK `fetchOrderBook` return type widened to `OrderBook | OrderBook[]` (array when `since` + `until` are both provided).
+
 ## [2.42.7] - 2026-05-22
 
 ### Fixed

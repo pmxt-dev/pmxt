@@ -205,6 +205,9 @@
             "group": "Enterprise",
             "openapi": "api-reference/openapi-hosted.json",
             "pages": [
+              "sql",
+              "GET /v0/matched-markets",
+              "GET /v0/matched-prices",
               "POST /v0/sql"
             ]
           }

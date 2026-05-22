@@ -207,7 +207,7 @@ export class PolymarketUSExchange extends PredictionMarketExchange {
         });
     }
 
-    override async fetchOrderBook(outcomeId: string): Promise<OrderBook> {
+    override async fetchOrderBook(outcomeId: string, _limit?: number, _params?: Record<string, any>): Promise<OrderBook> {
         return this.run(async () => {
             const slug = this.slugFromId(outcomeId);
             const book = await this.client.markets.book(slug);

@@ -106,7 +106,7 @@ export class GeminiTitanExchange extends PredictionMarketExchange {
             .filter((e): e is UnifiedEvent => e !== null);
     }
 
-    async fetchOrderBook(outcomeId: string): Promise<OrderBook> {
+    async fetchOrderBook(outcomeId: string, _limit?: number, _params?: Record<string, any>): Promise<OrderBook> {
         const { instrumentSymbol } = fromOutcomeId(outcomeId);
         const raw = await this.fetcher.fetchRawOrderBook(instrumentSymbol);
         if (!raw) {

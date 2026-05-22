@@ -79,6 +79,7 @@ export interface PolymarketRawOrderBookLevel {
 }
 
 export interface PolymarketRawOrderBook {
+    asset_id: string;
     bids?: PolymarketRawOrderBookLevel[];
     asks?: PolymarketRawOrderBookLevel[];
     timestamp?: string | number;
@@ -225,6 +226,32 @@ export class PolymarketFetcher implements IExchangeFetcher<PolymarketRawEvent, P
                 throw new NotFound(
                     `Order book not found: ${id}. ` +
                     `fetchOrderBook requires an outcome token ID (market.yes.outcomeId or market.no.outcomeId from fetchMarkets), ` +
+                    `not a market slug or condition ID.`,
+                    'Polymarket',
+                );
+            }
+            throw mapped;
+        }
+    }
+
+    async fetchRawOrderBooks(ids: string[]): Promise<PolymarketRawOrderBook[]> {
+        try {
+            const payload = ids.map(id => ({token_id: id}));
+            const books: PolymarketRawOrderBook[] = await this.ctx.callApi('postBooks', payload);
+            if (books.length !== ids.length) {
+                const returned = new Set(books.map(b => b.asset_id));
+                const missing = ids.filter(id => !returned.has(id));
+                throw new NotFound(`Order book not found for token IDs ${missing.join(', ')}`, 'Polymarket');
+            }
+            return books;
+        } catch (error: any) {
+            if (error instanceof NotFound) throw error;
+            const mapped = polymarketErrorMapper.mapError(error);
+            if (mapped instanceof OrderNotFound) {
+                throw new NotFound(
+                    `${mapped.message}. ` +
+                    `fetchRawOrderBooks requires a list of outcome token IDs` +
+                    `(market.yes.outcomeId or market.no.outcomeId from fetchMarkets), ` +
                     `not a market slug or condition ID.`,
                     'Polymarket',
                 );

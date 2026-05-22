@@ -2068,6 +2068,56 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /markets/orderbooks:
+    get:
+      operationId: GetMarketOrderbooks
+      summary: Get Multiple Market Orderbooks
+      description: >-
+        Endpoint for getting the current order books for multiple markets in a
+        single request. The order book shows all active bid orders for both yes
+        and no sides of a binary market. It returns yes bids and no bids only
+        (no asks are returned). This is because in binary markets, a bid for yes
+        at price X is equivalent to an ask for no at price (100-X). For example,
+        a yes bid at 7Â¢ is the same as a no ask at 93Â¢, with identical contract
+        sizes. Each side shows price levels with their corresponding quantities
+        and order counts, organized from best to worst prices. Returns one
+        orderbook per requested market ticker.
+      tags:
+        - market
+      security:
+        - kalshiAccessKey: []
+          kalshiAccessSignature: []
+          kalshiAccessTimestamp: []
+      parameters:
+        - name: tickers
+          in: query
+          required: true
+          description: List of market tickers to fetch orderbooks for
+          schema:
+            type: array
+            items:
+              type: string
+              maxLength: 200
+            minItems: 1
+            maxItems: 100
+          style: form
+          explode: true
+          x-oapi-codegen-extra-tags:
+            validate: required,min=1,max=100,dive,max=200
+      responses:
+        '200':
+          description: Orderbooks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMarketOrderbooksResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /milestones/{milestone_id}:
     get:
       operationId: GetMilestone
@@ -6040,6 +6090,27 @@ components:
         orderbook_fp:
           $ref: '#/components/schemas/OrderbookCountFp'
           description: Orderbook with fixed-point contract counts (fp) in all price levels.
+
+    GetMarketOrderbooksResponse:
+      type: object
+      required:
+        - orderbooks
+      properties:
+        orderbooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketOrderbookFp'
+
+    MarketOrderbookFp:
+      type: object
+      required:
+        - ticker
+        - orderbook_fp
+      properties:
+        ticker:
+          type: string
+        orderbook_fp:
+          $ref: '#/components/schemas/OrderbookCountFp'
 
     GetEventsResponse:
       type: object

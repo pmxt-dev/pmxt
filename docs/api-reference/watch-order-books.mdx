@@ -38,7 +38,7 @@ exchange = pmxt.Polymarket(pmxt_api_key="YOUR_PMXT_API_KEY")
 
 ids = ["OUTCOME_ID_1", "OUTCOME_ID_2", "OUTCOME_ID_3"]
 while True:
-    books = exchange.watch_order_books(ids)
+    books = exchange.watch_order_books(ids, limit=10)
     for outcome_id, book in books.items():
         bid = book.bids[0].price if book.bids else None
         ask = book.asks[0].price if book.asks else None
@@ -52,7 +52,7 @@ const exchange = new Polymarket({ pmxtApiKey: "YOUR_PMXT_API_KEY" });
 
 const ids = ["OUTCOME_ID_1", "OUTCOME_ID_2", "OUTCOME_ID_3"];
 while (true) {
-  const books = await exchange.watchOrderBooks(ids);
+  const books = await exchange.watchOrderBooks(ids, 10);
   for (const [id, book] of Object.entries(books)) {
     console.log(`${id.slice(0, 20)}... bid=${book.bids[0]?.price} ask=${book.asks[0]?.price}`);
   }
@@ -65,7 +65,7 @@ while (true) {
   "id": "req-1",
   "action": "subscribe",
   "method": "watchOrderBooks",
-  "args": [["OUTCOME_ID_1", "OUTCOME_ID_2", "OUTCOME_ID_3"]]
+  "args": [["OUTCOME_ID_1", "OUTCOME_ID_2", "OUTCOME_ID_3"], 10]
 }
 
 // ← One data event per outcome, per update

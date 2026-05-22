@@ -22,7 +22,6 @@ if _GENERATED_PATH not in sys.path:
 from pmxt_internal import ApiClient, Configuration
 from pmxt_internal.api.default_api import DefaultApi
 from pmxt_internal.exceptions import ApiException
-from pmxt_internal import models as internal_models
 
 from .models import (
     UnifiedMarket,
@@ -852,13 +851,17 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def fetch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, side: Optional[Any] = None, **_compat_kwargs) -> OrderBook:
+    def fetch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, limit: Optional[float] = None, params: Optional[dict] = None, **kwargs) -> OrderBook:
         try:
             args = []
+            if kwargs:
+                params = {**(params or {}), **kwargs}
             outcome_id = _compat_id(outcome_id, _compat_kwargs)
             args.append(_resolve_outcome_id(outcome_id))
-            if side is not None:
-                args.append(side)
+            if limit is not None:
+                args.append(limit)
+            if params is not None:
+                args.append(params)
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -872,6 +875,26 @@ class Exchange(ABC):
             response.read()
             data = self._handle_response(json.loads(response.data))
             return _convert_order_book(data)
+        except ApiException as e:
+            raise self._parse_api_exception(e) from None
+
+    def fetch_order_books(self, outcome_ids: List[Union[str, "MarketOutcome"]]) -> Dict[str, OrderBook]:
+        try:
+            args = []
+            args.append([_resolve_outcome_id(x) for x in outcome_ids])
+            body: dict = {"args": args}
+            creds = self._get_credentials_dict()
+            if creds:
+                body["credentials"] = creds
+            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/fetchOrderBooks"
+            headers = {"Content-Type": "application/json", "Accept": "application/json"}
+            headers.update(self._get_auth_headers())
+            response = self._fetch_with_retry(
+                lambda: self._api_client.call_api(method="POST", url=url, body=body, header_params=headers)
+            )
+            response.read()
+            data = self._handle_response(json.loads(response.data))
+            return {key: _convert_order_book(value) for key, value in (data or {}).items()}
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 

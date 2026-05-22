@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Build core (capability map needs dist/)
+        run: npm run build --workspace=pmxt-core
+
       - name: Generate OpenAPI (includes hosted docs spec)
         run: npm run generate:openapi --workspace=pmxt-core
 

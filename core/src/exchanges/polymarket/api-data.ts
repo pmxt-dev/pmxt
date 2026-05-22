@@ -1,6 +1,6 @@
 /**
- * Auto-generated from /Users/ndmeiri/Developer/pmxt/core/specs/polymarket/Polymarket_Data_API.yaml
- * Generated at: 2026-04-21T22:01:26.557Z
+ * Auto-generated from /home/zihao/pmxt/core/specs/polymarket/Polymarket_Data_API.yaml
+ * Generated at: 2026-05-10T23:00:51.410Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const polymarketDataSpec = {

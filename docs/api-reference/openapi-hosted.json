@@ -3,7 +3,7 @@
   "info": {
     "title": "PMXT Hosted Router API",
     "description": "Hosted-only endpoints for cross-venue search, matching, arbitrage, and SQL.",
-    "version": "87035e6"
+    "version": "81efb2b"
   },
   "servers": [
     {
@@ -714,6 +714,321 @@
           }
         },
         "operationId": "getV0MarketsId"
+      }
+    },
+    "/v0/matched-markets": {
+      "get": {
+        "summary": "Discover matched markets across venues",
+        "description": "Bulk cross-venue price comparison. Returns matched market pairs from the market_matches table, computing price differences across venues.\n",
+        "tags": [
+          "MatchedMarkets"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Keyword search across matched market titles.",
+            "example": "bitcoin"
+          },
+          {
+            "in": "query",
+            "name": "relations",
+            "schema": {
+              "type": "string",
+              "default": "identity"
+            },
+            "description": "Comma-separated relation filter. Valid values: identity, subset, superset, overlap, disjoint.\n",
+            "example": "identity,overlap"
+          },
+          {
+            "in": "query",
+            "name": "minDifference",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0
+            },
+            "description": "Minimum price difference to include (0.0-1.0)."
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter both sides of the match by category."
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            },
+            "description": "Maximum number of matched pairs to return."
+          },
+          {
+            "in": "query",
+            "name": "minConfidence",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0
+            },
+            "description": "Minimum match confidence score (0.0-1.0)."
+          },
+          {
+            "in": "query",
+            "name": "includePrices",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Enrich markets with live order book prices."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matched market pairs sorted by price difference descending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "marketA": {
+                            "$ref": "#/components/schemas/UnifiedMarket"
+                          },
+                          "marketB": {
+                            "$ref": "#/components/schemas/UnifiedMarket"
+                          },
+                          "priceDifference": {
+                            "type": "number"
+                          },
+                          "venueA": {
+                            "type": "string"
+                          },
+                          "venueB": {
+                            "type": "string"
+                          },
+                          "priceA": {
+                            "type": "number"
+                          },
+                          "priceB": {
+                            "type": "number"
+                          },
+                          "relation": {
+                            "type": "string",
+                            "enum": [
+                              "identity",
+                              "subset",
+                              "superset",
+                              "overlap",
+                              "disjoint"
+                            ]
+                          },
+                          "confidence": {
+                            "type": "number"
+                          },
+                          "reasoning": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getV0Matched-markets"
+      }
+    },
+    "/v0/matched-prices": {
+      "get": {
+        "summary": "Discover cross-venue matched market prices",
+        "description": "Bulk cross-venue price comparison. Returns matched market pairs from the market_matches table, computing price differences across venues.\n",
+        "tags": [
+          "MatchedPrices"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "relations",
+            "schema": {
+              "type": "string",
+              "default": "identity"
+            },
+            "description": "Comma-separated relation filter. Valid values: identity, subset, superset, overlap, disjoint.\n",
+            "example": "identity,overlap"
+          },
+          {
+            "in": "query",
+            "name": "minDifference",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0
+            },
+            "description": "Minimum price difference to include (0.0-1.0)."
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter both sides of the match by category."
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            },
+            "description": "Maximum number of matched pairs to return."
+          },
+          {
+            "in": "query",
+            "name": "minConfidence",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0
+            },
+            "description": "Minimum match confidence score (0.0-1.0)."
+          },
+          {
+            "in": "query",
+            "name": "includePrices",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Enrich markets with live order book prices."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matched market pairs sorted by price difference descending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "marketA": {
+                            "$ref": "#/components/schemas/UnifiedMarket"
+                          },
+                          "marketB": {
+                            "$ref": "#/components/schemas/UnifiedMarket"
+                          },
+                          "priceDifference": {
+                            "type": "number"
+                          },
+                          "venueA": {
+                            "type": "string"
+                          },
+                          "venueB": {
+                            "type": "string"
+                          },
+                          "priceA": {
+                            "type": "number"
+                          },
+                          "priceB": {
+                            "type": "number"
+                          },
+                          "relation": {
+                            "type": "string",
+                            "enum": [
+                              "identity",
+                              "subset",
+                              "superset",
+                              "overlap",
+                              "disjoint"
+                            ]
+                          },
+                          "confidence": {
+                            "type": "number"
+                          },
+                          "reasoning": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "count": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "getV0Matched-prices"
       }
     },
     "/v0/sql": {

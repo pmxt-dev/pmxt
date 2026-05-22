@@ -140,6 +140,8 @@ export interface OrderBook {
     asks: OrderLevel[];
     /** Unix timestamp in milliseconds when the snapshot was taken. */
     timestamp?: number;
+    /** ISO 8601 datetime string of the snapshot (CCXT-compatible). */
+    datetime?: string;
 }
 
 export interface Trade {

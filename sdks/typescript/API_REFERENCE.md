@@ -359,12 +359,12 @@ Fetch historical OHLCV (candlestick) price data for a specific market outcome.
 **Signature:**
 
 ```typescript
-async fetchOHLCV(id: string, params: OHLCVParams): Promise<PriceCandle[]>
+async fetchOHLCV(outcomeId: string, params: OHLCVParams): Promise<PriceCandle[]>
 ```
 
 **Parameters:**
 
-- `id` (string): The Outcome ID (outcomeId). Use outcome.outcomeId, NOT market.marketId
+- `outcomeId` (string): The Outcome ID (outcomeId). Use outcome.outcomeId, NOT market.marketId
 - `params` ([OHLCVParams](#ohlcvparams)): OHLCV parameters including resolution (required)
 
 **Returns:** Promise<[PriceCandle](#pricecandle)[]> - Array of price candles
@@ -372,7 +372,7 @@ async fetchOHLCV(id: string, params: OHLCVParams): Promise<PriceCandle[]>
 **Example:**
 
 ```typescript
-await exchange.fetchOHLCV("12345", "...")
+await exchange.fetchOHLCV("abc123", "...")
 ```
 
 **Notes:**
@@ -383,25 +383,52 @@ Common resolutions: '1m' | '5m' | '15m' | '1h' | '6h' | '1d'. Arbitrary interval
 ---
 ### `fetchOrderBook`
 
-Fetch the current order book (bids/asks) for a specific outcome.
+Fetch the order book (bids/asks) for a specific outcome.
 
 
 **Signature:**
 
 ```typescript
-async fetchOrderBook(id: string): Promise<OrderBook>
+async fetchOrderBook(outcomeId: string, limit?: number, params?: Record<string, any>): Promise<OrderBook>
 ```
 
 **Parameters:**
 
-- `id` (string): The Outcome ID (outcomeId)
+- `outcomeId` (string): The Outcome ID (outcomeId) or market slug
+- `limit` (number) - **Optional**: Max number of bid/ask levels to return (CCXT-style).
+- `params` (Record<string, any>) - **Optional**: Optional parameters:
 
-**Returns:** Promise<[OrderBook](#orderbook)> - Current order book with bids and asks
+**Returns:** Promise<[OrderBook](#orderbook)> - Order book with bids and asks. Returns OrderBook[] when
 
 **Example:**
 
 ```typescript
-await exchange.fetchOrderBook("12345")
+await exchange.fetchOrderBook("abc123", { limit: 10, params: "..." })
+```
+
+
+---
+### `fetchOrderBooks`
+
+Batch variant of {@link fetchOrderBook}. Fetches order books for
+
+
+**Signature:**
+
+```typescript
+async fetchOrderBooks(outcomeIds: string[]): Promise<Record<string, OrderBook>>
+```
+
+**Parameters:**
+
+- `outcomeIds` (string[]): List of Outcome IDs (outcomeId). Each id must be in the
+
+**Returns:** Promise<Record<string, OrderBook>> - A map keyed by the input id (preserving the caller's exact
+
+**Example:**
+
+```typescript
+await exchange.fetchOrderBooks("12345")
 ```
 
 
@@ -414,12 +441,12 @@ Fetch raw trade history for a specific outcome.
 **Signature:**
 
 ```typescript
-async fetchTrades(id: string, params: TradesParams | HistoryFilterParams): Promise<Trade[]>
+async fetchTrades(outcomeId: string, params: TradesParams | HistoryFilterParams): Promise<Trade[]>
 ```
 
 **Parameters:**
 
-- `id` (string): The Outcome ID (outcomeId)
+- `outcomeId` (string): The Outcome ID (outcomeId)
 - `params` (TradesParams | HistoryFilterParams): Trade filter parameters
 
 **Returns:** Promise<[Trade](#trade)[]> - Array of recent trades
@@ -427,7 +454,7 @@ async fetchTrades(id: string, params: TradesParams | HistoryFilterParams): Promi
 **Example:**
 
 ```typescript
-await exchange.fetchTrades("12345", "...")
+await exchange.fetchTrades("abc123", "...")
 ```
 
 **Notes:**
@@ -748,12 +775,12 @@ Watch order book updates in real-time via WebSocket.
 **Signature:**
 
 ```typescript
-async watchOrderBook(id: string, limit?: number, params: Record<string, any> = {}): Promise<OrderBook>
+async watchOrderBook(outcomeId: string, limit?: number, params: Record<string, any> = {}): Promise<OrderBook>
 ```
 
 **Parameters:**
 
-- `id` (string): The Outcome ID to watch
+- `outcomeId` (string): The Outcome ID to watch
 - `limit` (number) - **Optional**: Optional limit for orderbook depth
 - `params` (object) - **Optional**: Optional exchange-specific parameters
 
@@ -775,12 +802,12 @@ Watch multiple order books simultaneously via WebSocket.
 **Signature:**
 
 ```typescript
-async watchOrderBooks(ids: string[], limit?: number, params: Record<string, any> = {}): Promise<Record<string, OrderBook>>
+async watchOrderBooks(outcomeIds: string[], limit?: number, params: Record<string, any> = {}): Promise<Record<string, OrderBook>>
 ```
 
 **Parameters:**
 
-- `ids` (string[]): Array of Outcome IDs to watch
+- `outcomeIds` (string[]): Array of Outcome IDs to watch
 - `limit` (number) - **Optional**: Optional limit for orderbook depth
 
 **Returns:** Promise<Record<string, OrderBook>> - Promise that resolves with order books keyed by ID
@@ -788,7 +815,7 @@ async watchOrderBooks(ids: string[], limit?: number, params: Record<string, any>
 **Example:**
 
 ```typescript
-await exchange.watchOrderBooks("12345", { limit: 10 })
+await exchange.watchOrderBooks(["12345"], 10)
 ```
 
 
@@ -801,19 +828,19 @@ Unsubscribe from a previously watched order book stream.
 **Signature:**
 
 ```typescript
-async unwatchOrderBook(id: string): Promise<void>
+async unwatchOrderBook(outcomeId: string): Promise<void>
 ```
 
 **Parameters:**
 
-- `id` (string): The Outcome ID to stop watching
+- `outcomeId` (string): The Outcome ID to stop watching
 
 **Returns:** Promise<void> - Result
 
 **Example:**
 
 ```typescript
-await exchange.unwatchOrderBook("12345")
+await exchange.unwatchOrderBook("abc123")
 ```
 
 
@@ -826,12 +853,12 @@ Watch trade executions in real-time via WebSocket.
 **Signature:**
 
 ```typescript
-async watchTrades(id: string, address?: string, since?: number, limit?: number): Promise<Trade[]>
+async watchTrades(outcomeId: string, address?: string, since?: number, limit?: number): Promise<Trade[]>
 ```
 
 **Parameters:**
 
-- `id` (string): The Outcome ID to watch
+- `outcomeId` (string): The Outcome ID to watch
 - `address` (string) - **Optional**: Public wallet address
 - `since` (number) - **Optional**: Optional timestamp to filter trades from
 - `limit` (number) - **Optional**: Optional limit for number of trades
@@ -841,7 +868,7 @@ async watchTrades(id: string, address?: string, since?: number, limit?: number):
 **Example:**
 
 ```typescript
-await exchange.watchTrades("12345", { address: "0xabc...", since: "..." })
+await exchange.watchTrades("abc123", { address: "0xabc...", since: "..." })
 ```
 
 
@@ -897,7 +924,7 @@ await exchange.unwatchAddress("0xabc...")
 
 
 ---
-### `close`
+### `testDummyMethod`
 
 Close all WebSocket connections and clean up resources.
 
@@ -905,19 +932,19 @@ Close all WebSocket connections and clean up resources.
 **Signature:**
 
 ```typescript
-async close(): Promise<void>
+async testDummyMethod(param?: string): Promise<string>
 ```
 
 **Parameters:**
 
-- None
+- `param` (string) - **Optional**: param
 
-**Returns:** Promise<void> - Result
+**Returns:** Promise<string> - Result
 
 **Example:**
 
 ```typescript
-await exchange.close()
+await exchange.testDummyMethod({ param: "..." })
 ```
 
 
@@ -1487,6 +1514,7 @@ interface OrderBook {
 bids: OrderLevel[]; // Order book bid levels, sorted by price descending.
 asks: OrderLevel[]; // Order book ask levels, sorted by price ascending.
 timestamp: number; // Unix timestamp in milliseconds when the snapshot was taken.
+datetime: string; // ISO 8601 datetime string of the snapshot (CCXT-compatible).
 }
 ```
 
@@ -1550,10 +1578,12 @@ type: string; // Order type: market (execute immediately) or limit (resting at a
 price: number; // For limit orders
 amount: number; // Size in contracts/shares
 status: string; // Lifecycle status of the order.
-filled: number; // Amount filled
+filled: number; // Amount filled (USDC cost for buys, shares for sells)
+filledShares: number; // Amount filled in shares/contracts (if different from USDC-denominated `filled`).
 remaining: number; // Amount remaining
 timestamp: number; // Unix timestamp in milliseconds when the order was created.
 fee: number; // Fee paid for this order, if known.
+feeRateBps: number; // Fee rate in basis points applied to this order (e.g. 100 = 1%).
 }
 ```
 
@@ -1779,6 +1809,75 @@ apiToken: string; // Metaculus: `Authorization: Token <apiToken>` for higher rat
 privateKey: string; // Required for Polymarket L1 auth
 signatureType: any; // 0 = EOA, 1 = Poly Proxy, 2 = Gnosis Safe (Can also use 'eoa', 'polyproxy', 'gnosis_safe')
 funderAddress: string; // The address funding the trades (defaults to signer address)
+walletAddress: string; // 
+baseUrl: string; // 
+}
+```
+
+---
+### `FeedTicker`
+
+CCXT-compatible ticker with last trade price and metadata.
+
+```typescript
+interface FeedTicker {
+symbol: string; // Trading pair symbol (e.g. BTC/USD)
+info: any; // Raw provider-specific data
+timestamp: number; // Unix timestamp in milliseconds
+datetime: string; // 
+high: number; // 
+low: number; // 
+bid: number; // 
+bidVolume: number; // 
+ask: number; // 
+askVolume: number; // 
+vwap: number; // 
+open: number; // 
+close: number; // 
+last: number; // Last trade price
+previousClose: number; // 
+change: number; // 
+percentage: number; // 
+average: number; // 
+quoteVolume: number; // 
+baseVolume: number; // 
+indexPrice: number; // 
+markPrice: number; // 
+}
+```
+
+---
+### `FeedMarket`
+
+CCXT-compatible market descriptor for a data feed.
+
+```typescript
+interface FeedMarket {
+id: string; // 
+symbol: string; // 
+base: string; // 
+quote: string; // 
+active: boolean; // 
+type: string; // 
+info: any; // Provider-specific metadata
+}
+```
+
+---
+### `FeedOracleRound`
+
+Chainlink oracle price round.
+
+```typescript
+interface FeedOracleRound {
+feed: string; // Price feed pair (e.g. BTC/USD)
+roundId: string; // 
+answer: number; // Oracle price
+startedAt: number; // 
+updatedAt: number; // 
+answeredInRound: string; // 
+decimals: number; // 
+description: string; // 
 }
 ```
 
@@ -1896,6 +1995,7 @@ price?: number; // Required for limit orders
 fee?: number; // Optional fee rate (e.g., 1000 for 0.1%)
 tickSize?: number; // Optional override for Limitless/Polymarket
 negRisk?: boolean; // Optional override to skip neg-risk lookup (Polymarket)
+onBehalfOf?: number; // Limitless delegated signing: profile ID to trade on behalf of
 }
 ```
 
@@ -2919,6 +3019,7 @@ Get aggregated builder leaderboard
 | `GetStructuredTargets` | `GET` | `/structured_targets` | Get Structured Targets | Public |
 | `GetStructuredTarget` | `GET` | `/structured_targets/{structured_target_id}` | Get Structured Target | Public |
 | `GetMarketOrderbook` | `GET` | `/markets/{ticker}/orderbook` | Get Market Orderbook | Required |
+| `GetMarketOrderbooks` | `GET` | `/markets/orderbooks` | Get Multiple Market Orderbooks | Required |
 | `GetMilestone` | `GET` | `/milestones/{milestone_id}` | Get Milestone | Public |
 | `GetMilestones` | `GET` | `/milestones` | Get Milestones | Public |
 | `GetCommunicationsID` | `GET` | `/communications/id` | Get Communications ID | Required |
@@ -3603,6 +3704,16 @@ Get Market Orderbook *(Auth required)*
 **Parameters:**
 - `` (, string)
 - `depth` (query, integer) — Depth of the orderbook to retrieve (0 or negative means all levels, 1-100 for specific depth)
+
+---
+##### `GetMarketOrderbooks`
+
+**GET** `/markets/orderbooks`
+
+Get Multiple Market Orderbooks *(Auth required)*
+
+**Parameters:**
+- `tickers` (query, array) **required** — List of market tickers to fetch orderbooks for
 
 ---
 ##### `GetMilestone`

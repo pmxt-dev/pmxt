@@ -106,7 +106,7 @@ export class Router extends PredictionMarketExchange {
     // Unified orderbook (cross-exchange merge)
     // -----------------------------------------------------------------------
 
-    async fetchOrderBook(outcomeId: string, side?: 'yes' | 'no'): Promise<OrderBook> {
+    async fetchOrderBook(outcomeId: string, limit?: number, params?: Record<string, any>): Promise<OrderBook> {
         const exchangeNames = Object.keys(this.exchanges);
         if (exchangeNames.length === 0) {
             throw new Error(
@@ -114,7 +114,7 @@ export class Router extends PredictionMarketExchange {
             );
         }
 
-        const resolvedSide = side ?? 'yes';
+        const resolvedSide = params?.side ?? 'yes';
 
         // Find identity matches across venues
         const matches = await this.fetchMarketMatches({
@@ -138,7 +138,7 @@ export class Router extends PredictionMarketExchange {
 
             fetchPromises.push(
                 exchange
-                    .fetchOrderBook(outcome.outcomeId, resolvedSide)
+                    .fetchOrderBook(outcome.outcomeId, undefined, { side: resolvedSide })
                     .then((book) => ({ book, venue: venueName, error: null }))
                     .catch((error: unknown) => ({ book: null, venue: venueName, error })),
             );
@@ -149,7 +149,7 @@ export class Router extends PredictionMarketExchange {
             if (matchedVenues.has(name)) continue;
             fetchPromises.push(
                 exchange
-                    .fetchOrderBook(outcomeId, resolvedSide)
+                    .fetchOrderBook(outcomeId, undefined, { side: resolvedSide })
                     .then((book) => ({ book, venue: name, error: null }))
                     .catch((error: unknown) => ({ book: null, venue: name, error })),
             );

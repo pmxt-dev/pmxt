@@ -788,7 +788,7 @@ async watchOrderBook(outcomeId: string, limit?: number): Promise<OrderBook>
 **Example:**
 
 ```typescript
-await exchange.watchOrderBook("abc123", { limit: 10 })
+await exchange.watchOrderBook("12345", 10)
 ```
 
 
@@ -814,7 +814,7 @@ async watchOrderBooks(outcomeIds: string[], limit?: number): Promise<Record<stri
 **Example:**
 
 ```typescript
-await exchange.watchOrderBooks("12345", { limit: 10 })
+await exchange.watchOrderBooks(["12345"], 10)
 ```
 
 

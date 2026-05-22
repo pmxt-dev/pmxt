@@ -830,13 +830,18 @@ export abstract class PredictionMarketExchange {
      *
      * @param outcomeId - The Outcome ID (outcomeId) or market slug
      * @param limit - Max number of bid/ask levels to return (CCXT-style).
+     *   For range queries, limits the number of snapshots returned.
      * @param params - Optional parameters:
      *   - `side`: 'yes' or 'no' — explicitly indicate the outcome side
      *     (required for exchanges like Limitless where the API returns a
      *     single orderbook per market).
      *   - `since`: Unix timestamp (ms) — fetch a historical snapshot from
      *     the archive at or before this time (hosted API only).
-     * @returns Order book with bids and asks
+     *   - `until`: Unix timestamp (ms) — when combined with `since`,
+     *     returns an array of OrderBook snapshots between `since` and
+     *     `until` (hosted API only).
+     * @returns Order book with bids and asks. Returns OrderBook[] when
+     *   both `since` and `until` are provided.
      */
     async fetchOrderBook(outcomeId: string, limit?: number, params?: Record<string, any>): Promise<OrderBook> {
         throw new Error("Method fetchOrderBook not implemented.");

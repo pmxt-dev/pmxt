@@ -766,7 +766,34 @@ export abstract class Exchange {
         }
     }
 
-    async fetchOrderBook(outcomeId: string | MarketOutcome, limit?: number, params?: Record<string, any>): Promise<OrderBook> {
+    /**
+     * Fetch the order book for an outcome.
+     *
+     * @param outcomeId - Outcome ID or MarketOutcome object
+     * @param limit - Max bid/ask levels (live), or max snapshots (range query)
+     * @param params - Optional parameters:
+     *   - `side`: 'yes' | 'no' — outcome side (for exchanges like Limitless)
+     *   - `since`: Unix timestamp (ms) — historical snapshot at or before this time
+     *   - `since` + `until`: Unix timestamps (ms) — returns OrderBook[] of all
+     *     snapshots between since and until
+     * @returns Single OrderBook, or OrderBook[] when both since and until are provided
+     *
+     * @example
+     * // Live order book
+     * const book = await exchange.fetchOrderBook(outcomeId);
+     *
+     * @example
+     * // Historical snapshot
+     * const book = await exchange.fetchOrderBook(outcomeId, undefined, { since: 1779278400000 });
+     *
+     * @example
+     * // Range of snapshots (last 5 minutes)
+     * const books = await exchange.fetchOrderBook(outcomeId, 100, {
+     *   since: Date.now() - 5 * 60 * 1000,
+     *   until: Date.now(),
+     * });
+     */
+    async fetchOrderBook(outcomeId: string | MarketOutcome, limit?: number, params?: Record<string, any>): Promise<OrderBook | OrderBook[]> {
         await this.initPromise;
         try {
             const args: any[] = [];

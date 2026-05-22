@@ -2282,7 +2282,7 @@ function buildSpec(methodSpecs) {
           name: 'exchange',
           schema: {
             type: 'string',
-            enum: ['polymarket', 'kalshi', 'kalshi-demo', 'limitless', 'probable', 'baozi', 'myriad', 'opinion', 'metaculus', 'smarkets', 'polymarket_us', 'router'],
+            enum: ['polymarket', 'kalshi', 'kalshi-demo', 'limitless', 'probable', 'baozi', 'myriad', 'opinion', 'metaculus', 'smarkets', 'polymarket_us', 'gemini-titan', 'hyperliquid', 'mock', 'router'],
           },
           required: true,
           description: 'The prediction market exchange to target.',

@@ -1,6 +1,6 @@
 /**
- * Auto-generated from /Users/ndmeiri/Developer/pmxt/core/specs/kalshi/Kalshi.yaml
- * Generated at: 2026-04-21T22:01:26.550Z
+ * Auto-generated from /home/zihao/pmxt/core/specs/kalshi/Kalshi.yaml
+ * Generated at: 2026-05-10T23:00:51.402Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const kalshiApiSpec = {
@@ -1730,6 +1730,43 @@ export const kalshiApiSpec = {
                         },
                         "x-oapi-codegen-extra-tags": {
                             "validate": "omitempty,min=0,max=100"
+                        }
+                    }
+                ]
+            }
+        },
+        "/markets/orderbooks": {
+            "get": {
+                "operationId": "GetMarketOrderbooks",
+                "summary": "Get Multiple Market Orderbooks",
+                "tags": [
+                    "market"
+                ],
+                "security": [
+                    {
+                        "kalshiAccessKey": [],
+                        "kalshiAccessSignature": [],
+                        "kalshiAccessTimestamp": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "tickers",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "maxLength": 200
+                            },
+                            "minItems": 1,
+                            "maxItems": 100
+                        },
+                        "style": "form",
+                        "explode": true,
+                        "x-oapi-codegen-extra-tags": {
+                            "validate": "required,min=1,max=100,dive,max=200"
                         }
                     }
                 ]

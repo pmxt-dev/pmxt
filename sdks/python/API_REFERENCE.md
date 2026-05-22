@@ -356,12 +356,12 @@ Fetch historical OHLCV (candlestick) price data for a specific market outcome.
 **Signature:**
 
 ```python
-def fetch_ohlcv(id: str, params: OHLCVParams) -> List[PriceCandle]:
+def fetch_ohlcv(outcome_id: str, params: OHLCVParams) -> List[PriceCandle]:
 ```
 
 **Parameters:**
 
-- `id` (str): The Outcome ID (outcomeId). Use outcome.outcomeId, NOT market.marketId
+- `outcome_id` (str): The Outcome ID (outcomeId). Use outcome.outcomeId, NOT market.marketId
 - `params` ([OHLCVParams](#ohlcvparams)): OHLCV parameters including resolution (required)
 
 **Returns:** List[[PriceCandle](#pricecandle)] - Array of price candles
@@ -369,7 +369,7 @@ def fetch_ohlcv(id: str, params: OHLCVParams) -> List[PriceCandle]:
 **Example:**
 
 ```python
-exchange.fetch_ohlcv(id="12345", params="...")
+exchange.fetch_ohlcv(outcome_id="abc123", params="...")
 ```
 
 **Notes:**
@@ -380,25 +380,52 @@ Common resolutions: '1m' | '5m' | '15m' | '1h' | '6h' | '1d'. Arbitrary interval
 ---
 ### `fetch_order_book`
 
-Fetch the current order book (bids/asks) for a specific outcome.
+Fetch the order book (bids/asks) for a specific outcome.
 
 
 **Signature:**
 
 ```python
-def fetch_order_book(id: str) -> OrderBook:
+def fetch_order_book(outcome_id: str, limit: Optional[float] = None, params: Optional[Dict[str, Any]] = None) -> OrderBook:
 ```
 
 **Parameters:**
 
-- `id` (str): The Outcome ID (outcomeId)
+- `outcome_id` (str): The Outcome ID (outcomeId) or market slug
+- `limit` (float) - **Optional**: Max number of bid/ask levels to return (CCXT-style).
+- `params` (Dict[str, Any]) - **Optional**: Optional parameters:
 
-**Returns:** [OrderBook](#orderbook) - Current order book with bids and asks
+**Returns:** [OrderBook](#orderbook) - Order book with bids and asks. Returns OrderBook[] when
 
 **Example:**
 
 ```python
-exchange.fetch_order_book(id="12345")
+exchange.fetch_order_book(outcome_id="abc123", limit=10, params="...")
+```
+
+
+---
+### `fetch_order_books`
+
+Batch variant of {@link fetchOrderBook}. Fetches order books for
+
+
+**Signature:**
+
+```python
+def fetch_order_books(outcome_ids: List[string]) -> Dictstr, [OrderBook]:
+```
+
+**Parameters:**
+
+- `outcome_ids` (List[string]): List of Outcome IDs (outcomeId). Each id must be in the
+
+**Returns:** Dict[str, [OrderBook](#orderbook)] - A map keyed by the input id (preserving the caller's exact
+
+**Example:**
+
+```python
+exchange.fetch_order_books(outcome_ids="12345")
 ```
 
 
@@ -411,12 +438,12 @@ Fetch raw trade history for a specific outcome.
 **Signature:**
 
 ```python
-def fetch_trades(id: str, params: TradesParams | HistoryFilterParams) -> List[Trade]:
+def fetch_trades(outcome_id: str, params: TradesParams | HistoryFilterParams) -> List[Trade]:
 ```
 
 **Parameters:**
 
-- `id` (str): The Outcome ID (outcomeId)
+- `outcome_id` (str): The Outcome ID (outcomeId)
 - `params` (TradesParams | HistoryFilterParams): Trade filter parameters
 
 **Returns:** List[[Trade](#trade)] - Array of recent trades
@@ -424,7 +451,7 @@ def fetch_trades(id: str, params: TradesParams | HistoryFilterParams) -> List[Tr
 **Example:**
 
 ```python
-exchange.fetch_trades(id="12345", params="...")
+exchange.fetch_trades(outcome_id="abc123", params="...")
 ```
 
 **Notes:**
@@ -745,12 +772,12 @@ Watch order book updates in real-time via WebSocket.
 **Signature:**
 
 ```python
-def watch_order_book(id: str, limit: Optional[float] = None) -> OrderBook:
+def watch_order_book(outcome_id: str, limit: Optional[float] = None) -> OrderBook:
 ```
 
 **Parameters:**
 
-- `id` (str): The Outcome ID to watch
+- `outcome_id` (str): The Outcome ID to watch
 - `limit` (float) - **Optional**: Optional limit for orderbook depth
 
 **Returns:** [OrderBook](#orderbook) - Promise that resolves with the current orderbook state
@@ -758,7 +785,7 @@ def watch_order_book(id: str, limit: Optional[float] = None) -> OrderBook:
 **Example:**
 
 ```python
-exchange.watch_order_book(id="12345", limit=10)
+exchange.watch_order_book(outcome_id="abc123", limit=10)
 ```
 
 
@@ -771,12 +798,12 @@ Watch multiple order books simultaneously via WebSocket.
 **Signature:**
 
 ```python
-def watch_order_books(ids: List[string], limit: Optional[float] = None) -> Dictstr, [OrderBook]:
+def watch_order_books(outcome_ids: List[string], limit: Optional[float] = None) -> Dictstr, [OrderBook]:
 ```
 
 **Parameters:**
 
-- `ids` (List[string]): Array of Outcome IDs to watch
+- `outcome_ids` (List[string]): Array of Outcome IDs to watch
 - `limit` (float) - **Optional**: Optional limit for orderbook depth
 
 **Returns:** Dict[str, [OrderBook](#orderbook)] - Promise that resolves with order books keyed by ID
@@ -784,7 +811,7 @@ def watch_order_books(ids: List[string], limit: Optional[float] = None) -> Dicts
 **Example:**
 
 ```python
-exchange.watch_order_books(ids="12345", limit=10)
+exchange.watch_order_books(outcome_ids="12345", limit=10)
 ```
 
 
@@ -797,19 +824,19 @@ Unsubscribe from a previously watched order book stream.
 **Signature:**
 
 ```python
-def unwatch_order_book(id: str) -> void:
+def unwatch_order_book(outcome_id: str) -> void:
 ```
 
 **Parameters:**
 
-- `id` (str): The Outcome ID to stop watching
+- `outcome_id` (str): The Outcome ID to stop watching
 
 **Returns:** void - Result
 
 **Example:**
 
 ```python
-exchange.unwatch_order_book(id="12345")
+exchange.unwatch_order_book(outcome_id="abc123")
 ```
 
 
@@ -822,12 +849,12 @@ Watch trade executions in real-time via WebSocket.
 **Signature:**
 
 ```python
-def watch_trades(id: str, address: Optional[str] = None, since: Optional[float] = None, limit: Optional[float] = None) -> List[Trade]:
+def watch_trades(outcome_id: str, address: Optional[str] = None, since: Optional[float] = None, limit: Optional[float] = None) -> List[Trade]:
 ```
 
 **Parameters:**
 
-- `id` (str): The Outcome ID to watch
+- `outcome_id` (str): The Outcome ID to watch
 - `address` (str) - **Optional**: Public wallet address
 - `since` (float) - **Optional**: Optional timestamp to filter trades from
 - `limit` (float) - **Optional**: Optional limit for number of trades
@@ -837,7 +864,7 @@ def watch_trades(id: str, address: Optional[str] = None, since: Optional[float] 
 **Example:**
 
 ```python
-exchange.watch_trades(id="12345", address="0xabc...", since="...")
+exchange.watch_trades(outcome_id="abc123", address="0xabc...", since="...")
 ```
 
 
@@ -893,7 +920,7 @@ exchange.unwatch_address(address="0xabc...")
 
 
 ---
-### `close`
+### `test_dummy_method`
 
 Close all WebSocket connections and clean up resources.
 
@@ -901,19 +928,19 @@ Close all WebSocket connections and clean up resources.
 **Signature:**
 
 ```python
-def close() -> void:
+def test_dummy_method(param: Optional[str] = None) -> str:
 ```
 
 **Parameters:**
 
-- None
+- `param` (str) - **Optional**: param
 
-**Returns:** void - Result
+**Returns:** str - Result
 
 **Example:**
 
 ```python
-exchange.close()
+exchange.test_dummy_method(param="...")
 ```
 
 
@@ -1486,6 +1513,7 @@ class OrderBook:
 bids: List[OrderLevel] # Order book bid levels, sorted by price descending.
 asks: List[OrderLevel] # Order book ask levels, sorted by price ascending.
 timestamp: float # Unix timestamp in milliseconds when the snapshot was taken.
+datetime: str # ISO 8601 datetime string of the snapshot (CCXT-compatible).
 ```
 
 ---
@@ -1549,10 +1577,12 @@ type: str # Order type: market (execute immediately) or limit (resting at a pric
 price: float # For limit orders
 amount: float # Size in contracts/shares
 status: str # Lifecycle status of the order.
-filled: float # Amount filled
+filled: float # Amount filled (USDC cost for buys, shares for sells)
+filled_shares: float # Amount filled in shares/contracts (if different from USDC-denominated `filled`).
 remaining: float # Amount remaining
 timestamp: float # Unix timestamp in milliseconds when the order was created.
 fee: float # Fee paid for this order, if known.
+fee_rate_bps: float # Fee rate in basis points applied to this order (e.g. 100 = 1%).
 ```
 
 ---
@@ -1778,6 +1808,75 @@ api_token: str # Metaculus: `Authorization: Token <apiToken>` for higher rate li
 private_key: str # Required for Polymarket L1 auth
 signature_type: Any # 0 = EOA, 1 = Poly Proxy, 2 = Gnosis Safe (Can also use 'eoa', 'polyproxy', 'gnosis_safe')
 funder_address: str # The address funding the trades (defaults to signer address)
+wallet_address: str # 
+base_url: str # 
+```
+
+---
+### `FeedTicker`
+
+CCXT-compatible ticker with last trade price and metadata.
+
+```python
+@dataclass
+class FeedTicker:
+symbol: str # Trading pair symbol (e.g. BTC/USD)
+info: Any # Raw provider-specific data
+timestamp: int # Unix timestamp in milliseconds
+datetime: str # 
+high: float # 
+low: float # 
+bid: float # 
+bid_volume: float # 
+ask: float # 
+ask_volume: float # 
+vwap: float # 
+open: float # 
+close: float # 
+last: float # Last trade price
+previous_close: float # 
+change: float # 
+percentage: float # 
+average: float # 
+quote_volume: float # 
+base_volume: float # 
+index_price: float # 
+mark_price: float # 
+```
+
+---
+### `FeedMarket`
+
+CCXT-compatible market descriptor for a data feed.
+
+```python
+@dataclass
+class FeedMarket:
+id: str # 
+symbol: str # 
+base: str # 
+quote: str # 
+active: bool # 
+type: str # 
+info: Any # Provider-specific metadata
+```
+
+---
+### `FeedOracleRound`
+
+Chainlink oracle price round.
+
+```python
+@dataclass
+class FeedOracleRound:
+feed: str # Price feed pair (e.g. BTC/USD)
+round_id: str # 
+answer: float # Oracle price
+started_at: int # 
+updated_at: int # 
+answered_inround: str # 
+decimals: int # 
+description: str # 
 ```
 
 ---
@@ -1895,6 +1994,7 @@ price: float # Required for limit orders
 fee: float # Optional fee rate (e.g., 1000 for 0.1%)
 tick_size: float # Optional override for Limitless/Polymarket
 neg_risk: bool # Optional override to skip neg-risk lookup (Polymarket)
+on_behalf_of: float # Limitless delegated signing: profile ID to trade on behalf of
 ```
 
 ---
@@ -2917,6 +3017,7 @@ Get aggregated builder leaderboard
 | `GetStructuredTargets` | `GET` | `/structured_targets` | Get Structured Targets | Public |
 | `GetStructuredTarget` | `GET` | `/structured_targets/{structured_target_id}` | Get Structured Target | Public |
 | `GetMarketOrderbook` | `GET` | `/markets/{ticker}/orderbook` | Get Market Orderbook | Required |
+| `GetMarketOrderbooks` | `GET` | `/markets/orderbooks` | Get Multiple Market Orderbooks | Required |
 | `GetMilestone` | `GET` | `/milestones/{milestone_id}` | Get Milestone | Public |
 | `GetMilestones` | `GET` | `/milestones` | Get Milestones | Public |
 | `GetCommunicationsID` | `GET` | `/communications/id` | Get Communications ID | Required |
@@ -3601,6 +3702,16 @@ Get Market Orderbook *(Auth required)*
 **Parameters:**
 - `` (, string)
 - `depth` (query, integer) — Depth of the orderbook to retrieve (0 or negative means all levels, 1-100 for specific depth)
+
+---
+##### `GetMarketOrderbooks`
+
+**GET** `/markets/orderbooks`
+
+Get Multiple Market Orderbooks *(Auth required)*
+
+**Parameters:**
+- `tickers` (query, array) **required** — List of market tickers to fetch orderbooks for
 
 ---
 ##### `GetMilestone`

@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm install --workspace=pmxt-core
 
+      - name: Build core
+        run: npm run build --workspace=pmxt-core
+
       - name: Regenerate OpenAPI spec
         run: npm run generate:openapi --workspace=pmxt-core
 
@@ -65,6 +68,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install --workspace=pmxt-core
+
+      - name: Build core
+        run: npm run build --workspace=pmxt-core
 
       - name: Regenerate OpenAPI spec
         run: npm run generate:openapi --workspace=pmxt-core

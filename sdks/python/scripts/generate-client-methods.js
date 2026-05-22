@@ -130,6 +130,20 @@ function resolveReturnType(node, sf) {
                 return { ...inner, isArray: true };
             }
 
+            // Record<K, V>
+            if (name === 'Record' && node.typeArguments && node.typeArguments.length === 2) {
+                const k = resolveReturnType(node.typeArguments[0], sf).pyType;
+                const v = resolveReturnType(node.typeArguments[1], sf);
+                return {
+                    pyType: `Dict[${k}, ${v.pyType}]`,
+                    isArray: false,
+                    converter: v.converter,
+                    pattern: 'dict_of',
+                    valueIsArray: v.isArray,
+                    valuePattern: v.pattern,
+                };
+            }
+
             // Known model type
             if (TYPE_MAP[name]) {
                 const info = TYPE_MAP[name];
@@ -180,6 +194,14 @@ function inferReturnConfig(returnTypeNode, methodName, sf) {
         return { returnPy: 'None', pattern: 'void', converter: null };
     }
 
+    if (resolved.pattern === 'dict_of') {
+        if (!resolved.converter || resolved.valueIsArray || resolved.valuePattern !== 'single') {
+            console.warn(`  WARNING: '${methodName}' returns Record with unsupported value type ('${resolved.pyType}'). Using raw pattern.`);
+            return { returnPy: resolved.pyType, pattern: 'raw', converter: null };
+        }
+        return { returnPy: resolved.pyType, pattern: 'dict_of', converter: resolved.converter };
+    }
+
     if (resolved.isArray) {
         if (!resolved.converter) {
             console.warn(`  WARNING: '${methodName}' returns an array of unknown type ('${resolved.pyType}[]'). Using raw pattern.`);
@@ -206,12 +228,14 @@ function typeNodeToPy(node, sf) {
         case ts.SyntaxKind.VoidKeyword: return 'None';
         case ts.SyntaxKind.AnyKeyword: return 'Any';
         case ts.SyntaxKind.UndefinedKeyword: return 'Any';
+        case ts.SyntaxKind.ArrayType: return `List[${typeNodeToPy(node.elementType, sf)}]`;
         case ts.SyntaxKind.TypeLiteral: return 'dict';
         case ts.SyntaxKind.TypeReference: {
             const name = node.typeName.kind === ts.SyntaxKind.Identifier
                 ? node.typeName.text
                 : node.typeName.right.text;
             if (name === 'Promise' && node.typeArguments) return typeNodeToPy(node.typeArguments[0], sf);
+            if (name === 'Array' && node.typeArguments) return `List[${typeNodeToPy(node.typeArguments[0], sf)}]`;
             if (name === 'string') return 'str';
             if (name === 'number') return 'float';
             if (name === 'boolean') return 'bool';
@@ -291,7 +315,7 @@ function buildPySignatureParams(params, sf) {
         // Use _UNSET default so callers can still pass the old `id=` keyword.
         if (OUTCOME_ID_PARAM_NAMES.has(tsName) && typeStr === 'str') {
             return `${snakeName}: Union[str, "MarketOutcome"] = _UNSET`;
-        } else if (OUTCOME_IDS_PARAM_NAMES.has(tsName) && typeStr === 'str') {
+        } else if (OUTCOME_IDS_PARAM_NAMES.has(tsName) && typeStr === 'List[str]') {
             typeStr = 'List[Union[str, "MarketOutcome"]]';
         }
         if (isOptional) return `${snakeName}: Optional[${typeStr}] = None`;
@@ -307,7 +331,7 @@ function buildPyArgsLines(params, sf) {
         const typeStr = p.type ? typeNodeToPy(p.type, sf) : 'Any';
         // Resolve MarketOutcome -> str for outcome ID parameters
         const isOutcomeId = OUTCOME_ID_PARAM_NAMES.has(tsName) && typeStr === 'str';
-        const isOutcomeIds = OUTCOME_IDS_PARAM_NAMES.has(tsName) && typeStr === 'str';
+        const isOutcomeIds = OUTCOME_IDS_PARAM_NAMES.has(tsName) && typeStr === 'List[str]';
         // Backwards-compat: resolve old `id=` keyword before resolving MarketOutcome
         if (isOutcomeId) {
             lines.push(`            ${snakeName} = _compat_id(${snakeName}, _compat_kwargs)`);
@@ -340,6 +364,11 @@ function buildPyReturnLines(config) {
             return (
                 `${i}data = self._handle_response(json.loads(response.data))\n` +
                 `${i}return ${converter}(data)`
+            );
+        case 'dict_of':
+            return (
+                `${i}data = self._handle_response(json.loads(response.data))\n` +
+                `${i}return {key: ${converter}(value) for key, value in (data or {}).items()}`
             );
         case 'paginated':
             return [

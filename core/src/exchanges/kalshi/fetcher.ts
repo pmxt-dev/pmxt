@@ -1,5 +1,5 @@
-import { MarketFilterParams, EventFetchParams, OHLCVParams, TradesParams, MyTradesParams } from '../../BaseExchange';
-import { IExchangeFetcher, FetcherContext } from '../interfaces';
+import { EventFetchParams, MarketFilterParams, MyTradesParams, OHLCVParams, TradesParams } from '../../BaseExchange';
+import { FetcherContext, IExchangeFetcher } from '../interfaces';
 import { kalshiErrorMapper } from './errors';
 import { NotFound } from '../../errors';
 import { validateIdFormat } from '../../utils/validation';
@@ -31,6 +31,7 @@ export interface KalshiRawMarket {
     volume_fp?: string;
     open_interest_fp?: string;
     close_time?: string;
+
     [key: string]: unknown;
 }
 
@@ -43,6 +44,7 @@ export interface KalshiRawEvent {
     tags?: string[];
     series_ticker?: string;
     markets?: KalshiRawMarket[];
+
     [key: string]: unknown;
 }
 
@@ -52,12 +54,22 @@ export interface KalshiRawCandlestick {
     price?: { open?: number; high?: number; low?: number; close?: number; previous?: number };
     yes_ask?: { open?: number; high?: number; low?: number; close?: number };
     yes_bid?: { open?: number; high?: number; low?: number; close?: number };
+
     [key: string]: unknown;
 }
 
 export interface KalshiRawOrderBookFp {
     yes_dollars?: string[][];
     no_dollars?: string[][];
+}
+
+export interface KalshiRawOrderBook {
+    ticker: string;
+    orderbook_fp: KalshiRawOrderBookFp;
+}
+
+export interface KalshiRawOrderBooks {
+    orderbooks: KalshiRawOrderBook[];
 }
 
 export interface KalshiRawTrade {
@@ -72,6 +84,7 @@ export interface KalshiRawTrade {
     /** New API field: count as a string e.g. "424.00" */
     count_fp?: string;
     taker_side: string;
+
     [key: string]: unknown;
 }
 
@@ -86,6 +99,7 @@ export interface KalshiRawFill {
     count_fp?: string;
     side: string;
     order_id: string;
+
     [key: string]: unknown;
 }
 
@@ -99,6 +113,7 @@ export interface KalshiRawOrder {
     remaining_count?: number;
     status?: string;
     created_time: string;
+
     [key: string]: unknown;
 }
 
@@ -109,6 +124,7 @@ export interface KalshiRawPosition {
     market_price?: number;
     market_exposure?: number;
     realized_pnl?: number;
+
     [key: string]: unknown;
 }
 
@@ -255,7 +271,7 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
 
     // -- OrderBook -------------------------------------------------------------
 
-    async fetchRawOrderBook(id: string): Promise<{ orderbook_fp: KalshiRawOrderBookFp }> {
+    async fetchRawOrderBook(id: string): Promise<KalshiRawOrderBook> {
         validateIdFormat(id, 'OrderBook');
         const ticker = id.replace(/-NO$/, '');
         const data = await this.ctx.callApi('GetMarketOrderbook', { ticker });
@@ -264,6 +280,19 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
             throw new NotFound(`Order book not found: ${id}`, 'Kalshi');
         }
         return data;
+    }
+
+    async fetchRawOrderBooks(ids: string[]): Promise<KalshiRawOrderBook[]> {
+        ids.forEach((id) => validateIdFormat(id, 'OrderBook'));
+        const tickers = [...new Set(ids.map(id => id.replace(/-NO$/, '')))];
+        const data: KalshiRawOrderBooks = await this.ctx.callApi('GetMarketOrderbooks', { tickers });
+        const orderBooks = data.orderbooks;
+        if (tickers.length !== orderBooks.length) {
+            const returned = new Set(orderBooks.map(item => item.ticker));
+            const missing = tickers.filter(t => !returned.has(t));
+            throw new NotFound(`Order book not found for tickers ${missing.join(', ')}`, 'Kalshi');
+        }
+        return orderBooks;
     }
 
     // -- Trades ----------------------------------------------------------------

@@ -140,7 +140,7 @@ export interface OrderLevel {
 }
 
 /**
- * Current order book for an outcome.
+ * Order book for an outcome.
  */
 export interface OrderBook {
     /** Bid orders (sorted high to low) */
@@ -151,6 +151,9 @@ export interface OrderBook {
 
     /** Unix timestamp (milliseconds) */
     timestamp?: number;
+
+    /** ISO 8601 datetime string of the snapshot (CCXT-compatible) */
+    datetime?: string;
 }
 
 /**

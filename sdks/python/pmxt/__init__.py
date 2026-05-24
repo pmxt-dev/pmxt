@@ -62,6 +62,9 @@ from .models import (
     PriceComparison,
     ArbitrageOpportunity,
     SubscribedAddressSnapshot,
+    SubscriptionOption,
+    CreateOrderParams,
+    TxPayload,
     MatchRelation,
 )
 
@@ -194,5 +197,8 @@ __all__ = [
     "PriceComparison",
     "ArbitrageOpportunity",
     "SubscribedAddressSnapshot",
+    "SubscriptionOption",
+    "CreateOrderParams",
+    "TxPayload",
     "MatchRelation",
 ]

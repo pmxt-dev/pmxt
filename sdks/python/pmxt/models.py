@@ -6,7 +6,7 @@ These are clean Pythonic wrappers around the auto-generated OpenAPI models.
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Literal
+from typing import Callable, List, Optional, Dict, Any, Literal, TypedDict
 
 # Parameter types
 # Common values: "1m", "5m", "15m", "1h", "6h", "1d".
@@ -18,6 +18,7 @@ SearchIn = Literal["title", "description", "both"]
 OrderSide = Literal["buy", "sell"]
 OrderType = Literal["market", "limit"]
 OutcomeType = Literal["yes", "no", "up", "down"]
+SubscriptionOption = Literal["trades", "positions", "balances"]
 
 
 @dataclass
@@ -403,6 +404,25 @@ class Order:
     """Trading fee"""
 
 
+class CreateOrderParams(TypedDict, total=False):
+    """Parameters for creating an order."""
+    market_id: str
+    outcome_id: str
+    side: OrderSide
+    type: OrderType
+    amount: float
+    price: float
+    fee: int
+
+
+class TxPayload(TypedDict):
+    """EVM transaction payload for on-chain AMM exchanges."""
+    to: str
+    data: str
+    value: str
+    chain_id: int
+
+
 @dataclass
 class BuiltOrder:
     """An order payload built but not yet submitted to the exchange."""
@@ -410,7 +430,7 @@ class BuiltOrder:
     exchange: str
     """The exchange name this order was built for."""
 
-    params: Dict[str, Any]
+    params: CreateOrderParams
     """The original params used to build this order."""
 
     raw: Any
@@ -419,7 +439,7 @@ class BuiltOrder:
     signed_order: Optional[Dict[str, Any]] = None
     """For CLOB exchanges (Polymarket): the EIP-712 signed order."""
 
-    tx: Optional[Dict[str, Any]] = None
+    tx: Optional[TxPayload] = None
     """For on-chain AMM exchanges: the EVM transaction payload."""
 
 
@@ -491,9 +511,6 @@ class SubscribedAddressSnapshot:
 # ----------------------------------------------------------------------------
 # Filtering Types
 # ----------------------------------------------------------------------------
-
-from typing import TypedDict, Callable
-
 
 class MinMax(TypedDict, total=False):
     """Range filter."""
@@ -595,16 +612,19 @@ MatchRelation = Literal["identity", "subset", "superset", "overlap", "disjoint"]
 
 
 @dataclass
-class MatchResult:
-    """A cross-venue market match with relation classification."""
+class MatchResult(UnifiedMarket):
+    """A cross-venue market match with relation classification.
 
-    market: UnifiedMarket
+    Market properties (title, slug, url, etc.) are accessible directly on the result.
+    """
+
+    market: UnifiedMarket = None  # type: ignore[assignment]
     """The matched market on another venue."""
 
-    relation: MatchRelation
+    relation: MatchRelation = "identity"
     """Set-theoretic relation between the source and matched market."""
 
-    confidence: float
+    confidence: float = 0.0
     """Confidence score (0.0 to 1.0)."""
 
     reasoning: Optional[str] = None
@@ -619,22 +639,31 @@ class MatchResult:
     source_market: Optional[UnifiedMarket] = None
     """The source market this was matched against. Present in browse mode, absent in lookup mode."""
 
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self.market, name)
+    def __post_init__(self) -> None:
+        if self.market is not None:
+            for field in self.market.__dataclass_fields__:
+                if getattr(self, field, None) is None:
+                    setattr(self, field, getattr(self.market, field, None))
 
 
 @dataclass
-class EventMatchResult:
-    """A cross-venue event match with constituent market matches."""
+class EventMatchResult(UnifiedEvent):
+    """A cross-venue event match with constituent market matches.
 
-    event: UnifiedEvent
+    Event properties (title, slug, url, etc.) are accessible directly on the result.
+    """
+
+    event: UnifiedEvent = None  # type: ignore[assignment]
     """The matched event on another venue."""
 
-    market_matches: List[MatchResult]
+    market_matches: List[MatchResult] = None  # type: ignore[assignment]
     """Cross-venue market matches within this event."""
 
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self.event, name)
+    def __post_init__(self) -> None:
+        if self.event is not None:
+            for field in self.event.__dataclass_fields__:
+                if getattr(self, field, None) is None:
+                    setattr(self, field, getattr(self.event, field, None))
 
 
 @dataclass

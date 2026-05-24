@@ -17,7 +17,7 @@ export interface MyriadRawMarket {
     volume24h?: number;
     volume?: number;
     liquidity?: number;
-    questionId?: number;
+    eventId?: number;
     topics?: string[];
     outcomes?: MyriadRawOutcome[];
     [key: string]: unknown;

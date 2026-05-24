@@ -39,7 +39,7 @@ export class MyriadNormalizer implements IExchangeNormalizer<MyriadRawMarket, My
 
         const um = {
             marketId: `${raw.networkId}:${raw.id}`,
-            eventId: raw.questionId ? String(raw.questionId) : undefined,
+            eventId: raw.eventId ? String(raw.eventId) : undefined,
             title: raw.title || '',
             description: raw.description || '',
             outcomes,

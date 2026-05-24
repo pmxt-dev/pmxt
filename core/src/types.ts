@@ -204,6 +204,8 @@ export interface Order {
 }
 
 export interface Position {
+    /** Raw exchange response for this position. */
+    info: any;
     /** The market this position is held in. */
     marketId: string;
     /** The outcome this position is held in. */
@@ -222,6 +224,8 @@ export interface Position {
 }
 
 export interface Balance {
+    /** Raw exchange response for this balance entry. */
+    info: any;
     currency: string;  // e.g., 'USDC'
     /** Total balance including funds locked in open orders. */
     total: number;

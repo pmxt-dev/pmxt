@@ -244,6 +244,7 @@ export class MyriadNormalizer implements IExchangeNormalizer<MyriadRawMarket, My
         }
 
         return [{
+            info: rawItems,
             currency: 'USDC',
             total: totalValue,
             available: 0,

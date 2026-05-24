@@ -367,6 +367,7 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
     normalizePosition(raw: HyperliquidRawPosition): Position {
         if (!isOutcomeCoin(raw.coin)) {
             return {
+                info: raw,
                 marketId: raw.coin,
                 outcomeId: raw.coin,
                 outcomeLabel: raw.coin,
@@ -378,6 +379,7 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
         }
 
         return {
+            info: raw,
             marketId: this.coinToMarketId(raw.coin),
             outcomeId: this.coinToOutcomeId(raw.coin),
             outcomeLabel: raw.coin,
@@ -394,6 +396,7 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
         const locked = parseFloat(summary.totalMarginUsed);
 
         return [{
+            info: raw,
             currency: 'USDH',
             total,
             available: total - locked,

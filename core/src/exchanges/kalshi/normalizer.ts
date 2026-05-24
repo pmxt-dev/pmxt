@@ -251,6 +251,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
         const entryPrice = absPosition > 0 ? raw.total_cost / absPosition / 100 : 0;
 
         return {
+            info: raw,
             marketId: raw.ticker,
             outcomeId: raw.ticker,
             outcomeLabel: raw.ticker,
@@ -266,6 +267,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
         const available = raw.balance / 100;
         const total = raw.portfolio_value / 100;
         return [{
+            info: raw,
             currency: 'USD',
             total,
             available,

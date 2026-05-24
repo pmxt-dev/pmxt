@@ -125,6 +125,7 @@ export class LimitlessNormalizer implements IExchangeNormalizer<LimitlessRawMark
             throw new Error(`Position missing market.slug (conditionId=${p.conditionId})`);
         }
         return {
+            info: raw,
             marketId: slug,
             outcomeId: p.asset,
             outcomeLabel: p.outcome || 'Unknown',

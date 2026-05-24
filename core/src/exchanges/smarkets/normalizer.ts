@@ -278,6 +278,7 @@ export class SmarketsNormalizer implements IExchangeNormalizer<SmarketsRawEventW
         const available = parseFloat(raw.available_balance || '0');
 
         return [{
+            info: raw,
             currency: raw.currency || 'GBP',
             total: balance,
             available,

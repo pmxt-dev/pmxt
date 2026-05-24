@@ -135,6 +135,7 @@ export class PolymarketNormalizer implements IExchangeNormalizer<PolymarketRawEv
 
     normalizePosition(raw: PolymarketRawPosition): Position {
         return {
+            info: raw,
             marketId: raw.resolvedMarketId || '',
             outcomeId: raw.asset || '',
             outcomeLabel: raw.outcome || 'Unknown',

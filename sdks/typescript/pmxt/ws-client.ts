@@ -254,6 +254,14 @@ export class SidecarWsClient {
     ): Promise<Record<string, any>> {
         const symbols: string[] = Array.isArray(args[0]) ? args[0] : [];
 
+        // Deduplicate via activeSubs -- reuse existing subscription for the same symbol set
+        const subKey = `${method}:${[...symbols].sort().join(",")}`;
+        const existingId = this.activeSubs.get(subKey);
+        if (existingId && this.subscriptions.has(existingId)) {
+            await this.waitForData(existingId, timeoutMs);
+            return this.collectBatchResult(existingId, symbols);
+        }
+
         await this.ensureConnected();
 
         const requestId = `req-${Math.random().toString(36).slice(2, 14)}`;
@@ -266,6 +274,7 @@ export class SidecarWsClient {
             reject: null,
         };
         this.subscriptions.set(requestId, sub);
+        this.activeSubs.set(subKey, requestId);
 
         const message: Record<string, any> = {
             id: requestId,
@@ -283,19 +292,31 @@ export class SidecarWsClient {
         // Wait for first data event
         await this.waitForData(requestId, timeoutMs);
 
-        // Collect per-symbol data
+        return this.collectBatchResult(requestId, symbols);
+    }
+
+    /**
+     * Collect per-symbol data for a batch subscription and clean up
+     * consumed dataStore entries to prevent unbounded growth.
+     */
+    private collectBatchResult(
+        requestId: string,
+        symbols: readonly string[],
+    ): Record<string, any> {
         const result: Record<string, any> = {};
         for (const symbol of symbols) {
             const storeKey = `${requestId}:${symbol}`;
             const data = this.dataStore.get(storeKey);
             if (data !== undefined) {
                 result[symbol] = data;
+                this.dataStore.delete(storeKey);
             }
         }
 
         // If no per-symbol data, return the single data event as-is
         if (Object.keys(result).length === 0) {
             const data = this.dataStore.get(requestId);
+            this.dataStore.delete(requestId);
             if (data && typeof data === "object") {
                 return data;
             }
@@ -306,6 +327,9 @@ export class SidecarWsClient {
 
     close(): void {
         this.closed = true;
+        this.subscriptions.clear();
+        this.dataStore.clear();
+        this.activeSubs.clear();
         if (this.ws) {
             try {
                 this.ws.close();

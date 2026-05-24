@@ -3,7 +3,7 @@
   "info": {
     "title": "PMXT Hosted Router API",
     "description": "Hosted-only endpoints for cross-venue search, matching, arbitrage, and SQL.",
-    "version": "81efb2b"
+    "version": "480d46a"
   },
   "servers": [
     {
@@ -756,6 +756,16 @@
           },
           {
             "in": "query",
+            "name": "maxDifference",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "description": "Maximum price difference to include (0.0-1.0). Defaults to 0.20 when scanning opportunities with sort=priceDifference or minDifference > 0; pass 1 to include raw giant spreads.\n"
+          },
+          {
+            "in": "query",
             "name": "category",
             "schema": {
               "type": "string"
@@ -906,6 +916,16 @@
               "default": 0
             },
             "description": "Minimum price difference to include (0.0-1.0)."
+          },
+          {
+            "in": "query",
+            "name": "maxDifference",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "description": "Maximum price difference to include (0.0-1.0). Defaults to 0.20; pass 1 to include raw giant spreads.\n"
           },
           {
             "in": "query",

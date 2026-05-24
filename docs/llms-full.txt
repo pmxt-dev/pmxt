@@ -5253,6 +5253,7 @@ Bulk cross-venue price comparison. Returns matched market pairs from the market_
 | `query` | string | No | Keyword search across matched market titles. |
 | `relations` | string | No | Comma-separated relation filter. Valid values: identity, subset, superset, overlap, disjoint. |
 | `minDifference` | number | No | Minimum price difference to include (0.0-1.0). |
+| `maxDifference` | number | No | Maximum price difference to include (0.0-1.0). Defaults to 0.20 when scanning opportunities with sort=priceDifference or minDifference > 0; pass 1 to include raw giant spreads. |
 | `category` | string | No | Filter both sides of the match by category. |
 | `limit` | integer | No | Maximum number of matched pairs to return. |
 | `minConfidence` | number | No | Minimum match confidence score (0.0-1.0). |
@@ -5271,6 +5272,7 @@ Bulk cross-venue price comparison. Returns matched market pairs from the market_
 | --- | --- | --- | --- |
 | `relations` | string | No | Comma-separated relation filter. Valid values: identity, subset, superset, overlap, disjoint. |
 | `minDifference` | number | No | Minimum price difference to include (0.0-1.0). |
+| `maxDifference` | number | No | Maximum price difference to include (0.0-1.0). Defaults to 0.20; pass 1 to include raw giant spreads. |
 | `category` | string | No | Filter both sides of the match by category. |
 | `limit` | integer | No | Maximum number of matched pairs to return. |
 | `minConfidence` | number | No | Minimum match confidence score (0.0-1.0). |

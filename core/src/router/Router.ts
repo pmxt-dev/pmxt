@@ -256,7 +256,7 @@ export class Router extends PredictionMarketExchange {
     // Price comparison: identity matches with live prices
     // -----------------------------------------------------------------------
 
-    async compareMarketPrices(params: FetchMarketMatchesParams): Promise<PriceComparison[]> {
+    async compareMarketPrices(params: FetchMarketMatchesParams = {}): Promise<PriceComparison[]> {
         if (params.market && !params.marketId) {
             params = { ...params, marketId: params.market.marketId };
         }
@@ -281,7 +281,7 @@ export class Router extends PredictionMarketExchange {
     // Related markets: subset/superset matches with live prices
     // -----------------------------------------------------------------------
 
-    async fetchRelatedMarkets(params: FetchMarketMatchesParams): Promise<PriceComparison[]> {
+    async fetchRelatedMarkets(params: FetchMarketMatchesParams = {}): Promise<PriceComparison[]> {
         if (params.market && !params.marketId) {
             params = { ...params, marketId: params.market.marketId };
         }
@@ -304,7 +304,7 @@ export class Router extends PredictionMarketExchange {
     }
 
     /** @deprecated Use {@link fetchRelatedMarkets} instead. */
-    async fetchHedges(params: FetchMarketMatchesParams): Promise<PriceComparison[]> {
+    async fetchHedges(params: FetchMarketMatchesParams = {}): Promise<PriceComparison[]> {
         logger.warn('fetchHedges is deprecated, use fetchRelatedMarkets instead');
         return this.fetchRelatedMarkets(params);
     }

@@ -1518,7 +1518,7 @@ export abstract class PredictionMarketExchange {
      * @param params - Match filter parameters (uses relation: 'identity' internally)
      * @returns Array of price comparisons across venues
      */
-    async compareMarketPrices(params: FetchMatchesParams): Promise<PriceComparison[]> {
+    async compareMarketPrices(params?: FetchMatchesParams): Promise<PriceComparison[]> {
         throw new Error("Method compareMarketPrices not implemented.");
     }
 
@@ -1529,7 +1529,7 @@ export abstract class PredictionMarketExchange {
      * @param params - Match filter parameters
      * @returns Array of subset/superset matches with live prices
      */
-    async fetchRelatedMarkets(params: FetchMatchesParams): Promise<PriceComparison[]> {
+    async fetchRelatedMarkets(params?: FetchMatchesParams): Promise<PriceComparison[]> {
         throw new Error("Method fetchRelatedMarkets not implemented.");
     }
 
@@ -1558,7 +1558,7 @@ export abstract class PredictionMarketExchange {
      * @param params - Match filter parameters
      * @returns Array of subset/superset matches with live prices
      */
-    async fetchHedges(params: FetchMatchesParams): Promise<PriceComparison[]> {
+    async fetchHedges(params?: FetchMatchesParams): Promise<PriceComparison[]> {
         throw new Error("Method fetchHedges not implemented.");
     }
 

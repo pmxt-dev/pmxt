@@ -17,6 +17,7 @@ export * from './exchanges/smarkets';
 export * from './exchanges/polymarket_us';
 export * from './exchanges/hyperliquid';
 export * from './exchanges/gemini-titan';
+export * from './exchanges/suibets';
 export * from './router';
 export * from './feeds';
 export * from './server/app';
@@ -37,6 +38,7 @@ import { SmarketsExchange } from './exchanges/smarkets';
 import { PolymarketUSExchange } from './exchanges/polymarket_us';
 import { HyperliquidExchange } from './exchanges/hyperliquid';
 import { GeminiTitanExchange } from './exchanges/gemini-titan';
+import { SuiBetsExchange } from './exchanges/suibets';
 import { Router } from './router';
 
 const pmxt = {
@@ -54,6 +56,7 @@ const pmxt = {
     PolymarketUS: PolymarketUSExchange,
     Hyperliquid: HyperliquidExchange,
     GeminiTitan: GeminiTitanExchange,
+    SuiBets: SuiBetsExchange,
     Router,
 };
 
@@ -71,5 +74,6 @@ export const Smarkets = SmarketsExchange;
 export const PolymarketUS = PolymarketUSExchange;
 export const Hyperliquid = HyperliquidExchange;
 export const GeminiTitan = GeminiTitanExchange;
+export const SuiBets = SuiBetsExchange;
 
 export default pmxt;

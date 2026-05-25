@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.43.26] - 2026-05-25
+
+### Fixed
+
+- **SDK streaming**: Remove TypeScript and Python REST fallbacks for `watchOrderBook`, `watchOrderBooks`, `watchTrades`, and `unwatchOrderBook`. Streaming methods now require the hosted `/ws` transport and fail fast if WebSocket transport is unavailable, preventing accidental 30s REST long-poll calls to `/api/{exchange}/watch*`.
+- **Python SDK**: Add regression coverage proving streaming methods use WebSocket transport and do not invoke HTTP fallbacks.
+
 ## [2.43.25] - 2026-05-24
 
 ### Added

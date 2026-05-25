@@ -52,6 +52,18 @@ import { PmxtError, fromServerError } from "./errors.js";
 import { LOCAL_URL, resolvePmxtBaseUrl } from "./constants.js";
 import { SidecarWsClient } from "./ws-client.js";
 
+interface RawWebSocketLike {
+    send(data: string): void;
+}
+
+interface SidecarWsClientInternals {
+    ensureConnected(): Promise<void>;
+    ws: RawWebSocketLike | null;
+    activeSubs: Map<string, string>;
+    subscriptions: Map<string, { reject: ((error: Error) => void) | null }>;
+    dataStore: Map<string, any>;
+}
+
 /**
  * Resolve a MarketOutcome shorthand to a plain outcome ID string.
  * Accepts either a raw string ID or a MarketOutcome object.
@@ -418,7 +430,7 @@ export abstract class Exchange {
      * Return the shared WebSocket client, creating it on first use.
      *
      * Returns `null` if the sidecar /ws endpoint was previously found
-     * to be unavailable, letting callers fall back to HTTP.
+     * to be unavailable.
      */
     private async getOrCreateWs(): Promise<SidecarWsClient | null> {
         if (this._wsUnsupported) return null;
@@ -480,12 +492,77 @@ export abstract class Exchange {
                 this.getCredentials() as Record<string, any> | undefined,
             );
         } catch (error) {
-            // Only fall back to HTTP for transport-level failures
-            if (error instanceof PmxtError && /connection failed|no websocket/i.test(error.message)) {
+            if (this.isWsTransportUnavailableError(error)) {
                 return null;
             }
             throw error;
         }
+    }
+
+    private wsTransportUnavailableError(method: string): PmxtError {
+        return new PmxtError(`${method}() requires WebSocket transport — connection failed`);
+    }
+
+    private isWsTransportUnavailableError(error: unknown): boolean {
+        return error instanceof PmxtError
+            && /connection failed|no websocket|websocket.*not connected/i.test(error.message);
+    }
+
+    private getWsInternals(ws: SidecarWsClient): SidecarWsClientInternals {
+        return ws as unknown as SidecarWsClientInternals;
+    }
+
+    private wsSubscriptionKey(method: string, args: any[]): string {
+        const firstArg = args[0] ?? "";
+        return Array.isArray(firstArg)
+            ? `${method}:${[...firstArg].sort().join(",")}`
+            : `${method}:${firstArg}`;
+    }
+
+    private getWsSubscriptionId(ws: SidecarWsClient, method: string, args: any[]): string | undefined {
+        const internals = this.getWsInternals(ws);
+        const subKey = this.wsSubscriptionKey(method, args);
+        return internals.activeSubs.get(subKey);
+    }
+
+    private clearWsSubscription(ws: SidecarWsClient, method: string, args: any[]): void {
+        const internals = this.getWsInternals(ws);
+        const subKey = this.wsSubscriptionKey(method, args);
+        const requestId = internals.activeSubs.get(subKey);
+        if (!requestId) return;
+
+        const sub = internals.subscriptions.get(requestId);
+        if (sub?.reject) {
+            sub.reject(new PmxtError(`${method} subscription cancelled`));
+        }
+
+        internals.activeSubs.delete(subKey);
+        internals.subscriptions.delete(requestId);
+        internals.dataStore.delete(requestId);
+
+        const firstArg = args[0] ?? "";
+        const symbols = Array.isArray(firstArg)
+            ? firstArg.map(String)
+            : firstArg
+                ? [String(firstArg)]
+                : [];
+        for (const symbol of symbols) {
+            internals.dataStore.delete(`${requestId}:${symbol}`);
+        }
+    }
+
+    private async sendWsMessage(
+        ws: SidecarWsClient,
+        message: Record<string, any>,
+    ): Promise<void> {
+        const internals = this.getWsInternals(ws);
+        await internals.ensureConnected();
+
+        const socket = internals.ws;
+        if (!socket) {
+            throw new PmxtError('[ws-client] Cannot send: WebSocket not connected');
+        }
+        socket.send(JSON.stringify(message));
     }
 
     // Low-Level API Access
@@ -1098,24 +1175,32 @@ export abstract class Exchange {
 
     async unwatchOrderBook(outcomeId: string | MarketOutcome): Promise<void> {
         await this.initPromise;
+        const resolvedOutcomeId = resolveOutcomeId(outcomeId);
+        const args: any[] = [resolvedOutcomeId];
         try {
-            const args: any[] = [];
-            args.push(resolveOutcomeId(outcomeId));
-            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/unwatchOrderBook`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                body: JSON.stringify({ args, credentials: this.getCredentials() }),
-            });
-            if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                if (body.error && typeof body.error === "object") {
-                    throw fromServerError(body.error);
-                }
-                throw new PmxtError(body.error?.message || response.statusText);
+            const ws = await this.getOrCreateWs();
+            if (!ws) {
+                throw this.wsTransportUnavailableError("unwatchOrderBook");
             }
-            const json = await response.json();
-            this.handleResponse(json);
+
+            const requestId = this.getWsSubscriptionId(ws, "watchOrderBook", args)
+                ?? `req-${Math.random().toString(36).slice(2, 14)}`;
+
+            await this.sendWsMessage(
+                ws,
+                {
+                    id: requestId,
+                    action: "unsubscribe",
+                    exchange: this.exchangeName,
+                    method: "unwatchOrderBook",
+                    args,
+                },
+            );
+            this.clearWsSubscription(ws, "watchOrderBook", args);
         } catch (error) {
+            if (this.isWsTransportUnavailableError(error)) {
+                throw this.wsTransportUnavailableError("unwatchOrderBook");
+            }
             if (error instanceof PmxtError) throw error;
             throw new PmxtError(`Failed to unwatchOrderBook: ${error}`);
         }
@@ -1521,33 +1606,12 @@ export abstract class Exchange {
             args.push(params);
         }
 
-        // Try WebSocket transport first
         const wsData = await this.watchViaWs("watchOrderBook", args);
         if (wsData !== null) {
             return convertOrderBook(wsData);
         }
 
-        // HTTP fallback
-        try {
-            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/watchOrderBook`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                body: JSON.stringify({ args, credentials: this.getCredentials() }),
-            });
-            if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                if (body.error && typeof body.error === "object") {
-                    throw fromServerError(body.error);
-                }
-                throw new PmxtError(body.error?.message || response.statusText);
-            }
-            const json = await response.json();
-            const data = this.handleResponse(json);
-            return convertOrderBook(data);
-        } catch (error) {
-            if (error instanceof PmxtError) throw error;
-            throw new PmxtError(`Failed to watch order book: ${error}`);
-        }
+        throw this.wsTransportUnavailableError("watchOrderBook");
     }
 
     /**
@@ -1556,9 +1620,6 @@ export abstract class Exchange {
      * Returns a record mapping each outcome ID (ticker) to its latest
      * order book snapshot. Call repeatedly in a loop to stream updates
      * (CCXT Pro pattern).
-     *
-     * Prefers the sidecar WebSocket transport when available, falling
-     * back to HTTP POST for older sidecars.
      *
      * @param outcomeIds - Array of outcome IDs (or MarketOutcome objects)
      * @param limit - Optional depth limit for each order book
@@ -1594,61 +1655,33 @@ export abstract class Exchange {
             args.push(params);
         }
 
-        // Try WebSocket transport first
-        const ws = await this.getOrCreateWs();
-        if (ws) {
-            try {
-                const rawResult = await ws.subscribeBatch(
-                    this.exchangeName,
-                    "watchOrderBooks",
-                    args,
-                    this.getCredentials() as Record<string, any> | undefined,
-                );
-                if (rawResult && typeof rawResult === "object") {
-                    const result: Record<string, OrderBook> = {};
-                    for (const [k, v] of Object.entries(rawResult)) {
-                        if (v && typeof v === "object") {
-                            result[k] = convertOrderBook(v);
-                        }
-                    }
-                    return result;
-                }
-            } catch (error) {
-                // Only fall through to HTTP for transport-level WS failures
-                if (!(error instanceof PmxtError) || !/connection failed|no websocket/i.test(error.message)) {
-                    throw error;
-                }
-            }
-        }
-
-        // HTTP fallback
         try {
-            const response = await this.fetchWithRetry(
-                `${this.resolveBaseUrl()}/api/${this.exchangeName}/watchOrderBooks`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                    body: JSON.stringify({ args, credentials: this.getCredentials() }),
-                },
-            );
-            if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                if (body.error && typeof body.error === "object") {
-                    throw fromServerError(body.error);
-                }
-                throw new PmxtError(body.error?.message || response.statusText);
+            const ws = await this.getOrCreateWs();
+            if (!ws) {
+                throw this.wsTransportUnavailableError("watchOrderBooks");
             }
-            const json = await response.json();
-            const data = this.handleResponse(json);
-            if (data && typeof data === "object") {
+
+            const rawResult = await ws.subscribeBatch(
+                this.exchangeName,
+                "watchOrderBooks",
+                args,
+                this.getCredentials() as Record<string, any> | undefined,
+            );
+            if (rawResult && typeof rawResult === "object") {
                 const result: Record<string, OrderBook> = {};
-                for (const [k, v] of Object.entries(data as Record<string, any>)) {
-                    result[k] = convertOrderBook(v);
+                for (const [k, v] of Object.entries(rawResult)) {
+                    if (v && typeof v === "object") {
+                        result[k] = convertOrderBook(v);
+                    }
                 }
                 return result;
             }
+
             throw new PmxtError("watchOrderBooks: unexpected response shape from server");
         } catch (error) {
+            if (this.isWsTransportUnavailableError(error)) {
+                throw this.wsTransportUnavailableError("watchOrderBooks");
+            }
             if (error instanceof PmxtError) throw error;
             throw new PmxtError(`Failed to watch order books: ${error}`);
         }
@@ -1690,7 +1723,7 @@ export abstract class Exchange {
             };
         }
 
-        throw new PmxtError("watchAllOrderBooks() requires WebSocket transport — connection failed");
+        throw this.wsTransportUnavailableError("watchAllOrderBooks");
     }
 
     /** @deprecated Use {@link watchAllOrderBooks} instead. */
@@ -1729,37 +1762,23 @@ export abstract class Exchange {
     ): Promise<Trade[]> {
         await this.initPromise;
         const resolvedOutcomeId = resolveOutcomeId(outcomeId);
-        try {
-            const args: any[] = [resolvedOutcomeId];
-            if (address !== undefined) {
-                args.push(address);
-            }
-            if (since !== undefined) {
-                args.push(since);
-            }
-            if (limit !== undefined) {
-                args.push(limit);
-            }
-
-            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/watchTrades`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                body: JSON.stringify({ args, credentials: this.getCredentials() }),
-            });
-            if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                if (body.error && typeof body.error === "object") {
-                    throw fromServerError(body.error);
-                }
-                throw new PmxtError(body.error?.message || response.statusText);
-            }
-            const json = await response.json();
-            const data = this.handleResponse(json);
-            return data.map(convertTrade);
-        } catch (error) {
-            if (error instanceof PmxtError) throw error;
-            throw new PmxtError(`Failed to watch trades: ${error}`);
+        const args: any[] = [resolvedOutcomeId];
+        if (address !== undefined) {
+            args.push(address);
         }
+        if (since !== undefined) {
+            args.push(since);
+        }
+        if (limit !== undefined) {
+            args.push(limit);
+        }
+
+        const wsData = await this.watchViaWs("watchTrades", args);
+        if (wsData !== null) {
+            return wsData.map(convertTrade);
+        }
+
+        throw this.wsTransportUnavailableError("watchTrades");
     }
 
     /**

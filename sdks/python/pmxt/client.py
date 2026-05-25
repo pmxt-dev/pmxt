@@ -10,6 +10,7 @@ import os
 import sys
 import time
 import urllib.error
+import uuid
 from abc import ABC
 from datetime import datetime
 from typing import Callable, List, Optional, Dict, Any, Literal, Union
@@ -320,8 +321,8 @@ class Exchange(ABC):
         self._ws_client = None
         self._ws_lock = __import__("threading").Lock()
         # Sticky flag: set to True if the sidecar's /ws endpoint is
-        # unavailable (older core). Once set, streaming methods skip
-        # the WS attempt and POST directly.
+        # unavailable (older core). Once set, streaming methods fail
+        # fast with a clear WebSocket transport error.
         self._ws_unsupported: bool = False
 
         # Resolve base_url / hosted mode using the shared rules.
@@ -1088,24 +1089,13 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def unwatch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, **_compat_kwargs) -> None:
-        try:
-            args = []
-            outcome_id = _compat_id(outcome_id, _compat_kwargs)
-            args.append(_resolve_outcome_id(outcome_id))
-            body: dict = {"args": args}
-            creds = self._get_credentials_dict()
-            if creds:
-                body["credentials"] = creds
-            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/unwatchOrderBook"
-            headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            headers.update(self._get_auth_headers())
-            response = self._fetch_with_retry(
-                lambda: self._api_client.call_api(method="POST", url=url, body=body, header_params=headers)
-            )
-            response.read()
-            self._handle_response(json.loads(response.data))
-        except ApiException as e:
-            raise self._parse_api_exception(e) from None
+        outcome_id = _compat_id(outcome_id, _compat_kwargs)
+        outcome_id = _resolve_outcome_id(outcome_id)
+        self._unwatch_required_via_ws(
+            "unwatch_order_book",
+            "unwatchOrderBook",
+            [outcome_id],
+        )
 
     def unwatch_address(self, address: str) -> None:
         try:
@@ -1720,7 +1710,7 @@ class Exchange(ABC):
                 with client._lock:
                     client._ensure_connected()
             except Exception:
-                # WS endpoint not available -- remember and fall back to HTTP
+                # WS endpoint not available -- remember and fail fast.
                 self._ws_unsupported = True
                 return None
 
@@ -1731,11 +1721,10 @@ class Exchange(ABC):
         self,
         method: str,
         args: List[Any],
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[Any]:
         """Attempt to use the WS transport for a watch method.
 
-        Returns the raw data dict on success, or None if WS is unavailable
-        (caller should fall back to HTTP).
+        Returns the raw data payload on success, or None if WS is unavailable.
         """
         ws = self._get_or_create_ws()
         if ws is None:
@@ -1749,8 +1738,82 @@ class Exchange(ABC):
                 credentials=self._get_credentials_dict(),
             )
         except (ConnectionError, OSError):
-            # Transport-level failure -- fall back to HTTP
+            # Transport-level failure.
             return None
+
+    def _ws_required_error(self, method_name: str) -> PmxtError:
+        return PmxtError(f"{method_name}() requires WebSocket transport — connection failed")
+
+    def _require_ws_transport(self, method_name: str):
+        ws = self._get_or_create_ws()
+        if ws is None:
+            raise self._ws_required_error(method_name)
+        return ws
+
+    def _watch_required_via_ws(
+        self,
+        public_method_name: str,
+        ws_method_name: str,
+        args: List[Any],
+    ) -> Any:
+        data = self._watch_via_ws(ws_method_name, args)
+        if data is None:
+            raise self._ws_required_error(public_method_name)
+        return data
+
+    def _watch_batch_required_via_ws(
+        self,
+        public_method_name: str,
+        ws_method_name: str,
+        args: List[Any],
+    ) -> Any:
+        ws = self._require_ws_transport(public_method_name)
+        try:
+            return ws.subscribe_batch(
+                exchange=self.exchange_name,
+                method=ws_method_name,
+                args=args,
+                credentials=self._get_credentials_dict(),
+            )
+        except (ConnectionError, OSError) as e:
+            self._ws_unsupported = True
+            raise self._ws_required_error(public_method_name) from e
+
+    def _unwatch_required_via_ws(
+        self,
+        public_method_name: str,
+        ws_method_name: str,
+        args: List[Any],
+    ) -> None:
+        ws = self._require_ws_transport(public_method_name)
+        try:
+            with ws._lock:
+                ws._ensure_connected()
+                sub_key = None
+                existing_id = None
+                if ws_method_name == "unwatchOrderBook" and args:
+                    sub_key = f"watchOrderBook:{args[0]}"
+                    existing_id = ws._active_subs.get(sub_key)
+                request_id = existing_id or f"req-{uuid.uuid4().hex[:12]}"
+                message = {
+                    "id": request_id,
+                    "action": "unsubscribe",
+                    "exchange": self.exchange_name,
+                    "method": ws_method_name,
+                    "args": args,
+                }
+                ws._ws.send(json.dumps(message))
+
+                if sub_key:
+                    existing_id = ws._active_subs.pop(sub_key, None)
+                    if existing_id:
+                        ws._subscriptions.pop(existing_id, None)
+                        ws._data_store.pop(existing_id, None)
+        except PmxtError:
+            raise
+        except Exception as e:
+            self._ws_unsupported = True
+            raise self._ws_required_error(public_method_name) from e
 
     def watch_order_book(
         self,
@@ -1765,8 +1828,7 @@ class Exchange(ABC):
         Returns a promise that resolves with the next order book update.
         Call repeatedly in a loop to stream updates (CCXT Pro pattern).
 
-        Prefers the sidecar WebSocket transport when available, falling
-        back to HTTP long-polling for older sidecars.
+        Requires the sidecar WebSocket transport.
 
         Args:
             outcome_id: Outcome ID to watch
@@ -1793,36 +1855,12 @@ class Exchange(ABC):
                 args.append(None)
             args.append(params)
 
-        # Try WebSocket transport first
-        ws_data = self._watch_via_ws("watchOrderBook", args)
-        if ws_data is not None:
-            return _convert_order_book(ws_data)
-
-        # HTTP fallback
-        try:
-            body: Dict[str, Any] = {"args": args}
-
-            creds = self._get_credentials_dict()
-            if creds:
-                body["credentials"] = creds
-
-            headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            headers.update(self._get_auth_headers())
-
-            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/watchOrderBook"
-            response = self._fetch_with_retry(
-                lambda: self._api_client.call_api(
-                    method="POST",
-                    url=url,
-                    body=body,
-                    header_params=headers,
-                )
-            )
-            response.read()
-            data = self._handle_response(json.loads(response.data))
-            return _convert_order_book(data)
-        except ApiException as e:
-            raise self._parse_api_exception(e) from None
+        ws_data = self._watch_required_via_ws(
+            "watch_order_book",
+            "watchOrderBook",
+            args,
+        )
+        return _convert_order_book(ws_data)
 
     def unwatch_order_book(self, outcome_id: Union[str, "MarketOutcome"]) -> None:
         """
@@ -1834,30 +1872,12 @@ class Exchange(ABC):
         Returns:
             None
         """
-        try:
-            outcome_id = _resolve_outcome_id(outcome_id)
-            body: Dict[str, Any] = {"args": [outcome_id]}
-
-            creds = self._get_credentials_dict()
-            if creds:
-                body["credentials"] = creds
-
-            headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            headers.update(self._get_auth_headers())
-
-            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/unwatchOrderBook"
-            response = self._fetch_with_retry(
-                lambda: self._api_client.call_api(
-                    method="POST",
-                    url=url,
-                    body=body,
-                    header_params=headers,
-                )
-            )
-            response.read()
-            return self._handle_response(json.loads(response.data))
-        except ApiException as e:
-            raise self._parse_api_exception(e) from None
+        outcome_id = _resolve_outcome_id(outcome_id)
+        self._unwatch_required_via_ws(
+            "unwatch_order_book",
+            "unwatchOrderBook",
+            [outcome_id],
+        )
 
     def watch_order_books(
         self,
@@ -1873,8 +1893,7 @@ class Exchange(ABC):
         order book snapshot. Call repeatedly in a loop to stream updates
         (CCXT Pro pattern).
 
-        Prefers the sidecar WebSocket transport when available, falling
-        back to HTTP POST for older sidecars.
+        Requires the sidecar WebSocket transport.
 
         Args:
             outcome_ids: List of outcome IDs (or MarketOutcome objects)
@@ -1913,53 +1932,18 @@ class Exchange(ABC):
                 args.append(None)
             args.append(params)
 
-        # Try WebSocket transport first
-        ws = self._get_or_create_ws()
-        if ws is not None:
-            try:
-                raw_result = ws.subscribe_batch(
-                    exchange=self.exchange_name,
-                    method="watchOrderBooks",
-                    args=args,
-                    credentials=self._get_credentials_dict(),
-                )
-                if isinstance(raw_result, dict):
-                    return {
-                        k: _convert_order_book(v)
-                        for k, v in raw_result.items()
-                        if isinstance(v, dict)
-                    }
-            except Exception:
-                pass  # fall through to HTTP
-
-        # HTTP fallback
-        try:
-            body: Dict[str, Any] = {"args": args}
-            creds = self._get_credentials_dict()
-            if creds:
-                body["credentials"] = creds
-
-            headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            headers.update(self._get_auth_headers())
-
-            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/watchOrderBooks"
-            response = self._fetch_with_retry(
-                lambda: self._api_client.call_api(
-                    method="POST",
-                    url=url,
-                    body=body,
-                    header_params=headers,
-                )
-            )
-            response.read()
-            data = self._handle_response(json.loads(response.data))
-            if isinstance(data, dict):
-                return {
-                    k: _convert_order_book(v) for k, v in data.items()
-                }
-            return {}
-        except ApiException as e:
-            raise self._parse_api_exception(e) from None
+        raw_result = self._watch_batch_required_via_ws(
+            "watch_order_books",
+            "watchOrderBooks",
+            args,
+        )
+        if isinstance(raw_result, dict):
+            return {
+                k: _convert_order_book(v)
+                for k, v in raw_result.items()
+                if isinstance(v, dict)
+            }
+        return {}
 
     def watch_all_order_books(
         self,
@@ -2027,41 +2011,24 @@ class Exchange(ABC):
             ...     for trade in trades:
             ...         print(f"Trade: {trade.price} @ {trade.amount}")
         """
-        try:
-            outcome_id = _compat_id(outcome_id, _compat_kwargs)
-            outcome_id = _resolve_outcome_id(outcome_id)
-            args: List[Any] = [outcome_id]
-            if address is not None:
-                args.append(address)
-            if since is not None:
-                args.append(since)
-            if limit is not None:
-                args.append(limit)
+        outcome_id = _compat_id(outcome_id, _compat_kwargs)
+        outcome_id = _resolve_outcome_id(outcome_id)
+        args: List[Any] = [outcome_id]
+        if address is not None:
+            args.append(address)
+        if since is not None:
+            args.append(since)
+        if limit is not None:
+            args.append(limit)
 
-            body: Dict[str, Any] = {"args": args}
-
-            # Add credentials if available
-            creds = self._get_credentials_dict()
-            if creds:
-                body["credentials"] = creds
-
-            headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            headers.update(self._get_auth_headers())
-
-            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/watchTrades"
-            response = self._fetch_with_retry(
-                lambda: self._api_client.call_api(
-                    method="POST",
-                    url=url,
-                    body=body,
-                    header_params=headers,
-                )
-            )
-            response.read()
-            data = self._handle_response(json.loads(response.data))
-            return [_convert_trade(t) for t in data]
-        except ApiException as e:
-            raise self._parse_api_exception(e) from None
+        data = self._watch_required_via_ws(
+            "watch_trades",
+            "watchTrades",
+            args,
+        )
+        if not isinstance(data, list):
+            raise PmxtError("watch_trades() expected WebSocket trade list")
+        return [_convert_trade(t) for t in data]
 
     def watch_address(
         self,

@@ -18,6 +18,17 @@ async function startTestServer(): Promise<{ server: http.Server; baseUrl: string
     return { server, baseUrl: `http://127.0.0.1:${addr.port}` };
 }
 
+async function startRawServer(
+    handler: http.RequestListener,
+): Promise<{ server: http.Server; baseUrl: string }> {
+    const server = http.createServer(handler);
+    await new Promise<void>((resolve) => {
+        server.listen(0, () => resolve());
+    });
+    const addr = server.address() as { port: number };
+    return { server, baseUrl: `http://127.0.0.1:${addr.port}` };
+}
+
 async function stopTestServer(server: http.Server): Promise<void> {
     await new Promise<void>((resolve) => {
         server.close(() => resolve());
@@ -67,6 +78,38 @@ describe('Router local mock match lookup', () => {
             expect(event.status).toBe(200);
             expect(event.body.success).toBe(true);
             expect(event.body.data).toEqual([]);
+        } finally {
+            await stopTestServer(server);
+        }
+    });
+
+    test('throws when hosted market match lookup returns a malformed success envelope', async () => {
+        const { server, baseUrl } = await startRawServer((_req, res) => {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+        });
+
+        try {
+            const router = new Router({ apiKey: 'test', baseUrl });
+            await expect(router.fetchMarketMatches({ marketId: 'bad-id' })).rejects.toThrow(
+                'missing matches array',
+            );
+        } finally {
+            await stopTestServer(server);
+        }
+    });
+
+    test('throws when hosted event match lookup returns a malformed success envelope', async () => {
+        const { server, baseUrl } = await startRawServer((_req, res) => {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+        });
+
+        try {
+            const router = new Router({ apiKey: 'test', baseUrl });
+            await expect(router.fetchEventMatches({ eventId: 'bad-id' })).rejects.toThrow(
+                'missing matches array',
+            );
         } finally {
             await stopTestServer(server);
         }

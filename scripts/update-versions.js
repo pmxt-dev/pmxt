@@ -73,6 +73,18 @@ if (tsPackage.dependencies && tsPackage.dependencies['pmxt-core']) {
 fs.writeFileSync(tsPath, JSON.stringify(tsPackage, null, 2) + '\n');
 console.log(`[OK] Updated sdks/typescript/package.json to ${npmVersion}`);
 
+// Update sdks/cli/package.json
+const cliPath = path.join(__dirname, '..', 'sdks', 'cli', 'package.json');
+if (fs.existsSync(cliPath)) {
+    const cliPackage = JSON.parse(fs.readFileSync(cliPath, 'utf8'));
+    cliPackage.version = npmVersion;
+    if (cliPackage.dependencies && cliPackage.dependencies['pmxtjs']) {
+        cliPackage.dependencies['pmxtjs'] = npmVersion;
+    }
+    fs.writeFileSync(cliPath, JSON.stringify(cliPackage, null, 2) + '\n');
+    console.log(`[OK] Updated sdks/cli/package.json to ${npmVersion}`);
+}
+
 // Update sdks/python/pyproject.toml
 const pyPath = path.join(__dirname, '..', 'sdks', 'python', 'pyproject.toml');
 let pyContent = fs.readFileSync(pyPath, 'utf8');

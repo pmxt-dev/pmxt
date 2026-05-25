@@ -1,0 +1,46 @@
+{
+  "name": "@pmxt/cli",
+  "version": "2.17.1",
+  "description": "Command-line interface for PMXT prediction market APIs",
+  "author": "PMXT Contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pmxt-dev/pmxt.git",
+    "directory": "sdks/cli"
+  },
+  "type": "commonjs",
+  "bin": {
+    "pmxt": "bin/pmxt.js"
+  },
+  "oclif": {
+    "bin": "pmxt",
+    "commands": "./commands"
+  },
+  "files": [
+    "bin",
+    "cli",
+    "commands",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/validate.js",
+    "prepack": "npm run build",
+    "test": "node scripts/validate.js && node scripts/verify-argv-alias-normalizer.js"
+  },
+  "keywords": [
+    "prediction-markets",
+    "polymarket",
+    "kalshi",
+    "trading",
+    "api",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@oclif/core": "^4.11.4",
+    "pmxtjs": "2.17.1",
+    "ws": "^8.18.0"
+  }
+}

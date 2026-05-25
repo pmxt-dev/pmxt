@@ -13,11 +13,46 @@ function createFetcher(responses: Array<{ events: unknown[]; cursor?: string | n
     const ctx: any = {
         http: {},
         getHeaders: () => ({}),
-        callApi: async (_operation: string, params?: unknown) => {
+        callApi: async (operation: string, params?: unknown) => {
+            if (operation === 'GetSeriesList') return { series: [] };
             calls.push(params ?? {});
             const response = responses.shift();
             if (!response) return { events: [], cursor: null };
             return response;
+        },
+    };
+
+    return { fetcher: new KalshiFetcher(ctx), calls };
+}
+
+function createSeriesFetcher() {
+    const calls: Array<{ operation: string; params?: unknown }> = [];
+    const ctx: any = {
+        http: {},
+        getHeaders: () => ({}),
+        callApi: async (operation: string, params?: unknown) => {
+            calls.push({ operation, params });
+            if (operation === 'GetEvents') {
+                return {
+                    events: [{
+                        event_ticker: 'KXUCL-26',
+                        title: 'Champions League Winner: PSG vs Arsenal',
+                        series_ticker: 'KXUCL',
+                        markets: [],
+                    }],
+                    cursor: null,
+                };
+            }
+            if (operation === 'GetSeriesList') {
+                return {
+                    series: [{
+                        ticker: 'KXUCL',
+                        title: 'UEFA Champions League',
+                        tags: ['Soccer'],
+                    }],
+                };
+            }
+            return {};
         },
     };
 
@@ -55,5 +90,15 @@ describe('Kalshi cursor pagination', () => {
         expect(calls).toEqual([
             { limit: 25, with_nested_markets: true, status: 'open', cursor: 'cursor-500' },
         ]);
+    });
+
+    it('enriches paginated events with series title and tags', async () => {
+        const { fetcher, calls } = createSeriesFetcher();
+
+        const page = await fetcher.fetchRawEventPage({ limit: 1 });
+
+        expect(page.events[0].series_title).toBe('UEFA Champions League');
+        expect(page.events[0].tags).toEqual(['Soccer']);
+        expect(calls.map(call => call.operation)).toEqual(['GetEvents', 'GetSeriesList']);
     });
 });

@@ -6,11 +6,11 @@
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pmxt-dev/pmxt.git"
+    "url": "git+https://github.com/pmxt-dev/pmxt.git"
   },
   "bin": {
-    "pmxt-server": "./dist/server/index.js",
-    "pmxt-ensure-server": "./bin/pmxt-ensure-server"
+    "pmxt-server": "dist/server/index.js",
+    "pmxt-ensure-server": "bin/pmxt-ensure-server"
   },
   "files": [
     "dist",

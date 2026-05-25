@@ -36,6 +36,7 @@ node scripts/update-versions.js <version>
 **What it updates:**
 - `core/package.json`
 - `sdks/typescript/package.json`
+- `sdks/cli/package.json`
 - `sdks/python/pyproject.toml`
 
 ---

@@ -1,8 +1,10 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { IncomingMessage, Server as HttpServer } from "http";
 import { ExchangeCredentials } from "../BaseExchange";
+import { IDataFeed } from "../feeds/interfaces";
 import { BaseError } from "../errors";
 import { createExchange } from "./exchange-factory";
+import { getFeed } from "./feed-factory";
 import { logger } from '../utils/logger';
 
 // ---------------------------------------------------------------------------
@@ -12,6 +14,7 @@ import { logger } from '../utils/logger';
 interface SubscribeMessage {
   id: string;
   action: "subscribe";
+  targetKind: "exchange";
   exchange: string;
   method: string;
   args: unknown[];
@@ -21,18 +24,42 @@ interface SubscribeMessage {
 interface UnsubscribeMessage {
   id: string;
   action: "unsubscribe";
+  targetKind: "exchange";
   exchange: string;
   method: string;
   args: unknown[];
 }
 
-type ClientMessage = SubscribeMessage | UnsubscribeMessage;
+interface FeedSubscribeMessage {
+  id: string;
+  action: "subscribe";
+  targetKind: "feed";
+  feed: string;
+  method: string;
+  args: unknown[];
+}
+
+interface FeedUnsubscribeMessage {
+  id: string;
+  action: "unsubscribe";
+  targetKind: "feed";
+  feed: string;
+  method: string;
+  args: unknown[];
+}
+
+type ClientMessage =
+  | SubscribeMessage
+  | UnsubscribeMessage
+  | FeedSubscribeMessage
+  | FeedUnsubscribeMessage;
 
 interface DataEvent {
   id: string;
   event: "data";
   method: string;
   symbol: string;
+  source?: string;
   data: unknown;
 }
 
@@ -51,6 +78,7 @@ type ServerEvent = DataEvent | ErrorEvent | SubscribedEvent;
 
 /** Tracks an active streaming subscription so it can be cancelled. */
 interface ActiveSubscription {
+  id: string;
   abortController: AbortController;
 }
 
@@ -77,6 +105,11 @@ const WATCH_METHODS = new Set([
   "watchTrades",
 ]);
 
+/** Data-feed methods that produce streaming data. */
+const FEED_WATCH_METHODS = new Set([
+  "watchTicker",
+]);
+
 /** Methods for unsubscribing. */
 const UNWATCH_METHODS: Record<string, string> = {
   unwatchOrderBook: "watchOrderBook",
@@ -96,7 +129,11 @@ function sendError(ws: WebSocket, id: string | undefined, message: string, code?
  * Build a unique key for a subscription so we can cancel it.
  */
 function subscriptionKey(msg: ClientMessage): string {
-  return `${msg.exchange}:${msg.method}:${JSON.stringify(msg.args)}`;
+  const target =
+    msg.targetKind === "feed"
+      ? `feed:${msg.feed}`
+      : `exchange:${msg.exchange}`;
+  return `${target}:${msg.method}:${JSON.stringify(msg.args)}`;
 }
 
 /**
@@ -186,6 +223,90 @@ async function streamBatch(
   }
 }
 
+/**
+ * Start a streaming loop for feed watch methods.
+ *
+ * Data feeds expose callback-driven watch methods rather than the exchange
+ * layer's await-next-update methods, so lifecycle is tied to the returned
+ * unsubscribe callback and the client's AbortSignal.
+ */
+async function streamFeedSingle(
+  feed: IDataFeed,
+  feedName: string,
+  method: string,
+  args: unknown[],
+  id: string,
+  ws: WebSocket,
+  signal: AbortSignal,
+): Promise<void> {
+  const symbol = typeof args[0] === "string" ? args[0] : String(args[0] ?? "");
+  let unsubscribe: (() => void) | undefined;
+  let settled = false;
+  let resolveDone: () => void = () => {};
+  const done = new Promise<void>((resolve) => {
+    resolveDone = resolve;
+  });
+
+  const cleanup = (): void => {
+    if (settled) return;
+    settled = true;
+    signal.removeEventListener("abort", cleanup);
+    ws.removeListener("close", cleanup);
+    if (unsubscribe) {
+      try {
+        unsubscribe();
+      } catch (err: unknown) {
+        logger.warn('ws-handler: feed unsubscribe failed', {
+          feed: feedName,
+          method,
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+    resolveDone();
+  };
+
+  signal.addEventListener("abort", cleanup, { once: true });
+  ws.once("close", cleanup);
+
+  try {
+    if (typeof feed.connect === "function") {
+      await feed.connect();
+    }
+    if (signal.aborted || ws.readyState !== WebSocket.OPEN) {
+      cleanup();
+      return;
+    }
+
+    if (method !== "watchTicker" || typeof feed.watchTicker !== "function") {
+      sendError(ws, id, `Method '${method}' not found on ${feedName}`);
+      cleanup();
+      return;
+    }
+
+    unsubscribe = feed.watchTicker(symbol, (data) => {
+      if (!signal.aborted && ws.readyState === WebSocket.OPEN) {
+        send(ws, { id, event: "data", method, symbol, source: feedName, data });
+      }
+    });
+    send(ws, { event: "subscribed", id });
+    await done;
+  } catch (err: unknown) {
+    if (!signal.aborted) {
+      const message =
+        err instanceof BaseError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Unknown streaming error";
+      const code = err instanceof BaseError ? err.code : undefined;
+      sendError(ws, id, message, code);
+    }
+    cleanup();
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -254,35 +375,78 @@ export function createWebSocketHandler(
       const id = parsed.id as string | undefined;
       const action = parsed.action as string | undefined;
       const exchange = parsed.exchange as string | undefined;
+      const feed = parsed.feed as string | undefined;
 
       const method = parsed.method as string | undefined;
 
-      if (!id || !action || !exchange || !method) {
-        sendError(ws, id, "Missing required fields: id, action, exchange, method");
+      if (!id || !action) {
+        sendError(ws, id, "Missing required fields: id, action");
         return;
       }
 
-      const exchangeName = exchange.toLowerCase();
+      if (action === "unsubscribe" && !method && !exchange && !feed) {
+        handleUnsubscribeById(ws, state, id);
+        return;
+      }
+
+      if (!method) {
+        sendError(ws, id, "Missing required field: method");
+        return;
+      }
+
+      if ((exchange && feed) || (!exchange && !feed)) {
+        sendError(ws, id, "Missing required target: provide exactly one of exchange or feed");
+        return;
+      }
 
       if (action === "subscribe") {
-        const msg: SubscribeMessage = {
-          id,
-          action: "subscribe",
-          exchange: exchangeName,
-          method,
-          args: (parsed.args as unknown[]) || [],
-          credentials: parsed.credentials as ExchangeCredentials | undefined,
-        };
-        handleSubscribe(ws, state, msg, exchangeName);
+        if (feed) {
+          const feedName = feed.toLowerCase();
+          const msg: FeedSubscribeMessage = {
+            id,
+            action: "subscribe",
+            targetKind: "feed",
+            feed: feedName,
+            method,
+            args: (parsed.args as unknown[]) || [],
+          };
+          handleFeedSubscribe(ws, state, msg, feedName);
+        } else {
+          const exchangeName = exchange!.toLowerCase();
+          const msg: SubscribeMessage = {
+            id,
+            action: "subscribe",
+            targetKind: "exchange",
+            exchange: exchangeName,
+            method,
+            args: (parsed.args as unknown[]) || [],
+            credentials: parsed.credentials as ExchangeCredentials | undefined,
+          };
+          handleSubscribe(ws, state, msg, exchangeName);
+        }
       } else if (action === "unsubscribe") {
-        const msg: UnsubscribeMessage = {
-          id,
-          action: "unsubscribe",
-          exchange: exchangeName,
-          method,
-          args: (parsed.args as unknown[]) || [],
-        };
-        handleUnsubscribe(ws, state, msg, exchangeName);
+        if (feed) {
+          const msg: FeedUnsubscribeMessage = {
+            id,
+            action: "unsubscribe",
+            targetKind: "feed",
+            feed: feed.toLowerCase(),
+            method,
+            args: (parsed.args as unknown[]) || [],
+          };
+          handleUnsubscribe(ws, state, msg);
+        } else {
+          const exchangeName = exchange!.toLowerCase();
+          const msg: UnsubscribeMessage = {
+            id,
+            action: "unsubscribe",
+            targetKind: "exchange",
+            exchange: exchangeName,
+            method,
+            args: (parsed.args as unknown[]) || [],
+          };
+          handleUnsubscribe(ws, state, msg);
+        }
       } else {
         sendError(ws, id, `Unknown action: ${action}`);
       }
@@ -378,7 +542,7 @@ function handleSubscribe(
   }
 
   const abortController = new AbortController();
-  state.subscriptions.set(key, { abortController });
+  state.subscriptions.set(key, { id, abortController });
 
   const streamFn = method === "watchOrderBooks" ? streamBatch : streamSingle;
 
@@ -400,6 +564,60 @@ function handleSubscribe(
       error: err instanceof Error ? err.message : String(err),
     });
     sendError(ws, id, err instanceof Error ? err.message : 'Streaming error');
+  }).finally(() => {
+    state.subscriptions.delete(key);
+  });
+}
+
+function handleFeedSubscribe(
+  ws: WebSocket,
+  state: ClientState,
+  msg: FeedSubscribeMessage,
+  feedName: string,
+): void {
+  const { id, method, args } = msg;
+
+  if (!FEED_WATCH_METHODS.has(method)) {
+    sendError(ws, id, `Method '${method}' is not a feed streaming method. Use the HTTP API for non-streaming calls.`);
+    return;
+  }
+
+  const key = subscriptionKey(msg);
+
+  if (state.subscriptions.has(key)) {
+    sendError(ws, id, `Already subscribed to ${key}`);
+    return;
+  }
+
+  let feed: IDataFeed;
+  try {
+    feed = getFeed(feedName);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to create feed";
+    sendError(ws, id, message);
+    return;
+  }
+
+  const abortController = new AbortController();
+  state.subscriptions.set(key, { id, abortController });
+
+  streamFeedSingle(
+    feed,
+    feedName,
+    method,
+    args || [],
+    id,
+    ws,
+    abortController.signal,
+  ).catch((err: unknown) => {
+    logger.warn('ws-handler: feed stream ended with unexpected error', {
+      feed: feedName,
+      method,
+      id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    sendError(ws, id, err instanceof Error ? err.message : 'Streaming error');
+  }).finally(() => {
     state.subscriptions.delete(key);
   });
 }
@@ -408,7 +626,6 @@ function handleUnsubscribe(
   ws: WebSocket,
   state: ClientState,
   msg: ClientMessage,
-  exchangeName: string,
 ): void {
   const { id } = msg;
 
@@ -428,4 +645,27 @@ function handleUnsubscribe(
   state.subscriptions.delete(key);
 
   send(ws, { event: "subscribed", id }); // Acknowledge unsubscribe
+}
+
+function handleUnsubscribeById(
+  ws: WebSocket,
+  state: ClientState,
+  id: string,
+): void {
+  let cancelled = false;
+
+  for (const [key, sub] of state.subscriptions) {
+    if (sub.id === id) {
+      sub.abortController.abort();
+      state.subscriptions.delete(key);
+      cancelled = true;
+    }
+  }
+
+  if (!cancelled) {
+    sendError(ws, id, `No active subscription for id ${id}`);
+    return;
+  }
+
+  send(ws, { event: "subscribed", id });
 }

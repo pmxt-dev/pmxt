@@ -100,6 +100,14 @@ pip install pmxt
 npm install pmxtjs
 ```
 
+### CLI
+```bash
+npm install -g @pmxt/cli
+pmxt polymarket markets --query Trump --limit 5
+pmxt polymarket fetchMarkets --query Trump --limit 5
+pmxt auth status
+```
+
 ### Running from Source
 ```bash
 git clone https://github.com/pmxt-dev/pmxt.git

@@ -18,6 +18,7 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}Step 1: Cleaning build artifacts...${NC}"
 rm -rf core/dist
 rm -rf sdks/typescript/dist
+rm -rf sdks/cli/dist
 rm -rf sdks/typescript/generated
 rm -rf sdks/python/generated
 rm -rf sdks/python/dist
@@ -100,8 +101,20 @@ npm publish --workspace=pmxtjs --dry-run 2>&1 | tee /tmp/pmxtjs-publish.log || {
 }
 echo ""
 
-# Step 9: Test Python package
-echo -e "${BLUE}Step 9: Testing Python package...${NC}"
+echo -e "${BLUE}Step 9: Dry run publish (@pmxt/cli)...${NC}"
+npm publish --workspace=@pmxt/cli --dry-run 2>&1 | tee /tmp/pmxt-cli-publish.log || {
+    if grep -q "cannot publish over the previously published versions" /tmp/pmxt-cli-publish.log; then
+        echo -e "${GREEN}[OK] @pmxt/cli package is valid (version already published - expected)${NC}"
+    else
+        echo -e "${RED}[FAIL] Dry run publish failed for @pmxt/cli${NC}"
+        kill $SERVER_PID 2>/dev/null || true
+        exit 1
+    fi
+}
+echo ""
+
+# Step 10: Test Python package
+echo -e "${BLUE}Step 10: Testing Python package...${NC}"
 cd sdks/python
 
 # Install Python dependencies
@@ -119,7 +132,7 @@ echo -e "${GREEN}[OK] Python tests passed${NC}"
 echo ""
 
 # Build Python package
-echo -e "${BLUE}Step 10: Building Python package...${NC}"
+echo -e "${BLUE}Step 11: Building Python package...${NC}"
 python3 -m build || {
     echo -e "${RED}[FAIL] Python build failed${NC}"
     kill $SERVER_PID 2>/dev/null || true
@@ -129,7 +142,7 @@ echo -e "${GREEN}[OK] Python package built${NC}"
 echo ""
 
 # Verify package metadata
-echo -e "${BLUE}Step 11: Verifying Python package metadata...${NC}"
+echo -e "${BLUE}Step 12: Verifying Python package metadata...${NC}"
 twine check dist/* || {
     echo -e "${RED}[FAIL] Python package metadata verification failed${NC}"
     kill $SERVER_PID 2>/dev/null || true

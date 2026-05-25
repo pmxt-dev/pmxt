@@ -9,7 +9,7 @@ import { createFeedRouter } from "./feed-routes";
 import { createSqlRouter } from "./sql-route";
 import { ExchangeCredentials, PredictionMarketExchange } from "../BaseExchange";
 import { Router } from "../router";
-import { BaseError } from "../errors";
+import { BaseError, ValidationError } from "../errors";
 import { logger } from "../utils/logger";
 
 // ---------------------------------------------------------------------------
@@ -144,6 +144,102 @@ function queryToArgs(
     args.pop();
   }
   return args;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function toDateParam(value: unknown, field: string, exchange?: string): Date {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      throw new ValidationError(`${field} must be a valid date-time value.`, field, exchange);
+    }
+    return value;
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  throw new ValidationError(`${field} must be a valid date-time string or timestamp.`, field, exchange);
+}
+
+function normalizeDateFields(
+  params: Record<string, unknown>,
+  fields: string[],
+  exchange?: string,
+): Record<string, unknown> {
+  const normalized = { ...params };
+  for (const field of fields) {
+    const value = normalized[field];
+    if (value === undefined || value === null || value === "") continue;
+    normalized[field] = toDateParam(value, field, exchange);
+  }
+  return normalized;
+}
+
+function isMissing(value: unknown): boolean {
+  return value === undefined || value === null || value === "";
+}
+
+function assertFiniteNumber(params: Record<string, unknown>, field: string, exchange?: string): void {
+  const value = params[field];
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new ValidationError(`createOrder params.${field} must be a finite number.`, field, exchange);
+  }
+}
+
+function validateCreateOrderParams(params: unknown, exchange?: string): Record<string, unknown> {
+  if (!isRecord(params)) {
+    throw new ValidationError("createOrder requires an order parameter object.", "params", exchange);
+  }
+
+  const required = ["marketId", "outcomeId", "side", "type", "amount"];
+  const missing = required.filter((field) => isMissing(params[field]));
+  if (missing.length > 0) {
+    throw new ValidationError(
+      `createOrder requires ${missing.map((field) => `params.${field}`).join(", ")}.`,
+      missing[0],
+      exchange,
+    );
+  }
+
+  if (params.side !== "buy" && params.side !== "sell") {
+    throw new ValidationError('createOrder params.side must be "buy" or "sell".', "side", exchange);
+  }
+  if (params.type !== "market" && params.type !== "limit") {
+    throw new ValidationError('createOrder params.type must be "market" or "limit".', "type", exchange);
+  }
+
+  assertFiniteNumber(params, "amount", exchange);
+
+  if (params.type === "limit" && isMissing(params.price)) {
+    throw new ValidationError("createOrder params.price is required for limit orders.", "price", exchange);
+  }
+  if (!isMissing(params.price)) {
+    assertFiniteNumber(params, "price", exchange);
+  }
+  if (!isMissing(params.fee)) {
+    assertFiniteNumber(params, "fee", exchange);
+  }
+
+  return params;
+}
+
+function normalizeDispatchArgs(methodName: string, args: unknown[], exchange?: string): unknown[] {
+  const normalized = [...args];
+
+  if (methodName === "fetchOHLCV" && isRecord(normalized[1])) {
+    normalized[1] = normalizeDateFields(normalized[1], ["start", "end"], exchange);
+  }
+
+  if (methodName === "createOrder") {
+    normalized[0] = validateCreateOrderParams(normalized[0], exchange);
+  }
+
+  return normalized;
 }
 
 // Singleton instances for local usage (when no credentials provided)
@@ -336,7 +432,8 @@ export function createApp(options: CreateAppOptions = {}): Express {
         return;
       }
 
-      const result = await exchange[methodName](...args);
+      const normalizedArgs = normalizeDispatchArgs(methodName, args, exchangeName);
+      const result = await exchange[methodName](...normalizedArgs);
       res.json({ success: true, data: result });
     } catch (error: any) {
       next(error);

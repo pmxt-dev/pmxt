@@ -592,6 +592,60 @@ describe('KalshiNormalizer', () => {
             expect(event.title).toBe('Fed Funds Rate Decision - January 2025');
         });
 
+        it('uses series title plus theme for contaminated futures event titles', () => {
+            const markets: KalshiRawMarket[] = [
+                ['PSG', 'Paris Saint-Germain'],
+                ['ARSENAL', 'Arsenal'],
+                ['BARCELONA', 'Barcelona'],
+                ['BAYERN', 'Bayern Munich'],
+                ['REALMADRID', 'Real Madrid'],
+            ].map(([ticker, label]) => ({
+                ticker: `KXUCL-26-${ticker}`,
+                title: `Will ${label} win the UEFA Champions League?`,
+                yes_sub_title: label,
+                last_price_dollars: '0.20',
+                expiration_time: '2026-06-01T00:00:00Z',
+            }));
+            const contaminatedEvent: KalshiRawEvent = {
+                event_ticker: 'KXUCL-26',
+                title: 'Champions League Winner: PSG vs Arsenal',
+                series_ticker: 'KXUCL',
+                series_title: 'UEFA Champions League',
+                mutually_exclusive: true,
+                markets,
+            };
+
+            const result = normalizer.normalizeEvent(contaminatedEvent)!;
+
+            expect(result.title).toBe('UEFA Champions League Winner');
+            expect(result.markets[0].title).toBe('Will Paris Saint-Germain win the UEFA Champions League?');
+            expect(result.markets[0].outcomes[0].label).toBe('Paris Saint-Germain');
+        });
+
+        it('keeps true matchup event titles even when a series title is present', () => {
+            const matchupMarkets: KalshiRawMarket[] = [
+                ['PSG', 'Paris Saint-Germain'],
+                ['DRAW', 'Draw'],
+                ['ARSENAL', 'Arsenal'],
+            ].map(([ticker, label]) => ({
+                ticker: `KXUCL-26-PSGARS-${ticker}`,
+                title: `${label} result`,
+                yes_sub_title: label,
+                last_price_dollars: '0.33',
+                expiration_time: '2026-05-06T00:00:00Z',
+            }));
+            const matchupEvent: KalshiRawEvent = {
+                event_ticker: 'KXUCL-26-PSGARS',
+                title: 'Champions League: PSG vs Arsenal',
+                series_ticker: 'KXUCL',
+                series_title: 'UEFA Champions League',
+                mutually_exclusive: true,
+                markets: matchupMarkets,
+            };
+
+            expect(normalizer.normalizeEvent(matchupEvent)!.title).toBe('Champions League: PSG vs Arsenal');
+        });
+
         it('derives description from market rules', () => {
             expect(event.description).toBe('This market resolves YES if the Fed Funds Rate is above 4.75% on Jan 29, 2025.');
         });

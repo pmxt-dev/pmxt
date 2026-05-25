@@ -28,6 +28,7 @@ import * as errors from "./pmxt/errors.js";
 export { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, Baozi, Opinion, Metaculus, Smarkets, PolymarketUS, GeminiTitan, Hyperliquid, SuiBets, Mock, PolymarketOptions } from "./pmxt/client.js";
 export { Router } from "./pmxt/router.js";
 export { ServerManager } from "./pmxt/server-manager.js";
+export { HOSTED_URL, LOCAL_URL, ENV, resolvePmxtBaseUrl } from "./pmxt/constants.js";
 export { MarketList } from "./pmxt/models.js";
 export type * from "./pmxt/models.js";
 export * from "./pmxt/errors.js";

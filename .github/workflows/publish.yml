@@ -118,6 +118,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Publish @pmxt/cli
+        run: npm publish --workspace=@pmxt/cli --provenance --access public --tag ${{ steps.get_version.outputs.npm_tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   publish-python:
     name: Publish pmxt (Python)
     runs-on: ubuntu-latest
@@ -243,6 +248,7 @@ jobs:
             **npm:**
             ```bash
             npm install pmxtjs@${{ steps.get_version.outputs.version }}
+            npm install -g @pmxt/cli@${{ steps.get_version.outputs.version }}
             ```
 
             **PyPI:**
@@ -252,6 +258,7 @@ jobs:
 
             ## Links
             - [npm: pmxtjs](https://www.npmjs.com/package/pmxtjs/v/${{ steps.get_version.outputs.version }})
+            - [npm: @pmxt/cli](https://www.npmjs.com/package/@pmxt/cli/v/${{ steps.get_version.outputs.version }})
             - [npm: pmxt-core](https://www.npmjs.com/package/pmxt-core/v/${{ steps.get_version.outputs.version }})
             - [PyPI: pmxt](https://pypi.org/project/pmxt/${{ steps.get_version.outputs.version }}/)
           prerelease: ${{ steps.get_version.outputs.is_prerelease }}

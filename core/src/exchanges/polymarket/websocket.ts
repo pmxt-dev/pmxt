@@ -14,7 +14,7 @@ import {
     POLYMARKET_DEFAULT_SUBSCRIPTION,
 } from '../../subscriber/external/goldsky';
 import { AddressWatcher, WatcherConfig } from '../../subscriber/watcher';
-import { OrderBook, OrderLevel, QueuedPromise, Trade } from '../../types';
+import { OrderBook, QueuedPromise, Trade } from '../../types';
 import { DEFAULT_WATCH_TIMEOUT_MS, withWatchTimeout } from '../../utils/watch-timeout';
 
 
@@ -63,9 +63,12 @@ export interface PolymarketWebSocketConfig {
     userChannelCreds?: PolymarketUserChannelCreds;
     /** Timeout in ms for WebSocket connections to open (default: 30000). */
     connectionTimeoutMs?: number;
+    /** Time to wait for an initial market-channel book before using a REST snapshot fallback. */
+    snapshotFallbackMs?: number;
 }
 
 const DEFAULT_CONNECTION_TIMEOUT_MS = 30_000;
+const DEFAULT_SNAPSHOT_FALLBACK_MS = 3_000;
 const MAX_PENDING_TRADES_PER_ASSET = 1000;
 const MAX_USER_CALLBACKS = 100;
 
@@ -85,8 +88,11 @@ export class PolymarketWebSocket {
     private orderBooks = new Map<string, OrderBook>();
     private config: PolymarketWebSocketConfig;
     private initializationPromise?: Promise<void>;
+    private marketPingInterval: ReturnType<typeof setInterval> | null = null;
+    private readonly callApi: (operationId: string, params?: Record<string, any>) => Promise<any>;
 
     constructor(callApi: (operationId: string, params?: Record<string, any>) => Promise<any>, config: PolymarketWebSocketConfig = {}) {
+        this.callApi = callApi;
         this.config = config;
         const watcherConfig = this.config.watcherConfig;
         const subscriber = new GoldSkySubscriber({
@@ -106,14 +112,22 @@ export class PolymarketWebSocket {
         await this.ensureInitialized();
         await this.subscribe([outcomeId]);
 
-        // Return a promise that resolves on the next orderbook update
+        // Return a promise that resolves on the next orderbook update.
+        // If the upstream market channel accepts the subscription but stays
+        // quiet, return a real REST snapshot instead of hanging indefinitely.
+        const resolverEntry: QueuedPromise<OrderBook> = {
+            resolve: () => {},
+            reject: () => {},
+        };
         const dataPromise = new Promise<OrderBook>((resolve, reject) => {
+            resolverEntry.resolve = resolve;
+            resolverEntry.reject = reject;
             const existing = this.orderBookResolvers.get(outcomeId) ?? [];
-            this.orderBookResolvers.set(outcomeId, [...existing, { resolve, reject }]);
+            this.orderBookResolvers.set(outcomeId, [...existing, resolverEntry]);
         });
 
         return withWatchTimeout(
-            dataPromise,
+            this.withSnapshotFallback(outcomeId, dataPromise, resolverEntry),
             this.config.watchTimeoutMs ?? DEFAULT_WATCH_TIMEOUT_MS,
             `watchOrderBook('${outcomeId}')`,
         );
@@ -323,6 +337,7 @@ export class PolymarketWebSocket {
             this.ws.close();
             this.ws = null;
         }
+        this.stopMarketHeartbeat();
         this.subscribedAssets.clear();
         this.closeUserChannel();
         this.watcher.close();
@@ -361,12 +376,15 @@ export class PolymarketWebSocket {
 
             this.ws.on('open', () => {
                 clearTimeout(timeout);
+                this.startMarketHeartbeat();
                 resolve();
             });
 
             this.ws.on('message', (raw: any) => {
                 try {
-                    const msgs = JSON.parse(raw.toString());
+                    const text = raw.toString();
+                    if (text === 'PONG' || text === 'PING') return;
+                    const msgs = JSON.parse(text);
                     const arr = Array.isArray(msgs) ? msgs : [msgs];
                     for (const msg of arr) {
                         const type = msg.event_type;
@@ -384,10 +402,13 @@ export class PolymarketWebSocket {
             this.ws.on('error', (err: Error) => {
                 clearTimeout(timeout);
                 logger.error('[polymarket-ws] WebSocket error', { error: err.message });
+                this.rejectPendingMarketResolvers(err);
                 reject(err);
             });
 
             this.ws.on('close', () => {
+                this.stopMarketHeartbeat();
+                this.rejectPendingMarketResolvers(new Error('Polymarket market channel closed'));
                 this.initializationPromise = undefined;
                 this.ws = null;
             });
@@ -399,24 +420,117 @@ export class PolymarketWebSocket {
     private handleBookSnapshot(event: any) {
         const id = event.asset_id;
 
-        const bids: OrderLevel[] = event.bids.map((b: any) => ({
-            price: parseFloat(b.price),
-            size: parseFloat(b.size),
-        })).sort((a: any, b: any) => b.price - a.price);
-
-        const asks: OrderLevel[] = event.asks.map((a: any) => ({
-            price: parseFloat(a.price),
-            size: parseFloat(a.size),
-        })).sort((a: any, b: any) => a.price - b.price);
-
-        const orderBook: OrderBook = {
-            bids,
-            asks,
-            timestamp: event.timestamp ? (isNaN(Number(event.timestamp)) ? new Date(event.timestamp).getTime() : Number(event.timestamp)) : Date.now(),
-        };
+        const orderBook = this.normalizeRawOrderBook(event);
 
         this.orderBooks.set(id, orderBook);
         this.resolveOrderBook(id, orderBook);
+    }
+
+    private withSnapshotFallback(
+        outcomeId: string,
+        dataPromise: Promise<OrderBook>,
+        resolverEntry: QueuedPromise<OrderBook>,
+    ): Promise<OrderBook> {
+        const fallbackMs = this.config.snapshotFallbackMs ?? DEFAULT_SNAPSHOT_FALLBACK_MS;
+        if (fallbackMs <= 0) return dataPromise;
+
+        let timer: ReturnType<typeof setTimeout>;
+        const fallbackPromise = new Promise<OrderBook>((resolve, reject) => {
+            timer = setTimeout(async () => {
+                this.removeOrderBookResolver(outcomeId, resolverEntry);
+                try {
+                    resolve(await this.fetchOrderBookSnapshot(outcomeId));
+                } catch (error) {
+                    reject(error);
+                }
+            }, fallbackMs);
+        });
+
+        return Promise.race([dataPromise, fallbackPromise]).finally(() => {
+            clearTimeout(timer);
+        });
+    }
+
+    private removeOrderBookResolver(outcomeId: string, resolverEntry: QueuedPromise<OrderBook>): void {
+        const resolvers = this.orderBookResolvers.get(outcomeId);
+        if (!resolvers) return;
+        const filtered = resolvers.filter((entry) => entry !== resolverEntry);
+        if (filtered.length > 0) {
+            this.orderBookResolvers.set(outcomeId, filtered);
+        } else {
+            this.orderBookResolvers.delete(outcomeId);
+        }
+    }
+
+    private async fetchOrderBookSnapshot(outcomeId: string): Promise<OrderBook> {
+        const raw = await this.callApi('getBook', { token_id: outcomeId });
+        const orderBook = this.normalizeRawOrderBook({
+            ...raw,
+            asset_id: raw?.asset_id ?? outcomeId,
+        });
+        this.orderBooks.set(outcomeId, orderBook);
+        return orderBook;
+    }
+
+    private normalizeRawOrderBook(raw: any): OrderBook {
+        const bids = (raw?.bids || []).map((level: any) => ({
+            price: parseFloat(level.price),
+            size: parseFloat(level.size),
+        })).sort((a: any, b: any) => b.price - a.price);
+
+        const asks = (raw?.asks || []).map((level: any) => ({
+            price: parseFloat(level.price),
+            size: parseFloat(level.size),
+        })).sort((a: any, b: any) => a.price - b.price);
+
+        return {
+            bids,
+            asks,
+            timestamp: this.parseTimestamp(raw?.timestamp),
+        };
+    }
+
+    private parseTimestamp(value: unknown): number {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string' && value.length > 0) {
+            const numeric = Number(value);
+            return Number.isNaN(numeric) ? new Date(value).getTime() : numeric;
+        }
+        return Date.now();
+    }
+
+    private startMarketHeartbeat(): void {
+        this.stopMarketHeartbeat();
+        this.marketPingInterval = setInterval(() => {
+            if (this.ws && this.ws.readyState === 1) {
+                try {
+                    this.ws.send('PING');
+                } catch (error) {
+                    logger.warn('[polymarket-ws] market heartbeat failed', {
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            }
+        }, 10_000);
+    }
+
+    private stopMarketHeartbeat(): void {
+        if (this.marketPingInterval) {
+            clearInterval(this.marketPingInterval);
+            this.marketPingInterval = null;
+        }
+    }
+
+    private rejectPendingMarketResolvers(error: Error): void {
+        for (const [, resolvers] of this.orderBookResolvers) {
+            for (const resolver of resolvers) resolver.reject(error);
+        }
+        this.orderBookResolvers.clear();
+
+        for (const [, resolvers] of this.tradeResolvers) {
+            for (const resolver of resolvers) resolver.reject(error);
+        }
+        this.tradeResolvers.clear();
     }
 
     private handlePriceChange(event: any) {

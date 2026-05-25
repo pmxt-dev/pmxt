@@ -287,7 +287,10 @@ export class Router extends PredictionMarketExchange {
 
         // Lookup mode: find matches for a specific market.
         const response = await this.client.getMarketMatches(params);
-        const matches = response.matches ?? [];
+        if (!response || !Array.isArray(response.matches)) {
+            throw new Error('fetchMarketMatches returned an unexpected response shape: missing matches array');
+        }
+        const matches = response.matches;
         return matches.map((m: any) => ({
             market: m.market,
             relation: m.relation,
@@ -337,7 +340,12 @@ export class Router extends PredictionMarketExchange {
         const hasIdentifier = params.eventId || params.slug;
         if (!hasIdentifier) {
             const results = await this.client.browseEventMatches(params);
-            return Array.isArray(results) ? results : [];
+            if (!Array.isArray(results)) {
+                throw new Error(
+                    `browseEventMatches returned unexpected type '${typeof results}'`
+                );
+            }
+            return results;
         }
 
         if (await this.resolveLocalMockEventLookup(params)) {
@@ -346,7 +354,10 @@ export class Router extends PredictionMarketExchange {
 
         // Lookup mode: find matches for a specific event.
         const response = await this.client.getEventMatches(params);
-        return response.matches ?? [];
+        if (!response || !Array.isArray(response.matches)) {
+            throw new Error('fetchEventMatches returned an unexpected response shape: missing matches array');
+        }
+        return response.matches;
     }
 
     // -----------------------------------------------------------------------

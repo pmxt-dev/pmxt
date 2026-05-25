@@ -23,6 +23,15 @@ import { SeededRng } from './seededRng';
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 const round = (n: number, decimals = 3) => parseFloat(n.toFixed(decimals));
+const toTimestamp = (value: Date | string | number | undefined): number | undefined => {
+    if (value === undefined) return undefined;
+    if (value instanceof Date) return value.getTime();
+    const parsed = typeof value === 'number' ? value : new Date(value).getTime();
+    if (!Number.isFinite(parsed)) {
+        throw new Error(`Invalid date value: ${String(value)}`);
+    }
+    return parsed;
+};
 
 const CATEGORIES = ['Politics', 'Sports', 'Crypto', 'Finance', 'Science', 'Entertainment', 'Tech', 'World'];
 const LOREM = `lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor
@@ -375,8 +384,8 @@ export class MockExchange extends PredictionMarketExchange {
         };
         const step = resolutionMs[params.resolution] ?? 3_600_000;
         const limit = params.limit ?? 100;
-        const end = params.end ? params.end.getTime() : Date.now();
-        const start = params.start ? params.start.getTime() : end - step * limit;
+        const end = toTimestamp(params.end) ?? Date.now();
+        const start = toTimestamp(params.start) ?? end - step * limit;
         const candles: PriceCandle[] = [];
         let price = round(f.float(0.2, 0.8), 3);
         let t = start;

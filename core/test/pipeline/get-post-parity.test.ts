@@ -75,6 +75,15 @@ async function apiPost<T>(exchange: string, method: string, args: unknown[]): Pr
     return (body as ApiSuccess<T>).data;
 }
 
+async function apiPostRaw(exchange: string, method: string, args: unknown[]) {
+    const res = await fetch(`${baseUrl}/api/${exchange}/${method}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ args }),
+    });
+    return { status: res.status, body: await res.json() };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -259,6 +268,51 @@ describe('GET/POST parity (mock exchange)', () => {
                 expect(g.close).toBe(p.close);
                 expect(g.volume).toBe(p.volume);
             }
+        });
+
+        it('accepts date-time strings for start and end on both GET and POST', async () => {
+            if (!sharedOutcomeId) {
+                const markets = await apiGet<any[]>('/api/mock/fetchMarkets?limit=1');
+                sharedOutcomeId = markets[0].outcomes[0].outcomeId;
+            }
+
+            const outcomeIdParam = encodeURIComponent(sharedOutcomeId);
+            const start = '2026-01-01T00:00:00.000Z';
+            const end = '2026-01-01T03:00:00.000Z';
+            const expectedStart = Date.parse(start);
+
+            const getResult = await apiGet<any[]>(
+                `/api/mock/fetchOHLCV?outcomeId=${outcomeIdParam}` +
+                    `&resolution=1h&start=${encodeURIComponent(start)}` +
+                    `&end=${encodeURIComponent(end)}&limit=3`,
+            );
+            const postResult = await apiPost<any[]>('mock', 'fetchOHLCV', [
+                sharedOutcomeId,
+                { resolution: '1h', start, end, limit: 3 },
+            ]);
+
+            expect(getResult.map((c: any) => c.timestamp)).toEqual([
+                expectedStart,
+                expectedStart + 3_600_000,
+                expectedStart + 7_200_000,
+            ]);
+            expect(postResult.map((c: any) => c.timestamp)).toEqual([
+                expectedStart,
+                expectedStart + 3_600_000,
+                expectedStart + 7_200_000,
+            ]);
+        });
+    });
+
+    describe('createOrder validation', () => {
+        it('returns a clean validation error for missing required order fields', async () => {
+            const { status, body } = await apiPostRaw('mock', 'createOrder', [{}]);
+
+            expect(status).toBe(400);
+            expect(body.success).toBe(false);
+            expect(body.error.code).toBe('VALIDATION_ERROR');
+            expect(body.error.message).toContain('createOrder requires params.marketId');
+            expect(body.error.message).not.toContain('Cannot read properties');
         });
     });
 });

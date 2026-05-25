@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.44.0] - 2026-05-25
+
+### Added
+
+- **CLI**: Introduced the standalone `@pmxt/cli` package with the `pmxt` executable. It can be installed globally with `npm install -g @pmxt/cli` or run with `npx @pmxt/cli`.
+- **CLI commands**: Added command coverage for the documented PMXT API surface, including markets, events, order books, trades, balances, positions, order build/create/submit/cancel/get, router matches, data feeds, feed streaming, WebSocket watch commands, enterprise commands, and local server management.
+- **CLI aliases**: Added an explicit alias layer for exchange-first UX such as `pmxt polymarket fetchMarkets --query Trump`, direct camelCase method aliases such as `pmxt fetchMarkets`, and space-separated command groups such as `pmxt order create` and `pmxt feed fetchTicker`.
+- **CLI auth**: Added `pmxt auth` commands for PMXT API keys and exchange credentials. Commands support saved auth, environment variables, and one-shot flags so automation can avoid interactive prompts.
+- **CLI packaging**: Added a dedicated `sdks/cli` workspace, oclif command discovery, package validation, and npm package metadata for publishing `@pmxt/cli`.
+
+### Changed
+
+- **TypeScript SDK**: Decoupled the command-line interface from `pmxtjs`. Installing `pmxtjs` now provides the SDK only; installing `@pmxt/cli` provides the CLI.
+- **Release workflow**: Updated CI/CD versioning, dry-run publishing, npm publishing, local release scripts, and GitHub release notes to include `@pmxt/cli` alongside `pmxt-core`, `pmxtjs`, and the Python `pmxt` package.
+
+### Fixed
+
+- **Package metadata**: Normalized `pmxt-core` npm metadata so publish dry-runs no longer rely on npm auto-correcting repository and bin path fields.
+- **Release dry run**: Updated the local version-update dry-run helper to validate CLI package versioning, `pmxtjs` dependency pinning, Python `__init__` versioning, and generated SDK version arguments.
+- **CLI auth**: `pmxt auth status` now dispatches correctly while preserving the existing `pmxt auth:status` command.
+
 ## [2.43.27] - 2026-05-25
 
 ### Fixed

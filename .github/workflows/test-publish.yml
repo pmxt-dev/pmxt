@@ -10,7 +10,7 @@ on:
 
 jobs:
   test-js-packages:
-    name: Test JS Packages (Core & SDK)
+    name: Test JS Packages (Core, SDK & CLI)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +51,9 @@ jobs:
 
       - name: Dry Run Publish pmxtjs
         run: npm publish --workspace=pmxtjs --dry-run
+
+      - name: Dry Run Publish @pmxt/cli
+        run: npm publish --workspace=@pmxt/cli --dry-run
 
   test-python-package:
     name: Test Python Package

@@ -736,6 +736,7 @@ function buildCapabilityMap() {
         metaculus: new pmxt.Metaculus(),
         smarkets: new pmxt.Smarkets(),
         polymarket_us: new pmxt.PolymarketUS(),
+        suibets: new pmxt.SuiBets(),
         router: new pmxt.Router({ apiKey: '_' }),
     };
 
@@ -2287,7 +2288,7 @@ function buildSpec(methodSpecs) {
           name: 'exchange',
           schema: {
             type: 'string',
-            enum: ['polymarket', 'kalshi', 'kalshi-demo', 'limitless', 'probable', 'baozi', 'myriad', 'opinion', 'metaculus', 'smarkets', 'polymarket_us', 'gemini-titan', 'hyperliquid', 'mock', 'router'],
+            enum: ['polymarket', 'kalshi', 'kalshi-demo', 'limitless', 'probable', 'baozi', 'myriad', 'opinion', 'metaculus', 'smarkets', 'polymarket_us', 'gemini-titan', 'hyperliquid', 'suibets', 'mock', 'router'],
           },
           required: true,
           description: 'The prediction market exchange to target.',

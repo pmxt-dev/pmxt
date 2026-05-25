@@ -19,7 +19,7 @@
  */
 
 
-import { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, Baozi, Opinion, Metaculus, Smarkets, PolymarketUS, GeminiTitan, Hyperliquid, Mock } from "./pmxt/client.js";
+import { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, Baozi, Opinion, Metaculus, Smarkets, PolymarketUS, GeminiTitan, Hyperliquid, SuiBets, Mock } from "./pmxt/client.js";
 import { Router } from "./pmxt/router.js";
 import { ServerManager } from "./pmxt/server-manager.js";
 import * as models from "./pmxt/models.js";
@@ -82,6 +82,7 @@ const pmxt = {
     PolymarketUS,
     GeminiTitan,
     Hyperliquid,
+    SuiBets,
     Mock,
     Router,
     ServerManager,

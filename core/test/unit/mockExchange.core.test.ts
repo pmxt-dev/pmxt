@@ -57,6 +57,40 @@ describe('MockExchange', () => {
         expect(byParam.asks).toEqual(byToken.asks);
     });
 
+    test('fetchOrderBook honors limit depth', async () => {
+        const ex = new MockExchange({ marketCount: 1, orderLatencyMs: 0 });
+        const market = (await ex.fetchMarkets())[0]!;
+        const outcomeId = market.outcomes[0]!.outcomeId;
+
+        const limited = await ex.fetchOrderBook(outcomeId, 5);
+
+        expect(limited.bids).toHaveLength(5);
+        expect(limited.asks).toHaveLength(5);
+    });
+
+    test('fetchOrderBooks returns books keyed by requested outcome IDs', async () => {
+        const ex = new MockExchange({ marketCount: 1, orderLatencyMs: 0 });
+        const market = (await ex.fetchMarkets())[0]!;
+        const outcomeIds = market.outcomes.slice(0, 2).map((outcome) => outcome.outcomeId);
+
+        const books = await ex.fetchOrderBooks(outcomeIds);
+
+        expect(Object.keys(books)).toEqual(outcomeIds);
+        expect(books[outcomeIds[0]!]!.bids.length).toBeGreaterThan(0);
+        expect(books[outcomeIds[1]!]!.asks.length).toBeGreaterThan(0);
+        expect(ex.has.fetchOrderBooks).toBe(true);
+    });
+
+    test('fetchTrades honors limit', async () => {
+        const ex = new MockExchange({ marketCount: 1, orderLatencyMs: 0 });
+        const market = (await ex.fetchMarkets())[0]!;
+        const outcomeId = market.outcomes[0]!.outcomeId;
+
+        const trades = await ex.fetchTrades(outcomeId, { limit: 3 });
+
+        expect(trades).toHaveLength(3);
+    });
+
     test('instant limit buy debits free cash and creates position', async () => {
         const ex = new MockExchange({ marketCount: 1, orderLatencyMs: 0, balance: 10_000 });
         const m = (await ex.fetchMarkets()).find(x => x.yes) ?? (await ex.fetchMarkets())[0]!;

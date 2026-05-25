@@ -326,12 +326,13 @@ export class MockExchange extends PredictionMarketExchange {
         return limit !== undefined ? events.slice(offset, offset + limit) : events.slice(offset);
     }
 
-    override async fetchOrderBook(id: string, _limit?: number, _params?: Record<string, any>): Promise<OrderBook> {
+    override async fetchOrderBook(id: string, limit?: number, _params?: Record<string, any>): Promise<OrderBook> {
         const resolved = await this.resolveOutcomeAlias(id, _params);
         id = resolved.outcomeId;
         const f = new SeededRng(id);
         const midPrice = round(f.float(0.1, 0.9), 3);
         const spread = round(f.float(0.005, 0.03), 3);
+        const depth = limit === undefined ? 8 : Math.max(0, Math.floor(limit));
 
         const buildLevels = (startPrice: number, direction: 1 | -1, count: number): OrderLevel[] => {
             const levels: OrderLevel[] = [];
@@ -348,10 +349,18 @@ export class MockExchange extends PredictionMarketExchange {
         const bidStart = clamp(round(midPrice - spread / 2, 3), 0.01, 0.99);
 
         return {
-            bids: buildLevels(bidStart, -1, 8).sort((a, b) => b.price - a.price),
-            asks: buildLevels(askStart, 1, 8).sort((a, b) => a.price - b.price),
+            bids: buildLevels(bidStart, -1, depth).sort((a, b) => b.price - a.price),
+            asks: buildLevels(askStart, 1, depth).sort((a, b) => a.price - b.price),
             timestamp: Date.now(),
         };
+    }
+
+    override async fetchOrderBooks(outcomeIds: string[]): Promise<Record<string, OrderBook>> {
+        const books: Record<string, OrderBook> = {};
+        for (const outcomeId of outcomeIds) {
+            books[outcomeId] = await this.fetchOrderBook(outcomeId);
+        }
+        return books;
     }
 
     override async fetchOHLCV(id: string, params: OHLCVParams): Promise<PriceCandle[]> {
@@ -385,7 +394,7 @@ export class MockExchange extends PredictionMarketExchange {
         return candles;
     }
 
-    override async fetchTrades(id: string, _params: TradesParams): Promise<Trade[]> {
+    override async fetchTrades(id: string, params: TradesParams = {}): Promise<Trade[]> {
         const f = new SeededRng(id);
         const count = f.int(5, 30);
         const trades: Trade[] = [];
@@ -401,7 +410,8 @@ export class MockExchange extends PredictionMarketExchange {
                 outcomeId: id,
             });
         }
-        return trades.sort((a, b) => b.timestamp - a.timestamp);
+        const sorted = trades.sort((a, b) => b.timestamp - a.timestamp);
+        return params.limit === undefined ? sorted : sorted.slice(0, Math.max(0, Math.floor(params.limit)));
     }
 
     override async fetchBalance(_address?: string): Promise<Balance[]> {

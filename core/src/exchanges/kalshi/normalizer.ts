@@ -105,7 +105,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
 
         return {
             id: raw.event_ticker,
-            title: raw.title,
+            title: this.deriveEventTitle(raw),
             description: this.deriveEventDescription(raw.markets || []),
             slug: raw.event_ticker,
             markets,
@@ -323,6 +323,149 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
         }
 
         return texts[0];
+    }
+
+    private deriveEventTitle(event: KalshiRawEvent): string {
+        const rawTitle = this.cleanLabel(event.title) || event.event_ticker;
+        const seriesTitle = this.cleanLabel(event.series_title);
+        const markets = event.markets || [];
+
+        if (!seriesTitle || !this.shouldUseSeriesTitle(event, markets)) {
+            return rawTitle;
+        }
+
+        return this.composeSeriesTitle(seriesTitle, this.deriveCommonEventTitle(event, markets));
+    }
+
+    private shouldUseSeriesTitle(event: KalshiRawEvent, markets: KalshiRawMarket[]): boolean {
+        if (event.mutually_exclusive !== true) return false;
+        if (markets.length < 4) return false;
+
+        const rawTitle = this.cleanLabel(event.title);
+        if (!rawTitle) return false;
+
+        const titleLooksScoped = /(?:\bvs\.?\b|\bversus\b|:)/i.test(rawTitle);
+        if (!titleLooksScoped) return false;
+
+        const candidateLabels = markets
+            .map((market) => this.deriveOutcomeLabel(market))
+            .filter((label): label is string => label != null && label.length >= 3);
+
+        if (candidateLabels.length < 4) return false;
+
+        const normalizedTitle = this.normalizeTitleText(rawTitle);
+        const containedLabels = new Set<string>();
+        for (const label of candidateLabels) {
+            const normalizedLabel = this.normalizeTitleText(label);
+            if (normalizedLabel && normalizedTitle.includes(normalizedLabel)) {
+                containedLabels.add(normalizedLabel);
+            }
+        }
+
+        return containedLabels.size >= 2;
+    }
+
+    private deriveCommonEventTitle(event: KalshiRawEvent, markets: KalshiRawMarket[]): string | null {
+        const eventTitlePrefix = this.extractEventTitlePrefix(event.title);
+        if (eventTitlePrefix) {
+            if (this.hasWinVerb(eventTitlePrefix)) return 'Winner';
+            if (this.hasResolutionTerm(eventTitlePrefix)) return eventTitlePrefix;
+        }
+
+        const candidates = new Map<string, number>();
+
+        for (const market of markets) {
+            const marketTitle = this.cleanLabel(market.title);
+            if (!marketTitle) continue;
+
+            const outcomeLabel = this.deriveOutcomeLabel(market);
+            const candidate = this.extractEventTitleFromMarketTitle(marketTitle, outcomeLabel);
+            if (!candidate) continue;
+
+            candidates.set(candidate, (candidates.get(candidate) ?? 0) + 1);
+        }
+
+        let best: string | null = null;
+        let bestCount = 0;
+        for (const [candidate, count] of candidates.entries()) {
+            if (count > bestCount) {
+                best = candidate;
+                bestCount = count;
+            }
+        }
+
+        return best;
+    }
+
+    private extractEventTitleFromMarketTitle(title: string, outcomeLabel: string | null): string | null {
+        const escapedOutcome = outcomeLabel ? this.escapeRegExp(outcomeLabel) : '[^?]+?';
+        const winPattern = new RegExp(`^Will (?:the )?${escapedOutcome} win (?:the )?(.+?)\\??$`, 'i');
+        const winMatch = title.match(winPattern);
+        if (winMatch?.[1]) {
+            return this.ensureWinnerTitle(winMatch[1].trim());
+        }
+
+        const plainWinnerMatch = title.match(/^(.+? Winner)\??$/i);
+        if (plainWinnerMatch?.[1]) return plainWinnerMatch[1].trim();
+
+        const championMatch = title.match(/^(.+? Champion(?:ship)?)\??$/i);
+        if (championMatch?.[1]) return championMatch[1].trim();
+
+        return null;
+    }
+
+    private composeSeriesTitle(seriesTitle: string, commonTitle: string | null): string {
+        if (!commonTitle) return seriesTitle;
+
+        let title = seriesTitle;
+        const year = commonTitle.match(/^\s*(20\d{2})\b/)?.[1];
+        if (year && !new RegExp(`\\b${year}\\b`).test(title)) {
+            title = `${year} ${title}`;
+        }
+
+        if (this.hasResolutionTerm(title)) {
+            return title;
+        }
+
+        const resolutionTerm = this.extractResolutionTerm(commonTitle);
+        if (resolutionTerm) {
+            return `${title} ${resolutionTerm}`;
+        }
+
+        return title;
+    }
+
+    private ensureWinnerTitle(title: string): string {
+        if (this.hasResolutionTerm(title)) return title;
+        return `${title} Winner`;
+    }
+
+    private hasResolutionTerm(title: string): boolean {
+        return /\b(winner|champion|championship|nominee|nomination|election|finals?|cup|award)\b/i.test(title);
+    }
+
+    private extractEventTitlePrefix(title: string): string | null {
+        const match = title.match(/^(.+?)(?:\s*:\s*|\s+[-\u2013\u2014]\s+)(.+)$/u);
+        const prefix = match?.[1]?.trim();
+        if (prefix && this.normalizeTitleText(prefix) === 'series winner') return null;
+        return prefix || null;
+    }
+
+    private extractResolutionTerm(title: string): string | null {
+        const match = title.match(/\b(Winner|Champion|Championship|Nominee|Nomination|Election|Finals?|Cup|Award)\b\s*$/i);
+        return match?.[1] || null;
+    }
+
+    private hasWinVerb(title: string): boolean {
+        return /\bwin(?:s|ning)?\b/i.test(title);
+    }
+
+    private normalizeTitleText(value: string): string {
+        return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    }
+
+    private escapeRegExp(value: string): string {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     private deriveOutcomeLabel(market: KalshiRawMarket): string | null {

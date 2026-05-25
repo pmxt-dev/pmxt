@@ -42,13 +42,21 @@ export interface KalshiRawMarket {
 export interface KalshiRawEvent {
     event_ticker: string;
     title: string;
+    sub_title?: string;
     image_url?: string;
     category?: string;
     tags?: string[];
     series_ticker?: string;
+    series_title?: string;
+    mutually_exclusive?: boolean;
     markets?: KalshiRawMarket[];
 
     [key: string]: unknown;
+}
+
+interface KalshiSeriesInfo {
+    title?: string;
+    tags?: string[];
 }
 
 export interface KalshiRawEventPage {
@@ -149,7 +157,7 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
 
     // Instance-level cache (moved from module-level)
     private cachedEvents: KalshiRawEvent[] | null = null;
-    private cachedSeriesMap: Map<string, string[]> | null = null;
+    private cachedSeriesMap: Map<string, KalshiSeriesInfo> | null = null;
     private lastCacheTime: number = 0;
 
     constructor(ctx: FetcherContext) {
@@ -205,16 +213,16 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
                     this.fetchAllWithStatus('closed'),
                     this.fetchAllWithStatus('settled'),
                 ]);
-                return [...openEvents, ...closedEvents, ...settledEvents];
+                return this.enrichEventsWithSeriesList([...openEvents, ...closedEvents, ...settledEvents]);
             } else if (status === 'closed' || status === 'inactive') {
                 const [closedEvents, settledEvents] = await Promise.all([
                     this.fetchAllWithStatus('closed'),
                     this.fetchAllWithStatus('settled'),
                 ]);
-                return [...closedEvents, ...settledEvents];
+                return this.enrichEventsWithSeriesList([...closedEvents, ...settledEvents]);
             }
 
-            return this.fetchAllWithStatus('open');
+            return this.enrichEventsWithSeriesList(await this.fetchAllWithStatus('open'));
         } catch (error: any) {
             throw kalshiErrorMapper.mapError(error);
         }
@@ -232,7 +240,9 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
             if (status === 'settled') apiStatus = 'settled';
 
             const limit = Math.max(1, Math.floor(params.limit || BATCH_SIZE));
-            return this.fetchPageWithStatus(apiStatus, limit, params.cursor);
+            const page = await this.fetchPageWithStatus(apiStatus, limit, params.cursor);
+            await this.enrichEventsWithSeriesList(page.events);
+            return page;
         } catch (error: any) {
             throw kalshiErrorMapper.mapError(error);
         }
@@ -366,14 +376,17 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
         return data.orders || [];
     }
 
-    async fetchRawSeriesMap(): Promise<Map<string, string[]>> {
+    async fetchRawSeriesMap(): Promise<Map<string, KalshiSeriesInfo>> {
         try {
             const data = await this.ctx.callApi('GetSeriesList');
             const seriesList = data.series || [];
-            const map = new Map<string, string[]>();
+            const map = new Map<string, KalshiSeriesInfo>();
             for (const series of seriesList) {
-                if (series.tags && series.tags.length > 0) {
-                    map.set(series.ticker, series.tags);
+                if (series.ticker) {
+                    map.set(series.ticker, {
+                        title: typeof series.title === 'string' ? series.title : undefined,
+                        tags: Array.isArray(series.tags) ? series.tags : undefined,
+                    });
                 }
             }
             return map;
@@ -394,19 +407,23 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
         const event = data.event;
         if (!event) return [];
 
-        // Enrich with series tags
+        // Enrich with series metadata. The series title helps the normalizer
+        // avoid polluted event titles on multi-market futures.
         if (event.series_ticker) {
             try {
                 const seriesData = await this.ctx.callApi('GetSeries', {
                     series_ticker: event.series_ticker,
                 });
                 const series = seriesData.series;
+                if (typeof series?.title === 'string' && series.title.trim()) {
+                    event.series_title = series.title.trim();
+                }
                 if (series?.tags?.length > 0 && (!event.tags || event.tags.length === 0)) {
                     event.tags = series.tags;
                 }
             } catch (err: unknown) {
-                // Non-critical — tags are enrichment only.
-                logger.warn('kalshi: series tag fetch failed', {
+                // Non-critical — series metadata is enrichment only.
+                logger.warn('kalshi: series metadata fetch failed', {
                     series_ticker: event.series_ticker,
                     error: err instanceof Error ? err.message : String(err),
                 });
@@ -438,14 +455,7 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
             this.fetchRawSeriesMap(),
         ]);
 
-        // Enrich events with series tags
-        for (const event of allEvents) {
-            if (event.series_ticker && fetchedSeriesMap.has(event.series_ticker)) {
-                if (!event.tags || event.tags.length === 0) {
-                    event.tags = fetchedSeriesMap.get(event.series_ticker);
-                }
-            }
-        }
+        this.enrichEventsWithSeriesMap(allEvents, fetchedSeriesMap);
 
         if (fetchLimit >= 1000 && useCache) {
             this.cachedEvents = allEvents;
@@ -454,6 +464,40 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
         }
 
         return allEvents;
+    }
+
+    private async enrichEventsWithSeriesList(events: KalshiRawEvent[]): Promise<KalshiRawEvent[]> {
+        if (events.length === 0) return events;
+
+        try {
+            const seriesMap = await this.fetchRawSeriesMap();
+            this.enrichEventsWithSeriesMap(events, seriesMap);
+        } catch (err: unknown) {
+            // Non-critical — callers can still normalize the venue-native title.
+            logger.warn('kalshi: series list enrichment failed', {
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+
+        return events;
+    }
+
+    private enrichEventsWithSeriesMap(
+        events: KalshiRawEvent[],
+        seriesMap: Map<string, KalshiSeriesInfo>,
+    ): void {
+        for (const event of events) {
+            if (!event.series_ticker) continue;
+            const seriesInfo = seriesMap.get(event.series_ticker);
+            if (!seriesInfo) continue;
+
+            if (seriesInfo.title) {
+                event.series_title = seriesInfo.title;
+            }
+            if (seriesInfo.tags?.length && (!event.tags || event.tags.length === 0)) {
+                event.tags = seriesInfo.tags;
+            }
+        }
     }
 
     private async fetchActiveEvents(targetMarketCount?: number, status: string = 'open'): Promise<KalshiRawEvent[]> {

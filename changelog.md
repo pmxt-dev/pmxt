@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.43.27] - 2026-05-25
+
+### Fixed
+
+- **Kalshi**: Use enriched series titles to normalize contaminated broad-future event titles. Multi-market futures such as Champions League Winner and conference championship winner events no longer inherit current-matchup labels like `PSG vs Arsenal` or `Cleveland vs New York` as their PMXT event title, while true match events keep their matchup titles.
+- **Kalshi**: Add regression coverage for contaminated futures, already-sane futures, and true matchup events.
+
 ## [2.43.26] - 2026-05-25
 
 ### Fixed

@@ -16,6 +16,11 @@ export interface RouterOptions {
     baseUrl?: string;
     /** Exchange instances for cross-venue orderbook aggregation. Keyed by exchange name (e.g. 'polymarket', 'kalshi'). */
     exchanges?: Record<string, PredictionMarketExchange>;
+    /**
+     * Local exchange instances used only to resolve sidecar-only fixture IDs
+     * before hosted catalog match lookups. Does not affect orderbook routing.
+     */
+    localExchanges?: Record<string, PredictionMarketExchange>;
 }
 
 // ---------------------------------------------------------------------------

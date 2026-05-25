@@ -7,7 +7,8 @@ import { createWebSocketHandler, CreateWebSocketHandlerOptions } from "./ws-hand
 import { createExchange } from "./exchange-factory";
 import { createFeedRouter } from "./feed-routes";
 import { createSqlRouter } from "./sql-route";
-import { ExchangeCredentials } from "../BaseExchange";
+import { ExchangeCredentials, PredictionMarketExchange } from "../BaseExchange";
+import { Router } from "../router";
 import { BaseError } from "../errors";
 import { logger } from "../utils/logger";
 
@@ -157,7 +158,15 @@ const defaultExchanges: Record<string, any> = {
   opinion: null,
   metaculus: null,
   smarkets: null,
+  mock: null,
 };
+
+function getDefaultExchange(exchangeName: string): any {
+  if (!defaultExchanges[exchangeName]) {
+    defaultExchanges[exchangeName] = createExchange(exchangeName);
+  }
+  return defaultExchanges[exchangeName];
+}
 
 /**
  * Options accepted by {@link createApp}.
@@ -282,7 +291,12 @@ export function createApp(options: CreateAppOptions = {}): Express {
         // different key, so Router is never cached as a singleton.
         const bearer =
           req.headers.authorization?.replace(/^Bearer\s+/i, "") || "";
-        exchange = createExchange(exchangeName, undefined, bearer);
+        exchange = new Router({
+          apiKey: bearer,
+          localExchanges: {
+            mock: getDefaultExchange("mock") as PredictionMarketExchange,
+          },
+        });
       } else if (
         credentials &&
         (credentials.privateKey ||
@@ -291,10 +305,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
       ) {
         exchange = createExchange(exchangeName, credentials);
       } else {
-        if (!defaultExchanges[exchangeName]) {
-          defaultExchanges[exchangeName] = createExchange(exchangeName);
-        }
-        exchange = defaultExchanges[exchangeName];
+        exchange = getDefaultExchange(exchangeName);
       }
 
       if (req.headers["x-pmxt-verbose"] === "true") {

@@ -4,6 +4,7 @@ import {
     type MarketFetchParams,
     type EventFetchParams,
 } from '../BaseExchange';
+import { BaseError, EventNotFound, MarketNotFound } from '../errors';
 import type { UnifiedMarket, UnifiedEvent, OrderBook, OrderLevel, MarketOutcome } from '../types';
 import { logger } from '../utils/logger';
 import { PmxtApiClient } from './client';
@@ -53,14 +54,98 @@ function mergeOrderBooks(books: OrderBook[]): OrderBook {
 
 // ---------------------------------------------------------------------------
 
+const MOCK_MARKET_OR_OUTCOME_ID_RE = /^(mock-m\d+)(?:-(?:yes|no|\d+))?$/;
+const MOCK_EVENT_ID_RE = /^mock-event-\d+$/;
+
+class LocalRouterMatchLookupUnsupported extends BaseError {
+    constructor(kind: 'market' | 'event', identifier: string) {
+        super(
+            `LOCAL_MATCH_LOOKUP_UNSUPPORTED: Router match lookup for local mock ${kind} ` +
+            `"${identifier}" cannot be served by the hosted match catalog. ` +
+            `Configure RouterOptions.localExchanges.mock when using Router in-process; ` +
+            `the /api/router sidecar endpoint resolves bundled mock IDs locally and returns [] because mock fixtures have no hosted cross-venue matches.`,
+            501,
+            'LOCAL_MATCH_LOOKUP_UNSUPPORTED',
+            false,
+            'Router',
+        );
+    }
+}
+
+function sourceExchangeIsMock(sourceExchange: unknown): boolean {
+    return typeof sourceExchange === 'string' && sourceExchange.toLowerCase() === 'mock';
+}
+
+function lookupString(value: unknown): string | undefined {
+    return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function mockMarketIdFromLocalId(id: unknown): string | undefined {
+    const value = lookupString(id);
+    if (!value) return undefined;
+    return value.match(MOCK_MARKET_OR_OUTCOME_ID_RE)?.[1];
+}
+
+function isMockEventId(id: unknown): boolean {
+    const value = lookupString(id);
+    return value !== undefined && MOCK_EVENT_ID_RE.test(value);
+}
+
+function isMockUrl(url: unknown, resource: 'market' | 'event'): boolean {
+    const value = lookupString(url);
+    if (!value) return false;
+    try {
+        const parsed = new URL(value);
+        return parsed.hostname === 'mock.pmxt.dev' && parsed.pathname.startsWith(`/${resource}/`);
+    } catch {
+        return value.includes(`mock.pmxt.dev/${resource}/`);
+    }
+}
+
+function describeMarketLookup(params: FetchMarketMatchesParams): string {
+    return params.market?.marketId
+        ?? lookupString(params.marketId)
+        ?? lookupString(params.slug)
+        ?? lookupString(params.url)
+        ?? 'unknown';
+}
+
+function describeEventLookup(params: FetchEventMatchesParams): string {
+    return params.event?.id
+        ?? lookupString(params.eventId)
+        ?? lookupString(params.slug)
+        ?? 'unknown';
+}
+
+function isLocalMockMarketLookup(params: FetchMarketMatchesParams): boolean {
+    return sourceExchangeIsMock(params.market?.sourceExchange)
+        || mockMarketIdFromLocalId(params.market?.marketId) !== undefined
+        || mockMarketIdFromLocalId(params.marketId) !== undefined
+        || mockMarketIdFromLocalId(params.slug) !== undefined
+        || isMockUrl(params.url, 'market');
+}
+
+function isLocalMockEventLookup(params: FetchEventMatchesParams): boolean {
+    return sourceExchangeIsMock(params.event?.sourceExchange)
+        || isMockEventId(params.event?.id)
+        || isMockEventId(params.eventId)
+        || isMockEventId(params.slug);
+}
+
+function findByUrl<T extends { url?: string }>(items: T[], url: string): T | undefined {
+    return items.find((item) => item.url === url);
+}
+
 export class Router extends PredictionMarketExchange {
     private readonly client: PmxtApiClient;
     private readonly exchanges: Record<string, PredictionMarketExchange>;
+    private readonly localExchanges: Record<string, PredictionMarketExchange>;
 
     constructor(options: RouterOptions) {
         super({ apiKey: options.apiKey } as ExchangeCredentials);
         this.client = new PmxtApiClient(options.apiKey, options.baseUrl);
         this.exchanges = options.exchanges ?? {};
+        this.localExchanges = options.localExchanges ?? options.exchanges ?? {};
         this.rateLimit = 100;
     }
 
@@ -180,7 +265,9 @@ export class Router extends PredictionMarketExchange {
 
     async fetchMarketMatches(params: FetchMarketMatchesParams = {}): Promise<MatchResult[]> {
         if (params.market && !params.marketId) {
-            if (params.market.slug && !params.slug) {
+            if (sourceExchangeIsMock(params.market.sourceExchange)) {
+                params = { ...params, marketId: params.market.marketId };
+            } else if (params.market.slug && !params.slug) {
                 params = { ...params, slug: params.market.slug };
             } else {
                 params = { ...params, marketId: params.market.marketId };
@@ -192,6 +279,10 @@ export class Router extends PredictionMarketExchange {
         const hasIdentifier = params.marketId || params.slug || params.url;
         if (!hasIdentifier) {
             return this.fetchMarketMatchesBrowse(params);
+        }
+
+        if (await this.resolveLocalMockMarketLookup(params)) {
+            return [];
         }
 
         // Lookup mode: find matches for a specific market.
@@ -233,7 +324,9 @@ export class Router extends PredictionMarketExchange {
 
     async fetchEventMatches(params: FetchEventMatchesParams = {}): Promise<EventMatchResult[]> {
         if (params.event && !params.eventId) {
-            if (params.event.slug && !params.slug) {
+            if (sourceExchangeIsMock(params.event.sourceExchange)) {
+                params = { ...params, eventId: params.event.id };
+            } else if (params.event.slug && !params.slug) {
                 params = { ...params, slug: params.event.slug };
             } else {
                 params = { ...params, eventId: params.event.id };
@@ -245,6 +338,10 @@ export class Router extends PredictionMarketExchange {
         if (!hasIdentifier) {
             const results = await this.client.browseEventMatches(params);
             return Array.isArray(results) ? results : [];
+        }
+
+        if (await this.resolveLocalMockEventLookup(params)) {
+            return [];
         }
 
         // Lookup mode: find matches for a specific event.
@@ -352,6 +449,88 @@ export class Router extends PredictionMarketExchange {
     async fetchArbitrage(params?: FetchArbitrageParams): Promise<ArbitrageOpportunity[]> {
         logger.warn('fetchArbitrage is deprecated, use fetchMatchedPrices instead');
         return this.fetchArbitrageInternal(params);
+    }
+
+    private getLocalExchange(name: string): PredictionMarketExchange | undefined {
+        const target = name.toLowerCase();
+        for (const [key, exchange] of Object.entries(this.localExchanges)) {
+            if (key.toLowerCase() === target || exchange.name.toLowerCase() === target) {
+                return exchange;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Local mock IDs are sidecar-only fixtures. Hosted match endpoints do not
+     * know them, so resolve them locally when possible and avoid opaque hosted
+     * "not found" responses.
+     */
+    private async resolveLocalMockMarketLookup(params: FetchMarketMatchesParams): Promise<boolean> {
+        if (!isLocalMockMarketLookup(params)) return false;
+
+        const identifier = describeMarketLookup(params);
+        const mock = this.getLocalExchange('mock');
+        if (!mock) {
+            throw new LocalRouterMatchLookupUnsupported('market', identifier);
+        }
+
+        if (params.market && sourceExchangeIsMock(params.market.sourceExchange)) {
+            return true;
+        }
+
+        const localMarketId =
+            mockMarketIdFromLocalId(params.marketId)
+            ?? mockMarketIdFromLocalId(params.slug);
+        if (localMarketId) {
+            await mock.fetchMarket({ marketId: localMarketId });
+            return true;
+        }
+
+        const url = lookupString(params.url);
+        if (url && isMockUrl(url, 'market')) {
+            const markets = await mock.fetchMarkets();
+            if (!findByUrl(markets, url)) {
+                throw new MarketNotFound(url, mock.name);
+            }
+            return true;
+        }
+
+        return true;
+    }
+
+    private async resolveLocalMockEventLookup(params: FetchEventMatchesParams): Promise<boolean> {
+        if (!isLocalMockEventLookup(params)) return false;
+
+        const identifier = describeEventLookup(params);
+        const mock = this.getLocalExchange('mock');
+        if (!mock) {
+            throw new LocalRouterMatchLookupUnsupported('event', identifier);
+        }
+
+        if (params.event && sourceExchangeIsMock(params.event.sourceExchange)) {
+            return true;
+        }
+
+        const localEventId =
+            isMockEventId(params.eventId) ? params.eventId
+            : isMockEventId(params.slug) ? params.slug
+            : undefined;
+        if (localEventId) {
+            await mock.fetchEvent({ eventId: localEventId });
+            return true;
+        }
+
+        const url = lookupString((params as FetchEventMatchesParams & { url?: string }).url);
+        if (url && isMockUrl(url, 'event')) {
+            const events = await mock.fetchEvents();
+            if (!findByUrl(events, url)) {
+                throw new EventNotFound(url, mock.name);
+            }
+            return true;
+        }
+
+        return true;
     }
 
     private async fetchArbitrageInternal(params?: FetchArbitrageParams): Promise<ArbitrageOpportunity[]> {

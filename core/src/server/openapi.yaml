@@ -2780,6 +2780,7 @@ components:
           - polymarket_us
           - gemini-titan
           - hyperliquid
+          - suibets
           - mock
           - router
       required: true

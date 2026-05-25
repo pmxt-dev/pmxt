@@ -2737,6 +2737,21 @@ export class Hyperliquid extends Exchange {
 }
 
 /**
+ * SuiBets exchange client.
+ *
+ * @example
+ * ```typescript
+ * const suibets = new SuiBets();
+ * const markets = await suibets.fetchMarkets();
+ * ```
+ */
+export class SuiBets extends Exchange {
+    constructor(options: ExchangeOptions = {}) {
+        super("suibets", options);
+    }
+}
+
+/**
  * Mock exchange client.
  *
  * Offline deterministic exchange for testing and development.

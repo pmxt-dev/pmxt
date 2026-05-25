@@ -12,6 +12,7 @@ import { SmarketsExchange } from "../exchanges/smarkets";
 import { PolymarketUSExchange } from "../exchanges/polymarket_us";
 import { HyperliquidExchange } from "../exchanges/hyperliquid";
 import { GeminiTitanExchange } from "../exchanges/gemini-titan";
+import { SuiBetsExchange } from "../exchanges/suibets";
 import { MockExchange } from "../exchanges/mock";
 import { Router } from "../router";
 
@@ -126,6 +127,13 @@ export function createExchange(
           credentials?.apiKey || process.env.GEMINI_API_KEY,
         apiSecret:
           credentials?.apiSecret || process.env.GEMINI_API_SECRET,
+      });
+    case "suibets":
+      return new SuiBetsExchange({
+        walletAddress:
+          (credentials as { walletAddress?: string })?.walletAddress || process.env.SUIBETS_WALLET_ADDRESS,
+        baseUrl:
+          credentials?.baseUrl || process.env.SUIBETS_BASE_URL,
       });
     case "mock":
       return new MockExchange();

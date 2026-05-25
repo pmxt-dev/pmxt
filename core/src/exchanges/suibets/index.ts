@@ -1,14 +1,17 @@
 import {
     PredictionMarketExchange,
     MarketFilterParams,
-    ExchangeCredentials,
     EventFetchParams,
+    ExchangeCredentials,
 } from '../../BaseExchange';
 import { UnifiedMarket, UnifiedEvent, OrderBook, Position } from '../../types';
-import { SuibetsFetcher } from './fetcher';
+import { AuthenticationError } from '../../errors';
+import { getSuibetsConfig, SuibetsApiConfig, RATE_LIMIT_MS, validateBaseUrl } from './config';
+import { SuibetsFetcher, SuibetsRawOffer } from './fetcher';
 import { SuibetsNormalizer } from './normalizer';
-
-export const SUIBETS_DEFAULT_BASE_URL = 'https://suibets.replit.app';
+import { suibetsErrorMapper } from './errors';
+import { fromOutcomeId } from './utils';
+import { FetcherContext } from '../interfaces';
 
 export interface SuibetsCredentials extends ExchangeCredentials {
     /** Sui wallet address for fetching personal positions */
@@ -41,22 +44,34 @@ export class SuiBetsExchange extends PredictionMarketExchange {
         fetchOrder: false as const,
         fetchOpenOrders: false as const,
         fetchBalance: false as const,
-        fetchPositions: 'real' as const,
+        fetchPositions: true as const,
         watchOrderBook: false as const,
         watchTrades: false as const,
     };
 
+    private readonly config: SuibetsApiConfig;
     private readonly fetcher: SuibetsFetcher;
     private readonly normalizer: SuibetsNormalizer;
     private readonly walletAddress?: string;
 
     constructor(credentials?: SuibetsCredentials) {
         super(credentials);
-        this.rateLimit = 300;
+        this.rateLimit = RATE_LIMIT_MS;
         this.walletAddress = credentials?.walletAddress;
 
-        const baseUrl = credentials?.baseUrl || SUIBETS_DEFAULT_BASE_URL;
-        this.fetcher = new SuibetsFetcher(baseUrl);
+        if (credentials?.baseUrl) {
+            validateBaseUrl(credentials.baseUrl);
+        }
+
+        this.config = getSuibetsConfig(credentials?.baseUrl);
+
+        const ctx: FetcherContext = {
+            http: this.http,
+            callApi: this.callApi.bind(this),
+            getHeaders: () => ({}),
+        };
+
+        this.fetcher = new SuibetsFetcher(ctx, this.config.baseUrl);
         this.normalizer = new SuibetsNormalizer();
     }
 
@@ -64,6 +79,7 @@ export class SuiBetsExchange extends PredictionMarketExchange {
         return 'SuiBets';
     }
 
+    // SuiBets is a public API -- no request signing required
     protected override sign(): Record<string, string> {
         return {};
     }
@@ -87,11 +103,13 @@ export class SuiBetsExchange extends PredictionMarketExchange {
     }
 
     /**
-     * Emulated order book from offer odds.
-     * Bid = taker side (buying the NO position), Ask = creator side (YES).
+     * Emulated order book derived from offer odds.
+     *
+     * Bid side: what buyers pay to back the creator's pick (YES price).
+     * Ask side: what sellers want to take the opposite side (NO price).
      */
     async fetchOrderBook(outcomeId: string): Promise<OrderBook> {
-        const offerId = outcomeId.split(':')[0];
+        const { offerId } = fromOutcomeId(outcomeId);
         const markets = await this.fetchMarketsImpl({ marketId: `suibets:${offerId}` });
         const market = markets[0];
         if (!market) return { bids: [], asks: [], timestamp: Date.now() };
@@ -108,18 +126,19 @@ export class SuiBetsExchange extends PredictionMarketExchange {
     }
 
     // -------------------------------------------------------------------------
-    // Positions (read-only — requires walletAddress)
+    // Positions (read-only -- requires walletAddress)
     // -------------------------------------------------------------------------
 
     async fetchPositions(): Promise<Position[]> {
         const wallet = this.walletAddress;
         if (!wallet) {
-            throw new Error(
+            throw new AuthenticationError(
                 'fetchPositions() requires a walletAddress. ' +
-                'Pass it via new SuiBetsExchange({ walletAddress: "0x..." }).',
+                    'Pass it via new SuiBetsExchange({ walletAddress: "0x..." }).',
+                'SuiBets',
             );
         }
         const raw = await this.fetcher.fetchRawPositions(wallet);
-        return raw.map(r => this.normalizer.normalizePosition(r));
+        return raw.map(r => this.normalizer.normalizePosition(r as SuibetsRawOffer));
     }
 }

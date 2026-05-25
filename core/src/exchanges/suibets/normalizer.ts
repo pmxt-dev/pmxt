@@ -1,82 +1,77 @@
 import { IExchangeNormalizer } from '../interfaces';
 import { UnifiedMarket, UnifiedEvent, Position } from '../../types';
 import { SuibetsRawOffer, SuibetsRawEvent } from './fetcher';
-import { OHLCVParams } from '../../BaseExchange';
-
-function impliedProbability(odds: number): number {
-    if (!odds || odds <= 1) return 0.5;
-    return Math.min(0.99, Math.max(0.01, 1 / odds));
-}
-
-function takerProbability(odds: number): number {
-    return Math.min(0.99, Math.max(0.01, 1 - impliedProbability(odds)));
-}
+import {
+    impliedProbability,
+    takerProbability,
+    mistToSui,
+    sideLabel,
+    toMarketId,
+    toOutcomeId,
+    mapStatus,
+} from './utils';
 
 function liquidity(offer: SuibetsRawOffer): number {
-    // Available to be filled in USD-equivalent (SUI)
     const remaining = offer.remainingStake ?? offer.creatorStake;
-    return Number(remaining) / 1e9 || 0; // convert MIST to SUI
-}
-
-function sideLabel(offer: SuibetsRawOffer, side: 'creator' | 'taker'): string {
-    const creator = offer.creatorTeam || offer.homeTeam || 'Home';
-    const away = offer.awayTeam || 'Away';
-    if (side === 'creator') return creator;
-    // taker takes opposite side
-    if (creator.toLowerCase() === offer.homeTeam?.toLowerCase()) return away;
-    if (creator.toLowerCase() === offer.awayTeam?.toLowerCase()) return offer.homeTeam || 'Home';
-    return 'Opposite';
+    return mistToSui(remaining);
 }
 
 export class SuibetsNormalizer implements IExchangeNormalizer<SuibetsRawOffer, SuibetsRawEvent> {
     normalizeMarket(raw: SuibetsRawOffer): UnifiedMarket | null {
         if (!raw?.id) return null;
 
+        const dateSource = raw.matchDate || raw.expiresAt;
+        if (!dateSource) {
+            throw new Error(`SuibetsNormalizer: offer ${raw.id} has neither matchDate nor expiresAt`);
+        }
+
+        const homeTeam = raw.homeTeam || 'Unknown Team';
+        const awayTeam = raw.awayTeam || 'Unknown Team';
+
         const odds = Number(raw.creatorOdds) || 2;
         const yesProb = impliedProbability(odds);
         const noProb = takerProbability(odds);
         const liq = liquidity(raw);
-        const volume24h = Number(raw.totalMatched ?? 0) / 1e9;
+        const volume24h = mistToSui(raw.totalMatched ?? 0);
+
+        const marketId = toMarketId(raw.id);
+        const creatorOutcome = {
+            outcomeId: toOutcomeId(raw.id, 'creator'),
+            marketId,
+            label: sideLabel(raw, 'creator'),
+            price: yesProb,
+        };
+        const takerOutcome = {
+            outcomeId: toOutcomeId(raw.id, 'taker'),
+            marketId,
+            label: sideLabel(raw, 'taker'),
+            price: noProb,
+        };
 
         const market: UnifiedMarket = {
-            marketId: `suibets:${raw.id}`,
-            eventId: raw.matchId ? `suibets:${raw.matchId}` : undefined,
-            title: `${raw.matchName || `${raw.homeTeam} vs ${raw.awayTeam}`} — ${sideLabel(raw, 'creator')} @ ${odds}x`,
+            marketId,
+            eventId: raw.matchId ? toMarketId(raw.matchId) : undefined,
+            title: `${raw.matchName || `${homeTeam} vs ${awayTeam}`} \u2014 ${sideLabel(raw, 'creator')} @ ${odds}x`,
             description: [
                 `P2P offer on ${raw.sport || 'sports'} match.`,
-                `Creator bets ${sideLabel(raw, 'creator')} at ${odds}× odds.`,
-                `Taker backs ${sideLabel(raw, 'taker')} at ${(1 / noProb).toFixed(2)}× implied odds.`,
+                `Creator bets ${sideLabel(raw, 'creator')} at ${odds}x odds.`,
+                `Taker backs ${sideLabel(raw, 'taker')} at ${(1 / noProb).toFixed(2)}x implied odds.`,
                 raw.leagueName ? `League: ${raw.leagueName}.` : '',
                 raw.isOnchain ? `On-chain escrow: ${raw.onchainOfferId ?? 'yes'}.` : 'Off-chain escrow.',
             ].filter(Boolean).join(' '),
             slug: raw.id,
-            outcomes: [
-                {
-                    outcomeId: `${raw.id}:creator`,
-                    marketId: `suibets:${raw.id}`,
-                    label: sideLabel(raw, 'creator'),
-                    price: yesProb,
-                },
-                {
-                    outcomeId: `${raw.id}:taker`,
-                    marketId: `suibets:${raw.id}`,
-                    label: sideLabel(raw, 'taker'),
-                    price: noProb,
-                },
-            ],
-            resolutionDate: new Date(raw.matchDate || raw.expiresAt),
+            outcomes: [creatorOutcome, takerOutcome],
+            resolutionDate: new Date(dateSource),
             volume24h,
             liquidity: liq,
-            url: `https://suibets.replit.app/p2p`,
-            status: raw.status === 'OPEN' ? 'active' : raw.status?.toLowerCase() ?? 'inactive',
+            url: 'https://suibets.replit.app/p2p',
+            status: mapStatus(raw.status),
             category: 'Sports',
             tags: ['Sports', 'P2P', raw.sport, raw.leagueName].filter((t): t is string => Boolean(t)),
             contractAddress: raw.onchainOfferId,
+            yes: creatorOutcome,
+            no: takerOutcome,
         };
-
-        // Convenience YES/NO accessors
-        (market as any).yes = market.outcomes[0];
-        (market as any).no = market.outcomes[1];
 
         return market;
     }
@@ -84,17 +79,20 @@ export class SuibetsNormalizer implements IExchangeNormalizer<SuibetsRawOffer, S
     normalizeEvent(raw: SuibetsRawEvent): UnifiedEvent | null {
         if (!raw?.id) return null;
 
+        const homeTeam = raw.homeTeam || 'Unknown Team';
+        const awayTeam = raw.awayTeam || 'Unknown Team';
+
         const markets: UnifiedMarket[] = (raw.offers ?? [])
             .map(o => this.normalizeMarket(o))
             .filter((m): m is UnifiedMarket => m !== null);
 
-        const totalVolume = markets.reduce((s, m) => s + (m.volume ?? m.volume24h ?? 0), 0);
+        const totalVolume = markets.reduce((s, m) => s + (m.volume24h ?? 0), 0);
 
         return {
-            id: `suibets:${raw.id}`,
-            title: raw.name || `${raw.homeTeam} vs ${raw.awayTeam}`,
+            id: toMarketId(raw.id),
+            title: raw.name || `${homeTeam} vs ${awayTeam}`,
             description: [
-                raw.leagueName ? `${raw.leagueName} —` : '',
+                raw.leagueName ? `${raw.leagueName} \u2014` : '',
                 raw.sport,
                 'P2P betting on SuiBets.',
             ].filter(Boolean).join(' '),
@@ -111,10 +109,10 @@ export class SuibetsNormalizer implements IExchangeNormalizer<SuibetsRawOffer, S
     normalizePosition(raw: SuibetsRawOffer): Position {
         const odds = Number(raw.creatorOdds) || 2;
         return {
-            marketId: `suibets:${raw.matchId ?? raw.id}`,
-            outcomeId: `${raw.id}:creator`,
+            marketId: toMarketId(raw.matchId ?? raw.id),
+            outcomeId: toOutcomeId(raw.id, 'creator'),
             outcomeLabel: sideLabel(raw, 'creator'),
-            size: Number(raw.creatorStake ?? 0) / 1e9,
+            size: mistToSui(raw.creatorStake ?? 0),
             entryPrice: impliedProbability(odds),
             currentPrice: impliedProbability(odds),
             unrealizedPnL: 0,

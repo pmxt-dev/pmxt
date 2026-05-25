@@ -470,6 +470,41 @@ class GeminiTitan(Exchange):
         return creds if creds else None
 
 
+class SuiBets(Exchange):
+    """SuiBets exchange client."""
+
+    def __init__(
+        self,
+        wallet_address: Optional[str] = None,
+        base_url: Optional[str] = None,
+        auto_start_server: Optional[bool] = None,
+        pmxt_api_key: Optional[str] = None,
+    ):
+        """
+        Initialize SuiBets client.
+
+        Args:
+            wallet_address: Sui wallet address for fetching positions (optional)
+            base_url: Base URL of the PMXT sidecar server
+            auto_start_server: Automatically start server if not running (default: True)
+            pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+        """
+        super().__init__(
+            exchange_name="suibets",
+            base_url=base_url,
+            auto_start_server=auto_start_server,
+            pmxt_api_key=pmxt_api_key,
+        )
+
+        self.wallet_address = wallet_address
+
+    def _get_credentials_dict(self) -> Optional[Dict[str, Any]]:
+        creds = super()._get_credentials_dict() or {}
+        if self.wallet_address:
+            creds["walletAddress"] = self.wallet_address
+        return creds if creds else None
+
+
 class Mock(Exchange):
     """Mock exchange client."""
 

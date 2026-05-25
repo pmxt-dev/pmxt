@@ -14,7 +14,7 @@ exports.numberFlag = core_1.Flags.custom({
 });
 exports.commonFlags = {
     json: core_1.Flags.boolean({ description: "Output raw response data as JSON." }),
-    "base-url": core_1.Flags.string({ description: "PMXT API base URL. Defaults to hosted when PMXT_API_KEY is set, otherwise the local sidecar." }),
+    "base-url": core_1.Flags.string({ description: "PMXT API base URL. Defaults to the hosted PMXT API." }),
     "pmxt-api-key": core_1.Flags.string({ description: "PMXT API key. Precedence: flags > env > auth store. Env: PMXT_API_KEY." }),
     "auth-store": core_1.Flags.string({ description: "Path to a PMXT CLI auth store JSON file." }),
 };

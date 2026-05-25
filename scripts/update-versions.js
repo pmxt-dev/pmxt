@@ -78,9 +78,6 @@ const cliPath = path.join(__dirname, '..', 'sdks', 'cli', 'package.json');
 if (fs.existsSync(cliPath)) {
     const cliPackage = JSON.parse(fs.readFileSync(cliPath, 'utf8'));
     cliPackage.version = npmVersion;
-    if (cliPackage.dependencies && cliPackage.dependencies['pmxtjs']) {
-        cliPackage.dependencies['pmxtjs'] = npmVersion;
-    }
     fs.writeFileSync(cliPath, JSON.stringify(cliPackage, null, 2) + '\n');
     console.log(`[OK] Updated sdks/cli/package.json to ${npmVersion}`);
 }

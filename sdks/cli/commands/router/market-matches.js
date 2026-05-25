@@ -59,7 +59,7 @@ function buildMarketMatchParams(flags) {
 }
 class RouterMarketMatches extends base_command_js_1.PmxtCommand {
     static description = "Find markets on other venues that correspond to a given market.";
-    static aliases = ["fetch-market-matches", "market-matches"];
+    static hiddenAliases = ["fetch-market-matches", "market-matches"];
     static flags = { ...base_command_js_1.routerFlags, ...exports.marketMatchFlags };
     async run() {
         const { flags } = await this.parse(RouterMarketMatches);

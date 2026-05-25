@@ -6,7 +6,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const root = path.resolve(__dirname, "..");
-const roots = ["bin", "cli", "commands"].map((name) => path.join(root, name));
+const roots = ["bin", "cli", "commands", "scripts"].map((name) => path.join(root, name));
 
 function walk(dir) {
   if (!fs.existsSync(dir)) return [];

@@ -55,7 +55,7 @@ function validateOrderParams(params) {
 }
 class OrderCreate extends base_command_js_1.PmxtCommand {
     static description = "Build and submit a new order.";
-    static aliases = ["create-order"];
+    static hiddenAliases = ["create-order"];
     static flags = { ...base_command_js_1.venueFlags, ...flagsForOrderParams };
     async run() {
         const { flags } = await this.parse(OrderCreate);

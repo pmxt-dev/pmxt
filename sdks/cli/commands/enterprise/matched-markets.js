@@ -31,7 +31,7 @@ function buildMatchedParams(flags) {
 }
 class EnterpriseMatchedMarkets extends base_command_js_1.PmxtCommand {
     static description = "Discover matched markets across venues.";
-    static aliases = ["matched-markets", "v0-matched-markets"];
+    static hiddenAliases = ["matched-markets", "v0-matched-markets"];
     static flags = { ...base_command_js_1.enterpriseFlags, ...matchedFlags };
     async run() {
         const { flags } = await this.parse(EnterpriseMatchedMarkets);

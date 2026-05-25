@@ -5,7 +5,7 @@ const base_command_js_1 = require("../../cli/base-command.js");
 const params_js_1 = require("../../cli/params.js");
 class EnterpriseSql extends base_command_js_1.PmxtCommand {
     static description = "Run a read-only Enterprise SQL query.";
-    static aliases = ["sql", "v0-sql"];
+    static hiddenAliases = ["sql", "v0-sql"];
     static args = { query: core_1.Args.string({ description: "SQL query. Prefix with @ to read a file.", required: false }) };
     static flags = { ...base_command_js_1.enterpriseFlags, query: core_1.Flags.string({ description: "SQL query. Prefix with @ to read a file." }) };
     async run() {

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.45.1] - 2026-05-25
+
+### Fixed
+
+- **CLI UX**: Replace the raw oclif root command dump with a curated onboarding help screen focused on exchange-first commands, auth setup, and common workflows.
+- **CLI defaults**: Default standalone CLI API calls to hosted PMXT instead of localhost, keeping local sidecar use explicit via `--base-url` or `pmxt server`.
+- **CLI install**: Remove the runtime dependency on `pmxtjs` from `@pmxt/cli`, keeping hosted CLI installs lightweight and avoiding SDK/core dependency warnings during global install.
+- **CLI auth errors**: Show actionable PMXT API key setup guidance on hosted `401`/`403` responses, including `pmxt auth login`, `PMXT_API_KEY`, and one-shot `--pmxt-api-key` usage.
+- **CLI aliases**: Keep duplicate fetch/v0 aliases working through the explicit alias layer while hiding them from command help output.
+- **Core packaging**: Move test/dev-only packages out of `pmxt-core` runtime dependencies so downstream installs do not pull Jest or tsx.
+
 ## [2.45.0] - 2026-05-25
 
 ### Added

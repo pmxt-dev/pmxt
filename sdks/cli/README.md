@@ -16,6 +16,12 @@ npx @pmxt/cli polymarket markets --query Trump --limit 5
 
 ## Usage
 
+Hosted PMXT API calls require a PMXT API key:
+
+```bash
+pmxt auth login --api-key pmxt_...
+```
+
 Use exchange-first commands for day-to-day work:
 
 ```bash
@@ -34,7 +40,7 @@ pmxt markets --exchange polymarket --query Trump --limit 5
 ## Auth
 
 ```bash
-pmxt auth login
+pmxt auth login --api-key pmxt_...
 pmxt auth status
 pmxt polymarket auth set-exchange --private-key 0x...
 pmxt polymarket auth status
@@ -45,4 +51,11 @@ You can also use environment variables or one-shot flags:
 ```bash
 PMXT_API_KEY=pmxt_... pmxt markets --limit 5
 pmxt markets --pmxt-api-key pmxt_... --limit 5
+```
+
+Local sidecar usage is explicit:
+
+```bash
+pmxt server status
+pmxt markets --base-url http://localhost:3847 --limit 5
 ```

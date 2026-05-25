@@ -44,7 +44,7 @@ exports.runAllowedMethod = runAllowedMethod;
 const fs = __importStar(require("node:fs"));
 const os = __importStar(require("node:os"));
 const path = __importStar(require("node:path"));
-const constants_js_1 = require("pmxtjs");
+const constants_js_1 = require("./constants.js");
 exports.ALLOWED_EXCHANGES = new Set([
     "polymarket", "kalshi", "kalshi-demo", "limitless", "probable", "baozi",
     "myriad", "opinion", "metaculus", "smarkets", "polymarket_us",
@@ -278,7 +278,7 @@ function resolveRuntimeConfig(flags = {}, env = process.env, exchangeOverride, o
         throw new Error(`Unsupported exchange '${exchange}'. Allowed exchanges: ${Array.from(exports.ALLOWED_EXCHANGES).join(", ")}`);
     }
     const pmxtApiKey = firstString(flags["pmxt-api-key"], env.PMXT_API_KEY, store.pmxtApiKey, store.pmxt?.apiKey);
-    const baseUrl = trimTrailingSlash(firstString(flags["base-url"], env.PMXT_BASE_URL, store.baseUrl, store.pmxt?.baseUrl) ?? (pmxtApiKey ? constants_js_1.HOSTED_URL : constants_js_1.LOCAL_URL));
+    const baseUrl = trimTrailingSlash(firstString(flags["base-url"], env.PMXT_BASE_URL, store.baseUrl, store.pmxt?.baseUrl) ?? constants_js_1.HOSTED_URL);
     return { baseUrl, exchange, pmxtApiKey, credentials: resolveCredentials(flags, env, store, exchange, options) };
 }
 function assertAllowedMethod(method, allowed, label) {
@@ -289,6 +289,32 @@ function assertAllowedMethod(method, allowed, label) {
 }
 function authHeaders(config) {
     return config.pmxtApiKey ? { Authorization: `Bearer ${config.pmxtApiKey}` } : {};
+}
+function responseErrorMessage(parsed, fallback) {
+    return isRecord(parsed) && isRecord(parsed.error)
+        ? firstString(parsed.error.message, parsed.error.code)
+        : isRecord(parsed) ? firstString(parsed.message, parsed.error) : fallback;
+}
+function authErrorMessage(response, parsed, config) {
+    const message = responseErrorMessage(parsed, response.statusText);
+    return [
+        `Unauthorized: ${message ?? "the PMXT API key was missing or rejected"}.`,
+        "",
+        `Endpoint: ${config.baseUrl}`,
+        "",
+        "Fix one of these ways:",
+        "  pmxt auth login --api-key <pmxt_api_key>",
+        "  PMXT_API_KEY=<pmxt_api_key> pmxt <exchange> <command>",
+        "  pmxt <exchange> <command> --pmxt-api-key <pmxt_api_key>",
+        "",
+        "Check current auth with: pmxt auth status",
+    ].join("\n");
+}
+function throwForResponse(response, parsed, config) {
+    if (response.status === 401 || response.status === 403) {
+        throw new Error(authErrorMessage(response, parsed, config));
+    }
+    throw new Error(responseErrorMessage(parsed, response.statusText) ?? "PMXT request failed");
 }
 async function postJson(url, body, config) {
     const response = await fetch(url, {
@@ -307,10 +333,7 @@ async function postJson(url, body, config) {
         }
     }
     if (!response.ok) {
-        const message = isRecord(parsed) && isRecord(parsed.error)
-            ? firstString(parsed.error.message, parsed.error.code)
-            : isRecord(parsed) ? firstString(parsed.message, parsed.error) : undefined;
-        throw new Error(message ?? response.statusText);
+        throwForResponse(response, parsed, config);
     }
     if (isRecord(parsed) && parsed.success === false) {
         const error = isRecord(parsed.error) ? parsed.error : {};
@@ -350,10 +373,7 @@ async function getJson(url, params, config) {
         }
     }
     if (!response.ok) {
-        const message = isRecord(parsed) && isRecord(parsed.error)
-            ? firstString(parsed.error.message, parsed.error.code)
-            : isRecord(parsed) ? firstString(parsed.message, parsed.error) : undefined;
-        throw new Error(message ?? response.statusText);
+        throwForResponse(response, parsed, config);
     }
     if (isRecord(parsed) && parsed.success === false) {
         const error = isRecord(parsed.error) ? parsed.error : {};

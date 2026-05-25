@@ -33,7 +33,7 @@ function compactEventInput(params) {
 }
 class RouterEventMatches extends base_command_js_1.PmxtCommand {
     static description = "Find the same or related event on other venues.";
-    static aliases = ["fetch-event-matches", "event-matches"];
+    static hiddenAliases = ["fetch-event-matches", "event-matches"];
     static flags = {
         ...base_command_js_1.routerFlags,
         query: core_1.Flags.string({ description: "Search query." }),

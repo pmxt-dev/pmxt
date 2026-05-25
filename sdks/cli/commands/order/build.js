@@ -8,7 +8,7 @@ const create_js_1 = require("./create.js");
 const create_js_2 = __importDefault(require("./create.js"));
 class OrderBuild extends base_command_js_1.PmxtCommand {
     static description = "Build an order payload without submitting it.";
-    static aliases = ["build-order"];
+    static hiddenAliases = ["build-order"];
     static flags = create_js_2.default.flags;
     async run() {
         const { flags } = await this.parse(OrderBuild);

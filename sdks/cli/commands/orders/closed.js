@@ -10,7 +10,7 @@ function buildOrderHistoryParams(flags) {
 }
 class OrdersClosed extends base_command_js_1.PmxtCommand {
     static description = "Fetch closed orders.";
-    static aliases = ["fetch-closed-orders", "closed-orders"];
+    static hiddenAliases = ["fetch-closed-orders", "closed-orders"];
     static flags = { ...base_command_js_1.venueFlags, ...orderHistoryFlags };
     async run() {
         const { flags } = await this.parse(OrdersClosed);

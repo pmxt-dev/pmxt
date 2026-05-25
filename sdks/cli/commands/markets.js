@@ -32,7 +32,7 @@ function buildMarketParams(flags) {
 }
 class Markets extends base_command_js_1.PmxtCommand {
     static description = "Search and list markets.";
-    static aliases = ["fetch-markets"];
+    static hiddenAliases = ["fetch-markets"];
     static flags = { ...base_command_js_1.venueFlags, ...exports.marketFlags };
     async run() {
         const { flags } = await this.parse(Markets);

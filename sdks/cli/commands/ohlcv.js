@@ -19,7 +19,7 @@ function buildOHLCVParams(flags) {
 }
 class OHLCV extends base_command_js_1.PmxtCommand {
     static description = "Fetch historical OHLCV candles for an outcome.";
-    static aliases = ["fetch-ohlcv"];
+    static hiddenAliases = ["fetch-ohlcv"];
     static args = { outcomeId: core_1.Args.string({ description: "Outcome ID.", required: true }) };
     static flags = { ...base_command_js_1.venueFlags, resolution: core_1.Flags.string({ description: "Candle resolution.", required: true }), start: core_1.Flags.string({ description: "Start time." }), end: core_1.Flags.string({ description: "End time." }), limit: core_1.Flags.integer({ description: "Maximum number of candles." }) };
     async run() {

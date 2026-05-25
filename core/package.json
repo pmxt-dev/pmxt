@@ -50,7 +50,6 @@
     "@polymarket/clob-client-v2": "^1.0.5",
     "@prob/clob": "0.5.0",
     "@solana/web3.js": "^1.98.4",
-    "@types/express": "^5.0.6",
     "axios": "^1.13.2",
     "bs58": "^6.0.0",
     "cors": "^2.8.5",
@@ -59,16 +58,15 @@
     "viem": "^2.0.0",
     "express": "^5.2.1",
     "isows": "^1.0.6",
-    "jest": "^30.2.0",
     "msgpackr": "^2.0.1",
     "polymarket-us": "0.1.1",
-    "tsx": "^4.21.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
     "@nevuamarkets/poly-websockets": "^1.0.0",
     "@openapitools/openapi-generator-cli": "^2.27.0",
     "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.3",
     "@types/supertest": "^7.2.0",
@@ -76,9 +74,11 @@
     "esbuild": "^0.24.2",
     "handlebars": "^4.7.8",
     "identity-obj-proxy": "^3.0.0",
+    "jest": "^30.2.0",
     "js-yaml": "^3.14.2",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {

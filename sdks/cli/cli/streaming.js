@@ -19,8 +19,9 @@ const fs_1 = require("fs");
 const os_1 = require("os");
 const path_1 = __importDefault(require("path"));
 const ws_1 = __importDefault(require("ws"));
-const pmxtjs_1 = require("pmxtjs");
+const constants_js_1 = require("./constants.js");
 const runtime_js_1 = require("./runtime.js");
+const server_manager_js_1 = require("./server-manager.js");
 const CREDENTIAL_KEYS = [
     "apiKey",
     "apiSecret",
@@ -39,11 +40,11 @@ exports.pmxtCredentialFlags = {
     }),
     "base-url": core_1.Flags.string({
         description: "PMXT API base URL",
-        env: pmxtjs_1.ENV.BASE_URL,
+        env: constants_js_1.ENV.BASE_URL,
     }),
     "pmxt-api-key": core_1.Flags.string({
         description: "Hosted PMXT API key",
-        env: pmxtjs_1.ENV.API_KEY,
+        env: constants_js_1.ENV.API_KEY,
     }),
 };
 exports.feedHttpFlags = {
@@ -109,7 +110,7 @@ function parseJsonObject(value) {
         return {};
     const parsed = JSON.parse(value);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        throw new pmxtjs_1.PmxtError("Expected params to be a JSON object");
+        throw new Error("Expected params to be a JSON object");
     }
     return parsed;
 }
@@ -141,7 +142,7 @@ function resolveCliCredentials(flags, options = {}) {
     };
 }
 async function fetchPmxtData(pathname, credentials, query = {}) {
-    const resolved = (0, pmxtjs_1.resolvePmxtBaseUrl)({
+    const resolved = (0, constants_js_1.resolvePmxtBaseUrl)({
         baseUrl: credentials.baseUrl,
         pmxtApiKey: credentials.pmxtApiKey,
     });
@@ -157,11 +158,14 @@ async function fetchPmxtData(pathname, credentials, query = {}) {
     });
     if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new pmxtjs_1.PmxtError(errorMessage(body) || response.statusText);
+        if (response.status === 401 || response.status === 403) {
+            throw new Error(authErrorMessage(errorMessage(body) || response.statusText, resolved.baseUrl));
+        }
+        throw new Error(errorMessage(body) || response.statusText);
     }
     const body = await response.json();
     if (body.success === false) {
-        throw new pmxtjs_1.PmxtError(errorMessage(body) || "PMXT request failed");
+        throw new Error(errorMessage(body) || "PMXT request failed");
     }
     return body.data;
 }
@@ -193,7 +197,7 @@ async function streamJsonl(options) {
             if (options.timeoutMs === undefined)
                 return;
             timeout = setTimeout(() => {
-                finish(new pmxtjs_1.PmxtError(`Timed out after ${options.timeoutMs}ms waiting for streaming data`));
+                finish(new Error(`Timed out after ${options.timeoutMs}ms waiting for streaming data`));
             }, options.timeoutMs);
         };
         const finish = (error) => {
@@ -233,7 +237,7 @@ async function streamJsonl(options) {
             if (parsed.event === "error") {
                 const text = errorMessage(parsed) || "Streaming error";
                 stderr.write(`${text}\n`);
-                finish(new pmxtjs_1.PmxtError(text));
+                finish(new Error(text));
                 return;
             }
             if (parsed.event !== "data")
@@ -262,17 +266,20 @@ function buildWebSocketUrl(baseUrl, auth) {
     return url.toString();
 }
 async function prepareWebSocket(credentials) {
-    const resolved = (0, pmxtjs_1.resolvePmxtBaseUrl)({
+    const resolved = (0, constants_js_1.resolvePmxtBaseUrl)({
         baseUrl: credentials.baseUrl,
         pmxtApiKey: credentials.pmxtApiKey,
     });
     if (resolved.isHosted) {
+        if (!resolved.pmxtApiKey) {
+            throw new Error(authErrorMessage("missing api key", resolved.baseUrl));
+        }
         return {
             url: buildWebSocketUrl(resolved.baseUrl, resolved.pmxtApiKey ? { name: "apiKey", value: resolved.pmxtApiKey } : undefined),
         };
     }
-    if (resolved.baseUrl === pmxtjs_1.LOCAL_URL) {
-        const manager = new pmxtjs_1.ServerManager();
+    if (resolved.baseUrl === constants_js_1.LOCAL_URL) {
+        const manager = new server_manager_js_1.ServerManager();
         await manager.ensureServerRunning();
         const token = manager.getAccessToken();
         const baseUrl = `http://localhost:${manager.getRunningPort()}`;
@@ -303,6 +310,20 @@ function errorMessage(body) {
     if (typeof body?.message === "string")
         return body.message;
     return undefined;
+}
+function authErrorMessage(message, baseUrl) {
+    return [
+        `Unauthorized: ${message || "the PMXT API key was missing or rejected"}.`,
+        "",
+        `Endpoint: ${baseUrl}`,
+        "",
+        "Fix one of these ways:",
+        "  pmxt auth login --api-key <pmxt_api_key>",
+        "  PMXT_API_KEY=<pmxt_api_key> pmxt <exchange> <command>",
+        "  pmxt <exchange> <command> --pmxt-api-key <pmxt_api_key>",
+        "",
+        "Check current auth with: pmxt auth status",
+    ].join("\n");
 }
 function getStoreBuckets(store, profile, options) {
     const buckets = [];

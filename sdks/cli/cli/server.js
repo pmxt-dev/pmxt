@@ -3,9 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.executeServerCommand = executeServerCommand;
 exports.formatServerCommandResult = formatServerCommandResult;
 // @ts-nocheck
-const pmxtjs_1 = require("pmxtjs");
+const server_manager_js_1 = require("./server-manager.js");
 async function executeServerCommand(action, options = {}) {
-    const manager = options.manager ?? new pmxtjs_1.ServerManager();
+    const manager = options.manager ?? new server_manager_js_1.ServerManager();
     switch (action) {
         case "start":
             await manager.start();

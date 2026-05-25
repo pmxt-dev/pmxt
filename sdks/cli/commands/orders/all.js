@@ -9,7 +9,7 @@ const closed_js_1 = require("./closed.js");
 const closed_js_2 = __importDefault(require("./closed.js"));
 class OrdersAll extends base_command_js_1.PmxtCommand {
     static description = "Fetch all orders.";
-    static aliases = ["fetch-all-orders", "all-orders"];
+    static hiddenAliases = ["fetch-all-orders", "all-orders"];
     static flags = closed_js_2.default.flags;
     async run() {
         const { flags } = await this.parse(OrdersAll);

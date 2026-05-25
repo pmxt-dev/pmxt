@@ -23,7 +23,7 @@ function buildEventParams(flags) {
 }
 class Events extends base_command_js_1.PmxtCommand {
     static description = "Search and list events.";
-    static aliases = ["fetch-events"];
+    static hiddenAliases = ["fetch-events"];
     static flags = { ...base_command_js_1.venueFlags, ...exports.eventFlags };
     async run() {
         const { flags } = await this.parse(Events);

@@ -38,11 +38,13 @@ echo "[OK] sdks/typescript/package.json pmxt-core dependency: $TS_CORE_DEP"
 
 # Test CLI package.json update
 sed -i.bak "s/\"version\": \".*\"/\"version\": \"$TEST_VERSION\"/" /tmp/test-cli-package.json
-sed -i.bak -E "s/\"pmxtjs\": \"[^\"]+\"/\"pmxtjs\": \"$TEST_VERSION\"/" /tmp/test-cli-package.json
 CLI_VERSION=$(grep '"version":' /tmp/test-cli-package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
-CLI_PMXTJS_DEP=$(grep '"pmxtjs":' /tmp/test-cli-package.json | head -1 | sed 's/.*"pmxtjs": "\(.*\)".*/\1/')
 echo "[OK] sdks/cli/package.json version: $CLI_VERSION"
-echo "[OK] sdks/cli/package.json pmxtjs dependency: $CLI_PMXTJS_DEP"
+if grep -q '"pmxtjs":' /tmp/test-cli-package.json; then
+    echo "[ERROR] sdks/cli/package.json should not depend on pmxtjs"
+    exit 1
+fi
+echo "[OK] sdks/cli/package.json has no pmxtjs dependency"
 
 # Test Python pyproject.toml update
 sed -i.bak "s/^version = \".*\"/version = \"$TEST_VERSION\"/" /tmp/test-pyproject.toml
@@ -70,7 +72,6 @@ if [ "$CORE_VERSION" = "$TEST_VERSION" ] && \
    [ "$TS_VERSION" = "$TEST_VERSION" ] && \
    [ "$TS_CORE_DEP" = "$TEST_VERSION" ] && \
    [ "$CLI_VERSION" = "$TEST_VERSION" ] && \
-   [ "$CLI_PMXTJS_DEP" = "$TEST_VERSION" ] && \
    [ "$PY_VERSION" = "$TEST_VERSION" ] && \
    [ "$PY_INIT_VERSION" = "$TEST_VERSION" ] && \
    [ "$GENERATOR_VERSION" = "$TEST_VERSION" ] && \
@@ -85,7 +86,7 @@ else
     echo "TS: $TS_VERSION"
     echo "TS pmxt-core dependency: $TS_CORE_DEP"
     echo "CLI: $CLI_VERSION"
-    echo "CLI pmxtjs dependency: $CLI_PMXTJS_DEP"
+    echo "CLI pmxtjs dependency: must be absent"
     echo "Python: $PY_VERSION"
     echo "Python __init__: $PY_INIT_VERSION"
     echo "Generator (Python): $GENERATOR_VERSION"

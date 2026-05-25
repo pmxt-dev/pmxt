@@ -14,7 +14,36 @@
   },
   "oclif": {
     "bin": "pmxt",
-    "commands": "./commands"
+    "commands": "./commands",
+    "helpOptions": {
+      "hideAliasesFromRoot": true
+    },
+    "topics": {
+      "auth": {
+        "description": "Manage PMXT API keys and venue credentials."
+      },
+      "enterprise": {
+        "description": "Run Enterprise matched-market and SQL commands."
+      },
+      "feed": {
+        "description": "Fetch data-feed tickers, candles, order books, and streams."
+      },
+      "order": {
+        "description": "Build, create, submit, cancel, or get orders."
+      },
+      "orders": {
+        "description": "Fetch open, closed, all, or user trade history."
+      },
+      "router": {
+        "description": "Find matching markets and events across venues."
+      },
+      "server": {
+        "description": "Manage an installed local pmxt-core sidecar."
+      },
+      "watch": {
+        "description": "Stream venue order books and trades as JSONL."
+      }
+    }
   },
   "files": [
     "bin",
@@ -25,7 +54,7 @@
   "scripts": {
     "build": "node scripts/validate.js",
     "prepack": "npm run build",
-    "test": "node scripts/validate.js && node scripts/verify-argv-alias-normalizer.js"
+    "test": "node scripts/validate.js && node scripts/verify-argv-alias-normalizer.js && node scripts/verify-root-help.js && node scripts/verify-runtime-errors.js"
   },
   "keywords": [
     "prediction-markets",
@@ -40,7 +69,6 @@
   },
   "dependencies": {
     "@oclif/core": "^4.11.4",
-    "pmxtjs": "2.17.1",
     "ws": "^8.18.0"
   }
 }

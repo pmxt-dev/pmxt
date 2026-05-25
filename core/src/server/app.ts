@@ -5,6 +5,7 @@ import path from "path";
 import { Server as HttpServer } from "http";
 import { createWebSocketHandler, CreateWebSocketHandlerOptions } from "./ws-handler";
 import { createExchange } from "./exchange-factory";
+import { createFeedRouter } from "./feed-routes";
 import { createSqlRouter } from "./sql-route";
 import { ExchangeCredentials } from "../BaseExchange";
 import { BaseError } from "../errors";
@@ -255,6 +256,9 @@ export function createApp(options: CreateAppOptions = {}): Express {
   }
 
   app.use("/v0/sql", createSqlRouter());
+  // Mount before /api/:exchange/:method so "feeds" is not interpreted as
+  // an exchange name by the generic dispatcher.
+  app.use("/api/feeds", createFeedRouter());
 
   // Shared dispatch used by both GET and POST handlers below. Given the
   // method name, the positional args, and optional credentials, it

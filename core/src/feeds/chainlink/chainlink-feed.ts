@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import { BaseDataFeed, DataFeedOptions } from '../base-feed';
 import { Ticker, Tickers, OHLCV, OrderBook, Market, OracleRound, OracleParams, Dictionary } from '../types';
 import { logger } from '../../utils/logger';
+import { ExchangeNotAvailable, NotSupported } from '../../errors';
 import {
     ChainlinkFeedConfig,
     ChainlinkLatestPricesResponse,
@@ -32,7 +33,19 @@ interface Subscription {
 export class ChainlinkFeed extends BaseDataFeed {
     readonly name = 'chainlink';
     readonly description = 'Chainlink price feeds (ETH, BTC, XRP, SOL) on Polygon via pmxt-ohlc';
+    readonly has = {
+        loadMarkets: true,
+        fetchTicker: true,
+        fetchTickers: true,
+        watchTicker: true,
+        fetchOHLCV: false,
+        fetchOrderBook: false,
+        fetchOracleRound: true,
+        fetchOracleHistory: true,
+        fetchHistoricalPrices: true,
+    } as const;
 
+    private readonly baseUrl: string;
     private readonly client: AxiosInstance;
     private readonly wsUrl: string;
     private readonly wsApiKey: string;
@@ -47,13 +60,14 @@ export class ChainlinkFeed extends BaseDataFeed {
 
     constructor(config: ChainlinkFeedConfig, options?: DataFeedOptions) {
         super(options);
-        const baseURL = config.baseUrl ?? CHAINLINK_DEFAULTS.baseUrl;
+        const baseURL = config.baseUrl ?? process.env.CHAINLINK_API_URL ?? CHAINLINK_DEFAULTS.baseUrl;
+        this.baseUrl = baseURL;
         this.client = axios.create({
             baseURL,
             headers: { 'X-API-Key': config.apiKey },
             timeout: 10_000,
         });
-        this.wsUrl = config.wsUrl ?? CHAINLINK_DEFAULTS.wsUrl;
+        this.wsUrl = config.wsUrl ?? process.env.CHAINLINK_WS_URL ?? CHAINLINK_DEFAULTS.wsUrl;
         this.wsApiKey = config.wsApiKey ?? config.apiKey;
         this.reconnectIntervalMs = config.reconnectIntervalMs ?? CHAINLINK_DEFAULTS.reconnectIntervalMs;
     }
@@ -113,6 +127,7 @@ export class ChainlinkFeed extends BaseDataFeed {
     protected async fetchTickerImpl(symbol: string): Promise<Ticker> {
         const cached = this.latestTickers.get(symbol.toUpperCase());
         if (cached) return cached;
+        this.ensureRestConfigured();
 
         const token = TOKEN_BY_PAIR.get(symbol.toUpperCase());
         if (!token) {
@@ -137,6 +152,7 @@ export class ChainlinkFeed extends BaseDataFeed {
     // -- CCXT: fetchTickers --
 
     protected async fetchTickersImpl(symbols?: string[]): Promise<Tickers> {
+        this.ensureRestConfigured();
         const { data } = await this.client.get<ChainlinkLatestPricesResponse>(
             '/v1/chainlink/latest-prices',
         );
@@ -176,21 +192,23 @@ export class ChainlinkFeed extends BaseDataFeed {
     // -- CCXT: fetchOHLCV (not supported) --
 
     protected async fetchOHLCVImpl(_symbol: string, _timeframe?: string, _since?: number, _limit?: number): Promise<OHLCV[]> {
-        throw new Error(
+        throw new NotSupported(
             'Chainlink feed does not provide OHLCV candles. ' +
             'Use fetchOracleHistory() for raw AnswerUpdated records.',
+            this.name,
         );
     }
 
     // -- CCXT: fetchOrderBook (not applicable) --
 
     protected async fetchOrderBookImpl(_symbol: string, _limit?: number): Promise<OrderBook> {
-        throw new Error('Chainlink oracle feeds do not have order books.');
+        throw new NotSupported('Chainlink oracle feeds do not have order books.', this.name);
     }
 
     // -- pmxt extensions: Oracle --
 
     async fetchOracleRound(params: OracleParams): Promise<OracleRound> {
+        this.ensureRestConfigured();
         const token = TOKEN_BY_PAIR.get(params.feed.toUpperCase());
         if (!token) {
             throw new Error(`Unsupported Chainlink feed: ${params.feed}. Supported: ${SUPPORTED_TOKENS.map((t) => t.pair).join(', ')}`);
@@ -209,6 +227,7 @@ export class ChainlinkFeed extends BaseDataFeed {
     }
 
     async fetchOracleHistory(params: OracleParams): Promise<OracleRound[]> {
+        this.ensureRestConfigured();
         const token = TOKEN_BY_PAIR.get(params.feed.toUpperCase());
         if (!token) {
             throw new Error(`Unsupported Chainlink feed: ${params.feed}. Supported: ${SUPPORTED_TOKENS.map((t) => t.pair).join(', ')}`);
@@ -231,6 +250,7 @@ export class ChainlinkFeed extends BaseDataFeed {
             order?: 'asc' | 'desc';
         },
     ): Promise<Ticker[]> {
+        this.ensureRestConfigured();
         const token = TOKEN_BY_PAIR.get(symbol.toUpperCase());
         if (!token) {
             throw new Error(`Unsupported Chainlink symbol: ${symbol}. Supported: ${SUPPORTED_TOKENS.map((t) => t.pair).join(', ')}`);
@@ -257,10 +277,41 @@ export class ChainlinkFeed extends BaseDataFeed {
         await this.connect();
     }
 
+    private ensureRestConfigured(): void {
+        const rawUrl = this.baseUrl.trim();
+        if (!rawUrl) {
+            throw new ExchangeNotAvailable(
+                'ChainlinkFeed requires CHAINLINK_API_URL to fetch oracle data.',
+                this.name,
+            );
+        }
+
+        let url: URL;
+        try {
+            url = new URL(rawUrl);
+        } catch {
+            throw new ExchangeNotAvailable(
+                'ChainlinkFeed requires CHAINLINK_API_URL to be a valid HTTP URL.',
+                this.name,
+            );
+        }
+
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+            throw new ExchangeNotAvailable(
+                'ChainlinkFeed requires CHAINLINK_API_URL to use http:// or https://.',
+                this.name,
+            );
+        }
+    }
+
     private establishConnection(): Promise<void> {
         return new Promise((resolve, reject) => {
-            const url = `${this.wsUrl}?key=${this.wsApiKey}`;
-            const ws = new WebSocket(url);
+            const wsUrl = this.validateWsUrl();
+            if (this.wsApiKey) {
+                wsUrl.searchParams.set('key', this.wsApiKey);
+            }
+
+            const ws = new WebSocket(wsUrl.toString());
 
             const connectionTimeout = setTimeout(() => {
                 ws.close();
@@ -296,6 +347,35 @@ export class ChainlinkFeed extends BaseDataFeed {
                 reject(err);
             });
         });
+    }
+
+    private validateWsUrl(): URL {
+        const rawUrl = this.wsUrl.trim();
+        if (!rawUrl) {
+            throw new ExchangeNotAvailable(
+                'ChainlinkFeed requires CHAINLINK_WS_URL to stream live oracle data.',
+                this.name,
+            );
+        }
+
+        let url: URL;
+        try {
+            url = new URL(rawUrl);
+        } catch {
+            throw new ExchangeNotAvailable(
+                'ChainlinkFeed requires CHAINLINK_WS_URL to be a valid WebSocket URL.',
+                this.name,
+            );
+        }
+
+        if (url.protocol !== 'ws:' && url.protocol !== 'wss:') {
+            throw new ExchangeNotAvailable(
+                'ChainlinkFeed requires CHAINLINK_WS_URL to use ws:// or wss://.',
+                this.name,
+            );
+        }
+
+        return url;
     }
 
     private handleMessage(data: WebSocket.Data): void {

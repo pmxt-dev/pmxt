@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import { logger } from '../../utils/logger';
+import { ExchangeNotAvailable, NotSupported } from '../../errors';
 import { BaseDataFeed, DataFeedOptions } from '../base-feed';
 import { Ticker, Tickers, OHLCV, OrderBook, Market, Dictionary } from '../types';
 import { BinanceFeedConfig, BinanceRelayMessage, BinanceRelayTradeEvent, BINANCE_RELAY_DEFAULTS } from './types';
@@ -17,6 +18,14 @@ interface Subscription {
 export class BinanceFeed extends BaseDataFeed {
     readonly name = 'binance';
     readonly description = 'Binance spot trade firehose via obdata relay';
+    readonly has = {
+        loadMarkets: true,
+        fetchTicker: true,
+        fetchTickers: true,
+        watchTicker: true,
+        fetchOHLCV: false,
+        fetchOrderBook: false,
+    } as const;
 
     private readonly wsUrl: string;
     private readonly apiKey: string;
@@ -31,7 +40,7 @@ export class BinanceFeed extends BaseDataFeed {
 
     constructor(config: BinanceFeedConfig = {}, options?: DataFeedOptions) {
         super(options);
-        this.wsUrl = config.wsUrl ?? BINANCE_RELAY_DEFAULTS.wsUrl;
+        this.wsUrl = config.wsUrl ?? process.env.BINANCE_RELAY_WS_URL ?? BINANCE_RELAY_DEFAULTS.wsUrl;
         this.apiKey = config.apiKey ?? process.env.OBDATA_API_KEY ?? '';
         this.reconnectIntervalMs = config.reconnectIntervalMs ?? BINANCE_RELAY_DEFAULTS.reconnectIntervalMs;
     }
@@ -135,11 +144,11 @@ export class BinanceFeed extends BaseDataFeed {
     }
 
     protected async fetchOHLCVImpl(_symbol: string, _timeframe?: string, _since?: number, _limit?: number): Promise<OHLCV[]> {
-        throw new Error('BinanceFeed: OHLCV not available via trade relay');
+        throw new NotSupported('BinanceFeed does not support fetchOHLCV via the configured trade relay.', this.name);
     }
 
     protected async fetchOrderBookImpl(_symbol: string, _limit?: number): Promise<OrderBook> {
-        throw new Error('BinanceFeed: Order book not available via trade relay');
+        throw new NotSupported('BinanceFeed does not support fetchOrderBook via the configured trade relay.', this.name);
     }
 
     // -- Internal --
@@ -151,11 +160,12 @@ export class BinanceFeed extends BaseDataFeed {
 
     private establishConnection(): Promise<void> {
         return new Promise((resolve, reject) => {
-            const url = this.apiKey
-                ? `${this.wsUrl}?key=${this.apiKey}`
-                : this.wsUrl;
+            const relayUrl = this.validateRelayWsUrl();
+            if (this.apiKey) {
+                relayUrl.searchParams.set('key', this.apiKey);
+            }
 
-            const ws = new WebSocket(url);
+            const ws = new WebSocket(relayUrl.toString());
 
             const connectionTimeout = setTimeout(() => {
                 ws.close();
@@ -233,5 +243,34 @@ export class BinanceFeed extends BaseDataFeed {
                 });
             }
         }, this.reconnectIntervalMs);
+    }
+
+    private validateRelayWsUrl(): URL {
+        const rawUrl = this.wsUrl.trim();
+        if (!rawUrl) {
+            throw new ExchangeNotAvailable(
+                'BinanceFeed requires BINANCE_RELAY_WS_URL to fetch live ticker data.',
+                this.name,
+            );
+        }
+
+        let url: URL;
+        try {
+            url = new URL(rawUrl);
+        } catch {
+            throw new ExchangeNotAvailable(
+                'BinanceFeed requires BINANCE_RELAY_WS_URL to be a valid WebSocket URL.',
+                this.name,
+            );
+        }
+
+        if (url.protocol !== 'ws:' && url.protocol !== 'wss:') {
+            throw new ExchangeNotAvailable(
+                'BinanceFeed requires BINANCE_RELAY_WS_URL to use ws:// or wss://.',
+                this.name,
+            );
+        }
+
+        return url;
     }
 }

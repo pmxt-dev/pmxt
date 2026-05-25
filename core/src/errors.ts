@@ -150,6 +150,15 @@ export class ValidationError extends BaseError {
 // ============================================================================
 
 /**
+ * 501 Not Implemented - The requested operation is not supported
+ */
+export class NotSupported extends BaseError {
+    constructor(message: string, exchange?: string) {
+        super(message, 501, 'NOT_SUPPORTED', false, exchange);
+    }
+}
+
+/**
  * 503 Service Unavailable - Network connectivity issues (retryable)
  */
 export class NetworkError extends BaseError {

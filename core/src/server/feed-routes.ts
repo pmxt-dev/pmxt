@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { getFeed, AVAILABLE_FEEDS } from './feed-factory';
+import type { DataFeedCapability, IDataFeed } from '../feeds/interfaces';
 
 /**
  * Express router for data feed endpoints — CCXT-compatible method names.
@@ -60,6 +61,7 @@ export function createFeedRouter(): Router {
     // GET /api/feeds/:feed/fetchOHLCV?symbol=BTC/USDT&timeframe=1h&since=...&limit=...
     router.get('/:feed/fetchOHLCV', async (req: Request, res: Response, next: NextFunction) => {
         try {
+            if (sendUnsupportedIfNeeded(req, res, 'fetchOHLCV')) return;
             const symbol = req.query.symbol;
             if (typeof symbol !== 'string') {
                 res.status(400).json({ success: false, error: 'Missing required query parameter: symbol' });
@@ -84,10 +86,8 @@ export function createFeedRouter(): Router {
     router.get('/:feed/fetchOrderBook', async (req: Request, res: Response, next: NextFunction) => {
         try {
             const feed = (req as any)._feed;
-            if (typeof feed.fetchOrderBook !== 'function') {
-                res.status(501).json({ success: false, error: `Feed '${req.params.feed}' does not support fetchOrderBook` });
-                return;
-            }
+            if (sendUnsupportedIfNeeded(req, res, 'fetchOrderBook')) return;
+            if (typeof feed.fetchOrderBook !== 'function') return sendUnsupported(res, getFeedParam(req), 'fetchOrderBook');
             const symbol = req.query.symbol;
             if (typeof symbol !== 'string') {
                 res.status(400).json({ success: false, error: 'Missing required query parameter: symbol' });
@@ -102,10 +102,8 @@ export function createFeedRouter(): Router {
     router.get('/:feed/fetchOracleRound', async (req: Request, res: Response, next: NextFunction) => {
         try {
             const feed = (req as any)._feed;
-            if (typeof feed.fetchOracleRound !== 'function') {
-                res.status(501).json({ success: false, error: `Feed '${req.params.feed}' does not support fetchOracleRound` });
-                return;
-            }
+            if (sendUnsupportedIfNeeded(req, res, 'fetchOracleRound')) return;
+            if (typeof feed.fetchOracleRound !== 'function') return sendUnsupported(res, getFeedParam(req), 'fetchOracleRound');
             const feedName = req.query.feed;
             if (typeof feedName !== 'string') {
                 res.status(400).json({ success: false, error: 'Missing required query parameter: feed' });
@@ -120,10 +118,8 @@ export function createFeedRouter(): Router {
     router.get('/:feed/fetchOracleHistory', async (req: Request, res: Response, next: NextFunction) => {
         try {
             const feed = (req as any)._feed;
-            if (typeof feed.fetchOracleHistory !== 'function') {
-                res.status(501).json({ success: false, error: `Feed '${req.params.feed}' does not support fetchOracleHistory` });
-                return;
-            }
+            if (sendUnsupportedIfNeeded(req, res, 'fetchOracleHistory')) return;
+            if (typeof feed.fetchOracleHistory !== 'function') return sendUnsupported(res, getFeedParam(req), 'fetchOracleHistory');
             const feedName = req.query.feed;
             if (typeof feedName !== 'string') {
                 res.status(400).json({ success: false, error: 'Missing required query parameter: feed' });
@@ -141,10 +137,8 @@ export function createFeedRouter(): Router {
     router.get('/:feed/fetchHistoricalPrices', async (req: Request, res: Response, next: NextFunction) => {
         try {
             const feed = (req as any)._feed;
-            if (typeof feed.fetchHistoricalPrices !== 'function') {
-                res.status(501).json({ success: false, error: `Feed '${req.params.feed}' does not support fetchHistoricalPrices` });
-                return;
-            }
+            if (sendUnsupportedIfNeeded(req, res, 'fetchHistoricalPrices')) return;
+            if (typeof feed.fetchHistoricalPrices !== 'function') return sendUnsupported(res, getFeedParam(req), 'fetchHistoricalPrices');
             const symbol = req.query.symbol;
             if (typeof symbol !== 'string') {
                 res.status(400).json({ success: false, error: 'Missing required query parameter: symbol' });
@@ -166,4 +160,27 @@ export function createFeedRouter(): Router {
     });
 
     return router;
+}
+
+function getRequestFeed(req: Request): IDataFeed {
+    return (req as any)._feed as IDataFeed;
+}
+
+function sendUnsupportedIfNeeded(req: Request, res: Response, method: DataFeedCapability): boolean {
+    const feed = getRequestFeed(req);
+    if (feed.has?.[method] !== false) return false;
+    sendUnsupported(res, feed.name || getFeedParam(req), method);
+    return true;
+}
+
+function sendUnsupported(res: Response, feedName: string, method: string): void {
+    res.status(501).json({
+        success: false,
+        error: `Feed '${feedName}' does not support ${method}`,
+    });
+}
+
+function getFeedParam(req: Request): string {
+    const value = req.params.feed;
+    return Array.isArray(value) ? value[0] ?? 'unknown' : value;
 }

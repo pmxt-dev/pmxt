@@ -4,9 +4,27 @@ import { Ticker, Tickers, OHLCV, OrderBook, Market, FundingRate, FundingRates, O
 // Data Feed Interface — CCXT-compatible method signatures.
 // ----------------------------------------------------------------------------
 
+export type DataFeedCapability =
+    | 'loadMarkets'
+    | 'fetchTicker'
+    | 'fetchTickers'
+    | 'watchTicker'
+    | 'fetchOHLCV'
+    | 'fetchOrderBook'
+    | 'watchOrderBook'
+    | 'fetchFundingRate'
+    | 'fetchFundingRates'
+    | 'fetchOracleRound'
+    | 'fetchOracleHistory'
+    | 'fetchHistoricalPrices';
+
+export type DataFeedCapabilityValue = true | false | 'emulated';
+export type DataFeedCapabilities = Readonly<Partial<Record<DataFeedCapability, DataFeedCapabilityValue>>>;
+
 export interface IDataFeed {
     readonly name: string;
     readonly description: string;
+    readonly has?: DataFeedCapabilities;
 
     // -- CCXT unified methods --
 
@@ -24,6 +42,15 @@ export interface IDataFeed {
 
     fetchOracleRound?(params: OracleParams): Promise<OracleRound>;
     fetchOracleHistory?(params: OracleParams): Promise<OracleRound[]>;
+    fetchHistoricalPrices?(
+        symbol: string,
+        opts?: {
+            fromTimestamp?: number;
+            untilTimestamp?: number;
+            maxSize?: number;
+            order?: 'asc' | 'desc';
+        },
+    ): Promise<Ticker[]>;
 
     // -- Lifecycle --
 

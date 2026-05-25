@@ -5,6 +5,7 @@ import path from "path";
 import { Server as HttpServer } from "http";
 import { createWebSocketHandler, CreateWebSocketHandlerOptions } from "./ws-handler";
 import { createExchange } from "./exchange-factory";
+import { createSqlRouter } from "./sql-route";
 import { ExchangeCredentials } from "../BaseExchange";
 import { BaseError } from "../errors";
 import { logger } from "../utils/logger";
@@ -252,6 +253,8 @@ export function createApp(options: CreateAppOptions = {}): Express {
       next();
     });
   }
+
+  app.use("/v0/sql", createSqlRouter());
 
   // Shared dispatch used by both GET and POST handlers below. Given the
   // method name, the positional args, and optional credentials, it

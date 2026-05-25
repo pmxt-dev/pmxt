@@ -27,6 +27,149 @@ paths:
                   timestamp:
                     type: integer
                     format: int64
+  /v0/sql:
+    post:
+      summary: Execute a read-only SQL query against ClickHouse
+      operationId: postV0Sql
+      description: >-
+        Enterprise SQL endpoint. The local sidecar accepts the same `{ query }`
+        body shape as hosted PMXT. It returns `503` unless
+        `CLICKHOUSE_HTTP_URL` is configured.
+      tags:
+        - SQL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  example: SELECT * FROM markets LIMIT 10
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  meta:
+                    type: object
+                    properties:
+                      columns:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            type:
+                              type: string
+                      rows:
+                        type: integer
+                      statistics:
+                        type: object
+        '400':
+          description: Invalid or disallowed query
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: query_error
+                  message:
+                    type: string
+        '403':
+          description: Enterprise plan required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: sql_access_denied
+                  message:
+                    type: string
+                    example: SQL query access requires an Enterprise plan
+        '408':
+          description: Query timed out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: query_timeout
+                  message:
+                    type: string
+                    example: Query exceeded the maximum execution time (5s)
+        '502':
+          description: ClickHouse connection failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: database_error
+                  message:
+                    type: string
+                    example: Database connection failed
+        '503':
+          description: ClickHouse not configured
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: service_unavailable
+                  message:
+                    type: string
+                    example: SQL query service is not available
+    get:
+      summary: Execute a read-only SQL query against ClickHouse (query param)
+      operationId: getV0Sql
+      description: >-
+        Curl-friendly variant of Enterprise SQL. The local sidecar returns
+        `503` unless `CLICKHOUSE_HTTP_URL` is configured.
+      tags:
+        - SQL
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+          description: SQL query to execute
+          example: SELECT * FROM markets LIMIT 10
+      responses:
+        '200':
+          $ref: '#/paths/~1v0~1sql/post/responses/200'
+        '400':
+          $ref: '#/paths/~1v0~1sql/post/responses/400'
+        '403':
+          $ref: '#/paths/~1v0~1sql/post/responses/403'
+        '408':
+          $ref: '#/paths/~1v0~1sql/post/responses/408'
+        '502':
+          $ref: '#/paths/~1v0~1sql/post/responses/502'
+        '503':
+          $ref: '#/paths/~1v0~1sql/post/responses/503'
   '/api/{exchange}/loadMarkets':
     post:
       summary: Load Markets

@@ -223,7 +223,14 @@ export class LimitlessFetcher implements IExchangeFetcher<LimitlessRawMarket, Li
         for (const res of rawResults) {
             if (res.markets && Array.isArray(res.markets)) {
                 for (const child of res.markets) {
-                    allRawMarkets.push(child);
+                    allRawMarkets.push({
+                        ...child,
+                        __pmxtEventId: res.slug,
+                        __pmxtEventTitle: res.title || res.question,
+                        __pmxtEventDescription: res.description,
+                        __pmxtCategories: res.categories,
+                        __pmxtTags: res.tags,
+                    });
                 }
             } else {
                 allRawMarkets.push(res);

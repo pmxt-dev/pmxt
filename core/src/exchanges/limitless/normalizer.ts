@@ -30,8 +30,15 @@ export class LimitlessNormalizer implements IExchangeNormalizer<LimitlessRawMark
         let marketsList: UnifiedMarket[] = [];
 
         if (raw.markets && Array.isArray(raw.markets)) {
+            const eventTitle = raw.title || raw.question || '';
             marketsList = raw.markets
-                .map((child: any) => mapMarketToUnified(child))
+                .map((child: any) => mapMarketToUnified(child, {
+                    eventId: raw.slug,
+                    eventTitle,
+                    eventDescription: raw.description,
+                    categories: raw.categories,
+                    tags: raw.tags,
+                }))
                 .filter((m: any): m is UnifiedMarket => m !== null);
         } else {
             const unifiedMarket = mapMarketToUnified(raw);

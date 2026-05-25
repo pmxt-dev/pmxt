@@ -990,6 +990,21 @@ describe('LimitlessNormalizer', () => {
             expect(event.markets).toHaveLength(2);
         });
 
+        it('maps grouped child eventId to the parent event slug', () => {
+            expect(event.markets[0].eventId).toBe('eth-flip-group');
+            expect(event.markets[1].eventId).toBe('eth-flip-group');
+        });
+
+        it('injects parent context into grouped child market titles', () => {
+            expect(event.markets[0].title).toBe('Ethereum vs Bitcoin Group - Will ETH flip BTC in 2025?');
+            expect(event.markets[1].title).toBe('Ethereum vs Bitcoin Group - Will ETH reach $10k in 2025?');
+        });
+
+        it('keeps grouped child outcome labels on the child proposition', () => {
+            expect(event.markets[0].outcomes[0].label).toBe('Will ETH flip BTC in 2025?');
+            expect(event.markets[0].outcomes[1].label).toBe('Not Will ETH flip BTC in 2025?');
+        });
+
         it('aggregates volume24h across all nested markets', () => {
             expect(typeof event.volume24h).toBe('number');
             expect(event.volume24h).toBe(75000 + 25000);
@@ -1015,6 +1030,48 @@ describe('LimitlessNormalizer', () => {
         it('maps tags as string array', () => {
             expect(event.tags).toContain('Ethereum');
             expect(event.tags).toContain('Bitcoin');
+        });
+
+        it('normalizes one-word grouped child titles with parent context', () => {
+            const eurovision = normalizer.normalizeEvent({
+                slug: 'eurovision-winner',
+                title: 'Who will win Eurovision?',
+                markets: [
+                    {
+                        slug: 'eurovision-winner-spain',
+                        title: 'Spain',
+                        tokens: { yes: 'spain-yes', no: 'spain-no' },
+                        prices: [0.2, 0.8],
+                        volumeFormatted: 100,
+                        volume: 1000,
+                        expirationTimestamp: '2026-06-01T00:00:00Z',
+                    },
+                ],
+            });
+
+            expect(eurovision).not.toBeNull();
+            expect(eurovision!.markets[0].eventId).toBe('eurovision-winner');
+            expect(eurovision!.markets[0].title).toBe('Who will win Eurovision? - Spain');
+            expect(eurovision!.markets[0].outcomes[0].label).toBe('Spain');
+            expect(eurovision!.markets[0].outcomes[1].label).toBe('Not Spain');
+        });
+
+        it('normalizes grouped child markets returned by search with embedded parent context', () => {
+            const market = normalizer.normalizeMarket({
+                slug: 'eurovision-winner-spain',
+                title: 'Spain',
+                tokens: { yes: 'spain-yes', no: 'spain-no' },
+                prices: [0.2, 0.8],
+                expirationTimestamp: '2026-06-01T00:00:00Z',
+                __pmxtEventId: 'eurovision-winner',
+                __pmxtEventTitle: 'Who will win Eurovision?',
+            } as any);
+
+            expect(market).not.toBeNull();
+            expect(market!.eventId).toBe('eurovision-winner');
+            expect(market!.title).toBe('Who will win Eurovision? - Spain');
+            expect(market!.outcomes[0].label).toBe('Spain');
+            expect(market!.outcomes[1].label).toBe('Not Spain');
         });
     });
 

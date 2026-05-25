@@ -3,10 +3,28 @@ import { addBinaryOutcomes } from '../../utils/market-utils';
 
 export const DEFAULT_LIMITLESS_API_URL = 'https://api.limitless.exchange';
 
-export function mapMarketToUnified(market: any): UnifiedMarket | null {
+export interface LimitlessMarketContext {
+    eventId?: string;
+    eventTitle?: string;
+    eventDescription?: string;
+    categories?: string[];
+    tags?: string[];
+}
+
+export function mapMarketToUnified(market: any, context: LimitlessMarketContext = {}): UnifiedMarket | null {
     if (!market) return null;
 
+    const resolvedContext: LimitlessMarketContext = {
+        eventId: getText(market.__pmxtEventId) || context.eventId,
+        eventTitle: getText(market.__pmxtEventTitle) || context.eventTitle,
+        eventDescription: getText(market.__pmxtEventDescription) || context.eventDescription,
+        categories: getStringArray(market.__pmxtCategories) || context.categories,
+        tags: getStringArray(market.__pmxtTags) || context.tags,
+    };
     const outcomes: MarketOutcome[] = [];
+    const rawTitle = getText(market.title) || getText(market.question) || market.slug;
+    const title = composeMarketTitle(rawTitle, resolvedContext.eventTitle);
+    const hasParentContext = Boolean(resolvedContext.eventTitle && rawTitle);
 
     // The Limitless SDK provides:
     //   tokens: { yes: "...", no: "..." }
@@ -21,11 +39,13 @@ export function mapMarketToUnified(market: any): UnifiedMarket | null {
         const prices = Array.isArray(market.prices) ? market.prices : [];
         const yesPrice = prices[0] || 0;
         const noPrice = prices[1] || 0;
+        const yesLabel = hasParentContext ? rawTitle : 'Yes';
+        const noLabel = hasParentContext ? `Not ${rawTitle}` : 'No';
 
         outcomes.push({
             outcomeId: market.tokens.yes,
             marketId: market.slug,
-            label: 'Yes',
+            label: yesLabel,
             price: yesPrice,
             priceChange24h: 0,
             metadata: { clobTokenId: market.tokens.yes },
@@ -33,7 +53,7 @@ export function mapMarketToUnified(market: any): UnifiedMarket | null {
         outcomes.push({
             outcomeId: market.tokens.no,
             marketId: market.slug,
-            label: 'No',
+            label: noLabel,
             price: noPrice,
             priceChange24h: 0,
             metadata: { clobTokenId: market.tokens.no },
@@ -49,9 +69,9 @@ export function mapMarketToUnified(market: any): UnifiedMarket | null {
     const um = {
         id: market.slug,
         marketId: market.slug,
-        eventId: market.slug,
-        title: market.title || market.question,
-        description: market.description,
+        eventId: resolvedContext.eventId || market.slug,
+        title,
+        description: market.description || resolvedContext.eventDescription,
         slug: market.slug,
         outcomes: outcomes,
         resolutionDate: market.expirationTimestamp ? new Date(market.expirationTimestamp) : new Date(),
@@ -61,13 +81,37 @@ export function mapMarketToUnified(market: any): UnifiedMarket | null {
         openInterest: 0, // Not directly in the flat market list
         url: `https://limitless.exchange/markets/${market.slug}`,
         image: market.logo || `https://limitless.exchange/api/og?slug=${market.slug}`,
-        category: market.categories?.[0],
-        tags: market.tags || [],
+        category: market.categories?.[0] || resolvedContext.categories?.[0],
+        tags: market.tags || resolvedContext.tags || [],
         status,
     } as UnifiedMarket;
 
     addBinaryOutcomes(um);
     return um;
+}
+
+function getText(value: unknown): string | undefined {
+    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function getStringArray(value: unknown): string[] | undefined {
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : undefined;
+}
+
+function normalizeTitle(value: string): string {
+    return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+
+function composeMarketTitle(childTitle: string, eventTitle?: string): string {
+    if (!eventTitle) return childTitle;
+
+    const normalizedChild = normalizeTitle(childTitle);
+    const normalizedEvent = normalizeTitle(eventTitle);
+    if (!normalizedChild || !normalizedEvent || normalizedChild.startsWith(normalizedEvent)) {
+        return childTitle;
+    }
+
+    return `${eventTitle} - ${childTitle}`;
 }
 
 export function mapIntervalToFidelity(interval: CandleInterval): number {

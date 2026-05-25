@@ -2,6 +2,7 @@ import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
+import { Server as HttpServer } from "http";
 import { createWebSocketHandler, CreateWebSocketHandlerOptions } from "./ws-handler";
 import { createExchange } from "./exchange-factory";
 import { ExchangeCredentials } from "../BaseExchange";
@@ -191,11 +192,24 @@ export interface CreateAppOptions {
  * wrap the sidecar in their own auth / quota / usage middleware and serve
  * it as part of a larger Express application.
  *
- * The returned app registers:
+ * The returned app registers HTTP routes only:
  *   - `GET  /health`
  *   - (optional) the built-in `x-pmxt-access-token` auth check
  *   - `POST /api/:exchange/:method`
  *   - the error handler
+ *
+ * WebSocket upgrades do not pass through Express routing. Local servers
+ * created from this app can expose `/ws` by attaching the WebSocket endpoint
+ * to the underlying HTTP server:
+ *
+ * ```ts
+ * import { createApp, attachWebSocketEndpoint } from 'pmxt-core';
+ *
+ * const accessToken = process.env.PMXT_ACCESS_TOKEN;
+ * const app = createApp({ accessToken });
+ * const server = app.listen(4000, "127.0.0.1");
+ * attachWebSocketEndpoint(server, { accessToken });
+ * ```
  *
  * Usage:
  * ```ts
@@ -408,6 +422,25 @@ export function createApp(options: CreateAppOptions = {}): Express {
   return app;
 }
 
+export type WebSocketEndpoint = ReturnType<typeof createWebSocketHandler>;
+
+/**
+ * Attach the PMXT streaming WebSocket endpoint to an HTTP server.
+ *
+ * Use this with servers built from `createApp()` when you need `/ws` support
+ * for watchOrderBook, watchOrderBooks, or watchTrades. The access token should
+ * match the one passed to `createApp()` so HTTP and WebSocket requests share
+ * the same local auth policy.
+ */
+export function attachWebSocketEndpoint(
+  server: HttpServer,
+  options: CreateWebSocketHandlerOptions = {},
+): WebSocketEndpoint {
+  const wsHandler = createWebSocketHandler(options);
+  wsHandler.attach(server);
+  return wsHandler;
+}
+
 /**
  * Start the PMXT sidecar server on the given port with the built-in
  * access-token auth middleware enabled. Returns the underlying
@@ -420,9 +453,7 @@ export async function startServer(port: number, accessToken: string) {
   const app = createApp({ accessToken });
   const server = app.listen(port, "127.0.0.1");
 
-  // Attach WebSocket handler for streaming subscriptions
-  const wsHandler = createWebSocketHandler({ accessToken });
-  wsHandler.attach(server);
+  attachWebSocketEndpoint(server, { accessToken });
 
   return server;
 }

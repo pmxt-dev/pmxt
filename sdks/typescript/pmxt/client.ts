@@ -238,6 +238,13 @@ export interface ExchangeOptions {
  * prediction market platforms (Polymarket, Kalshi, etc.).
  */
 export abstract class Exchange {
+    private static readonly OBDATA_WATCH_ALL_SOURCES = new Set([
+        "polymarket",
+        "limitless",
+        "kalshi",
+        "opinion",
+    ]);
+
     protected exchangeName: string;
     protected apiKey?: string;
     protected privateKey?: string;
@@ -506,6 +513,13 @@ export abstract class Exchange {
     private isWsTransportUnavailableError(error: unknown): boolean {
         return error instanceof PmxtError
             && /connection failed|no websocket|websocket.*not connected/i.test(error.message);
+    }
+
+    private defaultWatchAllOrderBookVenues(): string[] | undefined {
+        if (Exchange.OBDATA_WATCH_ALL_SOURCES.has(this.exchangeName)) {
+            return [this.exchangeName];
+        }
+        return undefined;
     }
 
     private getWsInternals(ws: SidecarWsClient): SidecarWsClientInternals {
@@ -1694,7 +1708,8 @@ export abstract class Exchange {
      * Call repeatedly in a loop to stream updates (CCXT Pro pattern).
      * Requires hosted mode (`pmxtApiKey` set).
      *
-     * @param venues - Optional venue filter (e.g. ["polymarket", "limitless"])
+     * @param venues - Optional venue filter. Defaults to this exchange's venue
+     *   for venue clients (e.g. Kalshi -> ["kalshi"]); Router defaults to all venues.
      * @returns Next event with source, symbol, and orderbook
      *
      * @example
@@ -1713,7 +1728,8 @@ export abstract class Exchange {
             throw new PmxtError("watchAllOrderBooks() requires hosted mode (set pmxtApiKey)");
         }
 
-        const args: any[] = venues ? [venues] : [];
+        const effectiveVenues = venues ?? this.defaultWatchAllOrderBookVenues();
+        const args: any[] = effectiveVenues?.length ? [effectiveVenues] : [];
         const wsData = await this.watchViaWs("watchAllOrderBooks", args);
         if (wsData !== null) {
             return {

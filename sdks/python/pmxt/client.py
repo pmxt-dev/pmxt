@@ -268,6 +268,13 @@ class Exchange(ABC):
     prediction market platforms (Polymarket, Kalshi, etc.).
     """
 
+    _OBDATA_WATCH_ALL_SOURCES = frozenset({
+        "polymarket",
+        "limitless",
+        "kalshi",
+        "opinion",
+    })
+
     def __init__(
         self,
         exchange_name: str,
@@ -489,6 +496,11 @@ class Exchange(ABC):
         if self.signature_type is not None:
             creds["signatureType"] = self.signature_type
         return creds if creds else None
+
+    def _default_watch_all_order_book_venues(self) -> Optional[List[str]]:
+        if self.exchange_name in self._OBDATA_WATCH_ALL_SOURCES:
+            return [self.exchange_name]
+        return None
 
     @staticmethod
     def _build_sidecar_query_string(query: Dict[str, Any]) -> str:
@@ -1955,7 +1967,9 @@ class Exchange(ABC):
         updates (CCXT Pro pattern). Requires hosted mode (``pmxt_api_key`` set).
 
         Args:
-            venues: Optional venue filter (e.g. ``["polymarket", "limitless"]``)
+            venues: Optional venue filter. Defaults to this exchange's venue
+                for venue clients (e.g. Kalshi -> ``["kalshi"]``); Router
+                defaults to all venues.
 
         Returns:
             FirehoseEvent with source, symbol, and orderbook
@@ -1963,7 +1977,8 @@ class Exchange(ABC):
         if not self.is_hosted:
             raise PmxtError("watch_all_order_books() requires hosted mode (set pmxt_api_key)")
 
-        args: list = [venues] if venues else []
+        effective_venues = venues if venues is not None else self._default_watch_all_order_book_venues()
+        args: list = [effective_venues] if effective_venues else []
         data = self._watch_via_ws("watchAllOrderBooks", args)
         if data is not None:
             return FirehoseEvent(

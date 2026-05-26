@@ -6,6 +6,7 @@ import pytest
 from pmxt.client import Exchange
 from pmxt.errors import PmxtError
 from pmxt.models import OrderBook, Trade
+from pmxt.router import Router
 
 
 def _exchange() -> Exchange:
@@ -97,6 +98,64 @@ def test_watch_order_books_uses_websocket_batch_transport(monkeypatch):
     assert fake_ws.kwargs["method"] == "watchOrderBooks"
     assert fake_ws.kwargs["args"] == [["outcome-1"], 3]
     assert isinstance(books["outcome-1"], OrderBook)
+
+
+def test_watch_all_order_books_defaults_to_exchange_venue(monkeypatch):
+    exchange = Exchange(
+        "kalshi",
+        pmxt_api_key="pmxt_test",
+        base_url="https://api.pmxt.dev",
+        auto_start_server=False,
+    )
+    calls = []
+    monkeypatch.setattr(
+        exchange,
+        "_watch_via_ws",
+        lambda method, args: calls.append((method, args)) or _raw_order_book(),
+    )
+
+    event = exchange.watch_all_order_books()
+
+    assert calls == [("watchAllOrderBooks", [["kalshi"]])]
+    assert event.source == ""
+    assert isinstance(event.orderbook, OrderBook)
+
+
+def test_watch_all_order_books_router_defaults_to_all_venues(monkeypatch):
+    router = Router(
+        pmxt_api_key="pmxt_test",
+        base_url="https://api.pmxt.dev",
+        auto_start_server=False,
+    )
+    calls = []
+    monkeypatch.setattr(
+        router,
+        "_watch_via_ws",
+        lambda method, args: calls.append((method, args)) or _raw_order_book(),
+    )
+
+    router.watch_all_order_books()
+
+    assert calls == [("watchAllOrderBooks", [])]
+
+
+def test_watch_all_order_books_explicit_venues_override_default(monkeypatch):
+    exchange = Exchange(
+        "kalshi",
+        pmxt_api_key="pmxt_test",
+        base_url="https://api.pmxt.dev",
+        auto_start_server=False,
+    )
+    calls = []
+    monkeypatch.setattr(
+        exchange,
+        "_watch_via_ws",
+        lambda method, args: calls.append((method, args)) or _raw_order_book(),
+    )
+
+    exchange.watch_all_order_books(["polymarket", "kalshi"])
+
+    assert calls == [("watchAllOrderBooks", [["polymarket", "kalshi"]])]
 
 
 def test_watch_trades_uses_websocket_transport(monkeypatch):

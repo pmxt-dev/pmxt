@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.45.3] - 2026-05-26
+
+### Fixed
+
+- **SDK streaming**: Default `watchAllOrderBooks()` / `watch_all_order_books()` to the instantiated venue for venue clients. `Kalshi`, `Polymarket`, `Limitless`, and `Opinion` now stream only their own venue unless an explicit venue list is provided, while `Router` continues to stream all venues by default.
+
 ## [2.45.2] - 2026-05-25
 
 ### Fixed

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.45.4] - 2026-05-28
+
+### Fixed
+
+- **WebSocket**: `watchOrderBooks` / `watch_order_books` now works in a loop. `subscribeBatch` reuses existing subscriptions instead of sending duplicate subscribe messages that the server rejects with "Already subscribed".
+
 ## [2.45.3] - 2026-05-26
 
 ### Fixed
@@ -19,7 +25,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **CLI UX**: Replace the raw oclif root command dump with a curated onboarding help screen focused on exchange-first commands, auth setup, and common workflows.
-- **CLI defaults**: Default standalone CLI API calls to hosted PMXT instead of localhost, keeping local sidecar use explicit via `--base-url` or `pmxt server`.
+- **CLI defaults**: Default standalone CLI API calls to hosted PMXT instead of localhost, keeping local service use explicit via `--base-url` or `pmxt server`.
 - **CLI install**: Remove the runtime dependency on `pmxtjs` from `@pmxt/cli`, keeping hosted CLI installs lightweight and avoiding SDK/core dependency warnings during global install.
 - **CLI auth errors**: Show actionable PMXT API key setup guidance on hosted `401`/`403` responses, including `pmxt auth login`, `PMXT_API_KEY`, and one-shot `--pmxt-api-key` usage.
 - **CLI aliases**: Keep duplicate fetch/v0 aliases working through the explicit alias layer while hiding them from command help output.
@@ -65,7 +71,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **Mock exchange**: Respect `limit` in `fetchOrderBook()` and `fetchTrades()`, and expose the documented `fetchOrderBooks()` batch method.
-- **Local sidecar**: Expose documented `/api/feeds`, `/v0/sql`, and `/ws` surfaces from `createApp()`/local servers with clearer unsupported-capability and missing-environment errors.
+- **Local local service**: Expose documented `/api/feeds`, `/v0/sql`, and `/ws` surfaces from `createApp()`/local servers with clearer unsupported-capability and missing-environment errors.
 - **Router**: Resolve local mock market, outcome, and event IDs locally for `/api/router` match lookups instead of sending fixture IDs to the hosted catalog.
 
 ## [2.44.4] - 2026-05-24
@@ -462,19 +468,19 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- **Docs**: Watch methods previously showed as HTTP POST endpoints (`curl --request POST`). Now correctly documented as WebSocket endpoints with connection URLs for both local sidecar and hosted API.
+- **Docs**: Watch methods previously showed as HTTP POST endpoints (`curl --request POST`). Now correctly documented as WebSocket endpoints with connection URLs for both local service and hosted API.
 
 ## [2.41.0] - 2026-05-13
 
 ### Added
 
-- **SDK (TypeScript + Python)**: Real-time WebSocket streaming via the hosted PMXT API. When `pmxtApiKey` is set, `watchOrderBook()` and `watchOrderBooks()` connect to `wss://api.pmxt.dev/ws` instead of the local sidecar — no venue credentials needed.
+- **SDK (TypeScript + Python)**: Real-time WebSocket streaming via the hosted PMXT API. When `pmxtApiKey` is set, `watchOrderBook()` and `watchOrderBooks()` connect to `wss://api.pmxt.dev/ws` instead of the local service — no venue credentials needed.
 - **SDK (TypeScript + Python)**: `firehose()` method streams all orderbook updates across all venues (Polymarket, Limitless, Opinion) through a single connection. Optional venue filter: `firehose(["polymarket"])`.
 - **SDK (TypeScript + Python)**: `FirehoseEvent` type with `source`, `symbol`, and `orderbook` fields.
 
 ### Fixed
 
-- **SDK (TypeScript)**: Silent WebSocket failures when sidecar is unavailable now fall back to HTTP correctly.
+- **SDK (TypeScript)**: Silent WebSocket failures when local service is unavailable now fall back to HTTP correctly.
 - **SDK (Python)**: `IndexError` in `ws_client.subscribe()` when called with empty args (affected `firehose()` with no venue filter).
 - **SDK (Python)**: Silent failures in WS client error handling.
 - **Router**: Throw on unexpected `browseMarketMatches` response type instead of returning silently.
@@ -558,7 +564,7 @@ Deleted ~170 test files (17,200 lines) that were vacuously passing, silently ski
 - **Error propagation tests** — unknown exchange/method, health check, GET/POST routing, write-method-via-GET rejection.
 - **GET/POST parity tests** — verifies GET and POST requests to the same endpoint return identical results.
 - **Python SDK converter tests** — every converter function, every field on every model, distinct sentinel values to catch field transpositions.
-- **Python SDK integration tests** — starts real Node sidecar, makes HTTP calls through Python, asserts responses are properly typed dataclass instances with all fields.
+- **Python SDK integration tests** — starts real Node local service, makes HTTP calls through Python, asserts responses are properly typed dataclass instances with all fields.
 
 #### MockExchange
 
@@ -785,22 +791,22 @@ Backwards compatible — when no env var is set, the default URL is used.
 
 ### Fix: Router-only methods now fail clearly instead of silently
 
-- **Sidecar 501 guard**: Calling a router-only method (e.g.
+- **Local service 501 guard**: Calling a router-only method (e.g.
   `fetchMarketMatches`, `fetchEventMatches`, `compareMarketPrices`,
   `fetchArbitrage`) on a regular exchange like `polymarket` now returns
   HTTP 501 with a message telling you to use `exchange: "router"`.
   Previously it threw a generic 500 `"Method X not implemented."` with
   no hint about what to do instead.
 
-- **OpenAPI exchange scoping**: The sidecar OpenAPI spec now restricts
+- **OpenAPI exchange scoping**: The local service OpenAPI spec now restricts
   the `exchange` enum to `["router"]` on all 8 router-only operations.
   The MCP tool generator reads this spec, so MCP tools will no longer
   accept invalid exchanges for cross-venue methods. The `{exchange}`
-  path template is preserved for sidecar routing; only the enum is
+  path template is preserved for local service routing; only the enum is
   scoped.
 
 - **SDK Router method name fix**: `Router.fetchMarketMatches` in
-  `pmxtjs` was internally dispatching to the deprecated sidecar method
+  `pmxtjs` was internally dispatching to the deprecated local service method
   name `fetchMatches` instead of `fetchMarketMatches`. Since
   `fetchMatches` has no entry in `method-verbs.json`, every call
   incurred a wasted 405 GET probe before falling back to POST. Fixed
@@ -906,7 +912,7 @@ to credentials. To use smart wallet signing, add both `apiSecret` and
   pushes to main bypassed the check entirely, allowing the spec (and
   downstream MCP + SDKs) to silently drift from `BaseExchange.ts`.
 - The `openapi-check` workflow now auto-regenerates and commits the
-  sidecar spec on push to main. The PR check-and-fail behavior is
+  local service spec on push to main. The PR check-and-fail behavior is
   unchanged.
 - The path trigger now watches all source files the generator reads
   (`types.ts`, `router/types.ts`, `math.ts`, `exchange-factory.ts`),
@@ -976,7 +982,7 @@ Fixes #121.
 
 - `watchOrderBook()` / `watchTrades()` no longer race with the exchange's
   internal `scheduleReconnect` to create duplicate TCP connections.
-- Previously, the sidecar streaming loop retried on error after 1s while
+- Previously, the local service streaming loop retried on error after 1s while
   the exchange's own reconnect timer fired at 5s, causing parallel
   connection attempts under network instability.
 - The exchange layer now solely owns its connection lifecycle. Watch
@@ -1070,9 +1076,9 @@ Fixes #122.
 - Added to BaseExchange, KalshiExchange, Python SDK
   (`watch_order_books`), and TypeScript SDK (`watchOrderBooks`).
 
-### Feat: sidecar WebSocket endpoint for streaming
+### Feat: local service WebSocket endpoint for streaming
 
-- The sidecar now exposes a `/ws` WebSocket endpoint for push-based
+- The local service now exposes a `/ws` WebSocket endpoint for push-based
   streaming. SDKs can subscribe to `watchOrderBook`,
   `watchOrderBooks`, and `watchTrades` over a persistent connection
   instead of HTTP long-polling.
@@ -1085,7 +1091,7 @@ Fixes #122.
 
 ### Feat: SDK WebSocket transport (Python + TypeScript)
 
-- Both SDKs now try a WebSocket connection to the sidecar for watch
+- Both SDKs now try a WebSocket connection to the local service for watch
   methods before falling back to HTTP POST. The WS connection is lazy,
   shared across all subscriptions on an exchange instance, and
   reconnects automatically.
@@ -1132,7 +1138,7 @@ Fixes #122.
 
 - `fetchRawTrades` and `fetchRawMyTrades` in the Polymarket fetcher
   called `.getTime()` directly on `params.start`/`params.end`, assuming
-  Date objects. When values arrive through the sidecar HTTP layer they
+  Date objects. When values arrive through the local service HTTP layer they
   are strings or numbers, causing `params.start.getTime is not a
   function`.
 - Added a module-level `ensureDate()` that coerces strings (ISO 8601),
@@ -1181,13 +1187,13 @@ Fixes #122.
 
 - Every exchange class (`Polymarket`, `Kalshi`, `Limitless`, etc.)
   defaulted `auto_start_server=True`, which always started the local
-  sidecar and overrode the hosted URL with `localhost`. The parent
+  local service and overrode the hosted URL with `localhost`. The parent
   `Exchange.__init__` had correct hosted-mode logic (`auto_start_server
   = not is_hosted`) but it only triggered when `None` was passed.
 - All exchange classes now default `auto_start_server=None`, letting
   the parent decide: True for local, False for hosted.
 - Also fixed `_resolve_sidecar_host` to skip the lock file in hosted
-  mode, preventing stale sidecar processes from hijacking hosted
+  mode, preventing stale local service processes from hijacking hosted
   requests.
 - Effect: `pmxt.Polymarket(pmxt_api_key="...")` now correctly routes
   to `api.pmxt.dev`, enabling OHLCV volume data and deep history via
@@ -1309,17 +1315,17 @@ Fixes #122.
 
 ## [2.35.16] - 2026-04-28
 
-### Fix: Sidecar 401 Unauthorized when orphan occupies default port
+### Fix: Local service 401 Unauthorized when orphan occupies default port
 
 - The launcher and `ServerManager` hardcoded `DEFAULT_PORT` (3847) for
-  health checks. An orphaned sidecar on that port would pass the check,
+  health checks. An orphaned local service on that port would pass the check,
   causing the client to connect with the wrong access token.
 - Launcher now waits for the lock file to appear and health-checks the
-  actual port the new sidecar bound (`waitForLockAndHealth`).
+  actual port the new local service bound (`waitForLockAndHealth`).
 - `ServerManager._wait_for_health()` reads the port from the lock file
   on each poll iteration instead of using the default.
-- New `_kill_orphan_sidecars()` kills all stale pmxt sidecar processes
-  before spawning so the new sidecar always gets the default port.
+- New `_kill_orphan_sidecars()` kills all stale pmxt local service processes
+  before spawning so the new local service always gets the default port.
   ([#119](https://github.com/pmxt-dev/pmxt/issues/119))
 
 ### Feat: `best_bid` / `best_ask` on Python SDK `MarketOutcome`
@@ -1654,14 +1660,14 @@ through its servers. Applies to both Python and TypeScript SDKs.
   `cutoffAt`, causing them to appear as having no expiry. Now correctly
   inherits the parent's `cutoffAt`. (#110)
 
-- **Sidecar survives updates and crashes require manual restart**: The
-  SIGTERM-based shutdown was insufficient — old sidecar processes survived
+- **Local service survives updates and crashes require manual restart**: The
+  SIGTERM-based shutdown was insufficient — old local service processes survived
   SDK updates and kept serving stale code. Now escalates to SIGKILL after
   the grace period. Adds retry with exponential backoff on connection
-  failures across both SDKs, and auto-restarts the sidecar on first
+  failures across both SDKs, and auto-restarts the local service on first
   ECONNREFUSED so crashes self-heal on the next request. TypeScript SDK
   now re-reads the lock file port on every request (matching Python)
-  so sidecar restarts on a different port are picked up transparently.
+  so local service restarts on a different port are picked up transparently.
 
 - **SDK generators emitted outdated method bodies**: Generated client
   methods did not use retry/backoff or dynamic port resolution, diverging
@@ -1892,7 +1898,7 @@ through its servers. Applies to both Python and TypeScript SDKs.
 
 ### Bug Fixes
 
-- **Sidecar reports hardcoded `2.0.2` version**: The bundled sidecar server
+- **Local service reports hardcoded `2.0.2` version**: The bundled local service server
   could not resolve `package.json` at runtime in pip/npm packages, so it always
   fell back to a stale hardcoded version string. The version is now injected at
   build time via esbuild `--define`, so `server.status()` reports the real
@@ -2049,9 +2055,9 @@ through its servers. Applies to both Python and TypeScript SDKs.
   `fetch_events(limit=10, category="Politics")` returns 10 Politics events —
   not "up to 10 events, some of which happen to be Politics."
 
-- **Express sidecar: deep object coercion**
+- **Express local service: deep object coercion**
 
-  The sidecar now recursively coerces nested query-string objects
+  The local service now recursively coerces nested query-string objects
   (`?filter[volume24h][min]=1000`) and accepts JSON-encoded filter values
   (`?filter={"category":"Politics"}`), so HTTP clients that bypass the SDK can
   use the new filter param directly.
@@ -2253,7 +2259,7 @@ through its servers. Applies to both Python and TypeScript SDKs.
 
 ### Added
 
-- **`unwatchOrderBook` / `unwatch_order_book` for per-asset WebSocket unsubscription** (issue #79): Previously the only way to stop receiving order book updates was `close()`, which tore down all WebSocket connections across all assets. Users streaming multiple assets (e.g. rotating through 5-minute Polymarket markets) accumulated subscriptions with no way to release individual ones, causing unbounded bandwidth growth — reported as 300+ Mbps in issue #79. Added `unwatchOrderBook(id)` across the full stack: `BaseExchange` stub, Polymarket implementation (calls `WSSubscriptionManager.removeSubscriptions`, clears pending resolvers and cached order book state), sidecar POST route, and both SDKs (`unwatchOrderBook` in TypeScript, `unwatch_order_book` in Python). All other exchanges declare `unwatchOrderBook: false` in their capabilities until they add support. The method is safe to call on assets that were never watched — it returns successfully with no side effects.
+- **`unwatchOrderBook` / `unwatch_order_book` for per-asset WebSocket unsubscription** (issue #79): Previously the only way to stop receiving order book updates was `close()`, which tore down all WebSocket connections across all assets. Users streaming multiple assets (e.g. rotating through 5-minute Polymarket markets) accumulated subscriptions with no way to release individual ones, causing unbounded bandwidth growth — reported as 300+ Mbps in issue #79. Added `unwatchOrderBook(id)` across the full stack: `BaseExchange` stub, Polymarket implementation (calls `WSSubscriptionManager.removeSubscriptions`, clears pending resolvers and cached order book state), local service POST route, and both SDKs (`unwatchOrderBook` in TypeScript, `unwatch_order_book` in Python). All other exchanges declare `unwatchOrderBook: false` in their capabilities until they add support. The method is safe to call on assets that were never watched — it returns successfully with no side effects.
 
 ## [2.27.10] - 2026-04-11
 
@@ -2265,7 +2271,7 @@ through its servers. Applies to both Python and TypeScript SDKs.
 
 ### Fixed
 
-- **`watch_order_book` returns "Unauthorized: Invalid or missing access token" despite valid credentials** (issue #76): Eight methods in both the Python and TypeScript SDKs — `watchOrderBook`, `watchTrades`, `watchAddress`, `unwatchAddress`, `watchPrices`, `watchUserPositions`, `watchUserTransactions`, `createOrder`, `buildOrder`, and `submitOrder` — were dispatched through the auto-generated `DefaultApi` client, which does not attach the `x-pmxt-access-token` header required by the sidecar's auth middleware. All other methods (e.g. `fetchOrderBook`, `cancelOrder`) already used direct HTTP calls with the access token. Replaced every `self._api.*` / `this.api.*` call site with the same manual `call_api()` / `fetch()` pattern used by working methods, ensuring `_get_auth_headers()` / `getAuthHeaders()` is called on every request.
+- **`watch_order_book` returns "Unauthorized: Invalid or missing access token" despite valid credentials** (issue #76): Eight methods in both the Python and TypeScript SDKs — `watchOrderBook`, `watchTrades`, `watchAddress`, `unwatchAddress`, `watchPrices`, `watchUserPositions`, `watchUserTransactions`, `createOrder`, `buildOrder`, and `submitOrder` — were dispatched through the auto-generated `DefaultApi` client, which does not attach the `x-pmxt-access-token` header required by the local service's auth middleware. All other methods (e.g. `fetchOrderBook`, `cancelOrder`) already used direct HTTP calls with the access token. Replaced every `self._api.*` / `this.api.*` call site with the same manual `call_api()` / `fetch()` pattern used by working methods, ensuring `_get_auth_headers()` / `getAuthHeaders()` is called on every request.
 
 ## [2.27.8] - 2026-04-10
 
@@ -2323,17 +2329,17 @@ through its servers. Applies to both Python and TypeScript SDKs.
 
 - **`GET /api/:exchange/:method` for read endpoints**: Every `fetch*` method is now exposed as an idempotent, cacheable HTTP GET in addition to the existing POST. All 15 fetches flip to GET — `fetchMarkets`, `fetchMarketsPaginated`, `fetchEvents`, `fetchMarket`, `fetchEvent`, `fetchOrderBook`, `fetchOHLCV`, `fetchTrades`, `fetchOrder`, `fetchOpenOrders`, `fetchMyTrades`, `fetchClosedOrders`, `fetchAllOrders`, `fetchPositions`, `fetchBalance`. Writes (`createOrder`/`cancelOrder`/`buildOrder`/`submitOrder`), lifecycle (`loadMarkets`/`close`), realtime (`watch*`/`unwatch*`), and in-memory helpers with non-serialisable args (`filterMarkets`/`filterEvents`/`getExecutionPrice*`) remain POST. Lets HTTP caches, CDNs, and browsers treat reads as the reads they actually are — `GET /api/polymarket/fetchMarkets?query=election&limit=3` Just Works.
 
-  Mechanically: `scripts/generate-openapi.js` walks each method's AST parameters, classifies the verb, and emits the right OpenAPI shape (query parameters for GETs, request body for POSTs). The classifier accepts any `fetch*` signature shaped as `[primitive..., object?]`, so multi-arg reads like `fetchOHLCV(id, params)` and `fetchTrades(id, params)` are GET-eligible too — primitive args travel by name and the trailing object is spread into the remaining query slots. Alongside `openapi.yaml` the generator writes a small `method-verbs.json` sidecar; the runtime server loads it at startup to drive its GET dispatcher, translating `req.query` into the positional `args` array. `method-verbs.json` ships in the published tarball at `dist/server/method-verbs.json`.
+  Mechanically: `scripts/generate-openapi.js` walks each method's AST parameters, classifies the verb, and emits the right OpenAPI shape (query parameters for GETs, request body for POSTs). The classifier accepts any `fetch*` signature shaped as `[primitive..., object?]`, so multi-arg reads like `fetchOHLCV(id, params)` and `fetchTrades(id, params)` are GET-eligible too — primitive args travel by name and the trailing object is spread into the remaining query slots. Alongside `openapi.yaml` the generator writes a small `method-verbs.json` local service; the runtime server loads it at startup to drive its GET dispatcher, translating `req.query` into the positional `args` array. `method-verbs.json` ships in the published tarball at `dist/server/method-verbs.json`.
 
 - **Kind-aware query-string coercion**: Query values are coerced using the declared arg kind from `method-verbs.json`, not a lossy autodetect heuristic. `string` args are left alone (critical for Polymarket's all-numeric CLOB token IDs like `"559652..."`, which must stay strings so `.trim()` and downstream venue code keep working), `number` and `boolean` args parse strictly, and object-arg spreads fall back to the permissive heuristic for unknown fields. Before this fix, `GET /api/polymarket/fetchOrderBook?id=559652...` silently failed with `id.trim is not a function` because the ID was parsed as a JS number.
 
 - **POST continues to work for every method**, including the ones now exposed as GET, so existing SDK clients that unconditionally POST keep running unchanged. The GET surface is purely additive — the server negotiates verbs per method, and clients can probe-then-fall-back.
 
-- **TypeScript and Python SDKs transparently prefer GET for reads**: All 15 `fetch*` methods now route through a shared `sidecarReadRequest` / `_sidecar_read_request` helper that issues GET against the sidecar by default, with automatic POST fallback for (a) instances that carry per-client credentials (so API keys don't leak into query strings or access logs), (b) calls with nested-object params that can't round-trip through a query string, and (c) older sidecars that return 404/405. On a 404/405 the client flips a sticky `_getReadsUnsupported` / `_get_reads_unsupported` flag and every subsequent read on that instance goes straight to POST — one round-trip penalty on the first call, zero overhead after. Fully backward compatible in both directions: new SDKs talking to old sidecars keep working, old SDKs talking to new sidecars keep working.
+- **TypeScript and Python SDKs transparently prefer GET for reads**: All 15 `fetch*` methods now route through a shared `sidecarReadRequest` / `_sidecar_read_request` helper that issues GET against the local service by default, with automatic POST fallback for (a) instances that carry per-client credentials (so API keys don't leak into query strings or access logs), (b) calls with nested-object params that can't round-trip through a query string, and (c) older local services that return 404/405. On a 404/405 the client flips a sticky `_getReadsUnsupported` / `_get_reads_unsupported` flag and every subsequent read on that instance goes straight to POST — one round-trip penalty on the first call, zero overhead after. Fully backward compatible in both directions: new SDKs talking to old local services keep working, old SDKs talking to new local services keep working.
 
 ### Fixed
 
-- **Python SDK: sidecar host re-resolved on every request**: `self._api_client.configuration.host` used to be frozen at SDK construction time, but the local sidecar can pick a new port on restart (e.g. if the previous port is held by a zombie). Combined with the fresh-every-call access token read from the lock file, this produced `Unauthorized: Invalid or missing access token` errors when the sidecar cycled — the new token went to the old port, where a different sidecar was still running with a different token. The new `_resolve_sidecar_host()` helper reads the lock file on every request so host and token always move together. Pre-existing latent bug on the POST path too; now fixed for both.
+- **Python SDK: local service host re-resolved on every request**: `self._api_client.configuration.host` used to be frozen at SDK construction time, but the local service can pick a new port on restart (e.g. if the previous port is held by a zombie). Combined with the fresh-every-call access token read from the lock file, this produced `Unauthorized: Invalid or missing access token` errors when the local service cycled — the new token went to the old port, where a different local service was still running with a different token. The new `_resolve_sidecar_host()` helper reads the lock file on every request so host and token always move together. Pre-existing latent bug on the POST path too; now fixed for both.
 
 ## [2.26.2] - 2026-04-08
 
@@ -2347,29 +2353,29 @@ through its servers. Applies to both Python and TypeScript SDKs.
 
 ### Changed
 
-- **`pmxt.stop_server()` / `pmxt.restart_server()` now emit `DeprecationWarning` (Python SDK)**: The flat aliases still work and still call the underlying `ServerManager`, but they now warn that `pmxt.server.stop()` / `pmxt.server.restart()` is the standard. This reverses the "no deprecation, no warnings" stance from 2.26.0 — the namespaced `pmxt.server.*` API is the single canonical surface for sidecar lifecycle management, and the flat helpers are kept only for backwards compatibility.
+- **`pmxt.stop_server()` / `pmxt.restart_server()` now emit `DeprecationWarning` (Python SDK)**: The flat aliases still work and still call the underlying `ServerManager`, but they now warn that `pmxt.server.stop()` / `pmxt.server.restart()` is the standard. This reverses the "no deprecation, no warnings" stance from 2.26.0 — the namespaced `pmxt.server.*` API is the single canonical surface for local service lifecycle management, and the flat helpers are kept only for backwards compatibility.
 
 ## [2.26.0] - 2026-04-08
 
 ### Fixed
 
-- **`ServerManager.ensureServerRunning()` race condition (TypeScript and Python SDKs)**: Creating multiple `Exchange` instances in parallel (e.g. `const p = new Polymarket(); const k = new Kalshi(); const l = new Limitless();`) caused every request to return `401 Unauthorized`. Each `Exchange` constructed its own `ServerManager` and each one called `ensureServerRunning()` concurrently. Every call saw "no server running", every call spawned its own sidecar via `pmxt-ensure-server`, and the lock file ended up pointing at whichever spawn wrote last — but each `Exchange` had already captured its own `basePath` at construction time, so most requests hit a sidecar whose access token did NOT match the token later read from the lock file.
+- **`ServerManager.ensureServerRunning()` race condition (TypeScript and Python SDKs)**: Creating multiple `Exchange` instances in parallel (e.g. `const p = new Polymarket(); const k = new Kalshi(); const l = new Limitless();`) caused every request to return `401 Unauthorized`. Each `Exchange` constructed its own `ServerManager` and each one called `ensureServerRunning()` concurrently. Every call saw "no server running", every call spawned its own local service via `pmxt-ensure-server`, and the lock file ended up pointing at whichever spawn wrote last — but each `Exchange` had already captured its own `basePath` at construction time, so most requests hit a local service whose access token did NOT match the token later read from the lock file.
 
   Fix is process-wide coalescing inside `ServerManager`:
-  - **TypeScript**: `ensureServerRunning()` now uses a static `Promise | null` cache. Concurrent callers await the same in-flight promise; the cache is cleared on settle so later calls can re-check the sidecar state.
-  - **Python**: `ensure_server_running()` now holds a class-level `threading.Lock` for the entire check-and-spawn critical section. The "is the server already running?" check is re-evaluated inside the lock so threads that lose the race observe the sidecar that the winning thread just started.
+  - **TypeScript**: `ensureServerRunning()` now uses a static `Promise | null` cache. Concurrent callers await the same in-flight promise; the cache is cleared on settle so later calls can re-check the local service state.
+  - **Python**: `ensure_server_running()` now holds a class-level `threading.Lock` for the entire check-and-spawn critical section. The "is the server already running?" check is re-evaluated inside the lock so threads that lose the race observe the local service that the winning thread just started.
 
 ### Added
 
-- **`pmxt.server` namespace for sidecar lifecycle management** (TypeScript and Python SDKs): A single, discoverable namespace for managing the background sidecar. All six commands are available identically in both SDKs:
+- **`pmxt.server` namespace for local service lifecycle management** (TypeScript and Python SDKs): A single, discoverable namespace for managing the background local service. All six commands are available identically in both SDKs:
   - `pmxt.server.status()` — Structured snapshot: `{ running, pid, port, version, uptimeSeconds, lockFile }`. Returns a fresh object on every call (no shared mutable state).
-  - `pmxt.server.health()` — Returns `true` if the sidecar responds to `/health`, `false` otherwise. Fast, no side effects.
-  - `pmxt.server.start()` — Idempotently starts the sidecar. No-op if one is already running.
-  - `pmxt.server.stop()` — Stops the sidecar and removes the lock file.
+  - `pmxt.server.health()` — Returns `true` if the local service responds to `/health`, `false` otherwise. Fast, no side effects.
+  - `pmxt.server.start()` — Idempotently starts the local service. No-op if one is already running.
+  - `pmxt.server.stop()` — Stops the local service and removes the lock file.
   - `pmxt.server.restart()` — Stop + start.
   - `pmxt.server.logs(n = 50)` — Returns the last `n` lines from `~/.pmxt/server.log`, or an empty list if the launcher never wrote a log file.
 
-  Motivation: sidecar lifecycle is a real surface users hit regularly — stale lock files, zombie sidecars from crashed parents, version mismatches, and race conditions when multiple `Exchange` instances boot in parallel. Previously users had to reach into `ServerManager` directly or shell out to `ps` / `lsof` to diagnose. `pmxt.server.*` makes the lifecycle observable and controllable from a single entry point. Example:
+  Motivation: local service lifecycle is a real surface users hit regularly — stale lock files, zombie local services from crashed parents, version mismatches, and race conditions when multiple `Exchange` instances boot in parallel. Previously users had to reach into `ServerManager` directly or shell out to `ps` / `lsof` to diagnose. `pmxt.server.*` makes the lifecycle observable and controllable from a single entry point. Example:
 
   ```typescript
   import pmxt from 'pmxtjs';
@@ -2378,7 +2384,7 @@ through its servers. Applies to both Python and TypeScript SDKs.
   console.log(await pmxt.server.logs(20));
   ```
 
-- **Sidecar writes stdout/stderr to `~/.pmxt/server.log`**: `pmxt-ensure-server` now redirects the spawned sidecar's stdio to a log file in the `~/.pmxt/` directory so `pmxt.server.logs()` has something to read. Previously stdio was dropped (`stdio: 'ignore'`) and any crash during boot left no trace.
+- **Local service writes stdout/stderr to `~/.pmxt/server.log`**: `pmxt-ensure-server` now redirects the spawned local service's stdio to a log file in the `~/.pmxt/` directory so `pmxt.server.logs()` has something to read. Previously stdio was dropped (`stdio: 'ignore'`) and any crash during boot left no trace.
 
 Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmxt.restartServer()` (TypeScript) and `pmxt.stop_server()` / `pmxt.restart_server()` (Python) remain first-class, fully-supported aliases for `pmxt.server.stop()` / `pmxt.server.restart()`. No deprecation, no warnings — both spellings work and will keep working.
 
@@ -2386,9 +2392,9 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 
 ### Added
 
-- **TypeScript SDK: `Opinion`, `Metaculus`, `Smarkets`, `PolymarketUS` exchange classes**: These adapters already existed in `core/src/exchanges/` and were reachable via the sidecar HTTP API, but the hand-maintained TypeScript SDK client at `sdks/typescript/pmxt/client.ts` (and the package entry point at `sdks/typescript/index.ts`) never exposed them. Anyone using `pmxtjs` would see `pmxt.Opinion === undefined` even though the core adapter had been merged. All four are now exported and work via the standard `new pmxt.Opinion({}).fetchEvents()` consumer path.
+- **TypeScript SDK: `Opinion`, `Metaculus`, `Smarkets`, `PolymarketUS` exchange classes**: These adapters already existed in `core/src/exchanges/` and were reachable via the local service HTTP API, but the hand-maintained TypeScript SDK client at `sdks/typescript/pmxt/client.ts` (and the package entry point at `sdks/typescript/index.ts`) never exposed them. Anyone using `pmxtjs` would see `pmxt.Opinion === undefined` even though the core adapter had been merged. All four are now exported and work via the standard `new pmxt.Opinion({}).fetchEvents()` consumer path.
 - **Python SDK: `Smarkets`, `PolymarketUS` exchange classes**: Same drift in `sdks/python/pmxt/_exchanges.py` and `sdks/python/pmxt/__init__.py`. Both are now exported.
-- **`openapi.yaml` `source_exchange` enum**: Added `kalshi-demo` and `polymarket_us`, which were missing even though the sidecar routes accepted them. The generated openapi-fetch TypeScript SDK would have rejected requests targeting these exchanges at the type layer.
+- **`openapi.yaml` `source_exchange` enum**: Added `kalshi-demo` and `polymarket_us`, which were missing even though the local service routes accepted them. The generated openapi-fetch TypeScript SDK would have rejected requests targeting these exchanges at the type layer.
 
 ### Fixed
 
@@ -2402,7 +2408,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 
 ### Fixed
 
-- **TypeScript and Python SDKs: dropped fields in `convertMarket` / `convertEvent`**: The hand-maintained converter shims at the top of `sdks/typescript/pmxt/client.ts` and `sdks/python/pmxt/client.py` had their own allowlists and were silently dropping `slug`, `tickSize`, `status`, `contractAddress` on `UnifiedMarket` and `volume`, `volume24h` on `UnifiedEvent` even though the sidecar populates them and the generated OpenAPI client maps them. Both shims now copy the full set, and the corresponding `UnifiedMarket` / `UnifiedEvent` interfaces in `models.ts` / `models.py` declare the new fields. The 2.25.1 release fixed the sidecar end of the pipe; this release fixes the SDK consumer end.
+- **TypeScript and Python SDKs: dropped fields in `convertMarket` / `convertEvent`**: The hand-maintained converter shims at the top of `sdks/typescript/pmxt/client.ts` and `sdks/python/pmxt/client.py` had their own allowlists and were silently dropping `slug`, `tickSize`, `status`, `contractAddress` on `UnifiedMarket` and `volume`, `volume24h` on `UnifiedEvent` even though the local service populates them and the generated OpenAPI client maps them. Both shims now copy the full set, and the corresponding `UnifiedMarket` / `UnifiedEvent` interfaces in `models.ts` / `models.py` declare the new fields. The 2.25.1 release fixed the local service end of the pipe; this release fixes the SDK consumer end.
 
 ## [2.25.1] - 2026-04-07
 
@@ -2458,7 +2464,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 ### Added
 
 - **Metaculus Exchange Integration**: Full support for the Metaculus reputation-based forecasting platform. Browse questions, community predictions, and tournament structures via `fetchMarkets` and `fetchEvents`. Submit probability forecasts via `createOrder` (binary and multiple-choice questions) and withdraw them via `cancelOrder`. Group-of-questions posts are automatically expanded into individual sub-question markets. Token-based authentication via `{ apiToken: "..." }`.
-- **Python SDK: Token Auth**: `Exchange` base class and `Metaculus` subclass now accept `api_token` for token-based authentication, with credential forwarding to the sidecar server.
+- **Python SDK: Token Auth**: `Exchange` base class and `Metaculus` subclass now accept `api_token` for token-based authentication, with credential forwarding to the local service server.
 - **Python SDK: Unit Tests**: Comprehensive unit test suite for the Python client wrapper (`test_client.py`, `conftest.py`) covering market fetching, order creation, filtering, error handling, and credential forwarding.
 
 ### Fixed
@@ -2589,7 +2595,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 
 ### Fixed
 
-- **SDK: Resilient Authentication (Python & TypeScript)**: Eliminated "Unauthorized: Invalid or missing access token" errors caused by sidecar server restarts. Both the Python and TypeScript SDKs now read the access token fresh from the `~/.pmxt/server.lock` file on every request via a new `getAuthHeaders` helper. This ensures that if the server rebooted and rotated tokens, existing `Exchange` instances (like `Polymarket`) automatically pick up the new valid token on their next call, removing the need for developers to manually re-instantiate clients.
+- **SDK: Resilient Authentication (Python & TypeScript)**: Eliminated "Unauthorized: Invalid or missing access token" errors caused by local service server restarts. Both the Python and TypeScript SDKs now read the access token fresh from the `~/.pmxt/server.lock` file on every request via a new `getAuthHeaders` helper. This ensures that if the server rebooted and rotated tokens, existing `Exchange` instances (like `Polymarket`) automatically pick up the new valid token on their next call, removing the need for developers to manually re-instantiate clients.
 - **SDK: Generator Persistence (Python & TypeScript)**: Updated both `sdks/python/scripts/generate-client-methods.js` and `sdks/typescript/scripts/generate-client-methods.js` to emit the live header retrieval pattern, ensuring authentication resilience is maintained in all future auto-generated methods.
 
 ## [2.19.4] - 2026-03-06
@@ -2698,7 +2704,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 
 ### Fixed
 
-- **Fatal Circular JSON Crash (`fetchEvents`)**: Fixed a `TypeError: Converting circular structure to JSON` that fatally crashed the sidecar server on every `fetchEvents` call across all exchanges. The v2.17.2 patch injected `market.event = event` inside the core exchange functions, creating an `event → markets[0] → event` reference cycle. Since Express serializes sidecar responses via `JSON.stringify`, this caused an unrecoverable crash propagated to all SDK clients. The `market.event` back-references are now hydrated exclusively client-side inside `convertEvent` in the TypeScript SDK, keeping all sidecar REST payloads strictly acyclic.
+- **Fatal Circular JSON Crash (`fetchEvents`)**: Fixed a `TypeError: Converting circular structure to JSON` that fatally crashed the local service server on every `fetchEvents` call across all exchanges. The v2.17.2 patch injected `market.event = event` inside the core exchange functions, creating an `event → markets[0] → event` reference cycle. Since Express serializes local service responses via `JSON.stringify`, this caused an unrecoverable crash propagated to all SDK clients. The `market.event` back-references are now hydrated exclusively client-side inside `convertEvent` in the TypeScript SDK, keeping all local service REST payloads strictly acyclic.
 
 ## [2.17.2] - 2026-02-24
 
@@ -2711,9 +2717,9 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 
 ### Fixed
 
-- **Sidecar Bundle Drift**: The features shipped in 2.17.0 (parameterless `fetchEvents()`, Kalshi client-side sorting) were correctly implemented in TypeScript source but **never reached users** because the publish pipeline was missing the `bundle:server` step for the npm job. The distributed `pmxt-core` package contained a stale pre-compiled sidecar (`bundled.js`) from a previous release that still enforced the old guard `fetchEvents() requires a query, eventId, or slug parameter`. This patch rebuilds and ships the correct bundle.
-- **CI/CD: Publish Workflow**: Added `npm run bundle:server` to the `publish-npm` job in `publish.yml`, immediately after the `Build Core` step. Without this, source-level changes to the sidecar server are silently ignored in all npm-distributed packages.
-- **CI/CD: Test Workflow**: Applied the same fix to `test-publish.yml` so dry-run publishes and test runs also exercise the correct sidecar, preventing this class of drift from going undetected in future PRs.
+- **Local service Bundle Drift**: The features shipped in 2.17.0 (parameterless `fetchEvents()`, Kalshi client-side sorting) were correctly implemented in TypeScript source but **never reached users** because the publish pipeline was missing the `bundle:server` step for the npm job. The distributed `pmxt-core` package contained a stale pre-compiled local service (`bundled.js`) from a previous release that still enforced the old guard `fetchEvents() requires a query, eventId, or slug parameter`. This patch rebuilds and ships the correct bundle.
+- **CI/CD: Publish Workflow**: Added `npm run bundle:server` to the `publish-npm` job in `publish.yml`, immediately after the `Build Core` step. Without this, source-level changes to the local service server are silently ignored in all npm-distributed packages.
+- **CI/CD: Test Workflow**: Applied the same fix to `test-publish.yml` so dry-run publishes and test runs also exercise the correct local service, preventing this class of drift from going undetected in future PRs.
 
 ## [2.17.0] - 2026-02-24
 
@@ -2764,7 +2770,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 
 ### Fixed
 
-- **Sidecar Server Build**: Resolved a critical TypeScript compilation error in `app.ts` caused by an invalid Express error handler signature. This fix ensures the unified sidecar server can be successfully bundled and published.
+- **Local service Server Build**: Resolved a critical TypeScript compilation error in `app.ts` caused by an invalid Express error handler signature. This fix ensures the unified local service server can be successfully bundled and published.
 
 ## [2.14.0] - 2026-02-23
 
@@ -2780,7 +2786,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 ### Fixed
 
 - **Kalshi Demo Connectivity**: Corrected internal API and WebSocket endpoints for the Kalshi Demo environment to ensure reliable connectivity.
-- **Core Stability**: Resolved merge conflicts and performed general code cleanup in the sidecar server.
+- **Core Stability**: Resolved merge conflicts and performed general code cleanup in the local service server.
 
 ### Documentation
 
@@ -2807,9 +2813,9 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 
 ### Added
 
-- **Unified Sidecar API Expansion**: Formally exposed `fetchMyTrades`, `fetchClosedOrders`, and `fetchAllOrders` in the sidecar server and generated SDKs, completing the functional rollout of the Order History API.
+- **Unified Local service API Expansion**: Formally exposed `fetchMyTrades`, `fetchClosedOrders`, and `fetchAllOrders` in the local service server and generated SDKs, completing the functional rollout of the Order History API.
 - **New Public Methods**: Introduced `loadMarkets()` and `fetchMarketsPaginated()` to the public SDKs for stateful market caching and stable pagination support.
-- **OpenAPI Auto-Generation**: Implemented a reflection-based specification generator (`core/scripts/generate-openapi.js`) that automatically derives the sidecar API from the `BaseExchange` TypeScript definition.
+- **OpenAPI Auto-Generation**: Implemented a reflection-based specification generator (`core/scripts/generate-openapi.js`) that automatically derives the local service API from the `BaseExchange` TypeScript definition.
 - **CI Synchronization Check**: Added a GitHub Action workflow to ensure the OpenAPI spec and SDKs stay perfectly in sync with the core library on every contribution.
 
 ### Changed
@@ -2825,7 +2831,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 
 ### Fixed
 
-- **Security**: Bound the sidecar server to `127.0.0.1` by default to prevent accidental exposure on all network interfaces (`0.0.0.0`).
+- **Security**: Bound the local service server to `127.0.0.1` by default to prevent accidental exposure on all network interfaces (`0.0.0.0`).
 
 ## [2.12.0] - 2026-02-22
 
@@ -2959,7 +2965,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 
 - **CCXT-Style Capability Map (`exchange.has`)**: Introduced a unified capability mapping system across all exchanges. This allows developers to programmatically check which features (e.g., `fetchOHLCV`, `watchOrderBook`, `createOrder`) are supported or emulated by a specific exchange.
   - Added the `.has` property to `BaseExchange` and all exchange implementations (Polymarket, Kalshi, Limitless, Probable, Myriad, Baozi).
-  - New `/api/:exchange/has` endpoint in the sidecar server for remote capability discovery.
+  - New `/api/:exchange/has` endpoint in the local service server for remote capability discovery.
   - Python SDK updated to expose these capabilities on exchange instances.
 
 ### Changed
@@ -3038,7 +3044,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
 ### Features
 
 - **MarketList Convenience Class**: Introduced a new `MarketList` class to simplify market discovery and filtering. This provides a more ergonomic way to search and interact with collections of markets across different exchanges.
-- **Developer Experience**: Added `npm run dev` command to support streamlined local development with automatic rebuilding and sidecar management.
+- **Developer Experience**: Added `npm run dev` command to support streamlined local development with automatic rebuilding and local service management.
 
 ### Documentation
 
@@ -3242,7 +3248,7 @@ Fully backwards compatible: the existing flat helpers `pmxt.stopServer()` / `pmx
   - Increased `fetchMarkets` timeout to 120s for Kalshi to handle slower API responses.
   - Changed market fetch limit to 25 for better test reliability.
   - Fixed `fetchMarket` tests to properly handle Kalshi's data structure.
-- **Verbose Logging**: Removed excessive verbose logging from sidecar API, providing cleaner console output during normal operations.
+- **Verbose Logging**: Removed excessive verbose logging from local service API, providing cleaner console output during normal operations.
 
 ### Improved
 
@@ -3329,7 +3335,7 @@ Invalid
   - `filterEvents` / `filter_events`: Filter events by text, category, tags, market count, and total volume.
   - Support for custom predicate functions (lambdas) for unlimited filtering flexibility.
 - **Server Management Utilities**: Added global convenience functions to manage the PMXT background process.
-  - `stop_server()` / `stopServer()`: Programmatically shut down the sidecar server.
+  - `stop_server()` / `stopServer()`: Programmatically shut down the local service server.
   - `restart_server()` / `restartServer()`: Quickly refresh the server state.
 - **Comprehensive Testing**: Added extensive unit tests for the filtering engine in both SDKs and the core library.
 
@@ -3344,7 +3350,7 @@ Invalid
 - **Polymarket Fee Handling**: Implemented mandatory fee rates (e.g., 1000 for 0.1%) for Polymarket orders. This enables trading on high-frequency markets like "Bitcoin Up/Down" which require a fee rate.
 
 ### Fixed
-- **API Parity**: Ensured `fee` field consistency across Python SDK, TypeScript SDK, and core sidecar server.
+- **API Parity**: Ensured `fee` field consistency across Python SDK, TypeScript SDK, and core local service server.
 
 ## [1.5.6] - 2026-02-01
 
@@ -3352,7 +3358,7 @@ Invalid
 - **Polymarket Proxy Auto-Discovery**: The SDK now automatically identifies Gnosis Safe, PolyProxy, and EOA account types by querying the Polymarket Data API, reducing manual configuration.
 - **Robust Balance Fallback**: Implemented an on-chain USDC balance check for Polymarket that triggers if the CLOB API returns zero, ensuring accurate fund reporting even during API desyncs.
 - **Explicit Proxy Configuration**: Added `funderAddress` (proxy address) and `signatureType` to exchange credentials in both TypeScript and Python SDKs for manual overrides.
-- **OpenAPI Schema Updates**: Exposed proxy configuration fields in the sidecar server API.
+- **OpenAPI Schema Updates**: Exposed proxy configuration fields in the local service server API.
 
 ### Fixed
 - **Polymarket Balance Accuracy**: Resolved critical issues where proxy-based accounts were incorrectly reporting zero balance.
@@ -3417,7 +3423,7 @@ Invalid
 ## [1.4.1] - 2026-01-30
 
 ### Fixed
-- **Windows Core Support**: Resolved a critical `[WinError 193]` issue that prevented the sidecar server from launching on Windows.
+- **Windows Core Support**: Resolved a critical `[WinError 193]` issue that prevented the local service server from launching on Windows.
   - Implemented explicit `node` execution for the server launcher on Windows.
   - Added `.js` extension aliases for core binary scripts to ensure compatibility with Windows file associations.
 - **Server Lifecycle**: Improved the `pmxt-ensure-server` launcher to perform a proactive health check even if a stale lock file is present, ensuring the server is actually responsive before returning.
@@ -3443,7 +3449,7 @@ Invalid
 ### Improved
 - **Financial Math Logic**: Implemented robust floating-point handling and sorting for execution price calculations to ensure consistency across exchanges.
 - **Base Exchange Class**: Promoted `getMarketsBySlug` to the base `PredictionMarketExchange` class for improved code sharing and API consistency.
-- **OpenAPI Synchronization**: Updated the sidecar's OpenAPI specification to include the new execution price endpoints.
+- **OpenAPI Synchronization**: Updated the local service's OpenAPI specification to include the new execution price endpoints.
 
 ### Fixed
 - **Precision Errors**: Resolved subtle floating-point precision issues in cumulative volume calculations when traversing deep order books.
@@ -3472,10 +3478,10 @@ Invalid
 ## [1.3.2] - 2026-01-29
 
 ### Fixed
-- **Python SDK Bundled Server**: Updated the internal bundled sidecar server to the latest version. This resolves a regression where the "Date Handling in OHLCV" fix (from v1.1.3) was not correctly applied in the Python distribution, causing `getTime is not a function` errors when fetching historical data.
+- **Python SDK Bundled Server**: Updated the internal bundled local service server to the latest version. This resolves a regression where the "Date Handling in OHLCV" fix (from v1.1.3) was not correctly applied in the Python distribution, causing `getTime is not a function` errors when fetching historical data.
 
 ### Improved
-- **CI/CD**: Added an automated step to the GitHub Actions workflow to rebuild and bundle the sidecar server immediately before publishing the Python package, ensuring the PyPI distribution always contains the latest core server code.
+- **CI/CD**: Added an automated step to the GitHub Actions workflow to rebuild and bundle the local service server immediately before publishing the Python package, ensuring the PyPI distribution always contains the latest core server code.
 
 ## [1.3.1] - 2026-01-29
 
@@ -3484,7 +3490,7 @@ Invalid
   - **Contextual Grouping**: `searchEvents` returns `UnifiedEvent` objects that group related markets (e.g., all candidates in the same election).
   - **In-Event Search**: Added `event.searchMarkets(query)` to result objects for fast, contextual filtering.
   - **Unified Support**: Implemented for both Polymarket (Gamma API) and Kalshi (Events API).
-- **OpenAPI Updates**: Exposed the new `/searchEvents` endpoint and `UnifiedEvent` schema in the sidecar server documentation.
+- **OpenAPI Updates**: Exposed the new `/searchEvents` endpoint and `UnifiedEvent` schema in the local service server documentation.
 
 ### Improved
 - **Developer Experience (DX)**: Updated the README Quickstart to prioritize the new hierarchical search pattern, reducing boilerplate for common tasks.
@@ -3506,7 +3512,7 @@ Invalid
 ## [1.1.4] - 2026-01-27
 
 ### Fixed
-- **Timezone Handling**: Hardened date parsing to treat naive ISO strings (typically from Python's `datetime.utcnow()`) as UTC. This prevents timezone shifts when querying historical data across the sidecar interface.
+- **Timezone Handling**: Hardened date parsing to treat naive ISO strings (typically from Python's `datetime.utcnow()`) as UTC. This prevents timezone shifts when querying historical data across the local service interface.
 
 ### Improved
 - **Polymarket OHLCV**: Implemented robust client-side candle aggregation for Polymarket price history.
@@ -3516,15 +3522,15 @@ Invalid
 ## [1.1.3] - 2026-01-27
 
 ### Fixed
-- **Date Handling in OHLCV**: Fixed a critical issue where the Python SDK (which serializes datetime objects as strings) was causing "getTime is not a function" errors in the TypeScript sidecar.
+- **Date Handling in OHLCV**: Fixed a critical issue where the Python SDK (which serializes datetime objects as strings) was causing "getTime is not a function" errors in the TypeScript local service.
   - Implemented robust date parsing middleware in `fetchOHLCV` for both Polymarket and Kalshi exchanges.
-  - The sidecar server now correctly accepts both native `Date` objects (from internal TS calls) and ISO 8601 strings (from external APIs/SDKs) for `start` and `end` parameters.
+  - The local service server now correctly accepts both native `Date` objects (from internal TS calls) and ISO 8601 strings (from external APIs/SDKs) for `start` and `end` parameters.
 
 ## [1.1.1] - 2026-01-25
 
 ### Fixed
-- **Server Lifecycle**: Resolved a critical race condition where multiple concurrent client instantiations (e.g., initializing both Polymarket and Kalshi simultaneously) would kill and restart the sidecar server, invalidating access tokens.
-- **Version Detection**: Improved `package.json` discovery in the sidecar server to ensure correct version reporting in bundled environments.
+- **Server Lifecycle**: Resolved a critical race condition where multiple concurrent client instantiations (e.g., initializing both Polymarket and Kalshi simultaneously) would kill and restart the local service server, invalidating access tokens.
+- **Version Detection**: Improved `package.json` discovery in the local service server to ensure correct version reporting in bundled environments.
 - **SDK Stability**: Updated the Python `ServerManager` to be more tolerant of version suffixes (like `-b4` or `-dev`), preventing unnecessary server restarts during development.
 
 ## [1.1.0] - 2026-01-25
@@ -3534,7 +3540,7 @@ Invalid
   - **New Methods**: Added `watchOrderBook(id)` and `watchTrades(id)` following the CCXT Pro pattern for real-time data ingestion.
   - **Kalshi WebSocket**: Implemented native WebSocket support for Kalshi, including real-time order book snapshots, incremental deltas, and trade feeds.
   - **Polymarket CLOB WebSocket**: Integrated with Polymarket's Central Limit Order Book (CLOB) WebSocket for low-latency market updates.
-  - **Sidecar Integration**: Real-time methods are now accessible via the sidecar server, enabling streaming support across Python and TypeScript SDKs.
+  - **Local service Integration**: Real-time methods are now accessible via the local service server, enabling streaming support across Python and TypeScript SDKs.
 - **Examples**: Added comprehensive WebSocket examples in `examples/market-data/`:
   - `watch_orderbook_kalshi.ts` / `watch_orderbook_polymarket.ts`
   - `watch_trades_kalshi.ts` / `watch_trades_polymarket.ts`
@@ -3551,8 +3557,8 @@ Invalid
 ## [1.0.4] - 2026-01-22
 
 ### Added
-- **Sidecar Security**: Implemented a secure handshake protocol between the SDK and the Node.js sidecar server to prevent unauthorized access.
-- **Auto-Restart Handshake**: Added logic to automatically detect sidecar crashes and restart the process seamlessly.
+- **Local service Security**: Implemented a secure handshake protocol between the SDK and the Node.js local service server to prevent unauthorized access.
+- **Auto-Restart Handshake**: Added logic to automatically detect local service crashes and restart the process seamlessly.
 
 ### Fixed
 - **Kalshi Pagination**: Fixed a critical bug in `fetchMarkets` where the `offset` parameter was incorrectly ignored, enabling full traversal of Kalshi's market catalog.
@@ -3561,7 +3567,7 @@ Invalid
 ## [1.0.3] - 2026-01-17
 
 ### Added
-- **Zero-Config SDK Installation**: The sidecar server (`pmxt-core`) is now bundled directly within the SDK distributions, enabling a single-command setup experience.
+- **Zero-Config SDK Installation**: The local service server (`pmxt-core`) is now bundled directly within the SDK distributions, enabling a single-command setup experience.
   - **Python**: Bundled the server logic into the `pmxt` package on PyPI.
   - **TypeScript**: Added `pmxt-core` as a direct dependency for `pmxtjs`.
 - **Project Statistics**: Introduced a programmatic "Total Downloads" badge in the README that aggregates data from both npm and PyPI.
@@ -3583,7 +3589,7 @@ broken
 
 ### Fixed
 - **Core SDK (Universal)**: Implemented dynamic port detection via the `~/.pmxt/server.lock` file. This resolves `ConnectionRefusedError` issues when the default port (3847) is already in use and the server falls back to an alternative port.
-- **TypeScript SDK**: Resolved a critical race condition where API calls could be executed before the internal server manager had finished starting the sidecar or detecting the actual running port. Standardized the initialization pattern using an internal `initPromise`.
+- **TypeScript SDK**: Resolved a critical race condition where API calls could be executed before the internal server manager had finished starting the local service or detecting the actual running port. Standardized the initialization pattern using an internal `initPromise`.
 - **TypeScript SDK**: Fixed `ServerManager` health checks to correctly target the dynamically detected port instead of always checking the default.
 - **Python SDK**: Hardened the `ServerManager` logic and improved consistency with the TypeScript implementation.
 
@@ -3594,7 +3600,7 @@ broken
 
 ### Major Release: Multi-Language SDK Support
 
-This release represents a complete architectural transformation of pmxt, introducing **multi-language support** through a unified sidecar architecture. The project has evolved from a TypeScript-only library to a comprehensive multi-language ecosystem with official Python and TypeScript SDKs.
+This release represents a complete architectural transformation of pmxt, introducing **multi-language support** through a unified local service architecture. The project has evolved from a TypeScript-only library to a comprehensive multi-language ecosystem with official Python and TypeScript SDKs.
 
 ### Breaking Changes
 
@@ -3609,13 +3615,13 @@ This release represents a complete architectural transformation of pmxt, introdu
 
 #### Python SDK (`pmxt`)
 - **Official Python Support**: First-class Python SDK with full feature parity with TypeScript
-- **Automatic Server Management**: Python SDK automatically starts and manages the Node.js sidecar server
+- **Automatic Server Management**: Python SDK automatically starts and manages the Node.js local service server
 - **Native Python API**: Pythonic interface with type hints and async support
 - **PyPI Distribution**: Published to PyPI as `pmxt` package
 - **Comprehensive Examples**: Python examples for all major features (market data, trading, account management)
 - **Auto-generated Documentation**: Language-specific API reference documentation
 
-#### Sidecar Architecture
+#### Local service Architecture
 - **Local Express Server**: Core aggregation logic runs as a local HTTP server (port 3847)
 - **OpenAPI Specification**: Complete OpenAPI 3.0 schema for all endpoints
 - **Health Checks**: Built-in health monitoring and server lifecycle management
@@ -3671,7 +3677,7 @@ This release represents a complete architectural transformation of pmxt, introdu
 ### Technical Details
 
 #### Architecture
-The new sidecar architecture works as follows:
+The new local service architecture works as follows:
 1. **Core Server**: Node.js Express server (`pmxt-core`) runs locally and handles all exchange integrations
 2. **SDK Clients**: Language-specific SDKs (Python, TypeScript) communicate with the core server via HTTP
 3. **Auto-Management**: SDKs automatically start/stop the server as needed
@@ -3704,7 +3710,7 @@ markets = poly.search_markets("Trump")
 
 ### Known Limitations
 
-- **Node.js Dependency**: Both SDKs require Node.js to be installed (for the sidecar server)
+- **Node.js Dependency**: Both SDKs require Node.js to be installed (for the local service server)
 - **Beta Features**: Some advanced features are still in beta (see `BETA_RELEASE.md`)
 - **Exchange Coverage**: Currently supports Polymarket and Kalshi (more exchanges planned for v1.x.x)
 

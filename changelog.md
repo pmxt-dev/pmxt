@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - **WebSocket**: `watchOrderBooks` / `watch_order_books` now works in a loop. `subscribeBatch` reuses existing subscriptions instead of sending duplicate subscribe messages that the server rejects with "Already subscribed".
 - **WebSocket**: Switch sidecar WebSocket to blocking recv after handshake so the connection survives between batch updates instead of dying after 10s of inactivity.
 
+## [2.45.5] - 2026-05-28
+
+### Fixed
+
+- **Polymarket**: Skip the 30s watch timeout for outcome IDs that have already received data. The timeout only fires on the first call to detect invalid IDs — subsequent calls wait for the next real WS push instead of erroring on quiet markets.
+
 ## [2.45.3] - 2026-05-26
 
 ### Fixed

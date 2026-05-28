@@ -112,9 +112,6 @@ export class PolymarketWebSocket {
         await this.ensureInitialized();
         await this.subscribe([outcomeId]);
 
-        // Return a promise that resolves on the next orderbook update.
-        // If the upstream market channel accepts the subscription but stays
-        // quiet, return a real REST snapshot instead of hanging indefinitely.
         const resolverEntry: QueuedPromise<OrderBook> = {
             resolve: () => {},
             reject: () => {},
@@ -126,8 +123,14 @@ export class PolymarketWebSocket {
             this.orderBookResolvers.set(outcomeId, [...existing, resolverEntry]);
         });
 
+        const withFallback = this.withSnapshotFallback(outcomeId, dataPromise, resolverEntry);
+
+        if (this.orderBooks.has(outcomeId)) {
+            return withFallback;
+        }
+
         return withWatchTimeout(
-            this.withSnapshotFallback(outcomeId, dataPromise, resolverEntry),
+            withFallback,
             this.config.watchTimeoutMs ?? DEFAULT_WATCH_TIMEOUT_MS,
             `watchOrderBook('${outcomeId}')`,
         );

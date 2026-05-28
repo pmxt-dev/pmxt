@@ -1,9 +1,9 @@
 /**
  * WebSocket client for streaming methods.
  *
- * Provides a multiplexed WebSocket connection to the sidecar server,
+ * Provides a multiplexed WebSocket connection to the local service server,
  * used by watchOrderBook and watchOrderBooks as an alternative to
- * HTTP long-polling. Falls back to HTTP transparently when the sidecar
+ * HTTP long-polling. Falls back to HTTP transparently when the local service
  * does not support the /ws endpoint.
  */
 
@@ -27,7 +27,7 @@ interface WsMessage {
 }
 
 /**
- * Multiplexed WebSocket client for the pmxt sidecar.
+ * Multiplexed WebSocket client for the pmxt local service.
  *
  * Lazily connects to ws://{host}/ws?token={accessToken}. A single
  * WebSocket connection is shared across all streaming subscriptions.
@@ -268,37 +268,47 @@ export class SidecarWsClient {
     ): Promise<Record<string, any>> {
         const symbols: string[] = Array.isArray(args[0]) ? args[0] : [];
 
-        await this.ensureConnected();
+        const firstArg = args[0] ?? "";
+        const subKey = Array.isArray(firstArg)
+            ? `${method}:${[...firstArg].sort().join(",")}`
+            : `${method}:${firstArg}`;
 
-        const requestId = `req-${Math.random().toString(36).slice(2, 14)}`;
+        const existingId = this.activeSubs.get(subKey);
+        if (existingId && this.subscriptions.has(existingId)) {
+            await this.waitForData(existingId, timeoutMs);
+        } else {
+            await this.ensureConnected();
 
-        const sub: WsSubscription = {
-            requestId,
-            method,
-            symbols,
-            resolve: null,
-            reject: null,
-        };
-        this.subscriptions.set(requestId, sub);
+            const requestId = `req-${Math.random().toString(36).slice(2, 14)}`;
 
-        const message: Record<string, any> = {
-            id: requestId,
-            action: "subscribe",
-            exchange,
-            method,
-            args,
-        };
-        if (credentials) {
-            message.credentials = credentials;
+            const sub: WsSubscription = {
+                requestId,
+                method,
+                symbols,
+                resolve: null,
+                reject: null,
+            };
+            this.subscriptions.set(requestId, sub);
+            this.activeSubs.set(subKey, requestId);
+
+            const message: Record<string, any> = {
+                id: requestId,
+                action: "subscribe",
+                exchange,
+                method,
+                args,
+            };
+            if (credentials) {
+                message.credentials = credentials;
+            }
+
+            if (!this.ws) {
+                throw new PmxtError('[ws-client] Cannot send: WebSocket not connected');
+            }
+            this.ws.send(JSON.stringify(message));
+
+            await this.waitForData(requestId, timeoutMs);
         }
-
-        if (!this.ws) {
-            throw new PmxtError('[ws-client] Cannot send: WebSocket not connected');
-        }
-        this.ws.send(JSON.stringify(message));
-
-        // Wait for first data event
-        await this.waitForData(requestId, timeoutMs);
 
         // Collect per-symbol data
         const result: Record<string, any> = {};

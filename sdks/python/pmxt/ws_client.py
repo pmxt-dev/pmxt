@@ -1,9 +1,9 @@
 """
 WebSocket client for streaming methods.
 
-Provides a multiplexed WebSocket connection to the sidecar server,
+Provides a multiplexed WebSocket connection to the local service server,
 used by watch_order_book and watch_order_books as an alternative to
-HTTP long-polling. Falls back to HTTP transparently when the sidecar
+HTTP long-polling. Falls back to HTTP transparently when the local service
 does not support the /ws endpoint.
 """
 
@@ -28,7 +28,7 @@ class _WsSubscription:
 
 
 class SidecarWsClient:
-    """Multiplexed WebSocket client for the pmxt sidecar.
+    """Multiplexed WebSocket client for the pmxt local service.
 
     Lazily connects to ws://{host}/ws?token={access_token}. A single
     background thread reads incoming frames and dispatches them to
@@ -236,24 +236,39 @@ class SidecarWsClient:
         """
         symbols = args[0] if args and isinstance(args[0], list) else []
 
+        first_arg = args[0] if args else ""
+        if isinstance(first_arg, list):
+            sub_key = f"{method}:{','.join(sorted(first_arg))}"
+        else:
+            sub_key = f"{method}:{first_arg}"
+
         with self._lock:
-            self._ensure_connected()
-            request_id = f"req-{uuid.uuid4().hex[:12]}"
+            existing_id = self._active_subs.get(sub_key)
+            if existing_id and existing_id in self._subscriptions:
+                sub = self._subscriptions[existing_id]
+                sub.event.clear()
+                self._data_store.pop(existing_id, None)
+                for symbol in symbols:
+                    self._data_store.pop(f"{existing_id}:{symbol}", None)
+            else:
+                self._ensure_connected()
+                request_id = f"req-{uuid.uuid4().hex[:12]}"
 
-            sub = _WsSubscription(request_id, method, symbols)
-            self._subscriptions[request_id] = sub
+                sub = _WsSubscription(request_id, method, symbols)
+                self._subscriptions[request_id] = sub
+                self._active_subs[sub_key] = request_id
 
-            message = {
-                "id": request_id,
-                "action": "subscribe",
-                "exchange": exchange,
-                "method": method,
-                "args": args,
-            }
-            if credentials:
-                message["credentials"] = credentials
+                message = {
+                    "id": request_id,
+                    "action": "subscribe",
+                    "exchange": exchange,
+                    "method": method,
+                    "args": args,
+                }
+                if credentials:
+                    message["credentials"] = credentials
 
-            self._ws.send(json.dumps(message))
+                self._ws.send(json.dumps(message))
 
         # Wait for data event (the server may push one consolidated event
         # or multiple per-symbol events)

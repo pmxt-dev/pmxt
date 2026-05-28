@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **WebSocket**: `watchOrderBooks` / `watch_order_books` now works in a loop. `subscribeBatch` reuses existing subscriptions instead of sending duplicate subscribe messages that the server rejects with "Already subscribed".
+- **WebSocket**: Switch sidecar WebSocket to blocking recv after handshake so the connection survives between batch updates instead of dying after 10s of inactivity.
 
 ## [2.45.3] - 2026-05-26
 

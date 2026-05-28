@@ -28,6 +28,7 @@ from .models import (
     UnifiedMarket,
     UnifiedEvent,
     MarketOutcome,
+    OutcomeList,
     MarketList,
     PriceCandle,
     OrderBook,
@@ -79,7 +80,7 @@ def _snake_to_camel(name: str) -> str:
 
 
 def _convert_params_to_camel(params: Dict[str, Any]) -> Dict[str, Any]:
-    """Convert snake_case param keys to camelCase for the sidecar wire format.
+    """Convert snake_case param keys to camelCase for the local service wire format.
 
     Keys that are already camelCase or single-word pass through unchanged.
     Nested dicts/lists are left as-is -- only top-level keys are converted.
@@ -162,7 +163,7 @@ def _convert_outcome(raw: Dict[str, Any]) -> MarketOutcome:
 
 def _convert_market(raw: Dict[str, Any]) -> UnifiedMarket:
     """Convert raw API response to UnifiedMarket."""
-    outcomes = [_convert_outcome(o) for o in raw.get("outcomes", [])]
+    outcomes = OutcomeList(_convert_outcome(o) for o in raw.get("outcomes", []))
 
     # Handle resolution date (could be str or datetime)
     res_date_raw = raw.get("resolutionDate")
@@ -295,11 +296,11 @@ class Exchange(ABC):
             api_key: API key for authentication on the venue itself (optional)
             private_key: Private key for authentication (optional)
             api_token: Metaculus-style bearer token (optional)
-            base_url: Explicit sidecar / hosted-pmxt base URL. When omitted,
+            base_url: Explicit local service / hosted-pmxt base URL. When omitted,
                 the URL is resolved from ``PMXT_BASE_URL`` env, then from the
                 presence of ``pmxt_api_key`` (implying the hosted endpoint),
-                then falling back to the local sidecar default.
-            auto_start_server: When True, start the local sidecar on demand.
+                then falling back to the local service default.
+            auto_start_server: When True, start the local service on demand.
                 Defaults to True for local mode and False for hosted mode.
                 Pass an explicit bool to override.
             proxy_address: Proxy/smart wallet address (optional).
@@ -319,7 +320,7 @@ class Exchange(ABC):
         self.markets: Dict[str, "UnifiedMarket"] = {}
         self.markets_by_slug: Dict[str, "UnifiedMarket"] = {}
         self._loaded_markets: bool = False
-        # Sticky flag: flipped to True the first time the sidecar rejects a
+        # Sticky flag: flipped to True the first time the local service rejects a
         # GET read with 404/405 (i.e. an older pmxt-core that only supports
         # POST). Once set, read methods skip the GET probe for the lifetime
         # of this client and POST directly.
@@ -327,7 +328,7 @@ class Exchange(ABC):
         # WebSocket client for streaming methods (lazy, shared)
         self._ws_client = None
         self._ws_lock = __import__("threading").Lock()
-        # Sticky flag: set to True if the sidecar's /ws endpoint is
+        # Sticky flag: set to True if the local service's /ws endpoint is
         # unavailable (older core). Once set, streaming methods fail
         # fast with a clear WebSocket transport error.
         self._ws_unsupported: bool = False
@@ -346,7 +347,7 @@ class Exchange(ABC):
             auto_start_server = not self.is_hosted
 
         # Initialize server manager against the resolved URL so lock-file
-        # lookups still work when pointing at the local sidecar.
+        # lookups still work when pointing at the local service.
         self._server_manager = ServerManager(effective_base_url)
 
         # Ensure server is running (unless disabled or running hosted).
@@ -421,7 +422,7 @@ class Exchange(ABC):
 
         Only retries on connection-level errors (ECONNREFUSED, ECONNRESET) --
         never on HTTP/API errors (4xx, 5xx). On first connection failure,
-        attempts to restart the sidecar.
+        attempts to restart the local service.
         """
         delays = [0.2, 0.5, 1.0]
         last_error = None
@@ -434,7 +435,7 @@ class Exchange(ABC):
                 if attempt >= len(delays):
                     break
 
-                # Connection failed -- try to restart sidecar on first failure
+                # Connection failed -- try to restart local service on first failure
                 if attempt == 0 and not self.pmxt_api_key:
                     try:
                         self._server_manager.ensure_server_running()
@@ -447,9 +448,9 @@ class Exchange(ABC):
         raise last_error
 
     def _resolve_sidecar_host(self) -> str:
-        """Return the current sidecar host URL.
+        """Return the current local service host URL.
 
-        The local sidecar may pick a different port on restart (e.g. if
+        The local service may pick a different port on restart (e.g. if
         the previous port is still held by a zombie process), so we
         re-read the lock file on every request instead of trusting the
         ``configuration.host`` captured at SDK construction time. When
@@ -467,7 +468,7 @@ class Exchange(ABC):
     def _get_auth_headers(self) -> Dict[str, str]:
         """Build request headers with a fresh access token read from the lock file.
 
-        The token is re-read on every call so that if the sidecar server restarts
+        The token is re-read on every call so that if the local service server restarts
         (and writes a new token) existing client objects automatically recover on
         the next request — no re-instantiation required.
         """
@@ -504,7 +505,7 @@ class Exchange(ABC):
 
     @staticmethod
     def _build_sidecar_query_string(query: Dict[str, Any]) -> str:
-        """URL-encode a flat query dict for the sidecar GET path.
+        """URL-encode a flat query dict for the local service GET path.
 
         - ``None`` values are skipped entirely.
         - Lists become repeated ``key=v1&key=v2`` pairs.
@@ -524,7 +525,7 @@ class Exchange(ABC):
             elif isinstance(value, dict):
                 continue
             elif isinstance(value, bool):
-                # Python's str(True) is "True" — the sidecar expects lowercase.
+                # Python's str(True) is "True" — the local service expects lowercase.
                 parts.append(f"{quote(str(key), safe='')}={'true' if value else 'false'}")
             else:
                 parts.append(f"{quote(str(key), safe='')}={quote(str(value), safe='')}")
@@ -550,10 +551,10 @@ class Exchange(ABC):
         query: Dict[str, Any],
         args: List[Any],
     ) -> Dict[str, Any]:
-        """Dispatch a sidecar read, preferring GET with POST fallback.
+        """Dispatch a local service read, preferring GET with POST fallback.
 
         GET is attempted when the client has no per-instance credentials
-        (the sidecar's GET handler drops credentials to avoid leaking them
+        (the local service's GET handler drops credentials to avoid leaking them
         through query strings), the server hasn't already told us it
         doesn't understand GET, and the query is flat enough to serialise.
 
@@ -586,7 +587,7 @@ class Exchange(ABC):
                 response.read()
                 status = getattr(response, "status", 200)
                 if status in (404, 405):
-                    # Older sidecar without GET dispatch — remember and
+                    # Older local service without GET dispatch — remember and
                     # fall through to POST below.
                     self._get_reads_unsupported = True
                 else:
@@ -1692,7 +1693,7 @@ class Exchange(ABC):
         """Return the shared WebSocket client, creating it on first use.
 
         Thread-safe. Returns None if the websocket-client package is not
-        installed or the sidecar /ws endpoint was previously found to be
+        installed or the local service /ws endpoint was previously found to be
         unavailable.
         """
         if self._ws_unsupported:
@@ -1840,7 +1841,7 @@ class Exchange(ABC):
         Returns a promise that resolves with the next order book update.
         Call repeatedly in a loop to stream updates (CCXT Pro pattern).
 
-        Requires the sidecar WebSocket transport.
+        Requires the local service WebSocket transport.
 
         Args:
             outcome_id: Outcome ID to watch
@@ -1905,7 +1906,7 @@ class Exchange(ABC):
         order book snapshot. Call repeatedly in a loop to stream updates
         (CCXT Pro pattern).
 
-        Requires the sidecar WebSocket transport.
+        Requires the local service WebSocket transport.
 
         Args:
             outcome_ids: List of outcome IDs (or MarketOutcome objects)

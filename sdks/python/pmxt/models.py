@@ -20,6 +20,26 @@ OrderType = Literal["market", "limit"]
 OutcomeType = Literal["yes", "no", "up", "down"]
 
 
+class OutcomeList(list):
+    """List of MarketOutcome with .yes/.no/.up/.down accessors."""
+
+    @property
+    def yes(self) -> "MarketOutcome":
+        return self[0]
+
+    @property
+    def no(self) -> "MarketOutcome":
+        return self[1]
+
+    @property
+    def up(self) -> "MarketOutcome":
+        return self[0]
+
+    @property
+    def down(self) -> "MarketOutcome":
+        return self[1]
+
+
 @dataclass
 class MarketOutcome:
     """A single tradeable outcome within a market."""
@@ -599,7 +619,7 @@ class EventFetchParams(TypedDict, total=False):
 # Router Types
 # ----------------------------------------------------------------------------
 
-MatchRelation = Literal["identity", "subset", "superset", "overlap", "disjoint"]
+MatchRelation = Literal["identity", "complement", "subset", "superset", "overlap", "disjoint"]
 ClusterSortOption = Literal["volume", "confidence"]
 VenueFilter = Union[str, List[str]]
 

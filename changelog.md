@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.45.5] - 2026-05-28
+
+### Added
+
+- **SDK**: `market.outcomes.yes` / `market.outcomes.no` accessors in both Python and TypeScript SDKs. `outcomes` list now supports `.yes`, `.no`, `.up`, `.down` as shortcuts to the first and second outcome, matching the existing `market.yes` / `market.no` top-level accessors.
+
 ## [2.45.4] - 2026-05-28
 
 ### Fixed

@@ -51,6 +51,7 @@ import { buildArgsWithOptionalOptions } from "./args.js";
 import { PmxtError, fromServerError } from "./errors.js";
 import { LOCAL_URL, resolvePmxtBaseUrl } from "./constants.js";
 import { SidecarWsClient } from "./ws-client.js";
+import { streamFromWatch } from "./stream.js";
 
 interface RawWebSocketLike {
     send(data: string): void;
@@ -115,11 +116,21 @@ function queryHasNestedObject(query: Record<string, unknown>): boolean {
 }
 
 // Converter functions
+function addOutcomeAccessors(arr: any[]): any {
+    Object.defineProperties(arr, {
+        yes:  { get() { return this[0]; }, enumerable: false },
+        no:   { get() { return this[1]; }, enumerable: false },
+        up:   { get() { return this[0]; }, enumerable: false },
+        down: { get() { return this[1]; }, enumerable: false },
+    });
+    return arr;
+}
+
 function convertMarket(raw: any): UnifiedMarket {
     const market: UnifiedMarket = {
         ...raw,
         resolutionDate: raw.resolutionDate ? new Date(raw.resolutionDate) : undefined,
-        outcomes: (raw.outcomes || []).map((o: any) => ({ ...o })),
+        outcomes: addOutcomeAccessors((raw.outcomes || []).map((o: any) => ({ ...o }))),
         yes: raw.yes ? { ...raw.yes } : undefined,
         no: raw.no ? { ...raw.no } : undefined,
         up: raw.up ? { ...raw.up } : undefined,
@@ -197,10 +208,10 @@ export interface ExchangeOptions {
      * When set (either as this kwarg or via the `PMXT_API_KEY` env
      * variable), and no explicit `baseUrl` / `PMXT_BASE_URL` is set,
      * the Exchange will default to the hosted pmxt endpoint
-     * (`https://api.pmxt.dev`) instead of the local sidecar, and send
+     * (`https://api.pmxt.dev`) instead of the local service, and send
      * `Authorization: Bearer <pmxtApiKey>` on every request.
      *
-     * The local sidecar ignores this header, so it is safe to set in
+     * The local service ignores this header, so it is safe to set in
      * both local and hosted modes.
      */
     pmxtApiKey?: string;
@@ -212,14 +223,14 @@ export interface ExchangeOptions {
      *   1. Explicit `baseUrl` kwarg.
      *   2. `PMXT_BASE_URL` environment variable.
      *   3. `HOSTED_URL` when `pmxtApiKey` (kwarg or env) is present.
-     *   4. Local sidecar (`http://localhost:3847`).
+     *   4. Local local service (`http://localhost:3847`).
      */
     baseUrl?: string;
 
     /**
-     * Automatically start the local sidecar if it is not running.
+     * Automatically start the local service if it is not running.
      *
-     * Default: `true` when the resolved base URL is the local sidecar,
+     * Default: `true` when the resolved base URL is the local service,
      * `false` otherwise. Explicit `true` / `false` always wins.
      */
     autoStartServer?: boolean;
@@ -261,7 +272,7 @@ export abstract class Exchange {
 
     /**
      * Sticky flag: set to `true` the first time a GET read is rejected by
-     * the sidecar with 404/405 (i.e. an older pmxt-core that only supports
+     * the local service with 404/405 (i.e. an older pmxt-core that only supports
      * POST). While false, read methods try GET first; once flipped they
      * POST directly and skip the GET probe for the lifetime of this client.
      */
@@ -269,7 +280,7 @@ export abstract class Exchange {
 
     /** Shared WebSocket client for streaming methods (lazy). */
     private _wsClient: SidecarWsClient | null = null;
-    /** Sticky flag: true if the sidecar /ws endpoint is unavailable. */
+    /** Sticky flag: true if the local service /ws endpoint is unavailable. */
     private _wsUnsupported: boolean = false;
 
     constructor(exchangeName: string, options: ExchangeOptions = {}) {
@@ -300,7 +311,7 @@ export abstract class Exchange {
         this.serverManager = new ServerManager({ baseUrl });
 
         // Configure the API client with the initial base URL (will be
-        // updated to the actual listen port if the local sidecar gets
+        // updated to the actual listen port if the local service gets
         // bumped off the default).
         this.config = new Configuration({ basePath: baseUrl });
         this.api = new DefaultApi(this.config);
@@ -364,8 +375,8 @@ export abstract class Exchange {
     protected getAuthHeaders(): Record<string, string> {
         const headers: Record<string, string> = { ...(this.config.headers as Record<string, string>) };
 
-        // Local sidecar access token (read from the lock file). Only
-        // meaningful when talking to a local sidecar we spawned
+        // Local local service access token (read from the lock file). Only
+        // meaningful when talking to a local service we spawned
         // ourselves; harmless elsewhere.
         const accessToken = this.serverManager.getAccessToken();
         if (accessToken) {
@@ -373,7 +384,7 @@ export abstract class Exchange {
         }
 
         // Hosted pmxt bearer token. The hosted service requires this;
-        // the local sidecar ignores it. Safe to attach unconditionally
+        // the local service ignores it. Safe to attach unconditionally
         // whenever a pmxtApiKey has been resolved.
         if (this.pmxtApiKey) {
             headers['Authorization'] = `Bearer ${this.pmxtApiKey}`;
@@ -383,11 +394,11 @@ export abstract class Exchange {
     }
 
     /**
-     * Resolve the current sidecar base URL.
+     * Resolve the current local service base URL.
      *
      * For hosted mode the configured basePath is returned as-is.
      * For local mode the port is re-read from the lock file on every
-     * call so we pick up sidecar restarts that land on a different port.
+     * call so we pick up local service restarts that land on a different port.
      */
     private resolveBaseUrl(): string {
         if (this.isHosted) return this.config.basePath;
@@ -400,7 +411,7 @@ export abstract class Exchange {
      *
      * Only retries on connection-level errors (ECONNREFUSED, ECONNRESET) —
      * never on HTTP responses (4xx, 5xx). On first connection failure,
-     * attempts to restart the sidecar.
+     * attempts to restart the local service.
      */
     private async fetchWithRetry(
         input: RequestInfo | URL,
@@ -419,7 +430,7 @@ export abstract class Exchange {
                 lastError = error;
                 if (attempt >= delays.length) break;
 
-                // Connection failed — try to restart the sidecar on first failure
+                // Connection failed — try to restart the local service on first failure
                 if (attempt === 0 && !this.isHosted) {
                     try {
                         await this.serverManager.ensureServerRunning();
@@ -436,7 +447,7 @@ export abstract class Exchange {
     /**
      * Return the shared WebSocket client, creating it on first use.
      *
-     * Returns `null` if the sidecar /ws endpoint was previously found
+     * Returns `null` if the local service /ws endpoint was previously found
      * to be unavailable.
      */
     private async getOrCreateWs(): Promise<SidecarWsClient | null> {
@@ -632,14 +643,14 @@ export abstract class Exchange {
     }
 
     /**
-     * Dispatch a sidecar read method, preferring GET but transparently
+     * Dispatch a local service read method, preferring GET but transparently
      * falling back to POST for full backward compatibility.
      *
      * GET is used when:
-     *   - the client has no per-instance credentials (the sidecar's GET
+     *   - the client has no per-instance credentials (the local service's GET
      *     handler intentionally drops credentials to avoid leaking them
      *     through query strings and access logs), and
-     *   - the sidecar hasn't already returned 404/405 for a previous GET
+     *   - the local service hasn't already returned 404/405 for a previous GET
      *     in this client's lifetime (`_getReadsUnsupported`), and
      *   - the query has no nested objects (query strings can't round-trip
      *     arbitrary JSON).
@@ -667,7 +678,7 @@ export abstract class Exchange {
                 headers: this.getAuthHeaders(),
             });
 
-            // 404 / 405 => older sidecar without GET dispatch. Remember
+            // 404 / 405 => older local service without GET dispatch. Remember
             // the downgrade so future calls skip the probe, and fall
             // through to POST below.
             if (response.status === 404 || response.status === 405) {
@@ -702,7 +713,7 @@ export abstract class Exchange {
     }
 
     /**
-     * Dispatch a sidecar POST method with positional args and credentials.
+     * Dispatch a local service POST method with positional args and credentials.
      *
      * @internal - shared transport for hand-maintained methods that should
      * never use the GET read path.
@@ -727,7 +738,7 @@ export abstract class Exchange {
      * Read a hosted catalog endpoint directly.
      *
      * Hosted-only Router APIs such as matched clusters are not part of the
-     * core sidecar method namespace. They live under /v0 and return their own
+     * core local service method namespace. They live under /v0 and return their own
      * response envelopes, so callers intentionally receive the raw JSON body.
      */
     protected async catalogReadRequest(path: string, query: Record<string, unknown> = {}): Promise<any> {
@@ -1873,6 +1884,28 @@ export abstract class Exchange {
         }
     }
 
+    // ---- Streaming (AsyncGenerator wrappers around watch/unwatch) ----
+
+    /** Stream order book updates as an async iterable. */
+    streamOrderBook(outcomeId: string | MarketOutcome, limit?: number, params: Record<string, any> = {}, signal?: AbortSignal): AsyncGenerator<OrderBook> {
+        return streamFromWatch(() => this.watchOrderBook(outcomeId, limit, params), () => this.unwatchOrderBook(outcomeId), signal);
+    }
+
+    /** Stream multi-outcome order book updates as an async iterable. */
+    streamOrderBooks(outcomeIds: (string | MarketOutcome)[], limit?: number, params: Record<string, any> = {}, signal?: AbortSignal): AsyncGenerator<Record<string, OrderBook>> {
+        return streamFromWatch(() => this.watchOrderBooks(outcomeIds, limit, params), undefined, signal);
+    }
+
+    /** Stream trade updates as an async iterable. */
+    streamTrades(outcomeId: string | MarketOutcome, address?: string, since?: number, limit?: number, signal?: AbortSignal): AsyncGenerator<Trade[]> {
+        return streamFromWatch(() => this.watchTrades(outcomeId, address, since, limit), undefined, signal);
+    }
+
+    /** Stream all order book events across venues as an async iterable. */
+    streamAllOrderBooks(venues?: string[], signal?: AbortSignal): AsyncGenerator<FirehoseEvent> {
+        return streamFromWatch(() => this.watchAllOrderBooks(venues), undefined, signal);
+    }
+
     // Trading Methods (require authentication)
 
     /**
@@ -2126,7 +2159,7 @@ export abstract class Exchange {
 
     /**
      * Calculate the average execution price for a given amount by walking the order book.
-     * Uses the sidecar server for calculation to ensure consistency.
+     * Uses the local service server for calculation to ensure consistency.
      *
      * @param orderBook - The current order book
      * @param side - 'buy' or 'sell'
@@ -2149,7 +2182,7 @@ export abstract class Exchange {
 
     /**
      * Calculate detailed execution price information.
-     * Uses the sidecar server for calculation to ensure consistency.
+     * Uses the local service server for calculation to ensure consistency.
      *
      * @param orderBook - The current order book
      * @param side - 'buy' or 'sell'
@@ -2508,7 +2541,7 @@ export interface PolymarketOptions {
     /** Hosted pmxt API key. Enables hosted mode when set. */
     pmxtApiKey?: string;
 
-    /** Base URL of the PMXT sidecar server */
+    /** Base URL of the PMXT local service server */
     baseUrl?: string;
 
     /** Automatically start server if not running (default: true) */

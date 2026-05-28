@@ -87,6 +87,7 @@ class SidecarWsClient:
 
         ws = websocket.WebSocket()
         ws.connect(url, timeout=10)
+        ws.settimeout(None)
         self._ws = ws
         self._closed = False
 
@@ -143,7 +144,7 @@ class SidecarWsClient:
             symbol = msg.get("symbol", "")
             data = msg.get("data", {})
             # Store keyed by (request_id, symbol) for batch methods
-            store_key = f"{request_id}:{symbol}"
+            store_key = f"{rid}:{symbol}"
             self._data_store[store_key] = data
             # Also store by request_id alone for single-symbol methods
             self._data_store[request_id] = data
@@ -276,7 +277,8 @@ class SidecarWsClient:
             raise PmxtError(f"Timeout waiting for WebSocket data (method={method})")
 
         # Check for error
-        error_data = self._data_store.get(request_id, {})
+        rid = sub.request_id
+        error_data = self._data_store.get(rid, {})
         if isinstance(error_data, dict) and "_error" in error_data:
             err = error_data["_error"]
             raise PmxtError(
@@ -286,13 +288,13 @@ class SidecarWsClient:
         # Collect per-symbol data
         result: Dict[str, Any] = {}
         for symbol in symbols:
-            store_key = f"{request_id}:{symbol}"
+            store_key = f"{rid}:{symbol}"
             if store_key in self._data_store:
                 result[symbol] = self._data_store[store_key]
         # If no per-symbol data found, return the single data event
         # (server may return a dict of all order books in one push)
         if not result:
-            data = self._data_store.get(request_id, {})
+            data = self._data_store.get(rid, {})
             if isinstance(data, dict) and not data.get("_error"):
                 result = data
         return result

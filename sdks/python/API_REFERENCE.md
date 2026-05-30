@@ -298,6 +298,31 @@ exchange.fetch_events(query="Trump", limit=10, offset=0)
 Some exchanges (like Limitless) may only support status 'active' for search results.
 
 ---
+### `fetch_series`
+
+Fetch the recurring series (fourth tier above Event -> Market -> Outcome)
+
+
+**Signature:**
+
+```python
+def fetch_series(params: Optional[SeriesFetchParams] = None) -> List[UnifiedSeries]:
+```
+
+**Parameters:**
+
+- `params` (SeriesFetchParams) - **Optional**: params
+
+**Returns:** List[[UnifiedSeries](#unifiedseries)] - Array of unified series. Always an array, including the singular-lookup case.
+
+**Example:**
+
+```python
+exchange.fetch_series()
+```
+
+
+---
 ### `fetch_market`
 
 Fetch a single market by lookup parameters.
@@ -1443,6 +1468,7 @@ tags: List[string] # Optional list of tags. More granular than category — e.g.
 tick_size: float # Minimum price increment (e.g., 0.01, 0.001)
 status: str # Venue-native lifecycle status (e.g. 'active', 'closed', 'archived').
 contract_address: str # On-chain contract / condition identifier where applicable (Polymarket conditionId, etc.).
+source_metadata: object # Raw venue-specific metadata not captured by first-class fields (e.g. Kalshi series_ticker / series_title from the parent event, Polymarket series). Passed through verbatim so downstream consumers can recover anything the unified shape omits. Each venue populates what it has.
 source_exchange: str # The exchange/venue this market originates from (e.g. 'polymarket', 'kalshi'). Populated by the Router.
 yes: Any # Convenience accessor for the YES outcome on a binary market.
 no: Any # Convenience accessor for the NO outcome on a binary market.
@@ -1485,7 +1511,29 @@ url: str # Canonical URL to view the event on the venue.
 image: str # Optional image URL for the event.
 category: str # Optional category label. Venue-defined — common values include "Sports", "Politics", "Crypto", "Economics", "Science", "Culture". Polymarket uses finer-grained categories like "Bitcoin", "Soccer", "Economic Policy"; Kalshi uses broader ones like "Sports" or "Mentions".
 tags: List[string] # Optional list of tags. More granular than category — e.g. ["Sports", "FIFA World Cup", "2026 FIFA World Cup"] or ["Politics", "Geopolitics", "Middle East"]. Tags vary by venue: Polymarket markets carry several, Kalshi typically one.
+source_metadata: object # Raw venue-specific metadata not captured by first-class fields (e.g. Kalshi series_ticker / series_title, Polymarket series). Passed through verbatim so downstream consumers can recover anything the unified shape omits. Each venue populates what it has.
 source_exchange: str # The exchange/venue this event originates from (e.g. 'polymarket', 'kalshi'). Populated by the Router.
+```
+
+---
+### `UnifiedSeries`
+
+A recurring grouping of events on a venue — the fourth tier above Event -> Market -> Outcome. Examples: Kalshi `KXATPMATCH` (every ATP tennis match), Polymarket `wta` (every WTA match), Opinion's daily `collection`. Series only exists where the venue exposes a recurring-event concept; venues without one return an empty array from `fetchSeries`.
+
+```python
+@dataclass
+class UnifiedSeries:
+id: str # Stable venue-native series identifier (e.g. "KXATPMATCH" on Kalshi, "atp" on Polymarket Gamma, numeric Gamma id).
+ticker: str # Venue-native ticker, when distinct from `id`.
+slug: str # Venue-native slug.
+title: str # Human-readable series title (e.g. "ATP Match Winner", "WTA").
+description: Any # Long-form series description.
+recurrence: Any # Recurrence cadence the venue reports ('daily', 'weekly', 'annual', ...).
+events: List[UnifiedEvent] # Child events. Populated when fetched by id; the list form usually omits this to keep payloads small.
+url: Any # Canonical venue URL for the series.
+image: Any # Venue-hosted image.
+source_exchange: str # The exchange this series originates from. Populated by the Router.
+source_metadata: object # Raw venue-specific fields not promoted to first-class columns.
 ```
 
 ---
@@ -1934,6 +1982,7 @@ status: str # Filter by event status (default: 'active', 'inactive' and 'closed'
 search_in: str # Where to search (default: 'title')
 event_id: str # Direct lookup by event ID
 slug: str # Lookup by event slug
+series: str # Filter events by their parent series. Accepts the venue-native series id / ticker / slug (e.g. Kalshi `"KXATPMATCH"`, Polymarket `"wta"`). Passed through to the vendor where supported, otherwise applied to `sourceMetadata` after fetch.
 filter: Any # Optional client-side filter applied after fetching
 category: str # Filter by category. Each event belongs to a venue-assigned category such as "Sports", "Politics", "Crypto", "Bitcoin", "Soccer", "Economic Policy" (Polymarket) or "Sports", "Mentions" (Kalshi).
 tags: List[string] # Filter by tags. Returns events matching ANY of the provided tags. Tags are more specific than categories -- for example a "Politics" event might carry tags ["Politics", "Geopolitics", "Middle East", "Iran"]. Common tags include "Crypto", "Elections", "Fed Rates", "FIFA World Cup", "Trump".

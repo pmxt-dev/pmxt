@@ -2822,17 +2822,55 @@ export class Hyperliquid extends Exchange {
 }
 
 /**
+ * Options for the SuiBets exchange client.
+ */
+export interface SuiBetsOptions extends ExchangeOptions {
+    /**
+     * Sui wallet address (0x + 64 hex chars).
+     * Required for fetchPositions(). Can also be set via the
+     * SUIBETS_WALLET_ADDRESS environment variable on the sidecar.
+     */
+    walletAddress?: string;
+}
+
+/**
  * SuiBets exchange client.
+ *
+ * SuiBets is a decentralised P2P sports betting exchange on Sui mainnet.
+ * No house edge. 2% platform fee.
+ * Contract: 0xd51fe151bec66a15b086a67c1cfce9b05759ddac1d73fcd3e14324ad202b2e59
  *
  * @example
  * ```typescript
  * const suibets = new SuiBets();
- * const markets = await suibets.fetchMarkets();
+ * const markets = await suibets.fetchMarkets({ limit: 20 });
+ *
+ * // With wallet for fetchPositions()
+ * const me = new SuiBets({ walletAddress: '0xabc...' });
+ * const positions = await me.fetchPositions();
  * ```
  */
 export class SuiBets extends Exchange {
-    constructor(options: ExchangeOptions = {}) {
+    private readonly _walletAddress?: string;
+
+    constructor(options: SuiBetsOptions = {}) {
         super("suibets", options);
+        this._walletAddress = options.walletAddress;
+    }
+
+    /**
+     * Includes walletAddress in the credentials sent to the sidecar so
+     * that fetchPositions() can reach the /api/p2p/my endpoint.
+     * Falls back to SUIBETS_WALLET_ADDRESS env var on the sidecar side
+     * when walletAddress is not set here.
+     */
+    protected override getCredentials(): ExchangeCredentials | undefined {
+        const base = super.getCredentials();
+        if (!this._walletAddress) return base;
+        return {
+            ...(base ?? {}),
+            walletAddress: this._walletAddress,
+        } as ExchangeCredentials & { walletAddress: string };
     }
 }
 

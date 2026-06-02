@@ -347,6 +347,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
             marketId,
             label: raw.yesLabel || 'Yes',
             price: 0.5,
+            metadata: { opinionMarketId: raw.marketId },
         };
 
         const noOutcome: MarketOutcome = {
@@ -354,6 +355,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
             marketId,
             label: raw.noLabel || 'No',
             price: 0.5,
+            metadata: { opinionMarketId: raw.marketId },
         };
 
         const market: UnifiedMarket = {
@@ -397,6 +399,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
             marketId,
             label: child.yesLabel || 'Yes',
             price: 0.5,
+            metadata: { opinionMarketId: child.marketId },
         };
 
         const noOutcome: MarketOutcome = {
@@ -404,6 +407,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
             marketId,
             label: child.noLabel || 'No',
             price: 0.5,
+            metadata: { opinionMarketId: child.marketId },
         };
 
         const childTitle = child.marketTitle || '';

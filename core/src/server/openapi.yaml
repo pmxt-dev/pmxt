@@ -72,26 +72,7 @@ paths:
       summary: Fetch Markets
       operationId: fetchMarkets
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - baozi
-              - myriad
-              - opinion
-              - metaculus
-              - smarkets
-              - polymarket_us
-              - suibets
-              - router
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: limit
           required: false
@@ -277,26 +258,7 @@ paths:
       summary: Fetch Events
       operationId: fetchEvents
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - baozi
-              - myriad
-              - opinion
-              - metaculus
-              - smarkets
-              - polymarket_us
-              - suibets
-              - router
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: query
           required: false
@@ -421,19 +383,7 @@ paths:
       summary: Fetch Series
       operationId: fetchSeries
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - opinion
-              - polymarket_us
-              - router
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
       responses:
         '200':
           description: Fetch Series response
@@ -687,21 +637,7 @@ paths:
       summary: Fetch OHLCV
       operationId: fetchOHLCV
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - baozi
-              - myriad
-              - opinion
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: outcomeId
           required: true
@@ -753,25 +689,7 @@ paths:
       summary: Fetch Order Book
       operationId: fetchOrderBook
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - baozi
-              - myriad
-              - opinion
-              - smarkets
-              - polymarket_us
-              - suibets
-              - router
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: outcomeId
           required: true
@@ -839,16 +757,7 @@ paths:
       summary: Fetch Order Books
       operationId: fetchOrderBooks
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
       requestBody:
         content:
           application/json:
@@ -890,21 +799,7 @@ paths:
       summary: Fetch Trades
       operationId: fetchTrades
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - baozi
-              - myriad
-              - smarkets
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: outcomeId
           required: true
@@ -950,24 +845,7 @@ paths:
       summary: Create Order
       operationId: createOrder
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - baozi
-              - myriad
-              - opinion
-              - metaculus
-              - smarkets
-              - polymarket_us
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
       requestBody:
         content:
           application/json:
@@ -1003,19 +881,7 @@ paths:
       summary: Build Order
       operationId: buildOrder
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - opinion
-              - smarkets
-              - polymarket_us
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
       requestBody:
         content:
           application/json:
@@ -1053,19 +919,7 @@ paths:
       summary: Submit Order
       operationId: submitOrder
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - opinion
-              - smarkets
-              - polymarket_us
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
       requestBody:
         content:
           application/json:
@@ -1101,22 +955,7 @@ paths:
       summary: Cancel Order
       operationId: cancelOrder
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - opinion
-              - metaculus
-              - smarkets
-              - polymarket_us
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
       requestBody:
         content:
           application/json:
@@ -1152,21 +991,7 @@ paths:
       summary: Fetch Order
       operationId: fetchOrder
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - probable
-              - baozi
-              - opinion
-              - smarkets
-              - polymarket_us
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: orderId
           required: true
@@ -1190,23 +1015,7 @@ paths:
       summary: Fetch Open Orders
       operationId: fetchOpenOrders
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - baozi
-              - myriad
-              - opinion
-              - smarkets
-              - polymarket_us
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: marketId
           required: false
@@ -1232,22 +1041,7 @@ paths:
       summary: Fetch My Trades
       operationId: fetchMyTrades
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - myriad
-              - opinion
-              - smarkets
-              - polymarket_us
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: outcomeId
           required: false
@@ -1305,18 +1099,7 @@ paths:
       summary: Fetch Closed Orders
       operationId: fetchClosedOrders
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - opinion
-              - smarkets
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: marketId
           required: false
@@ -1368,18 +1151,7 @@ paths:
       summary: Fetch All Orders
       operationId: fetchAllOrders
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - opinion
-              - smarkets
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: marketId
           required: false
@@ -1431,24 +1203,7 @@ paths:
       summary: Fetch Positions
       operationId: fetchPositions
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - baozi
-              - myriad
-              - opinion
-              - smarkets
-              - polymarket_us
-              - suibets
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: address
           required: false
@@ -1474,22 +1229,7 @@ paths:
       summary: Fetch Balance
       operationId: fetchBalance
       parameters:
-        - in: path
-          name: exchange
-          schema:
-            type: string
-            enum:
-              - polymarket
-              - kalshi
-              - kalshi-demo
-              - limitless
-              - probable
-              - baozi
-              - myriad
-              - smarkets
-              - polymarket_us
-          required: true
-          description: The prediction market exchange to target.
+        - $ref: '#/components/parameters/ExchangeParam'
         - in: query
           name: address
           required: false

@@ -80,6 +80,10 @@ export class FeedClient {
         };
     }
 
+    async listFeeds(): Promise<string[]> {
+        return this.getRoot<string[]>();
+    }
+
     async loadMarkets(): Promise<Record<string, Market>> {
         return this.get<Record<string, Market>>('loadMarkets', {});
     }
@@ -118,14 +122,22 @@ export class FeedClient {
     }
 
     private async get<T>(method: string, params: Record<string, unknown>): Promise<T> {
+        return this.request<T>(`${this.baseUrl}/api/feeds/${this.feedName}/${method}`, params);
+    }
+
+    private async getRoot<T>(params: Record<string, unknown> = {}): Promise<T> {
+        return this.request<T>(`${this.baseUrl}/api/feeds/`, params);
+    }
+
+    private async request<T>(url: string, params: Record<string, unknown>): Promise<T> {
         const qs = Object.entries(params)
             .filter(([, v]) => v !== undefined && v !== null)
             .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
             .join('&');
 
-        const url = `${this.baseUrl}/api/feeds/${this.feedName}/${method}${qs ? '?' + qs : ''}`;
+        const requestUrl = `${url}${qs ? '?' + qs : ''}`;
 
-        const response = await fetch(url, {
+        const response = await fetch(requestUrl, {
             headers: this.headers,
             signal: AbortSignal.timeout(30_000),
         });

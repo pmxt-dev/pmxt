@@ -1456,7 +1456,7 @@ title: str # The market title (e.g., "Will BTC close above $100k on Dec 31?").
 description: str # Long-form market description or resolution criteria.
 slug: str # URL-friendly slug for the market.
 outcomes: List[MarketOutcome] # The possible outcomes for this market.
-resolution_date: str # When the market is scheduled to resolve.
+resolution_date: str # When the market is scheduled to resolve. Optional because some venues do not publish a cutoff for every market (e.g. Opinion categorical children) — emit `undefined` rather than coercing to epoch.
 volume24h: float # Trading volume over the past 24 hours (USD).
 volume: float # Total / Lifetime volume
 liquidity: float # Current market liquidity (USD).

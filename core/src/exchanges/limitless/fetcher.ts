@@ -16,6 +16,10 @@ export interface LimitlessRawMarket {
     description?: string;
     tokens?: Record<string, string>;
     prices?: number[];
+    tradePrices?: {
+        buy?: { market?: number[]; limit?: number[] };
+        sell?: { market?: number[]; limit?: number[] };
+    };
     expirationTimestamp?: string;
     volumeFormatted?: number;
     volume?: number;

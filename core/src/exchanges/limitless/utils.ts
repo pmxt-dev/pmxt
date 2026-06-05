@@ -73,9 +73,9 @@ export function mapMarketToUnified(market: any, context: LimitlessMarketContext 
             throw new Error(`[limitless] Market "${market.slug}" is missing token addresses`);
         }
 
-        const prices = Array.isArray(market.prices) ? market.prices : [];
-        const yesPrice = prices[0] || 0;
-        const noPrice = prices[1] || 0;
+        const legacyPrices = Array.isArray(market.prices) ? market.prices : [];
+        const yesPrice = market.tradePrices?.buy?.market?.[0] ?? legacyPrices[0] ?? 0.5;
+        const noPrice = market.tradePrices?.sell?.market?.[0] ?? legacyPrices[1] ?? Math.max(0, Math.min(1, 1 - yesPrice));
         const yesLabel = hasParentContext ? rawTitle : 'Yes';
         const noLabel = hasParentContext ? `Not ${rawTitle}` : 'No';
 

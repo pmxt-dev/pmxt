@@ -213,12 +213,19 @@ export class GeminiNormalizer implements IExchangeNormalizer<GeminiRawEvent, Gem
         // Extract prices
         const bestBid = contract.prices?.bestBid ? parseFloat(contract.prices.bestBid) : 0.5;
         const bestAsk = contract.prices?.bestAsk ? parseFloat(contract.prices.bestAsk) : 0.5;
+        const buyYes = contract.prices?.buy?.yes ? parseFloat(contract.prices.buy.yes) : undefined;
+        const sellYes = contract.prices?.sell?.yes ? parseFloat(contract.prices.sell.yes) : undefined;
+        const buyNo = contract.prices?.buy?.no ? parseFloat(contract.prices.buy.no) : undefined;
+        const sellNo = contract.prices?.sell?.no ? parseFloat(contract.prices.sell.no) : undefined;
         const lastPrice = contract.prices?.lastTradePrice
             ? parseFloat(contract.prices.lastTradePrice)
             : (bestBid + bestAsk) / 2;
 
-        const yesPrice = roundPrice(Math.max(0, Math.min(1, lastPrice)));
-        const noPrice = roundPrice(Math.max(0, Math.min(1, 1 - yesPrice)));
+        const yesPriceSource = buyYes ?? sellYes ?? lastPrice;
+        const noPriceSource = buyNo ?? sellNo ?? (1 - yesPriceSource);
+
+        const yesPrice = roundPrice(Math.max(0, Math.min(1, yesPriceSource)));
+        const noPrice = roundPrice(Math.max(0, Math.min(1, noPriceSource)));
 
         const outcomes: MarketOutcome[] = [
             {
@@ -258,7 +265,7 @@ export class GeminiNormalizer implements IExchangeNormalizer<GeminiRawEvent, Gem
             outcomes,
             resolutionDate,
             volume24h: 0,
-            liquidity: event.liquidity ? parseFloat(event.liquidity) : 0,
+            liquidity: event.liquidity ? parseFloat(event.liquidity) : (event.volume24h ? parseFloat(event.volume24h) : (event.volume ? parseFloat(event.volume) : 0)),
             url: buildExchangeUrl(event.ticker),
             category: event.category,
             tags,

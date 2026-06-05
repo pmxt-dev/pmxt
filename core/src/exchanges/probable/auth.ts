@@ -3,6 +3,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { createWalletClient, http } from 'viem';
 import { bsc, bscTestnet } from 'viem/chains';
 import { ExchangeCredentials } from '../../BaseExchange';
+import { PROBABLE_CHAIN_ID, PROBABLE_TESTNET_CHAIN_ID } from './config';
 
 /**
  * Manages Probable authentication and CLOB client initialization.
@@ -36,8 +37,8 @@ export class ProbableAuth {
             return this.clobClient;
         }
 
-        const chainId = parseInt(process.env.PROBABLE_CHAIN_ID || '56', 10);
-        const chain = chainId === 97 ? bscTestnet : bsc;
+        const chainId = parseInt(process.env.PROBABLE_CHAIN_ID || String(PROBABLE_CHAIN_ID), 10);
+        const chain = chainId === PROBABLE_TESTNET_CHAIN_ID ? bscTestnet : bsc;
 
         const account = privateKeyToAccount(this.credentials.privateKey as `0x${string}`);
         const wallet = createWalletClient({
@@ -56,9 +57,9 @@ export class ProbableAuth {
         // disagree on WalletClient. Runtime shape is identical.
         const walletForClob = wallet as any;
 
-        if (chainId === 56) {
+        if (chainId === PROBABLE_CHAIN_ID) {
             this.clobClient = createClobClient({
-                chainId: 56,
+                chainId: PROBABLE_CHAIN_ID,
                 wallet: walletForClob,
                 credential,
             });

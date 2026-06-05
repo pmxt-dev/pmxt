@@ -773,7 +773,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -796,7 +796,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -823,7 +823,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -846,7 +846,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -869,7 +869,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -892,7 +892,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -921,7 +921,7 @@ class Exchange(ABC):
                 if limit is None:
                     args.append(None)
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -943,7 +943,7 @@ class Exchange(ABC):
         try:
             args = []
             args.append([_resolve_outcome_id(x) for x in outcome_ids])
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -963,7 +963,7 @@ class Exchange(ABC):
         try:
             args = []
             args.append(order_id)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -983,7 +983,7 @@ class Exchange(ABC):
         try:
             args = []
             args.append(order_id)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1004,7 +1004,7 @@ class Exchange(ABC):
             args = []
             if market_id is not None:
                 args.append(market_id)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1027,7 +1027,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1050,7 +1050,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1073,7 +1073,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1094,7 +1094,7 @@ class Exchange(ABC):
             args = []
             if address is not None:
                 args.append(address)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1115,7 +1115,7 @@ class Exchange(ABC):
             args = []
             if address is not None:
                 args.append(address)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1136,7 +1136,7 @@ class Exchange(ABC):
             args = []
             outcome_id = _compat_id(outcome_id, _compat_kwargs)
             args.append(_resolve_outcome_id(outcome_id))
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1155,7 +1155,7 @@ class Exchange(ABC):
         try:
             args = []
             args.append(address)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1173,7 +1173,7 @@ class Exchange(ABC):
     def close(self) -> None:
         try:
             args = []
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1195,7 +1195,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1211,13 +1211,13 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def fetch_matches(self, params: Dict[str, Any], **kwargs) -> List[Any]:
+    def fetch_matches(self, params: dict, **kwargs) -> List[Any]:
         try:
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
             args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1240,7 +1240,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1256,13 +1256,13 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def compare_market_prices(self, params: Dict[str, Any], **kwargs) -> List[Any]:
+    def compare_market_prices(self, params: dict, **kwargs) -> List[Any]:
         try:
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
             args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1278,13 +1278,13 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def fetch_related_markets(self, params: Dict[str, Any], **kwargs) -> List[Any]:
+    def fetch_related_markets(self, params: dict, **kwargs) -> List[Any]:
         try:
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
             args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1307,7 +1307,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1330,7 +1330,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1346,13 +1346,13 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def fetch_hedges(self, params: Dict[str, Any], **kwargs) -> List[Any]:
+    def fetch_hedges(self, params: dict, **kwargs) -> List[Any]:
         try:
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
             args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -1375,7 +1375,7 @@ class Exchange(ABC):
                 params = {**(params or {}), **kwargs}
             if params is not None:
                 args.append(params)
-            body: Dict[str, Any] = {"args": args}
+            body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds

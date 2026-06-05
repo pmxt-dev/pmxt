@@ -19,6 +19,14 @@ const MYRIAD_PROMOTED_EVENT_KEYS = [
     'id', 'title', 'markets',
 ] as const;
 
+const WEI_SCALE = BigInt('1000000000000000000');
+const PRECISION_SCALE = BigInt('1000000000000');
+
+function weiStringToNumber(value: string): number {
+    const scaled = (BigInt(value) * PRECISION_SCALE) / WEI_SCALE;
+    return Number(scaled) / Number(PRECISION_SCALE);
+}
+
 function selectTimeframe(interval: CandleInterval): string {
     switch (interval) {
         case '1m':
@@ -213,15 +221,14 @@ export class MyriadNormalizer implements IExchangeNormalizer<MyriadRawMarket, My
     }
 
     normalizeClobOrderBook(raw: { bids: [string, string][]; asks: [string, string][] }): OrderBook {
-        const WEI = 1e18;
         return {
             bids: raw.bids.map(([priceWei, sizeWei]) => ({
-                price: Number(priceWei) / WEI,
-                size: Number(sizeWei) / WEI,
+                price: weiStringToNumber(priceWei),
+                size: weiStringToNumber(sizeWei),
             })),
             asks: raw.asks.map(([priceWei, sizeWei]) => ({
-                price: Number(priceWei) / WEI,
-                size: Number(sizeWei) / WEI,
+                price: weiStringToNumber(priceWei),
+                size: weiStringToNumber(sizeWei),
             })),
             timestamp: Date.now(),
         };

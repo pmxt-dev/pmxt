@@ -565,6 +565,17 @@ describe('MyriadNormalizer', () => {
             const result = normalizer.normalizeMarket(noExpiry)!;
             expect(result.resolutionDate.getTime()).toBe(0);
         });
+
+        it('preserves sub-1 wei prices without rounding to 1', () => {
+            const result = normalizer.normalizeClobOrderBook({
+                bids: [['999999999999999999', '250000000000000000'], ['100000000000000000', '1']],
+                asks: [['500000000000000000', '1000000000000000000']],
+            });
+
+            expect(result.bids[0].price).toBeLessThan(1);
+            expect(result.bids[0].price).toBeCloseTo(0.999999999999);
+            expect(result.bids[0].size).toBeCloseTo(0.25);
+        });
     });
 
     // -----------------------------------------------------------------------

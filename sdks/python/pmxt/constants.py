@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 from typing import Mapping, NamedTuple, Optional
+from types import SimpleNamespace
 
 #: The hosted pmxt production endpoint.
 #:
@@ -28,8 +29,9 @@ LOCAL_URL: str = "http://localhost:3847"
 
 #: Environment variable names. Centralised so tests and docs can reference
 #: a single source of truth.
-ENV_BASE_URL = "PMXT_BASE_URL"
-ENV_API_KEY = "PMXT_API_KEY"
+ENV = SimpleNamespace(BASE_URL="PMXT_BASE_URL", API_KEY="PMXT_API_KEY")
+ENV_BASE_URL = ENV.BASE_URL
+ENV_API_KEY = ENV.API_KEY
 
 
 class ResolvedBaseUrl(NamedTuple):

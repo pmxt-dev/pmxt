@@ -480,13 +480,15 @@ export class KalshiWebSocket {
     // The resolver will be fulfilled once the connection is (re)established
     // and data arrives.
     if (!this.isConnected) {
-      this.connect().catch(() => {
-        // Connection failed — scheduleReconnect is already queued via the
-        // close handler, so we intentionally swallow here. The pending
-        // resolver will be resolved when data arrives on the next connection.
+      this.connect().catch((err) => {
+        logger.warn("Kalshi WebSocket connect failed during subscribeToOrderbook", {
+          error: String(err),
+        });
+        if (!this.isTerminated) {
+          this.scheduleReconnect();
+        }
       });
     } else {
-      // Already connected — ensure subscription message is sent
       this.subscribeToOrderbook([ticker]);
     }
 
@@ -519,8 +521,13 @@ export class KalshiWebSocket {
 
     // Attempt connection — if it fails, scheduleReconnect handles recovery.
     if (!this.isConnected) {
-      this.connect().catch(() => {
-        // Swallow — scheduleReconnect will retry. Resolvers stay pending.
+      this.connect().catch((err) => {
+        logger.warn("Kalshi WebSocket connect failed during subscribeToOrderbooks", {
+          error: String(err),
+        });
+        if (!this.isTerminated) {
+          this.scheduleReconnect();
+        }
       });
     } else if (newTickers.length > 0) {
       this.subscribeToOrderbook(newTickers);
@@ -565,8 +572,13 @@ export class KalshiWebSocket {
     }
 
     if (!this.isConnected) {
-      this.connect().catch(() => {
-        // Swallow — scheduleReconnect will retry. Resolvers stay pending.
+      this.connect().catch((err) => {
+        logger.warn("Kalshi WebSocket connect failed during subscribeToTrades", {
+          error: String(err),
+        });
+        if (!this.isTerminated) {
+          this.scheduleReconnect();
+        }
       });
     } else {
       this.subscribeToTrades([ticker]);

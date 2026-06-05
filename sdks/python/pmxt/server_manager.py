@@ -53,7 +53,7 @@ class ServerManager:
     # must share the same critical section.
     _ensure_lock = threading.Lock()
 
-    def __init__(self, base_url: str = "http://localhost:3847"):
+    def __init__(self, base_url: str = "http://localhost:3847") -> None:
         """
         Initialize the server manager.
         

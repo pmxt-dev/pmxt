@@ -50,7 +50,7 @@ class _WsSubscription:
 
     __slots__ = ("request_id", "method", "symbols", "event")
 
-    def __init__(self, request_id: str, method: str, symbols: List[str]):
+    def __init__(self, request_id: str, method: str, symbols: List[str]) -> None:
         self.request_id = request_id
         self.method = method
         self.symbols = symbols
@@ -66,7 +66,7 @@ class SidecarWsClient:
     may invoke subscribe/receive from any thread.
     """
 
-    def __init__(self, host: str, access_token: Optional[str] = None, api_key: Optional[str] = None):
+    def __init__(self, host: str, access_token: Optional[str] = None, api_key: Optional[str] = None) -> None:
         self._host = host
         self._access_token = access_token
         self._api_key = api_key

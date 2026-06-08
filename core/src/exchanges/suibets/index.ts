@@ -9,14 +9,13 @@ import { AuthenticationError } from '../../errors';
 import { getSuibetsConfig, SuibetsApiConfig, RATE_LIMIT_MS, validateBaseUrl } from './config';
 import { SuibetsFetcher, SuibetsRawOffer } from './fetcher';
 import { SuibetsNormalizer } from './normalizer';
-import { suibetsErrorMapper } from './errors';
 import { fromOutcomeId } from './utils';
 import { FetcherContext } from '../interfaces';
 
 export interface SuibetsCredentials extends ExchangeCredentials {
     /** Sui wallet address for fetching personal positions */
     walletAddress?: string;
-    /** Override API base URL (default: https://suibets.replit.app) */
+    /** Override API base URL (default: https://www.suibets.com) */
     baseUrl?: string;
 }
 
@@ -145,6 +144,6 @@ export class SuiBetsExchange extends PredictionMarketExchange {
             );
         }
         const raw = await this.fetcher.fetchRawPositions(wallet);
-        return raw.map(r => this.normalizer.normalizePosition(r as SuibetsRawOffer));
+        return raw.createdOffers.map(r => this.normalizer.normalizePosition(r));
     }
 }

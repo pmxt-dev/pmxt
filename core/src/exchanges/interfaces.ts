@@ -20,7 +20,7 @@ export interface FetcherContext {
 // happens in a separate layer.
 // ----------------------------------------------------------------------------
 
-export interface IExchangeFetcher<TRawMarket = unknown, TRawEvent = unknown> {
+export interface IExchangeFetcher<TRawMarket = unknown, TRawEvent = unknown, TRawPositions = unknown[]> {
     fetchRawMarkets(params?: MarketFilterParams): Promise<TRawMarket[]>;
     fetchRawEvents(params: EventFetchParams): Promise<TRawEvent[]>;
 
@@ -30,7 +30,7 @@ export interface IExchangeFetcher<TRawMarket = unknown, TRawEvent = unknown> {
     fetchRawOrderBook?(id: string): Promise<unknown>;
     fetchRawTrades?(id: string, params: TradesParams): Promise<unknown[]>;
     fetchRawMyTrades?(params: MyTradesParams, walletAddress: string): Promise<unknown[]>;
-    fetchRawPositions?(walletAddress: string): Promise<unknown[]>;
+    fetchRawPositions?(walletAddress: string): Promise<TRawPositions>;
     fetchRawBalance?(walletAddress: string): Promise<unknown>;
 }
 

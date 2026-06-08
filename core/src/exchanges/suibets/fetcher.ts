@@ -37,7 +37,35 @@ export interface SuibetsRawEvent {
     offers?: SuibetsRawOffer[];
 }
 
-export class SuibetsFetcher implements IExchangeFetcher<SuibetsRawOffer, SuibetsRawEvent> {
+
+/**
+ * Structured return type for fetchRawPositions.
+ * Keeps the three position-array types separate so each is normalised
+ * with the correct shape instead of being cast from unknown[].
+ */
+export interface SuibetsRawPositions {
+    createdOffers: SuibetsRawOffer[];
+    matchedBets: unknown[];
+    parlays: unknown[];
+}
+
+/**
+ * Type guard: true only when the value has the core fields that
+ * SuibetsNormalizer.normalizePosition() reads (id, creatorOdds, creatorStake).
+ * Guards against silent garbage output when matchedBets or parlays
+ * are accidentally passed in as SuibetsRawOffer.
+ */
+export function isSuibetsRawOffer(value: unknown): value is SuibetsRawOffer {
+    if (typeof value !== 'object' || value === null) return false;
+    const v = value as Record<string, unknown>;
+    return (
+        (typeof v['id'] === 'string' || typeof v['id'] === 'number') &&
+        typeof v['creatorOdds'] === 'number' &&
+        typeof v['creatorStake'] === 'number'
+    );
+}
+
+export class SuibetsFetcher implements IExchangeFetcher<SuibetsRawOffer, SuibetsRawEvent, SuibetsRawPositions> {
     private readonly ctx: FetcherContext;
     private readonly baseUrl: string;
 
@@ -179,18 +207,21 @@ export class SuibetsFetcher implements IExchangeFetcher<SuibetsRawOffer, Suibets
     /**
      * Fetches raw positions (created offers, matched bets, parlays) for a
      * given Sui wallet address.
+     *
+     * Returns each array separately and typed so that normalisation uses
+     * the correct shape per position type rather than casting from unknown[].
      */
-    async fetchRawPositions(walletAddress: string): Promise<unknown[]> {
+    async fetchRawPositions(walletAddress: string): Promise<SuibetsRawPositions> {
         const data = await this.get<{
             createdOffers?: unknown[];
             matchedBets?: unknown[];
             parlays?: unknown[];
         }>('/api/p2p/my', { wallet: walletAddress });
 
-        return [
-            ...(data.createdOffers ?? []),
-            ...(data.matchedBets ?? []),
-            ...(data.parlays ?? []),
-        ];
+        return {
+            createdOffers: (data.createdOffers ?? []).filter(isSuibetsRawOffer),
+            matchedBets: data.matchedBets ?? [],
+            parlays: data.parlays ?? [],
+        };
     }
 }

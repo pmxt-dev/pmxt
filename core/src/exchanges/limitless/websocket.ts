@@ -107,7 +107,7 @@ export class LimitlessWebSocket {
             await this.client.connect();
         }
 
-        // Subscribe to market
+        // Subscribe to market orderbook updates through the SDK market-price channel.
         await this.client.subscribe('subscribe_market_prices', { marketSlugs: [marketSlug] });
 
         if (callback) {
@@ -228,11 +228,7 @@ export class LimitlessWebSocket {
             await this.client.connect();
         }
 
-        await this.client.subscribe('subscribe_order_events' as any); // SDK uses 'orders' channel for user positional updates too?
-        // Actually, the channel type has 'subscribe_positions'. Let's check.
-        // Wait, I saw 'orders' in SubscriptionChannel.
-        // Let's use 'orders' as it's common for user data.
-        // Wait, I saw 'subscribe_positions' in the type.
+        await this.client.subscribe('subscribe_order_events' as any);
         await this.client.subscribe('subscribe_positions' as any);
         this.client.on('positions', callback);
     }
@@ -272,7 +268,8 @@ export class LimitlessWebSocket {
         this.orderbookCallbacks.delete(marketSlugOrAddress);
         this.priceCallbacks.delete(marketSlugOrAddress);
 
-        // Unsubscribe from SDK
+        // The current SDK only exposes explicit unsubscribe lifecycle channels;
+        // cast market-price unsubscribe channels until the SDK publishes them.
         await this.client.unsubscribe('subscribe_market_prices' as any, {
             marketSlugs: [marketSlugOrAddress],
         });

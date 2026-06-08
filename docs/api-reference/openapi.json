@@ -9773,6 +9773,19 @@
           "datetime": {
             "type": "string",
             "description": "ISO 8601 datetime string of the snapshot (CCXT-compatible)."
+          },
+          "isNegRisk": {
+            "type": "boolean",
+            "description": "Whether the venue marks this snapshot as a negative-risk market."
+          },
+          "lastTradePrice": {
+            "type": "number",
+            "description": "Last traded price from venues that include it with the book snapshot."
+          },
+          "sourceMetadata": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Venue-specific metadata preserved from the raw order book snapshot."
           }
         },
         "required": [

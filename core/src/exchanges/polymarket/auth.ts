@@ -7,10 +7,10 @@ import { polygon } from 'viem/chains';
 import axios from 'axios';
 import { ExchangeCredentials } from '../../BaseExchange';
 import { logger } from '../../utils/logger';
+import { POLYMARKET_CHAIN_ID } from './config';
 import { polymarketErrorMapper } from './errors';
 
 const DEFAULT_POLYMARKET_HOST = process.env.POLYMARKET_CLOB_URL || 'https://clob.polymarket.com';
-const POLYGON_CHAIN_ID = 137;
 
 // Polymarket CLOB signature types — determines how the CLOB API
 // resolves the on-chain address holding the user's funds.
@@ -93,7 +93,7 @@ export class PolymarketAuth {
         // Otherwise, derive/create them using L1 auth
         const l1Client = new ClobClient({
             host: this.host,
-            chain: POLYGON_CHAIN_ID,
+            chain: POLYMARKET_CHAIN_ID,
             signer: this.signer,
         });
 
@@ -278,7 +278,7 @@ export class PolymarketAuth {
 
         this.clobClient = new ClobClient({
             host: this.host,
-            chain: POLYGON_CHAIN_ID,
+            chain: POLYMARKET_CHAIN_ID,
             signer: this.signer,
             creds: apiCreds,
             signatureType: finalSignatureType,

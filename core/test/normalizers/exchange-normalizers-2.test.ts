@@ -1051,6 +1051,26 @@ describe('OpinionNormalizer', () => {
             const broken = { ...binaryMarket, noTokenId: '' };
             expect(() => normalizer.normalizeMarket(broken)).toThrow(/noTokenId/);
         });
+
+        it('yes outcome carries opinionMarketId in metadata', () => {
+            const result = normalizer.normalizeMarket(binaryMarket)!;
+            const yesOutcome = result.outcomes.find(o => o.outcomeId === 'yes-token-abc');
+            expect(yesOutcome?.metadata?.opinionMarketId).toBe(200);
+        });
+
+        it('no outcome carries opinionMarketId in metadata', () => {
+            const result = normalizer.normalizeMarket(binaryMarket)!;
+            const noOutcome = result.outcomes.find(o => o.outcomeId === 'no-token-def');
+            expect(noOutcome?.metadata?.opinionMarketId).toBe(200);
+        });
+
+        it('opinionMarketId is an integer, not a string', () => {
+            const result = normalizer.normalizeMarket(binaryMarket)!;
+            for (const outcome of result.outcomes) {
+                expect(typeof outcome.metadata?.opinionMarketId).toBe('number');
+                expect(Number.isInteger(outcome.metadata?.opinionMarketId)).toBe(true);
+            }
+        });
     });
 
     // -----------------------------------------------------------------------
@@ -1134,6 +1154,27 @@ describe('OpinionNormalizer', () => {
 
         it('returns empty array for falsy input', () => {
             expect(normalizer.normalizeMarketsFromEvent(null as any)).toHaveLength(0);
+        });
+
+        it('each child outcome carries opinionMarketId matching child.marketId', () => {
+            const results = normalizer.normalizeMarketsFromEvent(categoricalMarket);
+            const childAMarket = results.find(m => m.marketId === '301')!;
+            expect(childAMarket.outcomes[0].metadata?.opinionMarketId).toBe(301);
+            expect(childAMarket.outcomes[1].metadata?.opinionMarketId).toBe(301);
+
+            const childBMarket = results.find(m => m.marketId === '302')!;
+            expect(childBMarket.outcomes[0].metadata?.opinionMarketId).toBe(302);
+            expect(childBMarket.outcomes[1].metadata?.opinionMarketId).toBe(302);
+        });
+
+        it('child opinionMarketId values are integers', () => {
+            const results = normalizer.normalizeMarketsFromEvent(categoricalMarket);
+            for (const market of results) {
+                for (const outcome of market.outcomes) {
+                    expect(typeof outcome.metadata?.opinionMarketId).toBe('number');
+                    expect(Number.isInteger(outcome.metadata?.opinionMarketId)).toBe(true);
+                }
+            }
         });
     });
 

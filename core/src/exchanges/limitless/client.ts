@@ -1,6 +1,6 @@
 import { HttpClient, OrderClient, OrderBuilder, OrderSigner, MarketFetcher, Side, OrderType } from '@limitless-exchange/sdk';
 import { Wallet, providers, Contract } from 'ethers';
-import { LIMITLESS_RPC_URL } from './config';
+import { LIMITLESS_CHAIN_ID, LIMITLESS_RPC_URL } from './config';
 import { scaledIntegerToNumber } from './utils';
 
 const DEFAULT_LIMITLESS_API_URL = process.env.LIMITLESS_BASE_URL || 'https://api.limitless.exchange';
@@ -204,7 +204,7 @@ export class LimitlessClient {
         // Sign with the EOA private key.
         const orderSigner = new OrderSigner(wallet);
         const signature = await orderSigner.signOrder(unsignedOrder, {
-            chainId: 8453,
+            chainId: LIMITLESS_CHAIN_ID,
             contractAddress: market.venue.exchange,
         });
 
@@ -387,7 +387,7 @@ export class LimitlessClient {
         const ABI = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
         
         const provider = new providers.StaticJsonRpcProvider(LIMITLESS_RPC_URL, {
-            chainId: 8453,
+            chainId: LIMITLESS_CHAIN_ID,
             name: 'base',
         });
         const contract = new Contract(USDC_ADDRESS, ABI, provider);

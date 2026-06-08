@@ -2915,7 +2915,9 @@ components:
         resolutionDate:
           type: string
           format: date-time
-          description: When the market is scheduled to resolve.
+          description: >-
+            When the market is scheduled to resolve. Optional because some venues do not publish a cutoff for every
+            market (e.g. Opinion categorical children) — emit `undefined` rather than coercing to epoch.
         volume24h:
           type: number
           description: Trading volume over the past 24 hours (USD).
@@ -2988,7 +2990,6 @@ components:
         - title
         - description
         - outcomes
-        - resolutionDate
         - volume24h
         - liquidity
         - url

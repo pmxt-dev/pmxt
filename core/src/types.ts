@@ -67,8 +67,10 @@ export interface UnifiedMarket {
     /** The possible outcomes for this market. */
     outcomes: MarketOutcome[];
 
-    /** When the market is scheduled to resolve. */
-    resolutionDate: Date;
+    /** When the market is scheduled to resolve. Optional because some venues
+     * do not publish a cutoff for every market (e.g. Opinion categorical
+     * children) — emit `undefined` rather than coercing to epoch. */
+    resolutionDate?: Date;
     /** Trading volume over the past 24 hours (USD). */
     volume24h: number;
     volume?: number; // Total / Lifetime volume

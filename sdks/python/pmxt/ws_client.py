@@ -50,7 +50,7 @@ class _WsSubscription:
 
     __slots__ = ("request_id", "method", "symbols", "event")
 
-    def __init__(self, request_id: str, method: str, symbols: List[str]):
+    def __init__(self, request_id: str, method: str, symbols: List[str]) -> None:
         self.request_id = request_id
         self.method = method
         self.symbols = symbols
@@ -66,7 +66,7 @@ class SidecarWsClient:
     may invoke subscribe/receive from any thread.
     """
 
-    def __init__(self, host: str, access_token: Optional[str] = None, api_key: Optional[str] = None):
+    def __init__(self, host: str, access_token: Optional[str] = None, api_key: Optional[str] = None) -> None:
         self._host = host
         self._access_token = access_token
         self._api_key = api_key
@@ -260,7 +260,8 @@ class SidecarWsClient:
         method: str,
         args: List[Any],
         credentials: Optional[Dict[str, Any]] = None,
-        timeout: float = 30.0,
+        timeout_ms: float = 30000.0,
+        timeout: Optional[float] = None,
     ) -> Dict[str, Any]:
         """Send a subscribe message and block until the first data event.
 
@@ -302,7 +303,8 @@ class SidecarWsClient:
 
                 self._ws.send(json.dumps(message))
 
-        return self._wait_for_subscription_data(sub, timeout)
+        effective_timeout = timeout if timeout is not None else timeout_ms / 1000.0
+        return self._wait_for_subscription_data(sub, effective_timeout)
 
     def subscribe_batch(
         self,
@@ -310,7 +312,8 @@ class SidecarWsClient:
         method: str,
         args: List[Any],
         credentials: Optional[Dict[str, Any]] = None,
-        timeout: float = 30.0,
+        timeout_ms: float = 30000.0,
+        timeout: Optional[float] = None,
     ) -> Dict[str, Any]:
         """Subscribe to a batch method (e.g. watchOrderBooks) and collect
         data events for all symbols.
@@ -340,7 +343,8 @@ class SidecarWsClient:
 
         # Wait for data event (the server may push one consolidated event
         # or multiple per-symbol events)
-        first_data = self._wait_for_subscription_data(sub, timeout)
+        effective_timeout = timeout if timeout is not None else timeout_ms / 1000.0
+        first_data = self._wait_for_subscription_data(sub, effective_timeout)
 
         # Collect per-symbol data
         result: Dict[str, Any] = {}

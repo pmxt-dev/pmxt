@@ -102,6 +102,7 @@ export class LimitlessFetcher implements IExchangeFetcher<LimitlessRawMarket, Li
             const httpClient = new HttpClient({
                 baseURL: this.apiUrl,
                 apiKey: this.apiKey,
+                timeout: 30000,
             });
             const marketFetcher = new MarketFetcher(httpClient);
 
@@ -259,7 +260,7 @@ export class LimitlessFetcher implements IExchangeFetcher<LimitlessRawMarket, Li
 
     private async fetchRawEventBySlug(slug: string): Promise<LimitlessRawEvent[]> {
         const { HttpClient, MarketFetcher } = await import('@limitless-exchange/sdk');
-        const httpClient = new HttpClient({ baseURL: this.apiUrl });
+        const httpClient = new HttpClient({ baseURL: this.apiUrl, timeout: 30000 });
         const marketFetcher = new MarketFetcher(httpClient);
 
         const market = await marketFetcher.getMarket(slug);

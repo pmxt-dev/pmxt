@@ -1272,6 +1272,7 @@ export abstract class PredictionMarketExchange {
             // ResolutionDate filter
             if (criteria.resolutionDate) {
                 const resDate = market.resolutionDate;
+                if (!resDate) return false;
                 if (criteria.resolutionDate.before && resDate >= criteria.resolutionDate.before) {
                     return false;
                 }

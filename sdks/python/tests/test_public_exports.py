@@ -25,7 +25,7 @@ def test_websocket_return_types_are_public_exports():
                 if isinstance(item, ast.Constant) and isinstance(item.value, str)
             )
 
-    expected = {"FirehoseEvent", "SubscribedAddressSnapshot"}
+    expected = {"FirehoseEvent", "SubscribedAddressSnapshot", "ExchangeOptions", "PolymarketOptions", "RouterOptions", "FeedClientOptions", "SeriesFetchParams", "TradesParams", "FetchOrderBookParams", "MatchedClusterSort", "FetchMatchedMarketClustersParams", "FetchMatchedEventClustersParams"}
     assert expected <= imported_models
     assert expected <= public_exports
 
@@ -97,6 +97,38 @@ def test_feed_client_is_top_level_public_export():
 
     assert imported_modules["FeedClient"] == "feed_client"
     assert "FeedClient" in public_exports
+
+
+def test_environment_constants_are_top_level_public_exports():
+    init_path = Path(__file__).resolve().parents[1] / "pmxt" / "__init__.py"
+    tree = ast.parse(init_path.read_text(encoding="utf-8"))
+
+    imported_modules = {
+        alias.name: node.module
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+    }
+    public_exports = set()
+
+    for node in tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == "__all__"
+            and isinstance(node.value, ast.List)
+        ):
+            public_exports.update(
+                item.value
+                for item in node.value.elts
+                if isinstance(item, ast.Constant) and isinstance(item.value, str)
+            )
+
+    assert imported_modules["ENV"] == "constants"
+    assert imported_modules["ENV_BASE_URL"] == "constants"
+    assert imported_modules["ENV_API_KEY"] == "constants"
+    assert {"ENV", "ENV_BASE_URL", "ENV_API_KEY"} <= public_exports
 
 
 def test_polymarket_init_auth_is_generated():

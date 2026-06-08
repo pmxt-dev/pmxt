@@ -1,6 +1,6 @@
 /**
- * Auto-generated from /Users/ndmeiri/Developer/pmxt/core/specs/opinion/opinion-openapi.yaml
- * Generated at: 2026-04-21T22:01:26.567Z
+ * Auto-generated from /opt/data/repos/pmxt/.worktrees/hermes-42dac47d/core/specs/opinion/opinion-openapi.yaml
+ * Generated at: 2026-06-05T12:40:10.198Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const opinionApiSpec = {
@@ -142,6 +142,25 @@ export const opinionApiSpec = {
                         "schema": {
                             "type": "integer",
                             "format": "int64"
+                        }
+                    }
+                ]
+            }
+        },
+        "/market/slug/{slug}": {
+            "get": {
+                "tags": [
+                    "Market"
+                ],
+                "summary": "Get market detail by slug",
+                "operationId": "getMarketDetailBySlug",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ]

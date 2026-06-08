@@ -822,6 +822,34 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequestError"
 
+  /market/slug/{slug}:
+    get:
+      tags: [Market]
+      summary: Get market detail by slug
+      description: Get detailed information about a specific market using its slug
+      operationId: getMarketDetailBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Market slug
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/APIBaseResponse"
+                  - type: object
+                    properties:
+                      result:
+                        $ref: "#/components/schemas/MarketDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+
   /market/categorical/{marketId}:
     get:
       tags: [Market]

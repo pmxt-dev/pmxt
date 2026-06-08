@@ -341,7 +341,9 @@ function buildPyArgsLines(params, sf) {
             ? `_resolve_outcome_id(${snakeName})`
             : isOutcomeIds
                 ? `[_resolve_outcome_id(x) for x in ${snakeName}]`
-                : snakeName;
+                : tsName === 'params'
+                    ? `_convert_params_to_camel(${snakeName})`
+                    : snakeName;
         if (p.questionToken) {
             lines.push(`            if ${snakeName} is not None:`);
             lines.push(`                args.append(${value})`);
@@ -376,7 +378,7 @@ function buildPyReturnLines(config) {
                 `${i}data = self._handle_response(json.loads(response.data))`,
                 `${i}return PaginatedMarketsResult(`,
                 `${i}    data=[_convert_market(m) for m in data.get("data", [])],`,
-                `${i}    total=data.get("total", 0),`,
+                `${i}    total=data.get("total"),`,
                 `${i}    next_cursor=data.get("nextCursor"),`,
                 `${i})`,
             ].join('\n');
@@ -402,7 +404,7 @@ function generatePyMethod(name, params, config, sf) {
             `            if params is not None:`,
             `                if limit is None:`,
             `                    args.append(None)`,
-            `                args.append(params)`,
+            `                args.append(_convert_params_to_camel(params))`,
             `            body: dict = {"args": args}`,
             `            creds = self._get_credentials_dict()`,
             `            if creds:`,

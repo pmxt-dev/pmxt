@@ -131,7 +131,7 @@ export class BinanceFeed extends BaseDataFeed {
 
     protected watchTickerImpl(symbol: string, callback: (ticker: Ticker) => void): () => void {
         const sub: Subscription = { symbol, callback };
-        this.subscriptions = [...this.subscriptions, sub];
+        this.subscriptions.push(sub);
         this.ensureConnected().catch((err: unknown) => {
             logger.error('[BinanceFeed] initial connect failed in watchTickerImpl', {
                 error: err instanceof Error ? err.message : String(err),
@@ -213,7 +213,10 @@ export class BinanceFeed extends BaseDataFeed {
         let msg: BinanceRelayMessage;
         try {
             msg = JSON.parse(text) as BinanceRelayMessage;
-        } catch {
+        } catch (error) {
+            logger.debug('[BinanceFeed] failed to parse relay message', {
+                error: error instanceof Error ? error.message : String(error),
+            });
             return;
         }
 
@@ -222,7 +225,7 @@ export class BinanceFeed extends BaseDataFeed {
         const event = msg as BinanceRelayTradeEvent;
         const ticker = normalizeTradeToTicker(event);
 
-        this.latestTickers = new Map(this.latestTickers).set(ticker.symbol, ticker);
+        this.latestTickers.set(ticker.symbol, ticker);
 
         for (const sub of this.subscriptions) {
             if (sub.symbol === ticker.symbol) {

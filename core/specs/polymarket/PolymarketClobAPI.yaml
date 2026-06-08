@@ -133,6 +133,8 @@ components:
           type: string
         tick_size:
           type: string
+        last_trade_price:
+          type: string
         neg_risk:
           type: boolean
 
@@ -331,14 +333,24 @@ components:
       properties:
         success:
           type: boolean
-        errorMsg:
+        orderID:
           type: string
-        orderId:
+        status:
           type: string
-        orderHashes:
+        makingAmount:
+          type: string
+        takingAmount:
+          type: string
+        transactionsHashes:
           type: array
           items:
             type: string
+        tradeIDs:
+          type: array
+          items:
+            type: string
+        errorMsg:
+          type: string
 
     CancelResponse:
       type: object
@@ -838,6 +850,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/CancelResponse'
 
+  /v1/heartbeats:
+    post:
+      summary: Refresh authenticated session heartbeat
+      tags: [Orders]
+      description: Keep an authenticated Polymarket session or websocket subscription alive.
+      security:
+        - L2Auth: []
+      parameters:
+        - $ref: '#/components/parameters/L2Headers'
+      responses:
+        '200':
+          description: Heartbeat acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+
   /data/order/{id}:
     get:
       summary: Get Order
@@ -881,15 +910,29 @@ paths:
           in: query
           schema:
             type: string
+        - name: next_cursor
+          in: query
+          description: Cursor for keyset pagination
+          schema:
+            type: string
       responses:
         '200':
           description: List of active orders
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OpenOrder'
+                type: object
+                properties:
+                  limit:
+                    type: integer
+                  next_cursor:
+                    type: string
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OpenOrder'
 
   /data/trades:
     get:

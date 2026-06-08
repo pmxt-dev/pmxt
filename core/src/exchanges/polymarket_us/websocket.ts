@@ -22,6 +22,7 @@ import type {
     MarketBook,
 } from 'polymarket-us';
 import { OrderBook, QueuedPromise, Trade } from '../../types';
+import { logger } from '../../utils/logger';
 import { DEFAULT_WATCH_TIMEOUT_MS, withWatchTimeout } from '../../utils/watch-timeout';
 import { fromAmount } from './price';
 import { PolymarketUSNormalizer } from './normalizer';
@@ -124,8 +125,8 @@ export class PolymarketUSWebSocket {
         if (this.socket) {
             try {
                 this.socket.close();
-            } catch {
-                // Ignore close errors.
+            } catch (error) {
+                logger.debug('[polymarket_us] error during socket close', { error: String(error) });
             }
             this.socket = null;
         }

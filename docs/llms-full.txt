@@ -3274,7 +3274,12 @@ Source: https://pmxt.dev/docs/api-reference/fetch-order-book
 
 ##### Live order book
 
-Fetch the current L2 order book for an outcome. If you already have an outcome token ID, pass it directly:
+Fetch the current L2 order book for an outcome from the exchange's live order book endpoint. For Polymarket this is a live CLOB call: pass the outcome token ID directly and omit historical params.
+
+
+> **Warning:**
+`poly.fetch_order_book(token_id)` without `params.since` or `params.until` is live-only. It does not read PMXT Archive data and may fail for closed, resolved, or otherwise inactive Polymarket markets with an error such as `No orderbook exists`.
+
 
 <CodeGroup>
 ```python Python
@@ -3295,15 +3300,15 @@ console.log(`${book.bids.length} bids, ${book.asks.length} asks`);
 
 ```bash curl
 curl "https://api.pmxt.dev/api/polymarket/fetchOrderBook?outcomeId=104932610032177696635191871147557737718087870958469629338467406422339967452218" \
-  -H "Authorization: Bearer $PMXT_API_KEY"
+  -H "Authorization: Bearer ***"
 ```
 </CodeGroup>
 
 ##### Historical snapshot
 
-Get the order book at a specific point in time. Pass `since` as a Unix timestamp in milliseconds — returns the nearest snapshot at or before that time.
+Get the order book at a specific point in time by passing `since` as a Unix timestamp in milliseconds. Historical Polymarket queries are served from the PMXT Archive and return the nearest reconstructed snapshot at or before that time.
 
-For binary markets, you can pass the market ID and choose the side with `params.outcome`. Use `"yes"` or `"no"` instead of copying the long outcome token ID:
+For binary markets, you can pass the Polymarket condition ID as the first argument and choose the side with `params.outcome`. Use `"yes"` or `"no"` instead of copying the long outcome token ID.
 
 <CodeGroup>
 ```python Python
@@ -3311,12 +3316,9 @@ import pmxt
 
 poly = pmxt.Polymarket(pmxt_api_key="pmxt_...")
 
-market = poly.fetch_market(
-slug="will-spacex-starship-flight-test-12-launch-by-may-22-354-721"
-)
-
+# Historical lookup against PMXT Archive, not the live CLOB.
 book = poly.fetch_order_book(
-market.market_id,
+"0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5",
 params={"since": 1779487200000, "outcome": "yes"},
 )
 
@@ -3330,12 +3332,9 @@ import { Polymarket } from "pmxtjs";
 
 const poly = new Polymarket({ pmxtApiKey: "pmxt_..." });
 
-const market = await poly.fetchMarket({
-  slug: "will-spacex-starship-flight-test-12-launch-by-may-22-354-721",
-});
-
+// Historical lookup against PMXT Archive, not the live CLOB.
 const book = await poly.fetchOrderBook(
-  market.marketId,
+  "0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5",
   undefined,
   { since: 1779487200000, outcome: "yes" }
 );
@@ -3346,9 +3345,51 @@ console.log(`  best ask: ${Math.min(...book.asks.map((a) => a.price)).toFixed(3)
 
 ```bash curl
 curl -X POST "https://api.pmxt.dev/api/polymarket/fetchOrderBook" \
-  -H "Authorization: Bearer $PMXT_API_KEY" \
+  -H "Authorization: Bearer ***" \
   -H "Content-Type: application/json" \
-  -d '{"args":["61b0ed20-7f42-41fd-af15-7b86153f6bb7", null, {"since": 1779487200000, "outcome": "yes"}]}'
+  -d '{"args":["0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5", null, {"since": 1779487200000, "outcome": "yes"}]}'
+```
+</CodeGroup>
+
+##### Historical crypto 5m events
+
+Polymarket crypto 5-minute slugs such as `btc-updown-5m-1779481500` are event slugs. Use `fetch_event(slug=...)`, then select the nested market you want. Do not use `fetch_market(slug=...)` for these event-level slugs.
+
+<CodeGroup>
+```python Python
+import pmxt
+
+poly = pmxt.Polymarket(pmxt_api_key="pmxt_...")
+event = poly.fetch_event(slug="btc-updown-5m-1779481500")
+market = event.markets[0]
+
+book = poly.fetch_order_book(
+market.market_id,
+params={"since": 1779487200000, "outcome": "yes"},
+)
+print(f"{market.title}: {book.dt}")
+```
+
+```javascript JavaScript
+import { Polymarket } from "pmxtjs";
+
+const poly = new Polymarket({ pmxtApiKey: "pmxt_..." });
+const event = await poly.fetchEvent({ slug: "btc-updown-5m-1779481500" });
+const market = event.markets[0];
+
+const book = await poly.fetchOrderBook(
+  market.marketId,
+  undefined,
+  { since: 1779487200000, outcome: "yes" }
+);
+console.log(`${market.title}: ${book.datetime}`);
+```
+
+```bash curl
+curl -X POST "https://api.pmxt.dev/api/polymarket/fetchEvent" \
+  -H "Authorization: Bearer ***" \
+  -H "Content-Type: application/json" \
+  -d '{"kwargs":{"slug":"btc-updown-5m-1779481500"}}'
 ```
 </CodeGroup>
 
@@ -3356,17 +3397,15 @@ curl -X POST "https://api.pmxt.dev/api/polymarket/fetchOrderBook" \
 
 Pass both `since` and `until` to get an array of fully reconstructed L2 order book snapshots. Each snapshot is a complete book at that moment in time — not deltas.
 
-Default 100 snapshots per request, max 1000.
+The API returns up to `limit` snapshots from the PMXT Archive. Defaults to 100 snapshots per request, max 1000. For raw bulk downloads, use the Parquet files in the [PMXT Archive](https://archive.pmxt.dev) instead of trying to stream bulk data through the live order book endpoint.
 
 <CodeGroup>
 ```python Python
 import pmxt
 
 poly = pmxt.Polymarket(pmxt_api_key="pmxt_...")
-
-market = poly.fetch_market(
-slug="will-spacex-starship-flight-test-12-launch-by-may-22-354-721"
-)
+event = poly.fetch_event(slug="btc-updown-5m-1779481500")
+market = event.markets[0]
 
 books = poly.fetch_order_book(
 market.market_id,
@@ -3374,6 +3413,7 @@ params={
     "since": 1779480000000,
     "until": 1779487200000,
     "outcome": "yes",
+    "limit": 100,
 }
 )
 print(f"{len(books)} snapshots")
@@ -3385,15 +3425,13 @@ print(f"  {ob.dt}  bid={ob.bids[0].price}  ask={ob.asks[0].price}")
 import { Polymarket } from "pmxtjs";
 
 const poly = new Polymarket({ pmxtApiKey: "pmxt_..." });
-
-const market = await poly.fetchMarket({
-  slug: "will-spacex-starship-flight-test-12-launch-by-may-22-354-721",
-});
+const event = await poly.fetchEvent({ slug: "btc-updown-5m-1779481500" });
+const market = event.markets[0];
 
 const books = await poly.fetchOrderBook(
   market.marketId,
   undefined,
-  { since: 1779480000000, until: 1779487200000, outcome: "yes" }
+  { since: 1779480000000, until: 1779487200000, outcome: "yes", limit: 100 }
 );
 console.log(`${books.length} snapshots`);
 books.slice(0, 3).forEach((ob) =>
@@ -3403,15 +3441,15 @@ books.slice(0, 3).forEach((ob) =>
 
 ```bash curl
 curl -X POST "https://api.pmxt.dev/api/polymarket/fetchOrderBook" \
-  -H "Authorization: Bearer $PMXT_API_KEY" \
+  -H "Authorization: Bearer ***" \
   -H "Content-Type: application/json" \
-  -d '{"args":["61b0ed20-7f42-41fd-af15-7b86153f6bb7", null, {"since": 1779480000000, "until": 1779487200000, "outcome": "yes"}]}'
+  -d '{"args":["0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5", null, {"since": 1779480000000, "until": 1779487200000, "outcome": "yes", "limit": 100}]}'
 ```
 </CodeGroup>
 
 
 > **Note:**
-Historical order book data is backed by the [PMXT Archive](https://archive.pmxt.dev) — the same tick-level data available as Parquet files, but queryable directly from the API without downloading or parsing files. Supports Polymarket, Kalshi, Limitless, and Opinion.
+Historical order book data is backed by the [PMXT Archive](https://archive.pmxt.dev) — the same tick-level data available as Parquet files, but queryable directly from the API without downloading or parsing files. Historical `fetchOrderBook` supports Polymarket, Kalshi, Limitless, and Opinion.
 
 ### Fetch Order Books
 
@@ -3426,7 +3464,7 @@ Batch variant of {@link fetchOrderBook}. Fetches order books for multiple outcom
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_order_books()
@@ -3434,10 +3472,10 @@ result = exchange.fetch_order_books()
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchOrderBooks();
@@ -3464,7 +3502,7 @@ Fetch raw trade history for a specific outcome.
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_trades(
@@ -3477,10 +3515,10 @@ result = exchange.fetch_trades(
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchTrades({
@@ -3601,7 +3639,10 @@ Place a new order on the exchange.
 import pmxt
 
 # Runs locally — never proxied through PMXT servers
-exchange = pmxt.Router()
+exchange = pmxt.Kalshi(
+    api_key="YOUR_API_KEY",
+    private_key="YOUR_PRIVATE_KEY",
+)
 result = exchange.create_order(
     market_id="12345",
     outcome_id="67890",
@@ -3618,10 +3659,13 @@ result = exchange.create_order(
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // Runs locally — never proxied through PMXT servers
-const exchange = new Router();
+const exchange = new Kalshi({
+  apiKey: "YOUR_API_KEY",
+  privateKey: "YOUR_PRIVATE_KEY",
+});
 const result = await exchange.createOrder({
   marketId: "12345",
   outcomeId: "67890",
@@ -3665,7 +3709,10 @@ Build an order payload without submitting it to the exchange. Returns the exchan
 import pmxt
 
 # Runs locally — never proxied through PMXT servers
-exchange = pmxt.Router()
+exchange = pmxt.Kalshi(
+    api_key="YOUR_API_KEY",
+    private_key="YOUR_PRIVATE_KEY",
+)
 result = exchange.build_order(
     market_id="12345",
     outcome_id="67890",
@@ -3682,10 +3729,13 @@ result = exchange.build_order(
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // Runs locally — never proxied through PMXT servers
-const exchange = new Router();
+const exchange = new Kalshi({
+  apiKey: "YOUR_API_KEY",
+  privateKey: "YOUR_PRIVATE_KEY",
+});
 const result = await exchange.buildOrder({
   marketId: "12345",
   outcomeId: "67890",
@@ -3724,17 +3774,23 @@ Submit a pre-built order returned by buildOrder().
 import pmxt
 
 # Runs locally — never proxied through PMXT servers
-exchange = pmxt.Router()
+exchange = pmxt.Kalshi(
+    api_key="YOUR_API_KEY",
+    private_key="YOUR_PRIVATE_KEY",
+)
 built = exchange.build_order(market_id="12345", side="buy", type="limit", amount=10, price=0.55)
 result = exchange.submit_order(built)
 ```
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // Runs locally — never proxied through PMXT servers
-const exchange = new Router();
+const exchange = new Kalshi({
+  apiKey: "YOUR_API_KEY",
+  privateKey: "YOUR_PRIVATE_KEY",
+});
 const built = await exchange.buildOrder({ marketId: "12345", side: "buy", type: "limit", amount: 10, price: 0.55 });
 const result = await exchange.submitOrder(built);
 ```
@@ -3753,16 +3809,22 @@ Cancel an existing open order.
 import pmxt
 
 # Runs locally — never proxied through PMXT servers
-exchange = pmxt.Router()
+exchange = pmxt.Kalshi(
+    api_key="YOUR_API_KEY",
+    private_key="YOUR_PRIVATE_KEY",
+)
 result = exchange.cancel_order(order_id="ord-001")
 ```
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // Runs locally — never proxied through PMXT servers
-const exchange = new Router();
+const exchange = new Kalshi({
+  apiKey: "YOUR_API_KEY",
+  privateKey: "YOUR_PRIVATE_KEY",
+});
 const result = await exchange.cancelOrder({ orderId: "ord-001" });
 ```
 
@@ -3787,7 +3849,7 @@ Fetch a specific order by ID.
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_order(order_id="ord-001")
@@ -3795,10 +3857,10 @@ result = exchange.fetch_order(order_id="ord-001")
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchOrder({ orderId: "ord-001" });
@@ -3822,7 +3884,7 @@ Fetch all open orders, optionally filtered by market.
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_open_orders(market_id="12345")
@@ -3830,10 +3892,10 @@ result = exchange.fetch_open_orders(market_id="12345")
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchOpenOrders({ marketId: "12345" });
@@ -3860,7 +3922,7 @@ const result = await exchange.fetchOpenOrders({ marketId: "12345" });
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_my_trades(
@@ -3875,10 +3937,10 @@ result = exchange.fetch_my_trades(
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchMyTrades({
@@ -3911,7 +3973,7 @@ const result = await exchange.fetchMyTrades({
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_closed_orders(
@@ -3925,10 +3987,10 @@ result = exchange.fetch_closed_orders(
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchClosedOrders({
@@ -3960,7 +4022,7 @@ const result = await exchange.fetchClosedOrders({
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_all_orders(
@@ -3974,10 +4036,10 @@ result = exchange.fetch_all_orders(
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchAllOrders({
@@ -4007,7 +4069,7 @@ Fetch current user positions across all markets.
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_positions(address="0xabc...")
@@ -4015,10 +4077,10 @@ result = exchange.fetch_positions(address="0xabc...")
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchPositions({ address: "0xabc..." });
@@ -4042,7 +4104,7 @@ Fetch account balances.
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_balance(address="0xabc...")
@@ -4050,10 +4112,10 @@ result = exchange.fetch_balance(address="0xabc...")
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchBalance({ address: "0xabc..." });

@@ -1576,6 +1576,7 @@ datetime: str # ISO 8601 datetime string of the snapshot (CCXT-compatible).
 class OrderLevel:
 price: float # 0.0 to 1.0 (probability)
 size: float # contracts/shares
+order_count: float # 
 ```
 
 ---

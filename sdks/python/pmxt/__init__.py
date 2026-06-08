@@ -111,7 +111,7 @@ class _ServerNamespace:
 
     __slots__ = ("_manager",)
 
-    def __init__(self, manager: ServerManager):
+    def __init__(self, manager: ServerManager) -> None:
         self._manager = manager
 
     def status(self) -> Dict[str, Any]:

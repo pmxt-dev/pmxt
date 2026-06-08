@@ -17,11 +17,11 @@ class Polymarket(Exchange):
         passphrase: Optional[str] = None,
         private_key: Optional[str] = None,
         proxy_address: Optional[str] = None,
-        signature_type: Optional[Any] = "gnosis-safe",
+        signature_type: Optional[str] = "gnosis-safe",
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Polymarket client.
 
@@ -76,7 +76,7 @@ class Limitless(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Limitless client.
 
@@ -120,7 +120,7 @@ class Kalshi(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Kalshi client.
 
@@ -151,7 +151,7 @@ class KalshiDemo(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize KalshiDemo client.
 
@@ -184,7 +184,7 @@ class Probable(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Probable client.
 
@@ -227,7 +227,7 @@ class Baozi(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Baozi client.
 
@@ -256,7 +256,7 @@ class Myriad(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Myriad client.
 
@@ -288,7 +288,7 @@ class Opinion(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Opinion client.
 
@@ -320,7 +320,7 @@ class Metaculus(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Metaculus client.
 
@@ -349,7 +349,7 @@ class Smarkets(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Smarkets client.
 
@@ -380,7 +380,7 @@ class PolymarketUS(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize PolymarketUS client.
 
@@ -411,7 +411,7 @@ class Hyperliquid(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Hyperliquid client.
 
@@ -442,7 +442,7 @@ class GeminiTitan(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize GeminiTitan client.
 
@@ -478,7 +478,7 @@ class SuiBets(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize SuiBets client.
 
@@ -503,7 +503,7 @@ class Mock(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Mock client.
 
@@ -528,7 +528,7 @@ class Router(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Initialize Router client.
 
@@ -547,5 +547,3 @@ class Router(Exchange):
 # Backwards-compatible aliases for exchange classes generated before underscore handling.
 Polymarket_us = PolymarketUS
 Suibets = SuiBets
-
-from .router import Router as Router

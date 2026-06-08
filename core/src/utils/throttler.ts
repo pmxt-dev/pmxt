@@ -22,12 +22,10 @@ export class Throttler {
     }
 
     async throttle(cost: number = 1): Promise<void> {
-        return new Promise<void>((resolve) => {
+        return new Promise<void>((resolve, reject) => {
             if (this.queue.length >= this.maxQueueDepth) {
-                const dropped = this.queue.shift();
-                if (dropped) {
-                    dropped.resolve();
-                }
+                reject(new Error(`Throttler queue full (max depth ${this.maxQueueDepth})`));
+                return;
             }
             this.queue.push({ resolve, cost });
             if (!this.running) {

@@ -185,7 +185,7 @@ class FeedClient:
 
         req = urllib.request.Request(request_url, headers=self._headers)
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:
                 body = json.loads(resp.read())
         except urllib.error.HTTPError as e:
             body = json.loads(e.read()) if e.fp else {}

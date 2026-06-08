@@ -11,19 +11,19 @@
  * Do NOT put runtime config into api.ts — it will be overwritten.
  *
  * Environment mapping (aligns with the `{env}` server variable in Kalshi.yaml):
- *   env = "api"      → production:  https://api.elections.kalshi.com
- *   env = "demo-api" → demo/paper:  https://demo-api.elections.kalshi.com
+ *   env = "api"      → production:  https://api.external-api.kalshi.com
+ *   env = "demo-api" → demo/paper:  https://demo-api.external-api.kalshi.com
  */
 
 // ── Base URL constants ────────────────────────────────────────────────────────
 
-export const KALSHI_PROD_API_URL = process.env.KALSHI_BASE_URL || "https://api.elections.kalshi.com";
-export const KALSHI_DEMO_API_URL = process.env.KALSHI_DEMO_BASE_URL || "https://demo-api.kalshi.co";
+export const KALSHI_PROD_API_URL = process.env.KALSHI_BASE_URL || "https://api.external-api.kalshi.com";
+export const KALSHI_DEMO_API_URL = process.env.KALSHI_DEMO_BASE_URL || "https://demo-api.external-api.kalshi.com";
 
 export const KALSHI_PROD_WS_URL =
-  "wss://api.elections.kalshi.com/trade-api/ws/v2";
+  "wss://api.external-api.kalshi.com/trade-api/ws/v2";
 export const KALSHI_DEMO_WS_URL =
-  "wss://demo-api.kalshi.co/trade-api/ws/v2";
+  "wss://demo-api.external-api.kalshi.com/trade-api/ws/v2";
 
 // ── Path constants ────────────────────────────────────────────────────────────
 
@@ -52,12 +52,12 @@ export interface KalshiApiConfig {
 /**
  * Return a typed config object for the requested environment.
  *
- * @param demoMode - Pass `true` to target demo-api.elections.kalshi.com.
+ * @param demoMode - Pass `true` to target demo-api.external-api.kalshi.com.
  *
  * @example
  * ```typescript
  * const config = getKalshiConfig(true);
- * // config.apiUrl === "https://demo-api.elections.kalshi.com"
+ * // config.apiUrl === "https://demo-api.external-api.kalshi.com"
  * ```
  */
 export function getKalshiConfig(demoMode = false, baseUrlOverride?: string): KalshiApiConfig {

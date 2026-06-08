@@ -1,6 +1,7 @@
 import type { createClobClient } from '@prob/clob';
 import { OrderBook, OrderLevel } from '../../types';
 import { DEFAULT_WATCH_TIMEOUT_MS, withWatchTimeout } from '../../utils/watch-timeout';
+import { PROBABLE_CHAIN_ID } from './config';
 
 interface QueuedPromise<T> {
     resolve: (value: T | PromiseLike<T>) => void;
@@ -37,7 +38,7 @@ export class ProbableWebSocket {
     private async ensureClient(): Promise<ReturnType<typeof createClobClient>> {
         if (this.client) return this.client;
 
-        const chainId = this.config.chainId || parseInt(process.env.PROBABLE_CHAIN_ID || '56', 10);
+        const chainId = this.config.chainId || parseInt(process.env.PROBABLE_CHAIN_ID || String(PROBABLE_CHAIN_ID), 10);
         const wsUrl = this.config.wsUrl || process.env.PROBABLE_WS_URL || 'wss://ws.probable.markets/public/api/v1';
         const baseUrl = this.config.baseUrl || process.env.PROBABLE_BASE_URL || 'https://api.probable.markets/public/api/v1';
 

@@ -2315,6 +2315,12 @@ class Exchange(ABC):
             params = {"marketId": kwargs.get("market_id"), "side": kwargs.get("side", "buy"), "outcome": kwargs.get("outcome"), "shares": kwargs.get("amount", 0)}
         if kwargs.get("price") is not None:
             params["price"] = kwargs["price"]
+        if kwargs.get("tick_size") is not None:
+            params["tickSize"] = kwargs["tick_size"]
+        if kwargs.get("neg_risk") is not None:
+            params["negRisk"] = kwargs["neg_risk"]
+        if kwargs.get("on_behalf_of") is not None:
+            params["onBehalfOf"] = kwargs["on_behalf_of"]
         params = {k: v for k, v in params.items() if v is not None}
 
         build_resp = _req.post(f"{host}/api/sor/buildOrder", headers={"Content-Type": "application/json", **self._get_auth_headers()}, json={"args": [params]}, timeout=30)
@@ -2353,8 +2359,10 @@ class Exchange(ABC):
             id=data.get("id", order_id), market_id=params.get("marketId", ""),
             outcome_id="", side=params.get("side", "buy"), type="market",
             amount=float(data.get("filled_shares", 0)), price=float(data.get("average_price") or 0),
-            filled=float(data.get("filled_shares", 0)), remaining=0,
+            filled=float(data.get("filled_shares", 0)), filled_shares=float(data.get("filled_shares", 0)) if data.get("filled_shares") is not None else None,
+            remaining=0,
             status=data.get("status", "unknown"), fee=float(data.get("fee_amount", 0)),
+            fee_rate_bps=float(data.get("fee_rate_bps")) if data.get("fee_rate_bps") is not None else None,
             timestamp=int(time.time() * 1000),
         )
 
@@ -2368,6 +2376,9 @@ class Exchange(ABC):
         amount: float,
         price: Optional[float] = None,
         fee: Optional[int] = None,
+        tick_size: Optional[float] = None,
+        neg_risk: Optional[bool] = None,
+        on_behalf_of: Optional[int] = None,
         outcome: Optional[MarketOutcome] = None,
     ) -> Order:
         """
@@ -2415,6 +2426,7 @@ class Exchange(ABC):
                 return self._execute_sor_order(
                     market_id=market_id, outcome_id=outcome_id, side=side,
                     type=order_type, amount=amount, price=price, outcome=outcome,
+                    tick_size=tick_size, neg_risk=neg_risk, on_behalf_of=on_behalf_of,
                 )
             raise PmxtError(
                 "Trade execution is not available through the hosted API. "
@@ -2450,6 +2462,12 @@ class Exchange(ABC):
                 params_dict["price"] = price
             if fee is not None:
                 params_dict["fee"] = fee
+            if tick_size is not None:
+                params_dict["tickSize"] = tick_size
+            if neg_risk is not None:
+                params_dict["negRisk"] = neg_risk
+            if on_behalf_of is not None:
+                params_dict["onBehalfOf"] = on_behalf_of
 
             body: Dict[str, Any] = {"args": [params_dict]}
 
@@ -2486,6 +2504,9 @@ class Exchange(ABC):
         amount: float,
         price: Optional[float] = None,
         fee: Optional[int] = None,
+        tick_size: Optional[float] = None,
+        neg_risk: Optional[bool] = None,
+        on_behalf_of: Optional[int] = None,
         outcome: Optional[MarketOutcome] = None,
     ) -> BuiltOrder:
         """
@@ -2567,6 +2588,12 @@ class Exchange(ABC):
                 params_dict["price"] = price
             if fee is not None:
                 params_dict["fee"] = fee
+            if tick_size is not None:
+                params_dict["tickSize"] = tick_size
+            if neg_risk is not None:
+                params_dict["negRisk"] = neg_risk
+            if on_behalf_of is not None:
+                params_dict["onBehalfOf"] = on_behalf_of
 
             body: Dict[str, Any] = {"args": [params_dict]}
 

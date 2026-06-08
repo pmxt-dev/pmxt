@@ -445,6 +445,9 @@ class Order:
     filled: float
     """Amount filled"""
     
+    filled_shares: Optional[float] = None
+    """Amount filled in shares/contracts (if different from USDC-denominated `filled`)."""
+    
     remaining: float
     """Amount remaining"""
     
@@ -456,6 +459,9 @@ class Order:
     
     fee: Optional[float] = None
     """Trading fee"""
+
+    fee_rate_bps: Optional[float] = None
+    """Fee rate in basis points applied to this order (e.g. 100 = 1%)."""
 
 
 @dataclass
@@ -634,11 +640,13 @@ class EventFetchParams(TypedDict, total=False):
     query: str
     limit: int
     offset: int
+    cursor: str
     sort: Literal["volume", "liquidity", "newest"]
     status: Literal["active", "inactive", "closed", "all"]
     search_in: Literal["title", "description", "both"]
     event_id: str
     slug: str
+    series: str
     category: str
     tags: List[str]
     filter: EventFilterCriteria

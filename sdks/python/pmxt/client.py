@@ -763,7 +763,8 @@ class Exchange(ABC):
 
         for market in markets:
             self.markets[market.market_id] = market
-            self.markets_by_slug[market.slug] = market
+            if market.slug:
+                self.markets_by_slug[market.slug] = market
 
         self._loaded_markets = True
         return self.markets

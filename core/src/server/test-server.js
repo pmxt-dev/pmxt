@@ -6,24 +6,32 @@
  */
 
 const BASE_URL = 'http://localhost:3847';
+const REQUEST_TIMEOUT_MS = 30_000;
+
+async function fetchWithTimeout(url, options = {}) {
+    return fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+}
 
 async function testHealthCheck() {
     console.log('\nTesting health check...');
-    const response = await fetch(`${BASE_URL}/health`);
+    const response = await fetchWithTimeout(`${BASE_URL}/health`);
     const data = await response.json();
     console.log('Health check:', data);
 }
 
 async function testVersion() {
     console.log('\nTesting version endpoint...');
-    const response = await fetch(`${BASE_URL}/version`);
+    const response = await fetchWithTimeout(`${BASE_URL}/version`);
     const data = await response.json();
     console.log('Version:', data);
 }
 
 async function testFetchMarkets() {
     console.log('\nTesting fetchMarkets (Polymarket)...');
-    const response = await fetch(`${BASE_URL}/api/polymarket/fetchMarkets`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/api/polymarket/fetchMarkets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,7 +50,7 @@ async function testFetchMarkets() {
 
 async function testSearchMarkets() {
     console.log('\nTesting searchMarkets (Kalshi)...');
-    const response = await fetch(`${BASE_URL}/api/kalshi/searchMarkets`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/api/kalshi/searchMarkets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -63,7 +71,7 @@ async function testSearchMarkets() {
 
 async function testGetMarketsBySlug() {
     console.log('\nTesting getMarketsBySlug (Polymarket)...');
-    const response = await fetch(`${BASE_URL}/api/polymarket/getMarketsBySlug`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/api/polymarket/getMarketsBySlug`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -84,7 +92,7 @@ async function testFetchOHLCV() {
     console.log('\nTesting fetchOHLCV (Polymarket)...');
 
     // First, get a market to extract an outcome ID
-    const marketsResponse = await fetch(`${BASE_URL}/api/polymarket/searchMarkets`, {
+    const marketsResponse = await fetchWithTimeout(`${BASE_URL}/api/polymarket/searchMarkets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -101,7 +109,7 @@ async function testFetchOHLCV() {
     const outcomeId = marketsData.data[0].outcomes[0].id;
     console.log(`  Using outcome ID: ${outcomeId.substring(0, 20)}...`);
 
-    const response = await fetch(`${BASE_URL}/api/polymarket/fetchOHLCV`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/api/polymarket/fetchOHLCV`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1576,6 +1576,7 @@ datetime: string; // ISO 8601 datetime string of the snapshot (CCXT-compatible).
 interface OrderLevel {
 price: number; // 0.0 to 1.0 (probability)
 size: number; // contracts/shares
+orderCount: number; // 
 }
 ```
 

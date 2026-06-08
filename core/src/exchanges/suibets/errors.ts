@@ -44,6 +44,20 @@ export class SuibetsErrorMapper extends ErrorMapper {
         if (axios.isAxiosError(error)) {
             const status = error.response?.status;
 
+            // HTML body = hosting/gateway outage — not a missing resource.
+            // Return ExchangeNotAvailable so callers can distinguish
+            // "offer not found" from "upstream server is down".
+            const responseData = error.response?.data;
+            const isHtml =
+                typeof responseData === 'string' &&
+                responseData.trimStart().startsWith('<');
+            if (isHtml) {
+                return new ExchangeNotAvailable(
+                    'SuiBets API is unavailable. Check https://www.suibets.com for service status.',
+                    this.exchangeName,
+                );
+            }
+
             if (status === 429) {
                 const retryAfter = error.response?.headers?.['retry-after'];
                 const retryAfterSeconds = retryAfter ? parseInt(retryAfter, 10) : undefined;

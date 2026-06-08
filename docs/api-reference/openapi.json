@@ -9790,6 +9790,9 @@
           "size": {
             "type": "number",
             "description": "contracts/shares"
+          },
+          "orderCount": {
+            "type": "number"
           }
         },
         "required": [

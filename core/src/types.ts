@@ -171,6 +171,7 @@ export interface PriceCandle {
 export interface OrderLevel {
     price: number; // 0.0 to 1.0 (probability)
     size: number;  // contracts/shares
+    orderCount?: number;
 }
 
 export interface OrderBook {

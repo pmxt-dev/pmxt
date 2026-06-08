@@ -23,6 +23,8 @@ export interface KalshiRawMarket {
     last_price_dollars?: string;
     yes_ask_dollars?: string;
     yes_bid_dollars?: string;
+    yes_ask_size_fp?: string;
+    yes_bid_size_fp?: string;
     rules_primary?: string;
     rules_secondary?: string;
     expiration_time: string;

@@ -878,19 +878,21 @@ describe('HyperliquidNormalizer', () => {
             expect(book.asks[0].price).toBeLessThanOrEqual(book.asks[1].price);
         });
 
-        test('bid prices and sizes are numbers', () => {
+        test('bid prices, sizes, and order counts are numbers', () => {
             const book = normalizer.normalizeOrderBook(rawBook, 'hl-outcome-42');
             for (const b of book.bids) {
                 expect(typeof b.price).toBe('number');
                 expect(typeof b.size).toBe('number');
+                expect(typeof b.orderCount).toBe('number');
             }
         });
 
-        test('ask prices and sizes are numbers', () => {
+        test('ask prices, sizes, and order counts are numbers', () => {
             const book = normalizer.normalizeOrderBook(rawBook, 'hl-outcome-42');
             for (const a of book.asks) {
                 expect(typeof a.price).toBe('number');
                 expect(typeof a.size).toBe('number');
+                expect(typeof a.orderCount).toBe('number');
             }
         });
 

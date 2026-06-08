@@ -5,7 +5,7 @@
  * It is NOT wired into defineImplicitApi — the fetcher calls these endpoints
  * directly via FetcherContext.http (the rate-limited HTTP client).
  *
- * Base URL: https://suibets.replit.app
+ * Base URL: https://www.suibets.com
  *
  * Endpoints:
  *   GET /api/p2p/offers          - List open P2P offers (status, matchId, sport, limit, offset)

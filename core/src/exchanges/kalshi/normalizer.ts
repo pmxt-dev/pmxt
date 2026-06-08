@@ -118,7 +118,12 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
             sourceMetadata: buildSourceMetadata(
                 market as unknown as Record<string, unknown>,
                 KALSHI_PROMOTED_MARKET_KEYS,
-                { series_ticker: event.series_ticker, series_title: event.series_title },
+                {
+                    yes_ask_size_fp: market.yes_ask_size_fp,
+                    yes_bid_size_fp: market.yes_bid_size_fp,
+                    series_ticker: event.series_ticker,
+                    series_title: event.series_title,
+                },
             ),
         } as UnifiedMarket;
 

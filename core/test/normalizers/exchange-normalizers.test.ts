@@ -381,6 +381,8 @@ describe('KalshiNormalizer', () => {
         last_price_dollars: '0.4540',
         yes_ask_dollars: '0.4600',
         yes_bid_dollars: '0.4500',
+        yes_ask_size_fp: '125.00',
+        yes_bid_size_fp: '90.00',
         previous_price_dollars: '0.4200',
         rules_primary: 'This market resolves YES if the Fed Funds Rate is above 4.75% on Jan 29, 2025.',
         rules_secondary: 'Data source: Federal Reserve',
@@ -507,6 +509,11 @@ describe('KalshiNormalizer', () => {
         it('maps liquidity as a number', () => {
             expect(typeof market.liquidity).toBe('number');
             expect(market.liquidity).toBe(5000);
+        });
+
+        it('surfaces top-of-book depth sizes in sourceMetadata', () => {
+            expect((market.sourceMetadata as any).yes_ask_size_fp).toBe('125.00');
+            expect((market.sourceMetadata as any).yes_bid_size_fp).toBe('90.00');
         });
 
         it('maps url to kalshi events URL', () => {
@@ -800,6 +807,10 @@ describe('LimitlessNormalizer', () => {
             no: 'token-eth-flip-no',
         },
         prices: [0.08, 0.92],
+        tradePrices: {
+            buy: { market: [0.11] },
+            sell: { market: [0.89] },
+        },
         expirationTimestamp: '2025-12-31T23:59:59Z',
         volumeFormatted: 75000,
         volume: 1500000,
@@ -863,14 +874,14 @@ describe('LimitlessNormalizer', () => {
             expect(market.outcomes[1].label).toBe('Not Will ETH flip BTC in 2025?');
         });
 
-        it('maps yes price from prices[0] as a number', () => {
+        it('maps yes price from directional tradePrices when available', () => {
             expect(typeof market.outcomes[0].price).toBe('number');
-            expect(market.outcomes[0].price).toBeCloseTo(0.08);
+            expect(market.outcomes[0].price).toBeCloseTo(0.11);
         });
 
-        it('maps no price from prices[1] as a number', () => {
+        it('maps no price from directional tradePrices when available', () => {
             expect(typeof market.outcomes[1].price).toBe('number');
-            expect(market.outcomes[1].price).toBeCloseTo(0.92);
+            expect(market.outcomes[1].price).toBeCloseTo(0.89);
         });
 
         it('prices sum to 1.0', () => {

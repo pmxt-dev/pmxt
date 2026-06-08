@@ -1,4 +1,4 @@
-export const SUIBETS_BASE_URL = 'https://suibets.replit.app';
+export const SUIBETS_BASE_URL = 'https://www.suibets.com';
 
 // SuiBets is a P2P sports betting platform on Sui blockchain.
 // Platform takes a 2% fee on settled markets.
@@ -15,7 +15,7 @@ export const MAX_PRICE = 0.99;
 export const RATE_LIMIT_MS = 300;
 
 // Allowlist of permitted hostnames for SSRF protection
-export const ALLOWED_HOSTS: readonly string[] = ['suibets.replit.app'];
+export const ALLOWED_HOSTS: readonly string[] = ['www.suibets.com'];
 
 /**
  * Validates that the given URL's hostname is in the ALLOWED_HOSTS allowlist.

@@ -3,7 +3,7 @@
   "info": {
     "title": "PMXT Hosted Router API",
     "description": "Hosted-only endpoints for cross-venue search, matching, arbitrage, and SQL.",
-    "version": "bfa6308"
+    "version": "49fbcd4"
   },
   "servers": [
     {

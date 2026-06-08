@@ -327,11 +327,13 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
         const bids = rawBids.map(level => ({
             price: parseFloat(level.px),
             size: parseFloat(level.sz),
+            orderCount: level.n,
         }));
 
         const asks = rawAsks.map(level => ({
             price: parseFloat(level.px),
             size: parseFloat(level.sz),
+            orderCount: level.n,
         }));
 
         return {

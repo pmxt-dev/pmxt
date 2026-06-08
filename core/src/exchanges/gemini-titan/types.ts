@@ -158,6 +158,8 @@ export interface GeminiRawActiveOrdersResponse {
     };
 }
 
+export type GeminiRawOrderHistoryResponse = GeminiRawActiveOrdersResponse;
+
 export interface GeminiRawPositionsResponse {
     positions: GeminiRawPosition[];
     total?: number;

@@ -9466,6 +9466,10 @@
             "type": "number",
             "description": "Minimum price increment (e.g., 0.01, 0.001)"
           },
+          "minOrderSize": {
+            "type": "number",
+            "description": "Minimum tradeable quantity/contracts for this market, when venue-provided"
+          },
           "status": {
             "type": "string",
             "description": "Venue-native lifecycle status (e.g. 'active', 'closed', 'archived')."
@@ -9773,6 +9777,14 @@
           "datetime": {
             "type": "string",
             "description": "ISO 8601 datetime string of the snapshot (CCXT-compatible)."
+          },
+          "tickSize": {
+            "type": "number",
+            "description": "Venue-provided minimum price increment for orders against this book."
+          },
+          "minOrderSize": {
+            "type": "number",
+            "description": "Venue-provided minimum order size/contracts for this book."
           }
         },
         "required": [

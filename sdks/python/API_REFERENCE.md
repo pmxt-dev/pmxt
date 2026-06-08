@@ -1466,6 +1466,7 @@ image: str # Optional image URL for the market.
 category: str # Optional category label. Venue-defined — common values include "Sports", "Politics", "Crypto", "Economics", "Science", "Culture". Polymarket uses finer-grained categories like "Bitcoin", "Soccer", "Economic Policy"; Kalshi uses broader ones like "Sports" or "Mentions".
 tags: List[string] # Optional list of tags. More granular than category — e.g. ["Crypto", "Crypto Prices", "Bitcoin"] or ["Politics", "Elections", "Trump"]. Tags vary by venue: Polymarket markets carry several, Kalshi typically one.
 tick_size: float # Minimum price increment (e.g., 0.01, 0.001)
+min_order_size: float # Minimum tradeable quantity/contracts for this market, when venue-provided
 status: str # Venue-native lifecycle status (e.g. 'active', 'closed', 'archived').
 contract_address: str # On-chain contract / condition identifier where applicable (Polymarket conditionId, etc.).
 source_metadata: object # Raw venue-specific metadata not captured by first-class fields (e.g. Kalshi series_ticker / series_title from the parent event, Polymarket series). Passed through verbatim so downstream consumers can recover anything the unified shape omits. Each venue populates what it has.
@@ -1564,6 +1565,8 @@ bids: List[OrderLevel] # Order book bid levels, sorted by price descending.
 asks: List[OrderLevel] # Order book ask levels, sorted by price ascending.
 timestamp: float # Unix timestamp in milliseconds when the snapshot was taken.
 datetime: str # ISO 8601 datetime string of the snapshot (CCXT-compatible).
+tick_size: float # Venue-provided minimum price increment for orders against this book.
+min_order_size: float # Venue-provided minimum order size/contracts for this book.
 ```
 
 ---
@@ -2813,7 +2816,7 @@ Check Order Reward Scoring *(Auth required)*
 
 **Parameters:**
 - `` (, string)
-- `orderId` (query, string) **required**
+- `order_id` (query, string) **required**
 
 ---
 ##### `postOrdersScoring`
@@ -2927,7 +2930,9 @@ Get trades for a user or markets
 - `market` (query, array) — Comma-separated list of condition IDs. Mutually exclusive with eventId.
 - `eventId` (query, array) — Comma-separated list of event IDs. Mutually exclusive with market.
 - `user` (query, string)
+- `maker_address` (query, string) — Maker address filter for trade lookups.
 - `side` (query, string) — enum: `BUY,SELL`
+- `next_cursor` (query, string) — Cursor for fetching the next page of trades.
 
 ---
 ##### `getActivity`

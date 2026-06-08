@@ -1564,6 +1564,9 @@ bids: List[OrderLevel] # Order book bid levels, sorted by price descending.
 asks: List[OrderLevel] # Order book ask levels, sorted by price ascending.
 timestamp: float # Unix timestamp in milliseconds when the snapshot was taken.
 datetime: str # ISO 8601 datetime string of the snapshot (CCXT-compatible).
+is_neg_risk: bool # Whether the venue marks this snapshot as a negative-risk market.
+last_trade_price: float # Last traded price from venues that include it with the book snapshot.
+source_metadata: object # Venue-specific metadata preserved from the raw order book snapshot.
 ```
 
 ---

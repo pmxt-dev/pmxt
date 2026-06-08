@@ -437,7 +437,12 @@ paths:
           in: query
           schema:
             type: string
-            enum: [open, closed, resolved]
+            enum: [open, closed, resolved, voided]
+        - name: trading_model
+          in: query
+          description: Filter markets by trading model (e.g. CLOB, AMM)
+          schema:
+            type: string
         - name: token_address
           in: query
           schema:
@@ -1044,6 +1049,11 @@ paths:
             type: integer
         - name: state
           in: query
+          schema:
+            type: string
+        - name: trading_model
+          in: query
+          description: Filter portfolio results by trading model (e.g. CLOB, AMM)
           schema:
             type: string
         - name: token_address

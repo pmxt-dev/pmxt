@@ -223,11 +223,9 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
             const status = (params?.status as string | undefined) || 'active';
 
             if (status === 'all') {
-                const [openEvents, closedEvents, settledEvents] = await Promise.all([
-                    this.fetchAllWithStatus('open'),
-                    this.fetchAllWithStatus('closed'),
-                    this.fetchAllWithStatus('settled'),
-                ]);
+                const openEvents = await this.fetchAllWithStatus('open');
+                const closedEvents = await this.fetchAllWithStatus('closed');
+                const settledEvents = await this.fetchAllWithStatus('settled');
                 return this.enrichEventsWithSeriesList([...openEvents, ...closedEvents, ...settledEvents]);
             } else if (status === 'closed' || status === 'inactive') {
                 const [closedEvents, settledEvents] = await Promise.all([
@@ -472,7 +470,8 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
         }
 
         const isSorted = params?.sort && (params.sort === 'volume' || params.sort === 'liquidity');
-        const fetchLimit = isSorted ? 1000 : limit;
+        const safetyCap = BATCH_SIZE * 10;
+        const fetchLimit = isSorted ? Math.min(1000, safetyCap) : Math.min(limit, safetyCap);
 
         const [allEvents, fetchedSeriesMap] = await Promise.all([
             this.fetchActiveEvents(fetchLimit, apiStatus),
@@ -555,7 +554,7 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
                 cursor = data.cursor;
                 page++;
 
-                if (!targetMarketCount && page >= 10) break;
+                if (page >= 10) break;
             } catch (e: any) {
                 throw kalshiErrorMapper.mapError(e);
             }

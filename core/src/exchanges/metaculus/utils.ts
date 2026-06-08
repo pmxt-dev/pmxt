@@ -142,7 +142,6 @@ function buildOutcomes(question: any, postId: string, medianProb: number): Marke
         aggregations: latest,
         resolution: question?.resolution ?? null,
         scaling: question?.scaling ?? null,
-        possibilities: question?.possibilities ?? null,
     };
 
     // Multiple choice: one outcome per option, each independently forecastable

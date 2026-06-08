@@ -29,6 +29,10 @@ class PmxtError(Exception):
 
 # 4xx Client Errors
 
+def _format_not_found_message(prefix: str, identifier: str) -> str:
+    return identifier if identifier.startswith(prefix) else f"{prefix}{identifier}"
+
+
 class BadRequest(PmxtError):
     """400 Bad Request - The request was malformed or contains invalid parameters."""
     pass
@@ -51,23 +55,38 @@ class NotFoundError(PmxtError):
 
 class OrderNotFound(NotFoundError):
     """404 Not Found - The requested order doesn't exist."""
-    pass
+    def __init__(self, order_id: str, exchange: str | None = None):
+        super().__init__(
+            _format_not_found_message("Order not found: ", order_id),
+            code="ORDER_NOT_FOUND",
+            exchange=exchange,
+        )
 
 
 class MarketNotFound(NotFoundError):
     """404 Not Found - The requested market doesn't exist."""
-    pass
+    def __init__(self, market_id: str, exchange: str | None = None):
+        super().__init__(
+            _format_not_found_message("Market not found: ", market_id),
+            code="MARKET_NOT_FOUND",
+            exchange=exchange,
+        )
 
 
 class EventNotFound(NotFoundError):
     """404 Not Found - The requested event doesn't exist."""
-    pass
+    def __init__(self, identifier: str, exchange: str | None = None):
+        super().__init__(
+            _format_not_found_message("Event not found: ", identifier),
+            code="EVENT_NOT_FOUND",
+            exchange=exchange,
+        )
 
 
 class RateLimitExceeded(PmxtError):
     """429 Too Many Requests - Rate limit exceeded."""
 
-    def __init__(self, message: str, retry_after: int | None = None, **kwargs):
+    def __init__(self, message: str, retry_after: float | None = None, **kwargs):
         super().__init__(message, **kwargs)
         self.retry_after = retry_after
 
@@ -94,12 +113,16 @@ class ValidationError(PmxtError):
 
 class NetworkError(PmxtError):
     """503 Service Unavailable - Network connectivity issues."""
-    pass
+
+    def __init__(self, message: str, exchange: str | None = None):
+        super().__init__(message, code="NETWORK_ERROR", retryable=True, exchange=exchange)
 
 
 class ExchangeNotAvailable(PmxtError):
     """503 Service Unavailable - Exchange is down or unreachable."""
-    pass
+
+    def __init__(self, message: str, exchange: str | None = None):
+        super().__init__(message, code="EXCHANGE_NOT_AVAILABLE", retryable=True, exchange=exchange)
 
 
 # Mapping from server error codes to error classes

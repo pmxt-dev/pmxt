@@ -431,11 +431,12 @@ components:
             must be 1.0, otherwise no more than 0.999 - meaning at least 
             0.1% of the probability mass must be assigned above the upper bound.<br><br>
 
-            At least 1% of the probability mass must be assigned uniformly within 
-            bounds, which means that the CDF must be strictly increasing by at 
-            least 0.01/200 = 0.0005 per step. No two adjacent values of the CDF 
-            can differ by more than 0.59, which is the largest number obtainable 
+            At least 1% of the probability mass must be assigned uniformly within
+            bounds, which means that the CDF must be strictly increasing by at
+            least 0.01/200 = 0.0005 per step. No two adjacent values of the CDF
+            can differ by more than 0.20, which is the largest number obtainable
             via the sliders.
+
           type: array
           items:
             type: number

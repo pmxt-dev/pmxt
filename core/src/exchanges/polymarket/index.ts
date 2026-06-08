@@ -37,6 +37,7 @@ import { polymarketClobSpec } from './api-clob';
 import { polymarketDataSpec } from './api-data';
 import { polymarketGammaSpec } from './api-gamma';
 import { PolymarketAuth } from './auth';
+import { POLYMARKET_CHAIN_ID } from './config';
 import { logger } from '../../utils/logger';
 import { polymarketErrorMapper } from './errors';
 import { PolymarketFetcher } from './fetcher';
@@ -752,7 +753,7 @@ export class PolymarketExchange extends PredictionMarketExchange {
         // Static network avoids ethers v5 auto-detect (eth_chainId), which can throw
         // noNetwork / NETWORK_ERROR on flaky public RPCs (#92).
         const provider = new ethers.providers.StaticJsonRpcProvider('https://polygon-rpc.com', {
-            chainId: 137,
+            chainId: POLYMARKET_CHAIN_ID,
             name: 'matic',
         });
         const pusdAddress = '0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB'; // pUSD (Polymarket USD)

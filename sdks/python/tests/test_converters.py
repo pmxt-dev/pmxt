@@ -22,6 +22,7 @@ from pmxt.client import (
     _convert_trade,
     _convert_user_trade,
     _convert_order,
+    _convert_subscription_snapshot,
 )
 from pmxt.models import (
     UnifiedMarket,
@@ -34,6 +35,7 @@ from pmxt.models import (
     UserTrade,
     Order,
     MarketList,
+    SubscribedAddressSnapshot,
 )
 
 
@@ -935,3 +937,15 @@ class TestConvertOrder:
         assert order.filled == 30.0
         assert order.remaining == 20.0
         assert order.amount == 50.0
+
+
+class TestConvertSubscriptionSnapshot:
+    def test_missing_lists_default_to_empty_lists(self):
+        snapshot = _convert_subscription_snapshot({
+            "address": "0xabc",
+            "timestamp": 123,
+        })
+        assert isinstance(snapshot, SubscribedAddressSnapshot)
+        assert snapshot.trades == []
+        assert snapshot.positions == []
+        assert snapshot.balances == []

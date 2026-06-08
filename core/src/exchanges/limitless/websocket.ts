@@ -107,8 +107,8 @@ export class LimitlessWebSocket {
             await this.client.connect();
         }
 
-        // Subscribe to market
-        await this.client.subscribe('orderbook', { marketSlugs: [marketSlug] });
+        // Subscribe to market orderbook updates through the SDK market-price channel.
+        await this.client.subscribe('subscribe_market_prices', { marketSlugs: [marketSlug] });
 
         if (callback) {
             this.orderbookCallbacks.set(marketSlug, callback);
@@ -210,7 +210,7 @@ export class LimitlessWebSocket {
         }
 
         // Subscribe to market prices
-        await this.client.subscribe('prices', { marketAddresses: [marketAddress] });
+        await this.client.subscribe('subscribe_market_prices', { marketAddresses: [marketAddress] });
 
         this.priceCallbacks.set(marketAddress, callback);
     }
@@ -228,11 +228,7 @@ export class LimitlessWebSocket {
             await this.client.connect();
         }
 
-        await this.client.subscribe('orders'); // SDK uses 'orders' channel for user positional updates too?
-        // Actually, the channel type has 'subscribe_positions'. Let's check.
-        // Wait, I saw 'orders' in SubscriptionChannel.
-        // Let's use 'orders' as it's common for user data.
-        // Wait, I saw 'subscribe_positions' in the type.
+        await this.client.subscribe('subscribe_order_events');
         await this.client.subscribe('subscribe_positions' as any);
         this.client.on('positions', callback);
     }
@@ -272,11 +268,12 @@ export class LimitlessWebSocket {
         this.orderbookCallbacks.delete(marketSlugOrAddress);
         this.priceCallbacks.delete(marketSlugOrAddress);
 
-        // Unsubscribe from SDK
-        await this.client.unsubscribe('orderbook', {
+        // The current SDK only exposes explicit unsubscribe lifecycle channels;
+        // cast market-price unsubscribe channels until the SDK publishes them.
+        await this.client.unsubscribe('subscribe_market_prices' as any, {
             marketSlugs: [marketSlugOrAddress],
         });
-        await this.client.unsubscribe('prices', {
+        await this.client.unsubscribe('subscribe_market_prices' as any, {
             marketAddresses: [marketSlugOrAddress],
         });
     }

@@ -65,7 +65,7 @@ export function isSuibetsRawOffer(value: unknown): value is SuibetsRawOffer {
     );
 }
 
-export class SuibetsFetcher implements IExchangeFetcher<SuibetsRawOffer, SuibetsRawEvent> {
+export class SuibetsFetcher implements IExchangeFetcher<SuibetsRawOffer, SuibetsRawEvent, SuibetsRawPositions> {
     private readonly ctx: FetcherContext;
     private readonly baseUrl: string;
 

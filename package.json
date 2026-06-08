@@ -22,6 +22,10 @@
     "dependencies": {
         "@types/cli-progress": "^3.11.6",
         "cli-progress": "^3.12.0",
-        "pmxtjs": "^2.17.1"
+        "pmxtjs": "^2.17.1",
+        "viem": "2.48.4"
+    },
+    "overrides": {
+        "viem": "2.48.4"
     }
 }

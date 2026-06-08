@@ -13,7 +13,7 @@ from typing import Dict, Any
 class PmxtError(Exception):
     """Base error class for all pmxt errors."""
 
-    def __init__(self, message: str, code: str = "UNKNOWN_ERROR", retryable: bool = False, exchange: str | None = None):
+    def __init__(self, message: str, code: str = "UNKNOWN_ERROR", retryable: bool = False, exchange: str | None = None) -> None:
         super().__init__(message)
         self.message = message
         self.code = code
@@ -86,7 +86,7 @@ class EventNotFound(NotFoundError):
 class RateLimitExceeded(PmxtError):
     """429 Too Many Requests - Rate limit exceeded."""
 
-    def __init__(self, message: str, retry_after: float | None = None, **kwargs):
+    def __init__(self, message: str, retry_after: float | None = None, **kwargs) -> None:
         super().__init__(message, **kwargs)
         self.retry_after = retry_after
 
@@ -104,7 +104,7 @@ class InsufficientFunds(PmxtError):
 class ValidationError(PmxtError):
     """400 Bad Request - Input validation failed."""
 
-    def __init__(self, message: str, field: str | None = None, **kwargs):
+    def __init__(self, message: str, field: str | None = None, **kwargs) -> None:
         super().__init__(message, **kwargs)
         self.field = field
 

@@ -220,9 +220,9 @@ function applyFilters(markets: UnifiedMarket[], params?: MarketFetchParams): Uni
     if (status !== 'all') {
         const now = Date.now();
         if (status === 'active') {
-            result = result.filter(m => m.resolutionDate.getTime() > now);
+            result = result.filter(m => !m.resolutionDate || m.resolutionDate.getTime() > now);
         } else {
-            result = result.filter(m => m.resolutionDate.getTime() <= now);
+            result = result.filter(m => m.resolutionDate && m.resolutionDate.getTime() <= now);
         }
     }
 
@@ -247,7 +247,7 @@ function applyFilters(markets: UnifiedMarket[], params?: MarketFetchParams): Uni
     } else if (params?.sort === 'liquidity') {
         result.sort((a, b) => b.liquidity - a.liquidity);
     } else if (params?.sort === 'newest') {
-        result.sort((a, b) => b.resolutionDate.getTime() - a.resolutionDate.getTime());
+        result.sort((a, b) => (b.resolutionDate?.getTime() ?? 0) - (a.resolutionDate?.getTime() ?? 0));
     } else {
         result.sort((a, b) => (b.volume || 0) - (a.volume || 0));
     }

@@ -167,7 +167,7 @@ function generateClass(exchange) {
     }
     if (creds.signatureType) {
         const defaultVal = defaults['signature_type'] || 'None';
-        constructorParams.push(`signature_type: Optional[Any] = ${defaultVal}`);
+        constructorParams.push(`signature_type: Optional[str] = ${defaultVal}`);
         superArgs.push('signature_type=signature_type');
     }
     constructorParams.push('base_url: Optional[str] = None');
@@ -204,7 +204,7 @@ function generateClass(exchange) {
         indent4('def __init__('),
         indent8('self,'),
         ...constructorParams.map(p => indent8(`${p},`)),
-        indent4('):'),
+        indent4(') -> None:'),
         indent8('"""'),
         indent8(`Initialize ${className} client.`),
         '',

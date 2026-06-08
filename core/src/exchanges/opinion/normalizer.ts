@@ -219,7 +219,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
     normalizeTrade(raw: OpinionRawUserTrade, index: number): Trade {
         return {
             id: raw.txHash || String(index),
-            timestamp: toMillis(raw.createdAt),
+            timestamp: toMillis(raw.createdAt) ?? 0,
             price: parseNumStr(raw.price),
             amount: parseNumStr(raw.shares),
             side: raw.side === 'BUY' ? 'buy' : raw.side === 'SELL' ? 'sell' : 'unknown',
@@ -231,7 +231,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
     normalizeUserTrade(raw: OpinionRawUserTrade, index: number): UserTrade {
         return {
             id: raw.txHash || String(index),
-            timestamp: toMillis(raw.createdAt),
+            timestamp: toMillis(raw.createdAt) ?? 0,
             price: parseNumStr(raw.price),
             amount: parseNumStr(raw.shares),
             side: raw.side === 'BUY' ? 'buy' : raw.side === 'SELL' ? 'sell' : 'unknown',
@@ -273,7 +273,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
             status: mapOrderStatus(raw.status),
             filled: filledShares,
             remaining: orderShares - filledShares,
-            timestamp: toMillis(raw.createdAt),
+            timestamp: toMillis(raw.createdAt) ?? 0,
         };
     }
 
@@ -363,7 +363,9 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
             title: raw.marketTitle || '',
             description: raw.rules || '',
             outcomes: [yesOutcome, noOutcome],
-            resolutionDate: new Date(toMillis(raw.cutoffAt)),
+            resolutionDate: toMillis(raw.cutoffAt) !== null
+                ? new Date(toMillis(raw.cutoffAt) as number)
+                : undefined,
             volume24h: parseNumStr(raw.volume24h),
             volume: parseNumStr(raw.volume),
             liquidity: 0,
@@ -422,7 +424,9 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
             title: combinedTitle,
             description: child.rules || '',
             outcomes: [yesOutcome, noOutcome],
-            resolutionDate: new Date(toMillis(child.cutoffAt)),
+            resolutionDate: toMillis(child.cutoffAt || parent.cutoffAt) !== null
+                ? new Date(toMillis(child.cutoffAt || parent.cutoffAt) as number)
+                : undefined,
             volume24h,
             volume: parseNumStr(child.volume),
             liquidity: 0,

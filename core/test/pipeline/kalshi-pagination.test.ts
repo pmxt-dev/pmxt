@@ -78,6 +78,29 @@ describe('Kalshi cursor pagination', () => {
         ]);
     });
 
+    it('caps the default fetch limit at 10 pages', async () => {
+        const { fetcher, calls } = createFetcher([
+            { events: buildEvents(200), cursor: 'cursor-200' },
+            { events: buildEvents(200, 200), cursor: 'cursor-400' },
+            { events: buildEvents(200, 400), cursor: 'cursor-600' },
+            { events: buildEvents(200, 600), cursor: 'cursor-800' },
+            { events: buildEvents(200, 800), cursor: 'cursor-1000' },
+            { events: buildEvents(200, 1000), cursor: 'cursor-1200' },
+            { events: buildEvents(200, 1200), cursor: 'cursor-1400' },
+            { events: buildEvents(200, 1400), cursor: 'cursor-1600' },
+            { events: buildEvents(200, 1600), cursor: 'cursor-1800' },
+            { events: buildEvents(200, 1800), cursor: 'cursor-2000' },
+            { events: buildEvents(200, 2000), cursor: 'cursor-2200' },
+        ]);
+
+        const events = await fetcher.fetchRawMarkets();
+
+        expect(events).toHaveLength(2000);
+        expect(calls).toHaveLength(10);
+        expect(calls[0]).toEqual({ limit: 200, with_nested_markets: true, status: 'open' });
+        expect(calls[9]).toEqual({ limit: 200, with_nested_markets: true, status: 'open', cursor: 'cursor-1800' });
+    });
+
     it('starts from a supplied cursor', async () => {
         const { fetcher, calls } = createFetcher([
             { events: buildEvents(25, 500), cursor: 'cursor-525' },
@@ -90,6 +113,37 @@ describe('Kalshi cursor pagination', () => {
         expect(calls).toEqual([
             { limit: 25, with_nested_markets: true, status: 'open', cursor: 'cursor-500' },
         ]);
+    });
+
+    it('runs status=all fetches sequentially instead of concurrently', async () => {
+        const active = { count: 0, max: 0 };
+        const responses: Array<{ events: unknown[]; cursor?: string | null }> = [
+            { events: buildEvents(1), cursor: null },
+            { events: buildEvents(1, 100), cursor: null },
+            { events: buildEvents(1, 200), cursor: null },
+        ];
+        const calls: Array<Record<string, unknown>> = [];
+        const ctx: any = {
+            http: {},
+            getHeaders: () => ({}),
+            callApi: async (operation: string, params?: Record<string, unknown>) => {
+                if (operation === 'GetSeriesList') return { series: [] };
+                if (operation !== 'GetEvents') return {};
+                calls.push(params ?? {});
+                active.count += 1;
+                active.max = Math.max(active.max, active.count);
+                await new Promise((resolve) => setTimeout(resolve, 0));
+                active.count -= 1;
+                return responses.shift() ?? { events: [], cursor: null };
+            },
+        };
+        const fetcher = new KalshiFetcher(ctx);
+
+        const events = await fetcher.fetchRawEvents({ status: 'all' } as any);
+
+        expect(events).toHaveLength(3);
+        expect(active.max).toBe(1);
+        expect(calls.map(call => call.status)).toEqual(['open', 'closed', 'settled']);
     });
 
     it('enriches paginated events with series title and tags', async () => {

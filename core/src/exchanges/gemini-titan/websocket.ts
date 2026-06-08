@@ -91,8 +91,10 @@ export class GeminiWebSocket {
                     try {
                         const message = JSON.parse(data.toString());
                         this.handleMessage(message);
-                    } catch {
-                        // Ignore unparseable messages
+                    } catch (error) {
+                        logger.warn('[gemini-titan] failed to parse or handle message', {
+                            error: error instanceof Error ? error.message : String(error),
+                        });
                     }
                 });
 
@@ -212,7 +214,7 @@ export class GeminiWebSocket {
         size: number,
         sortOrder: 'asc' | 'desc',
     ): void {
-        const idx = levels.findIndex(l => Math.abs(l.price - price) < 0.0001);
+        const idx = levels.findIndex(l => l.price === price);
 
         if (size === 0) {
             if (idx !== -1) levels.splice(idx, 1);
@@ -267,7 +269,12 @@ export class GeminiWebSocket {
 
         if (!this.isConnected) {
             this.connect().catch((err: unknown) => {
-                logger.warn(`[gemini-titan] connect failed during watchOrderBook('${symbol}'): ${err instanceof Error ? err.message : String(err)}`);
+                logger.warn(`[gemini-titan] connect failed during watchOrderBook('${symbol}')`, {
+                    error: err instanceof Error ? err.message : String(err),
+                });
+                if (!this.isTerminated) {
+                    this.scheduleReconnect();
+                }
             });
         } else {
             this.sendSubscribe([`${symbol}@depth20`]);
@@ -301,7 +308,12 @@ export class GeminiWebSocket {
 
         if (!this.isConnected) {
             this.connect().catch((err: unknown) => {
-                logger.warn(`[gemini-titan] connect failed during watchTrades('${symbol}'): ${err instanceof Error ? err.message : String(err)}`);
+                logger.warn(`[gemini-titan] connect failed during watchTrades('${symbol}')`, {
+                    error: err instanceof Error ? err.message : String(err),
+                });
+                if (!this.isTerminated) {
+                    this.scheduleReconnect();
+                }
             });
         } else {
             this.sendSubscribe([`${symbol}@trade`]);

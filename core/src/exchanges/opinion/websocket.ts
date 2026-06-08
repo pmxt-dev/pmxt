@@ -242,10 +242,7 @@ export class OpinionWebSocket {
       return;
     }
 
-    const existing = this.orderBooks.get(marketId);
-    const book: OrderBook = existing
-      ? { ...existing }
-      : { bids: [], asks: [], timestamp: Date.now() };
+    const book: OrderBook = this.orderBooks.get(marketId) ?? { bids: [], asks: [], timestamp: Date.now() };
 
     if (side === "bids") {
       book.bids = applyLevelUpdate(book.bids, price, size, "desc");
@@ -333,8 +330,11 @@ export class OpinionWebSocket {
     }
 
     if (!this.isConnected) {
-      this.connect().catch(() => {
-        // Swallow — scheduleReconnect will retry. Resolvers stay pending.
+      this.connect().catch((err) => {
+        logger.warn("Opinion WebSocket connect failed during watchOrderBook", { error: String(err) });
+        if (!this.isTerminated) {
+          this.scheduleReconnect();
+        }
       });
     } else {
       this.sendSubscribe("market.depth.diff", marketId);
@@ -370,8 +370,11 @@ export class OpinionWebSocket {
     }
 
     if (!this.isConnected) {
-      this.connect().catch(() => {
-        // Swallow — scheduleReconnect will retry. Resolvers stay pending.
+      this.connect().catch((err) => {
+        logger.warn("Opinion WebSocket connect failed during watchTrades", { error: String(err) });
+        if (!this.isTerminated) {
+          this.scheduleReconnect();
+        }
       });
     } else {
       this.sendSubscribe("market.last.trade", marketId);
@@ -457,29 +460,32 @@ export class OpinionWebSocket {
 
 /**
  * Apply an absolute-size level update to one side of the book.
- * A size of 0 (or NaN) removes the level. Returns a new sorted array.
+ * A size of 0 (or NaN) removes the level. Mutates the provided array in place
+ * and keeps it sorted.
  */
 function applyLevelUpdate(
-  levels: readonly OrderLevel[],
+  levels: OrderLevel[],
   price: number,
   size: number,
   sortOrder: "asc" | "desc",
 ): OrderLevel[] {
-  const updated = levels.filter(
-    (l) => Math.abs(l.price - price) >= 0.0001,
-  );
+  const idx = levels.findIndex((l) => l.price === price);
+
+  if (idx !== -1) {
+    levels.splice(idx, 1);
+  }
 
   if (!isNaN(size) && size > 0) {
-    updated.push({ price, size });
+    levels.push({ price, size });
   }
 
   if (sortOrder === "desc") {
-    updated.sort((a, b) => b.price - a.price);
+    levels.sort((a, b) => b.price - a.price);
   } else {
-    updated.sort((a, b) => a.price - b.price);
+    levels.sort((a, b) => a.price - b.price);
   }
 
-  return updated;
+  return levels;
 }
 
 /**

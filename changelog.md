@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.48.6] - 2026-06-04
+
+### Fixed
+
+- **Opinion**: `resolutionDate` on Opinion markets no longer collapses to `1970-01-01T00:00:00Z` when the upstream `cutoffAt` is missing or `0`. Root cause: `toMillis(0)` returned `0`, which the normalizer then wrapped in `new Date(0)` and emitted as a valid-looking past date. Categorical child markets (e.g. `2026 FIFA World Cup Winner - Spain`) are the common case — Opinion publishes `cutoffAt` only on the parent, not on each child — so every child silently inherited epoch and was filtered out by any downstream `closes_at > now()` guard. Concretely, hosted-pmxt's `fetchMarketMatches` was dropping all Opinion ↔ Polymarket pairs (407 in the catalog, 13 FIFA-specific) because the Opinion side looked already-closed.
+- **Opinion**: `normalizeChildMarket` now inherits `parent.cutoffAt` via `child.cutoffAt || parent.cutoffAt`, so the fallback introduced in commit `6ac8cd1` actually fires for the `cutoffAt = 0` case (the upstream literal, not a missing field).
+- **Core**: `toMillis(ts)` in `opinion/utils.ts` now returns `null` for falsy input instead of `0`, so callers can distinguish "no timestamp" from "epoch" and stop materializing bogus 1970 dates. Trade/order normalizers preserve old behavior with `?? 0`.
+- **Core**: `UnifiedMarket.resolutionDate` is now `?: Date`. Not every venue publishes a resolution date on every market, and the optional type lets normalizers emit `undefined` instead of fabricating an epoch sentinel. `BaseExchange.filterByCriteria` and the Baozi normalizer handle the optional case (markets without a known resolution date pass an `active`-status filter, fail a `closed`-status filter, and sort last under `sort=newest`).
+
 ## [2.48.5] - 2026-06-02
 
 ### Fixed

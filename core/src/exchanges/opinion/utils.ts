@@ -74,8 +74,10 @@ export function parseNumStr(value: string | undefined | null): number {
 
 // Convert a raw timestamp to milliseconds.
 // If the value is under 10_000_000_000 it is assumed to be in seconds.
-export function toMillis(ts: number | undefined | null): number {
-    if (!ts) return 0;
+// Returns null when the input is missing/zero so callers can distinguish
+// "no timestamp" from "epoch" instead of coercing both to 1970-01-01.
+export function toMillis(ts: number | undefined | null): number | null {
+    if (!ts) return null;
     return ts < 10_000_000_000 ? ts * 1000 : ts;
 }
 

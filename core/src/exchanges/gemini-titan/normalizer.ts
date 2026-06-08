@@ -10,6 +10,7 @@ import {
 import { IExchangeNormalizer } from '../interfaces';
 import { addBinaryOutcomes } from '../../utils/market-utils';
 import { buildSourceMetadata } from '../../utils/metadata';
+import { averageDecimals, complementDecimal, multiplyDecimals, roundDecimalPlaces, subtractDecimals } from '../../utils/decimal-math';
 import { toMarketId, toOutcomeId } from './utils';
 import { TICK_SIZE } from './config';
 import {
@@ -106,11 +107,8 @@ function extractDescription(desc: unknown): string {
     return '';
 }
 
-/**
- * Round to 2 decimal places to avoid floating point noise.
- */
 function roundPrice(n: number): number {
-    return Math.round(n * 100) / 100;
+    return roundDecimalPlaces(n, 2);
 }
 
 // ----------------------------------------------------------------------------
@@ -211,18 +209,20 @@ export class GeminiNormalizer implements IExchangeNormalizer<GeminiRawEvent, Gem
         const marketId = toMarketId(instrumentSymbol);
 
         // Extract prices
-        const bestBid = contract.prices?.bestBid ? parseFloat(contract.prices.bestBid) : 0.5;
-        const bestAsk = contract.prices?.bestAsk ? parseFloat(contract.prices.bestAsk) : 0.5;
+        const bestBidRaw = contract.prices?.bestBid ?? '0.5';
+        const bestAskRaw = contract.prices?.bestAsk ?? '0.5';
+        const bestBid = parseFloat(bestBidRaw);
+        const bestAsk = parseFloat(bestAskRaw);
         const buyYes = contract.prices?.buy?.yes ? parseFloat(contract.prices.buy.yes) : undefined;
         const sellYes = contract.prices?.sell?.yes ? parseFloat(contract.prices.sell.yes) : undefined;
         const buyNo = contract.prices?.buy?.no ? parseFloat(contract.prices.buy.no) : undefined;
         const sellNo = contract.prices?.sell?.no ? parseFloat(contract.prices.sell.no) : undefined;
         const lastPrice = contract.prices?.lastTradePrice
             ? parseFloat(contract.prices.lastTradePrice)
-            : (bestBid + bestAsk) / 2;
+            : averageDecimals(bestBidRaw, bestAskRaw);
 
         const yesPriceSource = buyYes ?? sellYes ?? lastPrice;
-        const noPriceSource = buyNo ?? sellNo ?? (1 - yesPriceSource);
+        const noPriceSource = buyNo ?? sellNo ?? complementDecimal(yesPriceSource);
 
         const yesPrice = roundPrice(Math.max(0, Math.min(1, yesPriceSource)));
         const noPrice = roundPrice(Math.max(0, Math.min(1, noPriceSource)));
@@ -325,6 +325,7 @@ export class GeminiNormalizer implements IExchangeNormalizer<GeminiRawEvent, Gem
             : 0;
         const entryPrice = parseFloat(raw.avgPrice);
         const size = parseFloat(raw.totalQuantity);
+        const priceDelta = subtractDecimals(raw.prices?.bestBid ?? '0', raw.avgPrice);
 
         return {
             marketId: toMarketId(raw.symbol),
@@ -333,7 +334,7 @@ export class GeminiNormalizer implements IExchangeNormalizer<GeminiRawEvent, Gem
             size,
             entryPrice,
             currentPrice,
-            unrealizedPnL: (currentPrice - entryPrice) * size,
+            unrealizedPnL: multiplyDecimals(priceDelta, raw.totalQuantity),
         };
     }
 }

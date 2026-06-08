@@ -17,6 +17,7 @@ import {
     BuiltOrder,
 } from '../../types';
 import { AuthenticationError } from '../../errors';
+import { toFixedDecimal } from '../../utils/decimal-math';
 import { getGeminiConfig, GeminiApiConfig } from './config';
 import { GeminiFetcher } from './fetcher';
 import { GeminiNormalizer } from './normalizer';
@@ -230,7 +231,7 @@ export class GeminiTitanExchange extends PredictionMarketExchange {
             orderType: 'limit',
             side: params.side,
             quantity: String(params.amount),
-            price: params.price !== undefined ? params.price.toFixed(2) : '0.50',
+            price: params.price !== undefined ? toFixedDecimal(params.price, 2) : '0.50',
             outcome: side,
             timeInForce: params.type === 'market' ? 'immediate-or-cancel' : 'good-til-cancel',
         };

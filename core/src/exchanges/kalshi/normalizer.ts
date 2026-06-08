@@ -3,6 +3,7 @@ import { UnifiedMarket, UnifiedEvent, UnifiedSeries, PriceCandle, OrderBook, Tra
 import { IExchangeNormalizer } from '../interfaces';
 import { addBinaryOutcomes } from '../../utils/market-utils';
 import { buildSourceMetadata } from '../../utils/metadata';
+import { averageDecimals, complementDecimal, subtractDecimals } from '../../utils/decimal-math';
 import { fromKalshiCents, invertKalshiUnified } from './price';
 import { KalshiRawEvent, KalshiRawMarket, KalshiRawCandlestick, KalshiRawTrade, KalshiRawFill, KalshiRawOrder, KalshiRawPosition, KalshiRawOrderBookFp, KalshiRawSeries } from './fetcher';
 
@@ -51,7 +52,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
         if (market.last_price_dollars != null) {
             price = parseFloat(market.last_price_dollars);
         } else if (market.yes_ask_dollars != null && market.yes_bid_dollars != null) {
-            price = (parseFloat(market.yes_ask_dollars) + parseFloat(market.yes_bid_dollars)) / 2;
+            price = averageDecimals(market.yes_ask_dollars, market.yes_bid_dollars);
         } else if (market.yes_ask_dollars != null) {
             price = parseFloat(market.yes_ask_dollars);
         } else if (market.last_price) {
@@ -66,7 +67,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
 
         let priceChange = 0;
         if (market.previous_price_dollars != null && market.last_price_dollars != null) {
-            priceChange = parseFloat(market.last_price_dollars) - parseFloat(market.previous_price_dollars);
+            priceChange = subtractDecimals(market.last_price_dollars, market.previous_price_dollars);
         }
 
         const outcomes: MarketOutcome[] = [
@@ -222,7 +223,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
                 size: parseFloat(level[1]),
             }));
             asks = (data.yes_dollars || []).map((level) => ({
-                price: Math.round((1 - parseFloat(level[0])) * 10000) / 10000,
+                price: complementDecimal(level[0], 4),
                 size: parseFloat(level[1]),
             }));
         } else {
@@ -231,7 +232,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
                 size: parseFloat(level[1]),
             }));
             asks = (data.no_dollars || []).map((level) => ({
-                price: Math.round((1 - parseFloat(level[0])) * 10000) / 10000,
+                price: complementDecimal(level[0], 4),
                 size: parseFloat(level[1]),
             }));
         }

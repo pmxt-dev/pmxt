@@ -14,6 +14,7 @@ import {
 import { IExchangeNormalizer } from '../interfaces';
 import { addBinaryOutcomes } from '../../utils/market-utils';
 import { buildSourceMetadata } from '../../utils/metadata';
+import { divideDecimals, proportionalDecimal, subtractDecimals } from '../../utils/decimal-math';
 import { parseNumStr, mapOrderStatus, toMillis, intervalToMs } from './utils';
 import {
     OpinionRawMarket,
@@ -83,9 +84,8 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
         const totalChildVolume = children.reduce((sum, c) => sum + parseNumStr(c.volume), 0);
 
         for (const child of children) {
-            const childVolume = parseNumStr(child.volume);
             const childVolume24h = totalChildVolume > 0
-                ? (childVolume / totalChildVolume) * parentVolume24h
+                ? proportionalDecimal(child.volume || '0', totalChildVolume, parentVolume24h, 6)
                 : 0;
             const market = this.normalizeChildMarket(child, raw, childVolume24h);
             if (market) results.push(market);
@@ -243,7 +243,9 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
     normalizePosition(raw: OpinionRawPosition): Position {
         const sharesOwned = parseNumStr(raw.sharesOwned);
         const currentValue = parseNumStr(raw.currentValueInQuoteToken);
-        const currentPrice = sharesOwned > 0 ? currentValue / sharesOwned : 0;
+        const currentPrice = sharesOwned > 0
+            ? divideDecimals(raw.currentValueInQuoteToken || '0', raw.sharesOwned || '0')
+            : 0;
 
         return {
             marketId: String(raw.marketId),
@@ -272,7 +274,7 @@ export class OpinionNormalizer implements IExchangeNormalizer<OpinionRawMarket, 
             amount: orderShares,
             status: mapOrderStatus(raw.status),
             filled: filledShares,
-            remaining: orderShares - filledShares,
+            remaining: subtractDecimals(raw.orderShares || '0', raw.filledShares || '0'),
             timestamp: toMillis(raw.createdAt) ?? 0,
         };
     }

@@ -5,6 +5,8 @@
  * and 1/10000 GBP units for quantities.
  */
 
+import { toScaledInteger } from '../../utils/decimal-math';
+
 const BASIS_POINTS_SCALE = 10000;
 
 /**
@@ -18,7 +20,7 @@ export function fromBasisPoints(basisPoints: number): number {
  * Convert probability (0.0-1.0) to Smarkets basis points (0-10000).
  */
 export function toBasisPoints(probability: number): number {
-  return Math.round(probability * BASIS_POINTS_SCALE);
+  return toScaledInteger(probability, BASIS_POINTS_SCALE);
 }
 
 /**
@@ -32,7 +34,7 @@ export function fromQuantityUnits(units: number): number {
  * Convert GBP to Smarkets quantity units (1/10000 GBP).
  */
 export function toQuantityUnits(gbp: number): number {
-  return Math.round(gbp * BASIS_POINTS_SCALE);
+  return toScaledInteger(gbp, BASIS_POINTS_SCALE);
 }
 
 /**

@@ -2,6 +2,7 @@ import { UnifiedMarket, UnifiedEvent, OrderBook, Trade, UserTrade, Position, Bal
 import { IExchangeNormalizer } from '../interfaces';
 import { addBinaryOutcomes } from '../../utils/market-utils';
 import { buildSourceMetadata } from '../../utils/metadata';
+import { subtractDecimals } from '../../utils/decimal-math';
 import { fromBasisPoints, fromQuantityUnits } from './price';
 import {
     SmarketsRawEventWithMarkets,
@@ -304,12 +305,13 @@ export class SmarketsNormalizer implements IExchangeNormalizer<SmarketsRawEventW
     normalizeBalance(raw: SmarketsRawBalance): Balance[] {
         const balance = parseFloat(raw.balance || '0');
         const available = parseFloat(raw.available_balance || '0');
+        const locked = subtractDecimals(raw.balance || '0', raw.available_balance || '0');
 
         return [{
             currency: raw.currency || 'GBP',
             total: balance,
             available,
-            locked: balance - available,
+            locked,
         }];
     }
 

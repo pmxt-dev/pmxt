@@ -96,6 +96,9 @@ class FeedClient:
         if api_key:
             self._headers["Authorization"] = f"Bearer {api_key}"
 
+    def list_feeds(self) -> List[str]:
+        return self._request(f"{self._base_url}/api/feeds/")
+
     def load_markets(self) -> Dict[str, Market]:
         data = self._get("loadMarkets", {})
         return {
@@ -172,13 +175,15 @@ class FeedClient:
         return [self._to_ticker(r) for r in data]
 
     def _get(self, method: str, params: Dict[str, Any]) -> Any:
-        filtered = {k: v for k, v in params.items() if v is not None}
-        qs = urllib.parse.urlencode(filtered) if filtered else ""
         url = f"{self._base_url}/api/feeds/{self._feed_name}/{method}"
-        if qs:
-            url += f"?{qs}"
+        return self._request(url, params)
 
-        req = urllib.request.Request(url, headers=self._headers)
+    def _request(self, url: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        filtered = {k: v for k, v in (params or {}).items() if v is not None}
+        qs = urllib.parse.urlencode(filtered) if filtered else ""
+        request_url = f"{url}?{qs}" if qs else url
+
+        req = urllib.request.Request(request_url, headers=self._headers)
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 body = json.loads(resp.read())

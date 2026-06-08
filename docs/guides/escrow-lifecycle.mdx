@@ -1,0 +1,209 @@
+---
+title: Escrow Lifecycle
+description: "Deposit, trade, withdraw — how USDC moves through PMXT's PreFundedEscrow custody."
+---
+
+Hosted trading on PMXT settles through a `PreFundedEscrow` smart contract. Your wallet retains beneficial ownership; PMXT operates the contract and submits orders to the venue on your behalf. This page walks through the full lifecycle: approve, deposit, trade, withdraw.
+
+The escrow contract lives on **Polygon** for Polymarket trades and on **BSC** for Opinion's cross-chain settlement.
+
+## Why escrow at all?
+
+Polymarket's CLOB exchange expects the submitter to be the operator of the user's CLOB proxy wallet. That proxy is created by Polymarket's USDC.e adapter and is non-trivial to operate from a third-party context. PMXT's `PreFundedEscrow` solves this by acting as a pre-funded operator: the user deposits USDC once, PMXT routes orders against that balance, and the user can withdraw at any time. The user signs every order with EIP-712; the escrow contract can only spend USDC against signed orders, never unilaterally.
+
+For Opinion, the escrow plays a different role — it's the on-chain settlement leg of a dual-signature cross-chain flow. Same custody story, different mechanics.
+
+## The `client.escrow` namespace
+
+Hosted exchange clients (Polymarket, Opinion) expose an `escrow` namespace. Every method **builds an unsigned transaction**. Your wallet — MetaMask, ethers `Wallet`, viem, web3.py, etc. — is responsible for signing and broadcasting it. PMXT never holds your private key.
+
+| Method (Python / TypeScript) | Description |
+| ---------------------------- | ----------- |
+| `escrow.approve_tx(token, amount_wei=None)` / `escrow.approveTx(token, amountWei?)` | Build an unsigned ERC-20 approval for USDC or CTF. |
+| `escrow.deposit_tx(amount)` / `escrow.depositTx(amount)` | Build an unsigned USDC deposit into PreFundedEscrow. |
+| `escrow.withdraw_tx(action, amount=None)` / `escrow.withdrawTx(action, amount?)` | Build an unsigned `request` / `claim` / `cancel` withdrawal. |
+| `escrow.withdrawals(include="pending,events")` / `escrow.withdrawals({ include })` | Read pending withdrawal state and historical events. |
+
+See the source: [`sdks/python/pmxt/escrow.py`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/python/pmxt/escrow.py) and [`sdks/typescript/pmxt/escrow.ts`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/typescript/pmxt/escrow.ts).
+
+## 1. Approve
+
+Before the first deposit, the escrow contract needs permission to pull USDC (and, for some flows, the Polymarket CTF token) from your wallet. This is a standard ERC-20 approval.
+
+<CodeGroup>
+```python Python
+# Unlimited approval for USDC (most common)
+tx = client.escrow.approve_tx("usdc")
+# tx is a dict like:
+#   { "to": "0x...", "data": "0x...", "value": "0", "chain_id": 137 }
+# Sign and broadcast it with your preferred wallet library.
+
+# Or scope the approval to a specific wei amount
+tx = client.escrow.approve_tx("usdc", amount_wei=1_000_000_000)  # 1,000 USDC
+
+# Approve the Polymarket CTF token (only needed for direct CTF transfers)
+tx = client.escrow.approve_tx("ctf")
+```
+
+```typescript TypeScript
+// Unlimited approval for USDC (most common)
+const tx = await client.escrow.approveTx("usdc");
+// tx is an object like:
+//   { to: "0x...", data: "0x...", value: "0", chainId: 137 }
+
+// Or scope the approval to a specific wei amount (bigint)
+const txScoped = await client.escrow.approveTx("usdc", 1_000_000_000n);
+
+// Approve the CTF token
+const ctfTx = await client.escrow.approveTx("ctf");
+```
+</CodeGroup>
+
+<Note>
+Approval is one-time per token + spender. If you ever rotate the escrow contract (rare, gated on a PMXT migration announcement), you'll need to re-approve.
+</Note>
+
+## 2. Deposit
+
+Once approval is in place, deposit USDC. Amounts are in **whole USDC** (6 decimals); the SDK validates precision and rejects values like `0.0000001`.
+
+<CodeGroup>
+```python Python
+# Deposit 10 USDC
+tx = client.escrow.deposit_tx(amount=10.0)
+# Sign and send with your wallet library.
+
+# Decimals up to 6 places are supported
+tx = client.escrow.deposit_tx(amount=10.5)
+tx = client.escrow.deposit_tx(amount=10.123456)
+```
+
+```typescript TypeScript
+// Deposit 10 USDC — number, decimal string, or wei BigInt all accepted
+const tx = await client.escrow.depositTx(10);
+const tx2 = await client.escrow.depositTx("10.5");
+const tx3 = await client.escrow.depositTx(10_500_000n); // wei micro-USDC
+```
+</CodeGroup>
+
+<Warning>
+USDC precision is 6 decimals. The SDK rejects `0.0000001` with `ValidationError`. Pre-round before passing the value in.
+</Warning>
+
+## 3. Confirm the deposit
+
+After the deposit transaction confirms on-chain, the balance shows up in escrow. `fetch_balance` is the canonical check.
+
+<CodeGroup>
+```python Python
+balance = client.fetch_balance()
+print(f"Free: {balance.free}, Used: {balance.used}, Total: {balance.total}")
+```
+
+```typescript TypeScript
+const balance = await client.fetchBalance();
+console.log(`Free: ${balance.free}, Used: ${balance.used}, Total: ${balance.total}`);
+```
+</CodeGroup>
+
+<Info>
+On-chain confirmation usually takes 2–5 seconds on Polygon. If `fetch_balance` still reads zero 30 seconds after broadcast, check the tx on Polygonscan — a failed deposit (e.g. due to missing approval) will not update escrow state.
+</Info>
+
+## 4. Trade
+
+With escrow funded, you can trade. `create_order` and `submit_order` debit the escrow balance; `cancel_order` releases the reservation. No additional escrow calls are needed during normal trading — the balance just gets spent.
+
+```python
+order = client.create_order(
+    market_id="2eeb03dc-404b-41d5-bc57-6aeb37927ae6",
+    outcome_id="a114f052-1fd1-4bcd-b9cf-de019db81b67",
+    side="buy",
+    order_type="market",
+    amount=5.0,
+    denom="usdc",
+    slippage_pct=30.0,
+)
+```
+
+## 5. Withdraw
+
+Withdrawals are a **two-step timelock**. You first `request` a withdrawal; after a contract-enforced delay (~1 hour in production), you `claim` it. You can also `cancel` a pending request.
+
+The timelock is a security feature — it gives the user a window to detect and abort an unauthorized withdrawal even if the operator key were compromised.
+
+### Request
+
+<CodeGroup>
+```python Python
+tx = client.escrow.withdraw_tx("request", amount=10.0)
+# Sign and send. After the timelock, the funds become claimable.
+```
+
+```typescript TypeScript
+const tx = await client.escrow.withdrawTx("request", 10);
+```
+</CodeGroup>
+
+### Inspect pending withdrawals
+
+<CodeGroup>
+```python Python
+state = client.escrow.withdrawals(include="pending,events")
+# state.pending is a list of pending requests with their `claimable_at` timestamps.
+for req in state["pending"]:
+    print(req["amount"], "claimable at", req["claimable_at"])
+```
+
+```typescript TypeScript
+const state = await client.escrow.withdrawals({ include: "pending,events" });
+// state.pending lists requests with claimable_at timestamps
+for (const req of state.pending) {
+  console.log(req.amount, "claimable at", req.claimable_at);
+}
+```
+</CodeGroup>
+
+### Claim
+
+Once `claimable_at` has passed, claim the funds — they move from escrow to your wallet.
+
+<CodeGroup>
+```python Python
+tx = client.escrow.withdraw_tx("claim")
+```
+
+```typescript TypeScript
+const tx = await client.escrow.withdrawTx("claim");
+```
+</CodeGroup>
+
+<Note>
+`claim` does not take an `amount`. It claims all matured requests at once. The escrow tracks individual request maturities; only matured ones settle.
+</Note>
+
+### Cancel
+
+If you change your mind during the timelock window, cancel a pending request and the funds remain in escrow as free balance.
+
+<CodeGroup>
+```python Python
+tx = client.escrow.withdraw_tx("cancel")
+```
+
+```typescript TypeScript
+const tx = await client.escrow.withdrawTx("cancel");
+```
+</CodeGroup>
+
+## Errors you might hit
+
+- `MissingWalletAddress` — `client.escrow.*` requires `wallet_address` on the exchange constructor. Pass it explicitly.
+- `ValidationError: amount precision exceeds 6 decimals` — round before passing.
+- `InsufficientEscrowBalance` (during a trade) — deposit more before retrying, or wait for matured withdrawals to clear pending positions.
+- `HostedTradingError` (5xx) — transient server error; retry with backoff. See [Hosted errors](/guides/hosted-errors).
+
+## Source references
+
+- Python: [`sdks/python/pmxt/escrow.py`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/python/pmxt/escrow.py)
+- TypeScript: [`sdks/typescript/pmxt/escrow.ts`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/typescript/pmxt/escrow.ts)

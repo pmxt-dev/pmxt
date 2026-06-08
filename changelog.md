@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.49.1] - 2026-06-08
+
+Positioning-shift patch on top of 2.49.0 — the hosted trading mode shipped in 2.49.0 but the docs, READMEs, and OpenAPI schemas still defaulted to the self-hosted sidecar path. This release flips the default everywhere the SDK + docs surface a customer hits: hosted PMXT is the primary experience; self-hosting becomes the advanced escape hatch. No SDK runtime behavior changes — pure documentation, schema, and copy work. Marketing-site changes ship separately in a sibling pmxt-website PR.
+
+### Added
+
+- **Docs**: 11 new MDX pages on the Mintlify site covering the hosted trading mode end-to-end — `trading-quickstart` (60-second walkthrough), `concepts/hosted-trading` (feature landing), `concepts/hosted-vs-self-hosted` (one-pager comparison), `concepts/catalog-uuid-vs-venue-id` (the UUID/venue-id gotcha), `guides/escrow-lifecycle` (PreFundedEscrow walkthrough), `guides/signing` (EthAccountSigner / EthersSigner + EIP-712), `guides/hosted-errors` (the 5 most-common subclasses with `try/except` cookbook), `guides/migrate-to-hosted-trading` (ported `MIGRATION.md` content with language tabs), `guides/self-hosted` (consolidated local-sidecar story), `api-reference/errors` (full `HostedTradingError` tree with dual-parent semantic-map), `api-reference/configuration` (`ExchangeOptions` + env vars + base-URL resolution).
+- **Docs**: New "Hosted Trading" and "Self-host" sidebar groups in `docs.json`, plus a "Reference" group at the top of the API Reference tab. `sdk/server` moved out of the previous "SDK" group into "Self-host" (without slug rename — link-stability preserved for this release).
+- **Core**: New `ExchangeOptions` component schema in `core/src/server/openapi.yaml` documenting constructor-level options (`pmxtApiKey`, `walletAddress`, `signer`, `privateKey`, `baseUrl`, etc.) — previously only `ExchangeCredentials` (per-request body credentials) existed at the schema level.
+- **Core**: `BuiltOrder.expiry` field added to the OpenAPI schema (the TTL that triggers `BuiltOrderExpired` at submit time was implicit in the SDK and undocumented at the spec level).
+
+### Changed
+
+- **Docs**: `introduction.mdx` "It runs two ways" bullet order inverted — hosted listed first as the default, self-hosted second as the advanced path. First code block swapped from a dual-variant local/hosted snippet to a single hosted-default `pmxt.Polymarket(pmxt_api_key=...)` constructor.
+- **Docs**: `authentication.mdx` venue-credentials section reframed — "Hosted writes (recommended)" subsection added on top showing the `pmxt_api_key + wallet_address + private_key` constructor with a one-line `client.escrow.deposit()` example. The raw-private-key prose was preserved but relabeled as "Self-hosted / direct venue credentials (advanced)". Status/body/meaning error table picked up a fourth "SDK exception" column cross-linking to the new `/api-reference/errors` page.
+- **Docs**: `security.mdx` "Run pmxt locally" callout downgraded from `<Warning>` to `<Note>` and reworded — self-hosting is positioned as one option among several rather than the implicit "safer choice". PreFundedEscrow custody surfaced as the hosted alternative.
+- **Docs**: `sdk/server.mdx` got a top `<Note>` banner clarifying that the page applies to self-hosted mode only and hosted-mode users can skip it. (File location and slug intentionally not renamed in this release to preserve external links.)
+- **Docs**: `concepts/venues.mdx` gained a third table at the bottom — "Hosted-trading venues" — listing Polymarket and Opinion with custody type, cross-chain support, and minimum-order-size columns.
+- **READMEs (root, Python, TypeScript)**: All three flipped to hosted-default. Subtitles, "Why pmxt?" bullets, Quick Start, and Trading sections now lead with `pmxt.Polymarket(pmxt_api_key=...)`. Per-venue raw-credentials blocks preserved verbatim but moved into "Self-hosted trading (advanced)" subsections. Root README's "No API key required" bullet (actively anti-hosted-positioning) replaced with a "Hosted API" lead bullet. Net +176 lines across the three files.
+
+### Fixed
+
+- **Core**: `Order` schema in `core/src/server/openapi.yaml` (and the generated `docs/api-reference/openapi.json`) now includes the nullable `txHash`, `chain`, and `blockNumber` fields the SDK has been returning in hosted mode since 2.49.0. Previous spec was silent on these and downstream codegen consumers missed them.
+- **Core**: `UserTrade` schema gained the same `txHash` / `chain` / `blockNumber` nullable trio.
+- **Core**: `Position` schema — `required` list trimmed from `[marketId, outcomeId, outcomeLabel, size, entryPrice, currentPrice, unrealizedPnL]` to `[marketId, outcomeId, size]`. The other four became optional in 2.49.0 when the SDK stopped fabricating mark-to-market defaults for positions without a known current price; the schema kept claiming they were required, so generated clients with strict-null checking were rejecting valid responses. New `currentValue` field added (`size * currentPrice` when available). `txHash` / `chain` / `blockNumber` enrichment added.
+- **Core**: `Balance` schema gained the optional `venue` field that hosted-mode responses already carry on multi-venue queries.
+- **Core**: `ErrorDetail` schema expanded from `{ message: string }` to the full envelope shipping in production responses — `code` (with a populated enum covering all `HostedTradingError` codes plus the pre-existing tree), `retryable: boolean`, optional `exchange`, optional free-form `detail` object. Downstream codegen can now branch on `code`.
+
+### Docs
+
+- **`docs.json`**: First-time `redirects` array added (empty for this release; reserves the structure for future slug renames).
+
 ## [2.49.0] - 2026-06-08
 
 ### Added

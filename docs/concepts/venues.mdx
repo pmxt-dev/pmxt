@@ -69,3 +69,19 @@ Not every venue supports every method. Broadly:
 
 See the [API Reference](/api-reference/overview) for the per-method
 matrix (inferred from the OpenAPI `operationId`s).
+
+## Hosted-trading venues
+
+A subset of venues support **hosted trading** — writes routed through
+`trade.pmxt.dev` with PMXT's PreFundedEscrow custody and locally-signed
+EIP-712 orders. Every other venue is read-only via the catalog or
+requires [self-hosted](/guides/self-hosted) for writes.
+
+| Venue | Custody | Cross-chain | Min order size | Hosted writes supported |
+| ----- | ------- | ----------- | -------------- | ----------------------- |
+| Polymarket | `PreFundedEscrow` on Polygon | No (Polygon-only) | 5 shares | Yes |
+| Opinion | `PreFundedEscrow` on BSC | Yes (dual-signature settlement) | Venue minimum | Yes |
+
+See [Hosted trading](/concepts/hosted-trading) for the build → sign →
+submit flow, and [Trading quickstart](/trading-quickstart) for the
+end-to-end path.

@@ -1,7 +1,7 @@
 # pmxt [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=The%20ccxt%20for%20prediction%20markets.&url=https://github.com/pmxt-dev/pmxt&hashtags=predictionmarkets,trading)  [![DOI](https://zenodo.org/badge/1130657894.svg)](https://doi.org/10.5281/zenodo.19111315)
 
 
-**The [ccxt](https://github.com/ccxt/ccxt) for prediction markets.** A unified, language-agnostic API for accessing prediction market data across multiple exchanges — works from Python, TypeScript, or any HTTP client.
+**The [ccxt](https://github.com/ccxt/ccxt) for prediction markets.** Hosted unified API for prediction markets — trade Polymarket, Kalshi, Opinion, and more from one API key. Open-source SDK and self-host option included.
 
 
 <img width="3840" height="2160" alt="plot" src="https://github.com/user-attachments/assets/ed77d244-c95f-4fe0-a7a7-89af713c053f" />
@@ -79,8 +79,9 @@
 
 Different prediction market platforms have different APIs, data formats, and conventions. pmxt provides a single, consistent interface to work with all of them.
 
+- **Hosted API.** Get a key at [pmxt.dev/dashboard](https://pmxt.dev/dashboard), construct a client, trade. PMXT handles custody, signing infrastructure, and on-chain settlement.
+- **Open source (MIT).** Self-host the local server for full control — your keys, your machine, no PMXT in the loop. See [Self-hosted](#self-hosted).
 - **Language-agnostic.** Python and TypeScript SDKs today, with HTTP access for any other language. No lock-in to a single ecosystem.
-- **Open source (MIT).** No API key required, no vendor dependency, no rate-limit business model. Self-host and run locally, or hit our hosted api.
 - **Drop-in Dome API replacement.** Automatic codemod (`dome-to-pmxt`) for teams migrating after the Polymarket acquisition.
 - **Unified trading, not just data.** Place orders across Polymarket, Kalshi, and Limitless with a single interface.
 - **[MCP-native](https://pmxt.dev/mcp).** Use pmxt directly from Claude, Cursor, and other AI agents.
@@ -135,52 +136,119 @@ npx dome-to-pmxt ./src
 
 ## Quickstart
 
+Get your API key at [pmxt.dev/dashboard](https://pmxt.dev/dashboard). For reads, only `pmxt_api_key` and `wallet_address` are required. For trading, also pass `private_key` — the SDK auto-wraps it into an EIP-712 signer.
+
+### Python
+```python
+import pmxt
+
+# Reads — pmxt_api_key + wallet_address only
+client = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWalletAddress",
+)
+
+positions = client.fetch_positions()
+balance = client.fetch_balance()
+markets = client.fetch_markets(query="nba")
+
+# Trading — also pass private_key
+trader = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWalletAddress",
+    private_key="0xYourPrivateKey",
+)
+order = trader.create_order(
+    market_id="market-uuid",
+    outcome_id="outcome-uuid",
+    side="buy",
+    order_type="market",
+    amount=5.0,
+    denom="usdc",
+    slippage_pct=30.0,
+)
+```
+
+### TypeScript
+
+> **Note:** Named imports do not work in ESM. Use `import pmxt from 'pmxtjs'` (default import) for the namespaced form, or import `Polymarket` from `pmxtjs` only via the CJS build.
+
+```typescript
+import { Polymarket } from "pmxtjs";
+
+// Reads — pmxtApiKey + walletAddress only
+const client = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWalletAddress",
+});
+
+const positions = await client.fetchPositions();
+const balance = await client.fetchBalance();
+
+// Trading — also pass privateKey
+const trader = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWalletAddress",
+  privateKey: "0xYourPrivateKey",
+});
+const order = await trader.createOrder({
+  marketId: "market-uuid",
+  outcomeId: "outcome-uuid",
+  side: "buy",
+  type: "market",
+  amount: 5.0,
+  denom: "usdc",
+  slippage_pct: 30.0,
+} as any);
+```
+
+### Prediction market hierarchy
+
 Prediction markets are structured in a hierarchy to group related information.
 
 *   **Event**: The broad topic (e.g., *"Who will Trump nominate as Fed Chair?"*)
 *   **Market**: A specific tradeable question (e.g., *"Will Trump nominate Kevin Warsh as the next Fed Chair?"*)
 *   **Outcome**: The actual share you buy (e.g., *"Yes"* or *"No"*)
 
-### Python
+## Trading
+pmxt supports unified trading across exchanges. The hosted API is the default — see Quickstart above for the basic flow.
+
+### Hosted trading (recommended)
+
+With a PMXT API key, you only need your wallet address and a private key to sign orders. PMXT handles custody, signer infrastructure, and on-chain settlement.
+
 ```python
 import pmxt
 
-api = pmxt.Exchange()
+trader = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWalletAddress",
+    private_key="0xYourPrivateKey",
+)
 
-# 1. Search for the broad Event
-events = api.fetch_events(query='Who will Trump nominate as Fed Chair?')
-fed_event = events[0]
+# 1. Check balance
+balance = trader.fetch_balance()
+print(f"Available balance: {balance[0].available}")
 
-# 2. Find the specific Market within that event
-warsh = fed_event.markets.match('Kevin Warsh')
+# 2. Fetch markets
+markets = trader.fetch_markets(query='Trump')
 
-print(f"Price: {warsh.yes.price}")
+# 3. Place an order
+order = trader.create_order(
+    market_id=markets[0].market_id,
+    outcome_id=markets[0].yes.outcome_id,
+    side='buy',
+    order_type='market',
+    amount=5.0,
+    denom='usdc',
+    slippage_pct=30.0,
+)
+print(f"Order status: {order.status}")
 ```
 
-### TypeScript
+### Self-hosted trading (advanced)
 
-> **Note:** Named imports do not work in ESM. Use `import pmxt from 'pmxtjs'` (default import), not `import { Polymarket } from 'pmxtjs'`.
-
-```typescript
-import pmxt from 'pmxtjs';
-
-const api = new pmxt.Exchange();
-
-// 1. Search for the broad Event
-const events = await api.fetchEvents({ query: 'Who will Trump nominate as Fed Chair?' });
-const fedEvent = events[0];
-
-// 2. Find the specific Market within that event
-const warsh = fedEvent.markets.match('Kevin Warsh');
-
-console.log(`Price: ${warsh.yes?.price}`);
-```
-
-## Trading
-pmxt supports unified trading across exchanges.
-
-### Setup
-To trade, you must provide your private credentials during initialization. For detailed credential setup instructions, see the exchange-specific guides: [Polymarket](core/docs/SETUP_POLYMARKET.md), [Kalshi](core/docs/SETUP_KALSHI.md), [Limitless](core/docs/SETUP_LIMITLESS.md).
+Use this when you self-host the local server. See [Self-hosted](#self-hosted) for setup. You provide venue credentials directly — no `pmxt_api_key` required. For detailed credential setup instructions, see the exchange-specific guides: [Polymarket](core/docs/SETUP_POLYMARKET.md), [Kalshi](core/docs/SETUP_KALSHI.md), [Limitless](core/docs/SETUP_LIMITLESS.md).
 
 #### Polymarket
 ```python
@@ -207,35 +275,9 @@ exchange = pmxt.Limitless(
 )
 ```
 
-### Trading Example (Python)
+## Self-hosted
 
-```python
-import pmxt
-import os
-
-# Initialize with credentials (e.g., Polymarket)
-exchange = pmxt.Polymarket(
-    private_key=os.getenv('POLYMARKET_PRIVATE_KEY'),
-    proxy_address=os.getenv('POLYMARKET_PROXY_ADDRESS')
-)
-
-# 1. Check Balance
-balance = exchange.fetch_balance()
-print(f"Available balance: {balance[0].available}")
-
-# 2. Fetch markets
-markets = exchange.fetch_markets(query='Trump')
-
-# 3. Place an Order (using outcome shorthand)
-order = exchange.create_order(
-    outcome=markets[0].yes,
-    side='buy',
-    type='limit',
-    price=0.33,
-    amount=100
-)
-print(f"Order Status: {order.status}")
-```
+To self-host pmxt-core on your own machine: `pip install pmxt-core` (Python) or `npm install pmxt-core` (Node.js), then construct any venue client without `pmxt_api_key`. The SDK spawns a local sidecar process; you supply venue credentials directly. See the [self-hosted guide](https://pmxt.dev/docs/guides/self-hosted) for details.
 
 ## Documentation
 

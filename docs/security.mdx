@@ -51,20 +51,20 @@ wallet, fund it with only what you need, and use that wallet's private key
 with PMXT.
 </Warning>
 
-<Warning>
-**For maximum security, run pmxt locally.** The hosted API exists for
-convenience. If you are not comfortable sending your private key to a
-third-party server — even over HTTPS — you can run pmxt-core locally and
-retain full custody of your credentials. They will never leave your machine.
+<Note>
+**Self-host pmxt-core if you want to keep venue credentials entirely on
+your own machine.** Most users should use hosted with PMXT's
+PreFundedEscrow custody — see [Hosted trading](/concepts/hosted-trading).
+Self-hosting is the right fit when you need sub-100ms latency, want raw
+venue credentials, or have regulatory custody requirements. See
+[Self-hosted](/guides/self-hosted) for setup.
 
 ```bash
-npm install pmxt-core
+npm install pmxtjs
 # or
 pip install pmxt
 ```
-
-See the [quickstart](/quickstart) for local setup.
-</Warning>
+</Note>
 
 ### Best practices
 

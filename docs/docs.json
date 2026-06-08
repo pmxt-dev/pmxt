@@ -45,6 +45,7 @@
       "href": "https://pmxt.dev/dashboard"
     }
   },
+  "redirects": [],
   "navigation": {
     "tabs": [
       {
@@ -55,6 +56,7 @@
             "pages": [
               "introduction",
               "quickstart",
+              "trading-quickstart",
               "authentication",
               "mcp",
               "security",
@@ -67,12 +69,25 @@
             "pages": [
               "concepts/unified-schema",
               "concepts/catalog-vs-live",
-              "concepts/venues"
+              "concepts/venues",
+              "concepts/hosted-trading",
+              "concepts/hosted-vs-self-hosted",
+              "concepts/catalog-uuid-vs-venue-id"
             ]
           },
           {
-            "group": "SDK",
+            "group": "Hosted Trading",
             "pages": [
+              "guides/escrow-lifecycle",
+              "guides/signing",
+              "guides/hosted-errors",
+              "guides/migrate-to-hosted-trading"
+            ]
+          },
+          {
+            "group": "Self-host",
+            "pages": [
+              "guides/self-hosted",
               "sdk/server"
             ]
           }
@@ -107,6 +122,13 @@
       {
         "tab": "API Reference",
         "groups": [
+          {
+            "group": "Reference",
+            "pages": [
+              "api-reference/errors",
+              "api-reference/configuration"
+            ]
+          },
           {
             "group": "Overview",
             "pages": [

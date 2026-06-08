@@ -1,8 +1,8 @@
 # PMXT Python SDK
 
-A unified Python interface for interacting with multiple prediction market exchanges (Kalshi, Polymarket).
+A unified Python interface for prediction market exchanges (Polymarket, Kalshi, Limitless, Opinion, and more).
 
-> **Note**: This SDK requires the PMXT sidecar server to be running. See [Installation](#installation) below.
+> **Note**: Use with a PMXT API key (hosted, recommended) or self-host the sidecar locally. Get a key at [pmxt.dev/dashboard](https://pmxt.dev/dashboard).
 
 ## Installation
 
@@ -10,19 +10,23 @@ A unified Python interface for interacting with multiple prediction market excha
 pip install pmxt
 ```
 
-**Requirements**: Python >= 3.8. The sidecar server is bundled automatically via the `pmxt-core` dependency -- no separate install needed.
+**Requirements**: Python >= 3.8. The sidecar server is bundled automatically via the `pmxt-core` dependency — only needed when self-hosting.
 
 ## Quick Start
+
+Get your API key at [pmxt.dev/dashboard](https://pmxt.dev/dashboard). For reads, only `pmxt_api_key` and `wallet_address` are required.
 
 ```python
 import pmxt
 
-# Initialize exchanges (server starts automatically!)
-poly = pmxt.Polymarket()
-kalshi = pmxt.Kalshi()
+# Reads — pmxt_api_key + wallet_address only
+client = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWalletAddress",
+)
 
 # Search for markets
-markets = poly.fetch_markets(query="Trump")
+markets = client.fetch_markets(query="Trump")
 print(markets[0].title)
 
 # Get outcome details
@@ -30,28 +34,41 @@ outcome = markets[0].outcomes[0]
 print(f"{outcome.label}: {outcome.price * 100:.1f}%")
 
 # Fetch historical data (use outcome.outcome_id!)
-candles = poly.fetch_ohlcv(
+candles = client.fetch_ohlcv(
     outcome.outcome_id,
     resolution="1d",
-    limit=30
+    limit=30,
 )
 
 # Get current order book
-order_book = poly.fetch_order_book(outcome.outcome_id)
+order_book = client.fetch_order_book(outcome.outcome_id)
 spread = order_book.asks[0].price - order_book.bids[0].price
 print(f"Spread: {spread * 100:.2f}%")
+
+# Account reads
+positions = client.fetch_positions()
+balance = client.fetch_balance()
 ```
 
-### How It Works
+### How it works (hosted)
 
-The Python SDK automatically manages the PMXT sidecar server:
+When you pass `pmxt_api_key`, the SDK talks to the PMXT hosted services:
+
+1. Catalog requests go to `api.pmxt.dev` (markets, events, order books, OHLCV, trades).
+2. Trading requests go to `trade.pmxt.dev` (orders, positions, balances).
+3. The SDK does **not** spawn a local process.
+4. For Polymarket and Opinion, PMXT's PreFundedEscrow handles custody — you sign orders with your own key, PMXT settles on-chain.
+
+### How it works (self-hosted)
+
+When you omit `pmxt_api_key`, the Python SDK manages the PMXT sidecar server for you:
 
 1. **First API call**: Checks if server is running
 2. **Auto-start**: Starts server if needed (takes ~1-2 seconds)
 3. **Reuse**: Multiple Python processes share the same server
 4. **Zero config**: Just import and use!
 
-### Manual Server Control (Optional)
+#### Manual server control (optional)
 
 If you prefer to manage the server yourself:
 
@@ -63,9 +80,57 @@ poly = pmxt.Polymarket(auto_start_server=False)
 # $ pmxt-server
 ```
 
-## Authentication (for Trading)
+## Trading
 
-### Polymarket
+### Hosted trading (recommended)
+
+With a PMXT API key, pass `pmxt_api_key`, `wallet_address`, and `private_key`. The SDK auto-wraps your key into an EIP-712 signer and PMXT settles the order on-chain.
+
+#### Polymarket
+
+```python
+import pmxt
+
+trader = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWalletAddress",
+    private_key="0xYourPrivateKey",
+)
+
+balance = trader.fetch_balance()
+print(f"Available: ${balance[0].available}")
+
+order = trader.create_order(
+    market_id="market-uuid",
+    outcome_id="outcome-uuid",
+    side="buy",
+    order_type="market",
+    amount=5.0,
+    denom="usdc",
+    slippage_pct=30.0,
+)
+print(f"Order status: {order.status}")
+```
+
+#### Opinion
+
+```python
+import pmxt
+
+trader = pmxt.Opinion(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWalletAddress",
+    private_key="0xYourPrivateKey",
+)
+```
+
+See the full [hosted trading guide](https://pmxt.dev/docs/concepts/hosted-trading) for venue support, custody model, and limits.
+
+### Self-hosted trading (advanced)
+
+When self-hosting, you supply venue credentials directly — no `pmxt_api_key`. The SDK spawns a local sidecar process.
+
+#### Polymarket
 
 Requires your **Polygon Private Key**:
 
@@ -94,7 +159,7 @@ order = poly.create_order(
 )
 ```
 
-### Kalshi
+#### Kalshi
 
 Requires **API Key** and **Private Key**:
 
@@ -113,7 +178,7 @@ for pos in positions:
     print(f"{pos.outcome_label}: ${pos.unrealized_pnl:.2f}")
 ```
 
-### Limitless
+#### Limitless
 
 Requires **Private Key**:
 

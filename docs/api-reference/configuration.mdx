@@ -1,0 +1,168 @@
+---
+title: Configuration
+description: "Exchange constructor arguments, environment variables, and base-URL resolution rules."
+---
+
+The PMXT SDKs share one configuration surface across hosted and self-hosted modes. The same `ExchangeOptions` object selects mode, supplies credentials, and overrides defaults. Hosted is the default; self-hosted is the explicit fallback when no `pmxt_api_key` is present.
+
+## ExchangeOptions
+
+Constructor arguments, Python kwargs alongside TypeScript option keys.
+
+### Hosted (the default)
+
+| Python kwarg | TypeScript key | Type | Required? | Description |
+| ------------ | -------------- | ---- | --------- | ----------- |
+| `pmxt_api_key` | `pmxtApiKey` | `str` | Required for hosted | PMXT API key from [pmxt.dev/dashboard](https://pmxt.dev/dashboard). Triggers hosted mode. |
+| `wallet_address` | `walletAddress` | `str` | Required for hosted writes + escrow | Address that owns the escrow balance and signs orders. |
+| `private_key` | `privateKey` | `str` | Required for hosted writes | EVM private key used to sign EIP-712 typed-data locally. Auto-wrapped into a signer. |
+| `signer` | `signer` | `Signer` | Optional (alt to `private_key`) | Custom signer implementing `sign_typed_data` / `signTypedData`. For hardware wallets, MPC, remote signing. |
+| `base_url` | `baseUrl` | `str` | Optional | Override the default `https://api.pmxt.dev`. Rarely needed. |
+| `trade_base_url` | `tradeBaseUrl` | `str` | Optional | Override the default `https://trade.pmxt.dev`. Rarely needed. |
+| `timeout` | `timeout` | `float` (s) | Optional | Per-request timeout in seconds. Default 30. |
+
+<CodeGroup>
+```python Python
+import pmxt
+
+# Read-only: no private_key
+read_only = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWallet...",
+)
+
+# Trading-capable: private_key auto-wraps into EthAccountSigner
+trader = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWallet...",
+    private_key="0xYourPrivateKey...",
+)
+
+# Custom signer (hardware wallet, MPC, etc.)
+trader = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWallet...",
+    signer=my_ledger_signer,
+)
+```
+
+```typescript TypeScript
+import { Polymarket } from "pmxtjs";
+
+// Read-only
+const readOnly = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWallet...",
+});
+
+// Trading-capable
+const trader = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWallet...",
+  privateKey: "0xYourPrivateKey...",
+});
+
+// Custom signer
+const traderCustom = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWallet...",
+  signer: myLedgerSigner,
+});
+```
+</CodeGroup>
+
+### Self-hosted (fallback)
+
+When `pmxt_api_key` is absent, the SDK enters self-hosted mode and routes through the local `pmxt-core` server. Venue-native credentials apply here.
+
+| Python kwarg | TypeScript key | Type | Description |
+| ------------ | -------------- | ---- | ----------- |
+| `private_key` | `privateKey` | `str` | EVM private key, for Polymarket / Limitless / Probable / Opinion / etc. |
+| `api_key_id`, `private_key_pem` | `apiKeyId`, `privateKeyPem` | `str` | Kalshi RSA credentials. |
+| `email`, `password` | `email`, `password` | `str` | Smarkets session credentials. |
+| `local_port` | `localPort` | `int` | Override the default pmxt-core port (`3847`). |
+
+See [Self-hosted](/guides/self-hosted) for per-venue credential examples.
+
+## Environment variables
+
+| Variable | Effect |
+| -------- | ------ |
+| `PMXT_API_KEY` | Default `pmxt_api_key` for all SDK clients. Explicit constructor arg wins. |
+| `PMXT_BASE_URL` | Override `api.pmxt.dev`. Useful for staging environments. |
+| `PMXT_TRADE_BASE_URL` | Override `trade.pmxt.dev`. Useful for staging hosted-trading environments. |
+| `PMXT_LOCAL_PORT` | Override the local pmxt-core port (default `3847`). Self-hosted only. |
+| `PMXT_ALWAYS_RESTART=1` | Force-restart the local pmxt-core on every `ensure_server_running` call. Useful during local SDK development. |
+| `PMXT_TIMEOUT` | Default per-request timeout in seconds. |
+| `PMXT_LOG_LEVEL` | Log verbosity for SDK + local server: `debug`, `info`, `warn`, `error`. |
+
+<Info>
+Constructor arguments always take precedence over environment variables. The env-var path is for ergonomics in deploy environments where you set `PMXT_API_KEY` once.
+</Info>
+
+## Base URL resolution
+
+When the SDK makes a request, it picks one of three base URLs based on the operation and configuration:
+
+1. **`trade.pmxt.dev` (hosted trading)** — used for `/v0/trade/*`, `/v0/user/*`, and `/v0/escrow/*` whenever `pmxt_api_key` is set. Override with `trade_base_url` or `PMXT_TRADE_BASE_URL`.
+2. **`api.pmxt.dev` (hosted catalog + reads)** — used for `/v0/markets`, `/v0/events`, `/api/{venue}/*` whenever `pmxt_api_key` is set and the operation is not a hosted-trading write. Override with `base_url` or `PMXT_BASE_URL`.
+3. **`http://localhost:3847` (self-hosted)** — used for **every** operation when `pmxt_api_key` is absent. Override port with `local_port` or `PMXT_LOCAL_PORT`.
+
+### Precedence (highest to lowest)
+
+1. Explicit constructor `base_url` / `trade_base_url`.
+2. `PMXT_BASE_URL` / `PMXT_TRADE_BASE_URL` env var.
+3. Default (`https://api.pmxt.dev` / `https://trade.pmxt.dev` / `http://localhost:3847`).
+
+### Worked example
+
+```python
+import os
+os.environ["PMXT_BASE_URL"] = "https://api-staging.pmxt.dev"
+
+# Hosted mode (because pmxt_api_key is set); base_url comes from env
+client = pmxt.Polymarket(pmxt_api_key="pmxt_test_...")
+# → reads go to https://api-staging.pmxt.dev
+# → trade writes still go to https://trade.pmxt.dev (PMXT_TRADE_BASE_URL not set)
+
+# Self-hosted mode (no pmxt_api_key); env var ignored
+local = pmxt.Polymarket(private_key="0x...")
+# → reads + writes go to http://localhost:3847
+```
+
+## Hosted as default
+
+The configuration philosophy:
+
+- Setting `pmxt_api_key` (or `PMXT_API_KEY`) is the **single switch** that opts in to hosted mode. No other flag is required.
+- All hosted-specific URLs default to PMXT's production endpoints — no setup beyond the API key.
+- Self-hosted is the explicit fallback path. The SDK only attempts to spawn `pmxt-core` when no API key is configured.
+
+The result: the **shortest correct config is hosted**. A single env var (`PMXT_API_KEY`) plus a constructor with a wallet and private key is everything you need to trade.
+
+```python
+# Minimum hosted trading config:
+import os
+os.environ["PMXT_API_KEY"] = "pmxt_live_..."
+
+client = pmxt.Polymarket(
+    wallet_address="0x...",
+    private_key="0x...",
+)
+```
+
+## Self-hosted fallback (advanced)
+
+If you have specific reasons to run local — sub-100ms latency, raw venue credentials, regulatory custody — drop the API key. See [Self-hosted](/guides/self-hosted) for the full guide and [Server Management](/sdk/server) for lifecycle controls.
+
+```python
+# Self-hosted: no PMXT_API_KEY, no pmxt_api_key arg
+client = pmxt.Polymarket(private_key="0x...")
+```
+
+## See also
+
+- [Authentication](/authentication) — API keys and venue credentials.
+- [Self-hosted](/guides/self-hosted) — running pmxt-core locally.
+- [Server Management](/sdk/server) — local server lifecycle.
+- [Hosted vs self-hosted](/concepts/hosted-vs-self-hosted) — when each mode applies.

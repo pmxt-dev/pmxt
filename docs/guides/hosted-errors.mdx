@@ -1,0 +1,269 @@
+---
+title: Handling Hosted Errors
+description: "Every common hosted-trading error, when it fires, and how to recover."
+---
+
+Hosted trading errors all descend from `HostedTradingError`. Each subclass also inherits from a **semantic parent** — `InsufficientEscrowBalance` is also an `InsufficientFunds`, `OrderSizeTooSmall` is also an `InvalidOrder`. Catch the parent and you handle both hosted and self-hosted paths with the same code. Catch the leaf and you can branch on the specific recovery action.
+
+In **Python**, this is true multi-inheritance — `isinstance(e, InsufficientFunds)` and `isinstance(e, HostedTradingError)` both work. In **TypeScript**, the same effect is achieved with a `static isHostedError = true` flag and the `isHostedError()` helper, since JS only allows single-extends.
+
+For the full class reference, see [API Reference / Errors](/api-reference/errors).
+
+This page covers the five errors you'll hit most often.
+
+## InsufficientEscrowBalance
+
+**When it fires:** the order would draw more USDC than your escrow free balance. PMXT debits escrow when an order is submitted; if the requested `amount` exceeds `balance.free`, the build phase rejects the order.
+
+**Detail string:** `Insufficient escrow balance: requested 50.0 USDC, available 12.34 USDC`.
+
+**Parent classes:** `InsufficientFunds`, `HostedTradingError`.
+
+**Recovery:** deposit more, or shrink the order. See [Escrow lifecycle](/guides/escrow-lifecycle).
+
+<CodeGroup>
+```python Python
+from pmxt.errors import InsufficientFunds
+from pmxt._hosted_errors import InsufficientEscrowBalance
+
+try:
+    client.create_order(...)
+except InsufficientEscrowBalance as e:
+    print(f"Need to deposit more. {e.detail}")
+    # Build a deposit tx for the shortfall
+    tx = client.escrow.deposit_tx(amount=20.0)
+    # ... sign and broadcast, then retry the order
+except InsufficientFunds:
+    # Self-hosted path also lands here
+    ...
+```
+
+```typescript TypeScript
+import { InsufficientEscrowBalance, isHostedError } from "pmxtjs";
+
+try {
+  await client.createOrder({ ... });
+} catch (e) {
+  if (e instanceof InsufficientEscrowBalance) {
+    console.log(`Need to deposit. ${(e as any).detail}`);
+    const tx = await client.escrow.depositTx(20);
+    // sign and broadcast, retry
+  } else if (isHostedError(e)) {
+    // any other hosted-error parent
+  } else {
+    throw e;
+  }
+}
+```
+</CodeGroup>
+
+## OrderSizeTooSmall
+
+**When it fires:** the resolved share count is below the venue's minimum. Polymarket's minimum is **5 shares per order**. A $2 buy at $0.78/share is only 2.5 shares — rejected.
+
+**Detail string:** `Order size 2.564 below the minimum 5 shares for venue polymarket`.
+
+**Parent classes:** `InvalidOrder`, `HostedTradingError`.
+
+**Recovery:** size up the order or pick a cheaper outcome.
+
+<Warning>
+The 5-share minimum is enforced **after** PMXT resolves your USDC amount into shares using the current price. If the price moves between price-check and submit, a borderline-sized order may flip from accepted to rejected. Add a buffer for marginal sizes.
+</Warning>
+
+<CodeGroup>
+```python Python
+from pmxt._hosted_errors import OrderSizeTooSmall
+
+try:
+    client.create_order(amount=2.0, ...)
+except OrderSizeTooSmall as e:
+    # Resize: at $0.78/share, 5 shares ≈ $3.90. Round up with buffer.
+    client.create_order(amount=5.0, ...)
+```
+
+```typescript TypeScript
+import { OrderSizeTooSmall } from "pmxtjs";
+
+try {
+  await client.createOrder({ amount: 2, ... });
+} catch (e) {
+  if (e instanceof OrderSizeTooSmall) {
+    await client.createOrder({ amount: 5, ... });
+  } else {
+    throw e;
+  }
+}
+```
+</CodeGroup>
+
+## InvalidApiKey
+
+**When it fires:** the `pmxt_api_key` is missing, malformed, revoked, or expired. Surface is `HTTP 401` from `trade.pmxt.dev`.
+
+**Detail string:** `invalid api key` or `missing api key`.
+
+**Parent classes:** `AuthenticationError`, `HostedTradingError`.
+
+**Recovery:** rotate the key from [pmxt.dev/dashboard](https://pmxt.dev/dashboard). Update your deployed config. **Do not retry** with the same key.
+
+<CodeGroup>
+```python Python
+from pmxt.errors import AuthenticationError
+from pmxt._hosted_errors import InvalidApiKey
+
+try:
+    client.fetch_balance()
+except InvalidApiKey:
+    # Rotate the key; don't retry with the same one
+    raise SystemExit("PMXT_API_KEY invalid — rotate from dashboard")
+```
+
+```typescript TypeScript
+import { InvalidApiKey } from "pmxtjs";
+
+try {
+  await client.fetchBalance();
+} catch (e) {
+  if (e instanceof InvalidApiKey) {
+    throw new Error("PMXT_API_KEY invalid — rotate from dashboard");
+  }
+  throw e;
+}
+```
+</CodeGroup>
+
+## BuiltOrderExpired
+
+**When it fires:** between `build_order` and `submit_order`, the built-order TTL elapsed (typically 30 seconds). Also fires for `cancel_id expired` in the cancel flow.
+
+**Detail string:** `built_order_id expired` or `cancel_id expired`.
+
+**Parent classes:** `InvalidOrder`, `HostedTradingError`.
+
+**Recovery:** re-build, then re-sign, then submit. Don't reuse the old `built_order_id`.
+
+<Warning>
+Hardware-wallet signing is the most common cause — Ledger confirmations can take 10–60 seconds, blowing past the TTL. If you sign with a hardware wallet, expect to retry once on `BuiltOrderExpired`.
+</Warning>
+
+<CodeGroup>
+```python Python
+from pmxt._hosted_errors import BuiltOrderExpired
+
+def submit_with_retry(client, *, market_id, outcome_id, **kwargs):
+    for attempt in range(2):
+        built = client.build_order(market_id=market_id, outcome_id=outcome_id, **kwargs)
+        sig = signer.sign_typed_data(built.typed_data)
+        try:
+            return client.submit_order(
+                built_order_id=built.built_order_id,
+                signature=sig,
+            )
+        except BuiltOrderExpired:
+            if attempt == 1:
+                raise
+            continue
+```
+
+```typescript TypeScript
+import { BuiltOrderExpired } from "pmxtjs";
+
+async function submitWithRetry(client, params) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const built = await client.buildOrder(params);
+    const sig = await signer.signTypedData(
+      built.typedData.domain,
+      built.typedData.types,
+      built.typedData.message,
+    );
+    try {
+      return await client.submitOrder({
+        builtOrderId: built.builtOrderId,
+        signature: sig,
+      });
+    } catch (e) {
+      if (e instanceof BuiltOrderExpired && attempt === 0) continue;
+      throw e;
+    }
+  }
+}
+```
+</CodeGroup>
+
+## NoLiquidity
+
+**When it fires:** the side of the book you're crossing is empty — there are no resting asks for a market buy, or no resting bids for a market sell.
+
+**Detail string:** `book has no resting asks` or `book has no resting bids`.
+
+**Parent classes:** `InvalidOrder`, `HostedTradingError`.
+
+**Recovery:** wait for liquidity, post a limit order instead of a market order, or pick a different outcome.
+
+<CodeGroup>
+```python Python
+from pmxt._hosted_errors import NoLiquidity
+
+try:
+    client.create_order(order_type="market", ...)
+except NoLiquidity:
+    # Fall back to a limit order at a price you'd accept
+    client.create_order(order_type="limit", price=0.50, ...)
+```
+
+```typescript TypeScript
+import { NoLiquidity } from "pmxtjs";
+
+try {
+  await client.createOrder({ orderType: "market", ... });
+} catch (e) {
+  if (e instanceof NoLiquidity) {
+    await client.createOrder({ orderType: "limit", price: 0.5, ... });
+  } else {
+    throw e;
+  }
+}
+```
+</CodeGroup>
+
+## Workaround warnings
+
+<Warning>
+**Use aggressive `slippage_pct` until the upstream economic validator tightens its `worst_price` checks.** Pragmatic defaults: `slippage_pct=30` for buys, `slippage_pct=99.9` for sells. Lower values frequently trip a precision check that has nothing to do with actual slippage. This will tighten once the validator ships its fix.
+</Warning>
+
+<Warning>
+**`fetch_markets` returns venue-native IDs**, but `create_order` needs catalog UUIDs. If you see `OutcomeNotFound` despite having a valid-looking ID, you are almost certainly passing a venue-native ID to a hosted endpoint. See [Catalog UUID vs venue ID](/concepts/catalog-uuid-vs-venue-id).
+</Warning>
+
+## Catching everything hosted
+
+If you only want to know "did the hosted layer reject this?", catch `HostedTradingError` (Python) or use `isHostedError(e)` (TS):
+
+<CodeGroup>
+```python Python
+from pmxt._hosted_errors import HostedTradingError
+
+try:
+    client.create_order(...)
+except HostedTradingError as e:
+    log.error("hosted trade failed", status=e.status, detail=e.detail)
+```
+
+```typescript TypeScript
+import { isHostedError } from "pmxtjs";
+
+try {
+  await client.createOrder({ ... });
+} catch (e) {
+  if (isHostedError(e)) {
+    log.error("hosted trade failed", e);
+  } else {
+    throw e;
+  }
+}
+```
+</CodeGroup>
+
+For the full error class reference, parent classes, and status codes, see [API Reference / Errors](/api-reference/errors).

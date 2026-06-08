@@ -3,6 +3,15 @@ title: Server Management
 description: "Start, stop, restart, and inspect the PMXT local server from your SDK code."
 ---
 
+<Note>
+This page covers the **self-hosted** local server. If you're using a
+`pmxt_api_key`, you can ignore this page — the SDK talks to
+`api.pmxt.dev` / `trade.pmxt.dev` directly and never spawns a local
+process. See [Hosted trading](/concepts/hosted-trading) for the default
+path, or [Self-hosted](/guides/self-hosted) for when running local is
+the right choice.
+</Note>
+
 The PMXT SDKs manage a local server automatically. When you
 create an exchange instance without a hosted API key, the SDK spawns a
 local server process, waits for it to become healthy, and routes every

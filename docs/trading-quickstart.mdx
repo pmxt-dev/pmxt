@@ -1,0 +1,177 @@
+---
+title: Trading Quickstart
+description: "Place your first hosted trade in 60 seconds — API key, escrow deposit, market order."
+---
+
+This page walks you from a fresh `pmxt_api_key` to a confirmed position on Polymarket in under a minute. Hosted mode is the default: PMXT custodies USDC in [PreFundedEscrow](/guides/escrow-lifecycle) and your wallet only ever signs EIP-712 typed-data payloads — no private key leaves your machine when you trade.
+
+<Info>
+Hosted trading currently supports **Polymarket** (Polygon) and **Opinion** (cross-chain). Other venues are read-only via the hosted catalog. To trade on those, run the [self-hosted server](/guides/self-hosted) with raw venue credentials.
+</Info>
+
+## 1. Get an API key
+
+Go to [pmxt.dev/dashboard](https://pmxt.dev/dashboard), create a key, and copy it. It looks like `pmxt_live_...` and works immediately.
+
+```bash
+export PMXT_API_KEY="pmxt_live_..."
+```
+
+## 2. Install the SDK
+
+<CodeGroup>
+```bash Python
+pip install pmxt
+```
+
+```bash TypeScript
+npm install pmxtjs
+```
+</CodeGroup>
+
+## 3. Construct a hosted client
+
+A hosted trading client takes three things: your PMXT API key, the wallet address you'll trade from, and the private key for that wallet (used only to sign EIP-712 messages locally — it is never sent to PMXT). The SDK auto-wraps `private_key` into an `EthAccountSigner` / `EthersSigner` for you.
+
+<CodeGroup>
+```python Python
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWallet...",
+    private_key="0xYourPrivateKey...",
+)
+```
+
+```typescript TypeScript
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWallet...",
+  privateKey: "0xYourPrivateKey...",
+});
+```
+
+```bash curl
+# Trading via curl is possible but tedious — you have to build the
+# EIP-712 payload, sign it locally, and POST it yourself. The SDK
+# does all of this for you. See /guides/signing for the protocol.
+echo "Use an SDK for the quickstart."
+```
+</CodeGroup>
+
+<Warning>
+Use a **dedicated trading wallet**. The private key only stays on your machine for local signing, but treat the wallet as compromised if the host is ever compromised. Read [Security](/security) before funding production wallets.
+</Warning>
+
+## 4. Approve and deposit USDC into escrow
+
+Hosted trades execute against your balance in PMXT's `PreFundedEscrow` contract. The first time you trade, you need to (a) approve the escrow to pull USDC from your wallet, and (b) deposit. Both methods on `client.escrow` build **unsigned** transactions — you submit them with your wallet (web3, ethers, viem, MetaMask, etc.).
+
+<CodeGroup>
+```python Python
+# 1. Build an unsigned ERC-20 approval tx for USDC
+approve_tx = client.escrow.approve_tx("usdc")
+# Sign and send approve_tx with your wallet library...
+
+# 2. Build an unsigned deposit tx for 10 USDC
+deposit_tx = client.escrow.deposit_tx(amount=10.0)
+# Sign and send deposit_tx with your wallet library...
+
+# 3. Confirm the deposit landed
+balance = client.fetch_balance()
+print(f"Escrow USDC: {balance.free}")
+```
+
+```typescript TypeScript
+// 1. Build an unsigned ERC-20 approval tx for USDC
+const approveTx = await client.escrow.approveTx("usdc");
+// Sign and send approveTx with your wallet library...
+
+// 2. Build an unsigned deposit tx for 10 USDC
+const depositTx = await client.escrow.depositTx(10);
+// Sign and send depositTx with your wallet library...
+
+// 3. Confirm the deposit landed
+const balance = await client.fetchBalance();
+console.log(`Escrow USDC: ${balance.free}`);
+```
+</CodeGroup>
+
+<Note>
+Approval and deposit are one-time setup. Subsequent trades just spend from escrow until you withdraw. See [Escrow Lifecycle](/guides/escrow-lifecycle) for the full deposit / withdraw flow.
+</Note>
+
+## 5. Place your first market order
+
+Let's buy 5 USDC of the YES outcome on **"Will the Knicks win the 2026 NBA Championship?"**. These UUIDs come straight from the live hosted catalog.
+
+<CodeGroup>
+```python Python
+order = client.create_order(
+    market_id="2eeb03dc-404b-41d5-bc57-6aeb37927ae6",
+    outcome_id="a114f052-1fd1-4bcd-b9cf-de019db81b67",
+    side="buy",
+    order_type="market",
+    amount=5.0,
+    denom="usdc",
+    slippage_pct=30.0,
+)
+print(f"Order {order.id}: {order.status}")
+```
+
+```typescript TypeScript
+const order = await client.createOrder({
+  marketId: "2eeb03dc-404b-41d5-bc57-6aeb37927ae6",
+  outcomeId: "a114f052-1fd1-4bcd-b9cf-de019db81b67",
+  side: "buy",
+  orderType: "market",
+  amount: 5,
+  denom: "usdc",
+  slippagePct: 30,
+});
+console.log(`Order ${order.id}: ${order.status}`);
+```
+
+```bash curl
+# create_order is a convenience wrapper. The hosted API exposes a
+# build → sign → submit flow. See /guides/signing for the raw protocol.
+echo "Use an SDK for create_order."
+```
+</CodeGroup>
+
+<Warning>
+**Polymarket has a 5-share minimum per order.** At ~$0.78/share, a 5 USDC buy is ~6.4 shares — fine. But $2 at the same price is only 2.5 shares and will be rejected with `OrderSizeTooSmall`. Size up or switch to a cheaper outcome.
+</Warning>
+
+<Warning>
+**Use aggressive `slippage_pct`** until the upstream economic validator tightens its `worst_price` checks. Pragmatic defaults: `slippage_pct=30` for buys, `slippage_pct=99.9` for sells. Lower values frequently trip a precision check that has nothing to do with actual slippage.
+</Warning>
+
+## 6. Verify the fill
+
+Hosted positions appear immediately on `fetch_positions`. The position's `quantity` and `notional` reflect the escrow-side accounting.
+
+<CodeGroup>
+```python Python
+positions = client.fetch_positions()
+for p in positions:
+    print(f"{p.market_id}  qty={p.quantity}  notional={p.notional}")
+```
+
+```typescript TypeScript
+const positions = await client.fetchPositions();
+for (const p of positions) {
+  console.log(`${p.marketId}  qty=${p.quantity}  notional=${p.notional}`);
+}
+```
+</CodeGroup>
+
+That's it — you placed a real trade through hosted PMXT. From here:
+
+- [Escrow lifecycle](/guides/escrow-lifecycle) — deposits, withdrawals, the request/claim timelock.
+- [Hosted errors](/guides/hosted-errors) — what each error means and how to recover.
+- [Signing](/guides/signing) — the EIP-712 protocol underneath `create_order`.
+- [Self-hosted](/guides/self-hosted) — when to skip hosted and run pmxt-core yourself.

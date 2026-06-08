@@ -10,28 +10,36 @@ talking to.
 
 It runs two ways:
 
-- **Locally** — the open-source [pmxt](https://github.com/pmxt-dev/pmxt)
-  local server runs on your machine. No API key, no external dependency. Your
-  requests go directly to the venues.
-- **Hosted** — `api.pmxt.dev` adds a shared catalog, cross-venue search,
-  and you skip running infrastructure. Set an API key and the SDK
-  switches automatically.
+- **Hosted (default)** — `api.pmxt.dev` and `trade.pmxt.dev` give you a
+  shared catalog, cross-venue search, and end-to-end [hosted
+  trading](/concepts/hosted-trading) with PreFundedEscrow custody. Set
+  an API key and the SDK is fully operational.
+- **Self-hosted (advanced)** — for users who run
+  [pmxt-core](https://github.com/pmxt-dev/pmxt) on their own machine.
+  No API key, no external dependency. Your requests go directly to the
+  venues. See [self-hosted](/guides/self-hosted).
 
 The code is identical either way:
 
 ```python
 import pmxt
 
-# Local: talks directly to Polymarket
-poly = pmxt.Polymarket()
-
-# Hosted: talks to api.pmxt.dev (add an API key and that's it)
+# Hosted (default): talks to api.pmxt.dev / trade.pmxt.dev
 poly = pmxt.Polymarket(pmxt_api_key="pmxt_live_...")
 
 markets = poly.fetch_markets(query="fed rate cut", limit=5)
 for m in markets:
     print(m.title, m.outcomes[0].price)
 ```
+
+If you'd rather run pmxt-core yourself, drop the API key:
+
+```python
+# Self-hosted: SDK spawns pmxt-core on localhost
+poly = pmxt.Polymarket()
+```
+
+See [self-hosted](/guides/self-hosted) for when that's the right choice.
 
 Swap the venue class — `pmxt.Kalshi(...)`, `pmxt.Limitless(...)` — and
 the methods and response shapes stay the same.

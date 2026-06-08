@@ -1,0 +1,197 @@
+---
+title: Migrate to Hosted Trading
+description: "Move existing pmxt / pmxtjs code from venue-direct to hosted-mode trading."
+---
+
+If you've been using PMXT in **venue-direct** mode — passing raw venue credentials to a local `pmxt-core` server — moving to hosted mode is mostly additive. The SDK surface is unchanged; the constructor takes new arguments; a few read methods change their data source. This guide enumerates every observable difference so you can audit your code before flipping the switch.
+
+This is a port of `sdks/python/MIGRATION.md` and `sdks/typescript/MIGRATION.md` with extra context. The original notes are tagged with the SDK version that introduced each change (`2.18.0` and later).
+
+## TL;DR
+
+1. Get a `pmxt_api_key` from [pmxt.dev/dashboard](https://pmxt.dev/dashboard).
+2. Pass `pmxt_api_key`, `wallet_address`, `private_key` to the exchange constructor.
+3. Approve + deposit USDC into PreFundedEscrow once (`client.escrow.approve_tx`, `client.escrow.deposit_tx`).
+4. Audit `fetch_balance()` consumers — the source changed.
+5. Audit `Position` field consumers — four fields are now Optional.
+6. Catch the new `HostedTradingError` tree where you used to catch broad `Exception`.
+
+## 1. Constructor — new arguments
+
+In venue-direct mode you'd construct a Polymarket client with a raw private key only. In hosted mode you also pass `pmxt_api_key` and an explicit `wallet_address`.
+
+<CodeGroup>
+```python Python
+# Before (venue-direct)
+client = pmxt.Polymarket(private_key="0xYourPrivateKey...")
+
+# After (hosted)
+client = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWallet...",
+    private_key="0xYourPrivateKey...",
+)
+```
+
+```typescript TypeScript
+// Before (venue-direct)
+const client = new Polymarket({ privateKey: "0xYourPrivateKey..." });
+
+// After (hosted)
+const client = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWallet...",
+  privateKey: "0xYourPrivateKey...",
+});
+```
+</CodeGroup>
+
+The `wallet_address` argument is new in hosted mode and is **required** for any `client.escrow.*` call — the SDK uses it to scope all escrow operations to a single user. If you've been deriving the address from the private key implicitly, make it explicit.
+
+## 2. Trust model — `pmxt_api_key` is a service-role credential
+
+`pmxt_api_key` is not app-scoped per-user auth. The key holder can:
+
+- Read any user's escrow data (balance, positions, trades) by passing a different `wallet_address`.
+- Forward signed orders for any wallet (the signature still gates the write).
+
+Writes are still gated by the user's EIP-712 signature against their own wallet — the key alone cannot move funds. Reads (`fetch_balance`, `fetch_positions`, etc.) are NOT gated by signature.
+
+**Treat `pmxt_api_key` as a backend secret.** Keep it on a server. Never ship it to a browser bundle. Never log it.
+
+If your previous architecture had end-user private keys on the server, hosted mode lets you flip that — keep `pmxt_api_key` on the server and push private keys to the client, where they're signed locally and never leave the device.
+
+## 3. `fetch_balance` — semantic change
+
+The shape of the `Balance` object is unchanged, but the source is different.
+
+| Mode | Source |
+| ---- | ------ |
+| Venue-direct (`pmxt_api_key=None`) | Wallet's CLOB-proxy USDC balance at the venue |
+| Hosted (`pmxt_api_key` set) | Wallet's USDC balance in PMXT's PreFundedEscrow on Polygon |
+
+If your code relied on venue-direct semantics — for example, comparing the balance against the raw on-chain USDC.e balance — audit it. The hosted balance reflects **available trading capital in escrow**, not the wallet's total USDC.
+
+<CodeGroup>
+```python Python
+balance = client.fetch_balance()
+# Hosted: `free` is the deposit-side escrow balance available for trading
+# Venue-direct: `free` is the wallet's CLOB-proxy USDC balance
+```
+
+```typescript TypeScript
+const balance = await client.fetchBalance();
+// Hosted: `free` is the escrow balance
+// Venue-direct: `free` is the CLOB-proxy USDC balance
+```
+</CodeGroup>
+
+## 4. `Position` fields now Optional
+
+Four fields on `Position` became Optional in 2.18.0. Venue-direct mode still populates them; hosted mode returns `None` / `undefined` when the server doesn't have the data yet.
+
+<CodeGroup>
+```python Python
+# Python: these are now Optional[...]
+position.outcome_label   # Optional[str]
+position.entry_price     # Optional[float]
+position.current_price   # Optional[float]
+position.unrealized_pnl  # Optional[float]
+
+# If your code does math on these, guard the None
+if position.current_price is not None:
+    pnl = position.current_price * position.quantity
+```
+
+```typescript TypeScript
+// TypeScript: these are now `| undefined`
+position.outcomeLabel   // string | undefined
+position.entryPrice     // number | undefined
+position.currentPrice   // number | undefined
+position.unrealizedPnL  // number | undefined
+
+if (position.currentPrice !== undefined) {
+  const pnl = position.currentPrice * position.quantity;
+}
+```
+</CodeGroup>
+
+`market_id`, `outcome_id`, `quantity`, `side`, `notional` are still required and always populated.
+
+## 5. New error tree
+
+Hosted mode introduces `HostedTradingError` and a suite of semantic-parent subclasses. The parents are the same classes used in venue-direct mode (`InsufficientFunds`, `InvalidOrder`, `AuthenticationError`, etc.), so existing `except`/`catch` clauses keep working.
+
+```python
+# Before: catch the venue-direct error
+try:
+    client.create_order(...)
+except InsufficientFunds:
+    ...
+
+# After: same catch still works for hosted (InsufficientEscrowBalance extends InsufficientFunds)
+try:
+    client.create_order(...)
+except InsufficientFunds:
+    ...
+```
+
+If you want hosted-specific handling, catch the leaf:
+
+```python
+from pmxt._hosted_errors import InsufficientEscrowBalance
+try:
+    client.create_order(...)
+except InsufficientEscrowBalance as e:
+    # Specifically the hosted-escrow shortfall
+    ...
+```
+
+See [Hosted errors](/guides/hosted-errors) for the full cookbook.
+
+## 6. Escrow setup — new one-time step
+
+Before your first hosted trade, USDC has to be in the PreFundedEscrow contract.
+
+<CodeGroup>
+```python Python
+# Once per wallet, once per token
+tx = client.escrow.approve_tx("usdc")
+# sign and broadcast via your wallet library
+
+# Once per top-up
+tx = client.escrow.deposit_tx(amount=100.0)
+# sign and broadcast
+```
+
+```typescript TypeScript
+const approve = await client.escrow.approveTx("usdc");
+// sign + broadcast
+
+const deposit = await client.escrow.depositTx(100);
+// sign + broadcast
+```
+</CodeGroup>
+
+There is no equivalent in venue-direct mode — direct venue trading uses the wallet's native balance. See [Escrow lifecycle](/guides/escrow-lifecycle) for details.
+
+## 7. Catalog UUIDs replace venue-native IDs in trading calls
+
+Venue-direct trading lets you pass venue-native IDs (Polymarket condition IDs, token IDs). Hosted trading requires **catalog UUIDs**. The simplest path: discover markets via the [Router](/router/overview) instead of via `client.fetch_markets`, since the Router returns UUIDs natively.
+
+See [Catalog UUID vs venue ID](/concepts/catalog-uuid-vs-venue-id) for the reverse-resolution workaround if you already have venue-native IDs in your database.
+
+## 8. Network surface
+
+Venue-direct mode talks to a local `pmxt-core` server, which talks to venue APIs directly. Hosted mode talks to `trade.pmxt.dev` and `api.pmxt.dev`. Make sure both are reachable from your runtime if you flip — corporate firewalls that allow only `api.pmxt.dev` will need `trade.pmxt.dev` added.
+
+## Rollback plan
+
+If you migrate and need to roll back, drop the `pmxt_api_key` argument. The SDK falls back to venue-direct mode and routes to the local pmxt-core server. No other changes needed. You'll lose the escrow funds until you withdraw them via `client.escrow.withdraw_tx`, but the venue-native trading flow is unchanged.
+
+## See also
+
+- [Trading quickstart](/trading-quickstart) — 60-second guided path.
+- [Escrow lifecycle](/guides/escrow-lifecycle) — deposit, withdraw, claim.
+- [Hosted errors](/guides/hosted-errors) — error class reference and recovery.
+- [Self-hosted](/guides/self-hosted) — when not to migrate.

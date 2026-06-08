@@ -1,0 +1,90 @@
+---
+title: Catalog UUID vs Venue ID
+description: "Two market identifier spaces coexist in PMXT — when each is used, and how to convert."
+---
+
+PMXT speaks two market identifier languages. The **catalog UUID** is PMXT's own stable identifier — a UUID assigned to every row in `prediction_markets.markets` and `prediction_markets.outcomes`. The **venue-native ID** is whatever the underlying venue uses — a Polymarket condition ID hex string, a Kalshi ticker, an Opinion market hash, a Limitless market address.
+
+Both exist. They are not interchangeable. Picking the wrong one is the single most common cause of `OutcomeNotFound` errors.
+
+## When each is used
+
+| Endpoint family | Identifier expected |
+| --------------- | ------------------- |
+| `trade.pmxt.dev/v0/trade/*` (hosted writes) | **Catalog UUID** |
+| `trade.pmxt.dev/v0/user/*` (hosted reads) | Wallet address (UUIDs not required) |
+| `api.pmxt.dev/v0/markets`, `/v0/events` (Router) | **Catalog UUID** in responses |
+| `api.pmxt.dev/api/{venue}/fetchMarkets` (per-venue reads) | Returns **venue-native ID** |
+| `api.pmxt.dev/api/{venue}/fetchOrderBook` (per-venue reads) | Accepts **venue-native ID** |
+| Direct venue API (self-hosted) | **Venue-native ID** only |
+
+The hosted trading API was designed to be venue-agnostic. To do that, every market reference needs a stable PMXT-owned identifier rather than a venue-native one that may collide across venues or change shape.
+
+## Examples
+
+A single Polymarket binary market has both:
+
+- Catalog `market_id`: `2eeb03dc-404b-41d5-bc57-6aeb37927ae6`
+- Polymarket `conditionId`: `0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5`
+
+Each outcome has both:
+
+- Catalog `outcome_id`: `a114f052-1fd1-4bcd-b9cf-de019db81b67`
+- Polymarket `tokenId`: `104932610032177696635191871147557737718087870958469629338467406422339967452218`
+
+`client.create_order(market_id="2eeb03dc-...", outcome_id="a114f052-...")` works against `trade.pmxt.dev`. `client.create_order(market_id="0xc704...", outcome_id="10493...")` will fail with `OutcomeNotFound`.
+
+## The `fetch_markets` quirk
+
+<Warning>
+**`fetch_markets` against a venue exchange returns venue-native IDs, not catalog UUIDs.** This is the quirk you will hit first.
+
+If you call `pmxt.Polymarket(...).fetch_markets(query="election")`, the `market_id` and `outcome_id` fields on every returned row are Polymarket-native. Feeding those into hosted-mode `create_order` will fail because `trade.pmxt.dev` resolves only catalog UUIDs.
+</Warning>
+
+This is a known gap. Three workarounds, ordered by ergonomics:
+
+### Workaround 1 — Use the Router
+
+The [Router](/router/overview) endpoints (`fetch_markets`, `fetch_events`) speak catalog UUIDs natively. The same query against the Router gives you UUIDs you can feed directly into `create_order`.
+
+```python
+router = pmxt.Router(pmxt_api_key="pmxt_live_...")
+markets = router.fetch_markets(query="knicks 2026 nba champion", venue="polymarket")
+# markets[0].market_id is already a catalog UUID
+```
+
+This is the path you should use for hosted trading. The Router is the hosted-mode address-book.
+
+### Workaround 2 — Reverse-resolve through the catalog
+
+If you already have a venue-native ID and need the catalog UUID, query the catalog via the hosted SQL endpoint or fetch the matched cluster:
+
+```python
+# Look up by venue-native condition_id
+clusters = router.fetch_matched_market_clusters(
+    venue="polymarket",
+    venue_market_id="0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5",
+)
+catalog_uuid = clusters[0].market_id
+```
+
+### Workaround 3 — Catalog DB lookup (Enterprise)
+
+For batch workflows, query the `prediction_markets.markets` and `prediction_markets.outcomes` tables directly via the [SQL endpoint](/sql). Each row has the canonical UUID alongside the venue-native fields (`venue_market_id`, `venue_outcome_id` / `token_id`).
+
+```sql
+SELECT id AS market_id, venue_market_id, venue
+FROM prediction_markets.markets
+WHERE venue = 'polymarket'
+  AND venue_market_id = '0xc704...';
+```
+
+## A simple rule of thumb
+
+- Discovering markets? **Use the Router** — UUIDs everywhere.
+- Trading via hosted? **UUIDs only.**
+- Reading order books / OHLCV? **Either works** at the per-venue endpoints, but venue-native is canonical there.
+- Self-hosted trading? **Venue-native** only — there's no PMXT catalog in the path.
+
+When in doubt: if the URL contains `trade.pmxt.dev`, it's UUIDs. If the URL contains `/api/{venue}/`, it's venue-native.

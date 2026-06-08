@@ -2220,6 +2220,7 @@ const result = await exchange.callApi('operationName', { param: 'value' });
 | `deleteOrders` | `DELETE` | `/orders` | Cancel Multiple Orders | Required |
 | `deleteCancelAll` | `DELETE` | `/cancel-all` | Cancel All Orders | Required |
 | `deleteCancelMarketOrders` | `DELETE` | `/cancel-market-orders` | Cancel Market Orders | Required |
+| `postV1Heartbeats` | `POST` | `/v1/heartbeats` | Refresh authenticated session heartbeat | Required |
 | `getDataOrder` | `GET` | `/data/order/{id}` | Get Order | Required |
 | `getDataOrders` | `GET` | `/data/orders` | Get Active Orders | Required |
 | `getDataTrades` | `GET` | `/data/trades` | Get Trades | Required |
@@ -2753,6 +2754,16 @@ Cancel Market Orders *(Auth required)*
 - `` (, string)
 
 ---
+##### `postV1Heartbeats`
+
+**POST** `/v1/heartbeats`
+
+Refresh authenticated session heartbeat *(Auth required)*
+
+**Parameters:**
+- `` (, string)
+
+---
 ##### `getDataOrder`
 
 **GET** `/data/order/{id}`
@@ -2775,6 +2786,7 @@ Get Active Orders *(Auth required)*
 - `id` (query, string)
 - `market` (query, string)
 - `asset_id` (query, string)
+- `next_cursor` (query, string) — Cursor for keyset pagination
 
 ---
 ##### `getDataTrades`
@@ -4830,7 +4842,8 @@ List Markets *(Auth required)*
 - `sort` (query, string) — enum: `volume,volume_24h,liquidity,expires_at,published_at,featured`
 - `order` (query, string) — enum: `asc,desc`
 - `network_id` (query, string) — Comma-separated list of network ids
-- `state` (query, string) — enum: `open,closed,resolved`
+- `state` (query, string) — enum: `open,closed,resolved,voided`
+- `trading_model` (query, string) — Filter markets by trading model (e.g. CLOB, AMM)
 - `token_address` (query, string)
 - `topics` (query, string) — Comma-separated list of topics
 - `keyword` (query, string) — Full-text search across title, description, and outcome titles
@@ -4985,6 +4998,7 @@ Get User Markets Portfolio *(Auth required)*
 - `min_shares` (query, number)
 - `network_id` (query, integer)
 - `state` (query, string)
+- `trading_model` (query, string) — Filter portfolio results by trading model (e.g. CLOB, AMM)
 - `token_address` (query, string)
 - `topics` (query, string)
 - `keyword` (query, string)

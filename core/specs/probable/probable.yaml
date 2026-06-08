@@ -205,7 +205,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         slug:
           type: string
         title:
@@ -223,7 +223,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         question:
           type: string
         market_slug:
@@ -428,14 +428,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  events:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Event'
-                  pagination:
-                    type: object
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
 
   /public/api/v1/events/{id}:
     get:
@@ -510,6 +505,17 @@ paths:
       responses:
         '200':
           description: List of markets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  markets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Market'
+                  pagination:
+                    type: object
 
   /public/api/v1/markets/{id}:
     get:

@@ -242,6 +242,7 @@ class Router(Exchange):
         *,
         event_id: Optional[str] = None,
         slug: Optional[str] = None,
+        url: Optional[str] = None,
         query: Optional[str] = None,
         category: Optional[str] = None,
         relation: Optional[MatchRelation] = None,
@@ -276,6 +277,8 @@ class Router(Exchange):
             params["eventId"] = event_id
         if slug is not None:
             params["slug"] = slug
+        if url is not None:
+            params["url"] = url
         if query is not None:
             params["query"] = query
         if category is not None:

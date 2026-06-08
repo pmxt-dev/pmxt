@@ -46,6 +46,9 @@ from .models import (
     MarketFilterFunction,
     EventFilterCriteria,
     EventFilterFunction,
+    SeriesFetchParams,
+    TradesParams,
+    FetchOrderBookParams,
     SubscribedAddressSnapshot,
     FirehoseEvent,
     MatchResult,
@@ -262,9 +265,9 @@ def _convert_subscription_snapshot(raw: Dict[str, Any]) -> SubscribedAddressSnap
     raw_positions = raw.get("positions")
     raw_balances = raw.get("balances")
     return _auto_convert(SubscribedAddressSnapshot, raw,
-        trades=[_convert_trade(t) for t in raw_trades] if raw_trades else None,
-        positions=[_convert_position(p) for p in raw_positions] if raw_positions else None,
-        balances=[_convert_balance(b) for b in raw_balances] if raw_balances else None,
+        trades=[_convert_trade(t) for t in (raw_trades or [])],
+        positions=[_convert_position(p) for p in (raw_positions or [])],
+        balances=[_convert_balance(b) for b in (raw_balances or [])],
     )
 
 
@@ -368,7 +371,7 @@ class Exchange(ABC):
                 effective_base_url = f"http://localhost:{actual_port}"
 
             except Exception as e:
-                raise Exception(
+                raise PmxtError(
                     f"Failed to start PMXT server: {e}\n\n"
                     f"Please ensure 'pmxt-core' is installed: npm install -g pmxt-core\n"
                     f"Or start the server manually: pmxt-server"
@@ -571,6 +574,7 @@ class Exchange(ABC):
         same ``_parse_api_exception`` path as the POST fallback.
         """
         base_url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/{method_name}"
+        query = _convert_params_to_camel(query)
         creds = self._get_credentials_dict()
         has_credentials = creds is not None
 
@@ -772,7 +776,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -795,7 +799,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -810,7 +814,7 @@ class Exchange(ABC):
             data = self._handle_response(json.loads(response.data))
             return PaginatedMarketsResult(
                 data=[_convert_market(m) for m in data.get("data", [])],
-                total=data.get("total", 0),
+                total=data.get("total"),
                 next_cursor=data.get("nextCursor"),
             )
         except ApiException as e:
@@ -822,7 +826,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -845,7 +849,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -868,7 +872,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -891,7 +895,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -920,7 +924,7 @@ class Exchange(ABC):
             if params is not None:
                 if limit is None:
                     args.append(None)
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1026,7 +1030,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1049,7 +1053,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1072,7 +1076,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1194,7 +1198,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1216,7 +1220,7 @@ class Exchange(ABC):
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
-            args.append(params)
+            args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1239,7 +1243,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1261,7 +1265,7 @@ class Exchange(ABC):
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
-            args.append(params)
+            args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1283,7 +1287,7 @@ class Exchange(ABC):
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
-            args.append(params)
+            args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1306,7 +1310,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1329,7 +1333,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1351,7 +1355,7 @@ class Exchange(ABC):
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
-            args.append(params)
+            args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1374,7 +1378,7 @@ class Exchange(ABC):
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
-                args.append(params)
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1908,7 +1912,7 @@ class Exchange(ABC):
         if params:
             if limit is None:
                 args.append(None)
-            args.append(params)
+            args.append(_convert_params_to_camel(params))
 
         ws_data = self._watch_required_via_ws(
             "watch_order_book",
@@ -1916,23 +1920,6 @@ class Exchange(ABC):
             args,
         )
         return _convert_order_book(ws_data)
-
-    def unwatch_order_book(self, outcome_id: Union[str, "MarketOutcome"]) -> None:
-        """
-        Unsubscribe from a previously watched order book stream.
-
-        Args:
-            outcome_id: Outcome ID to stop watching
-
-        Returns:
-            None
-        """
-        outcome_id = _resolve_outcome_id(outcome_id)
-        self._unwatch_required_via_ws(
-            "unwatch_order_book",
-            "unwatchOrderBook",
-            [outcome_id],
-        )
 
     def watch_order_books(
         self,
@@ -1985,7 +1972,7 @@ class Exchange(ABC):
         if params:
             if limit is None:
                 args.append(None)
-            args.append(params)
+            args.append(_convert_params_to_camel(params))
 
         raw_result = self._watch_batch_required_via_ws(
             "watch_order_books",

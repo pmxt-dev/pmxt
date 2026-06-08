@@ -301,6 +301,9 @@ export interface Order {
     /** Amount filled */
     filled: number;
 
+    /** Amount filled in shares/contracts (if different from USDC-denominated `filled`). */
+    filledShares?: number;
+
     /** Amount remaining */
     remaining: number;
 
@@ -312,6 +315,9 @@ export interface Order {
 
     /** Trading fee */
     fee?: number;
+
+    /** Fee rate in basis points applied to this order (e.g. 100 = 1%). */
+    feeRateBps?: number;
 }
 
 /**
@@ -437,6 +443,9 @@ export interface EventFetchParams {
     /** Pagination offset */
     offset?: number;
 
+    /** Opaque venue pagination cursor, where supported. */
+    cursor?: string;
+
     /** Sort order */
     sort?: SortOption;
 
@@ -451,6 +460,9 @@ export interface EventFetchParams {
 
     /** Lookup by event slug */
     slug?: string;
+
+    /** Filter events by their parent series. Accepts the venue-native series id / ticker / slug. */
+    series?: string;
 
     /** Filter by event category (e.g. "sports", "politics", "crypto") */
     category?: string;
@@ -503,6 +515,15 @@ export interface CreateOrderParams {
 
     /** Optional fee rate (e.g., 1000 for 0.1%) */
     fee?: number;
+
+    /** Optional override for Limitless/Polymarket */
+    tickSize?: number;
+
+    /** Optional override to skip neg-risk lookup (Polymarket) */
+    negRisk?: boolean;
+
+    /** Limitless delegated signing: profile ID to trade on behalf of */
+    onBehalfOf?: number;
 }
 
 /** Alias matching the core MarketFetchParams name. */

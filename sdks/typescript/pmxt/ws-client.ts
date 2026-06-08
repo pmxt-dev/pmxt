@@ -8,6 +8,7 @@
  */
 
 import { PmxtError } from "./errors.js";
+import { logger } from "./logger.js";
 
 const MAX_QUEUED_MESSAGES_PER_SUBSCRIPTION = 100_000;
 
@@ -144,7 +145,7 @@ export class SidecarWsClient {
                     this.dispatch(msg);
                 } catch (err) {
                     // Dispatch bug -- log and continue; don't kill the connection.
-                    console.error('[SidecarWsClient] dispatch error:', err);
+                    logger.error('[SidecarWsClient] dispatch error:', { err });
                 }
             };
         });

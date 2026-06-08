@@ -374,6 +374,9 @@ class Trade:
     side: Literal["buy", "sell", "unknown"]
     """Trade side"""
 
+    outcome_id: Optional[str] = None
+    """The outcome this trade belongs to"""
+
 
 @dataclass
 class UserTrade(Trade):

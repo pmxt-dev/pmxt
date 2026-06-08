@@ -57,7 +57,7 @@ from .models import (
     ArbitrageOpportunity,
 )
 from .constants import LOCAL_URL, resolve_pmxt_base_url
-from .errors import PmxtError, from_server_error
+from .errors import PmxtError, ValidationError, from_server_error
 from .server_manager import ServerManager
 
 import dataclasses as _dc
@@ -296,6 +296,7 @@ class Exchange(ABC):
         auto_start_server: Optional[bool] = None,
         proxy_address: Optional[str] = None,
         signature_type: Optional[str] = None,
+        wallet_address: Optional[str] = None,
         pmxt_api_key: Optional[str] = None,
     ) -> None:
         """
@@ -315,6 +316,7 @@ class Exchange(ABC):
                 Pass an explicit bool to override.
             proxy_address: Proxy/smart wallet address (optional).
             signature_type: Signature type for venues that need it (optional).
+            wallet_address: Wallet address for venues that support delegated signing (optional).
             pmxt_api_key: Hosted pmxt API key. Distinct from ``api_key``,
                 which targets the venue. If supplied (or via ``PMXT_API_KEY``
                 env) and no explicit ``base_url`` is set, the SDK auto-routes
@@ -327,6 +329,7 @@ class Exchange(ABC):
         self.api_token = api_token
         self.proxy_address = proxy_address
         self.signature_type = signature_type
+        self.wallet_address = wallet_address
         self.markets: Dict[str, "UnifiedMarket"] = {}
         self.markets_by_slug: Dict[str, "UnifiedMarket"] = {}
         self._loaded_markets: bool = False
@@ -492,7 +495,14 @@ class Exchange(ABC):
 
     def _get_credentials_dict(self) -> Optional[Dict[str, Any]]:
         """Build credentials dictionary for API requests."""
-        if not self.api_key and not self.private_key and not self.api_token:
+        if (
+            not self.api_key
+            and not self.private_key
+            and not self.api_token
+            and not self.proxy_address
+            and self.signature_type is None
+            and not self.wallet_address
+        ):
             return None
 
         creds = {}
@@ -506,6 +516,8 @@ class Exchange(ABC):
             creds["funderAddress"] = self.proxy_address
         if self.signature_type is not None:
             creds["signatureType"] = self.signature_type
+        if self.wallet_address:
+            creds["walletAddress"] = self.wallet_address
         return creds if creds else None
 
     def _default_watch_all_order_book_venues(self) -> Optional[List[str]]:
@@ -2424,17 +2436,17 @@ class Exchange(ABC):
             # Resolve outcome shorthand
             if outcome is not None:
                 if market_id is not None or outcome_id is not None:
-                    raise ValueError(
+                    raise ValidationError(
                         "Cannot specify both 'outcome' and 'market_id'/'outcome_id'. Use one or the other."
                     )
                 if not outcome.market_id:
-                    raise ValueError(
+                    raise ValidationError(
                         "outcome.market_id is not set. Ensure the outcome comes from a fetched market."
                     )
                 market_id = outcome.market_id
                 outcome_id = outcome.outcome_id
             elif market_id is None or outcome_id is None:
-                raise ValueError(
+                raise ValidationError(
                     "Either provide 'outcome' or both 'market_id' and 'outcome_id'."
                 )
 
@@ -2550,17 +2562,17 @@ class Exchange(ABC):
             # Resolve outcome shorthand
             if outcome is not None:
                 if market_id is not None or outcome_id is not None:
-                    raise ValueError(
+                    raise ValidationError(
                         "Cannot specify both 'outcome' and 'market_id'/'outcome_id'. Use one or the other."
                     )
                 if not outcome.market_id:
-                    raise ValueError(
+                    raise ValidationError(
                         "outcome.market_id is not set. Ensure the outcome comes from a fetched market."
                     )
                 market_id = outcome.market_id
                 outcome_id = outcome.outcome_id
             elif market_id is None or outcome_id is None:
-                raise ValueError(
+                raise ValidationError(
                     "Either provide 'outcome' or both 'market_id' and 'outcome_id'."
                 )
 

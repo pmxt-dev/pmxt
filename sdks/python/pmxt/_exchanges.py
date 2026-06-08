@@ -73,6 +73,7 @@ class Limitless(Exchange):
         api_secret: Optional[str] = None,
         passphrase: Optional[str] = None,
         private_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
@@ -85,6 +86,7 @@ class Limitless(Exchange):
             api_secret: API secret for authentication (optional)
             passphrase: Passphrase for authentication (optional)
             private_key: Private key for authentication (optional)
+            wallet_address: Wallet address for delegated signing (optional)
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
@@ -93,6 +95,7 @@ class Limitless(Exchange):
             exchange_name="limitless",
             api_key=api_key,
             private_key=private_key,
+            wallet_address=wallet_address,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,

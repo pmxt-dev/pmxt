@@ -123,7 +123,7 @@ class Router(Exchange):
         self,
         pmxt_api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        auto_start_server: bool = False,
+        auto_start_server: Optional[bool] = None,
     ) -> None:
         """
         Initialize the Router.
@@ -131,7 +131,7 @@ class Router(Exchange):
         Args:
             pmxt_api_key: PMXT API key (required for hosted mode).
             base_url: Override the base URL (defaults to hosted API).
-            auto_start_server: Start local sidecar (default: False).
+            auto_start_server: Start local sidecar. Defaults to True for local mode and False for hosted mode.
         """
         super().__init__(
             exchange_name="router",
@@ -198,7 +198,7 @@ class Router(Exchange):
         if include_prices:
             params["includePrices"] = True
 
-        raw = self._call_method("fetchMatches", params)
+        raw = self._call_method("fetchMarketMatches", params)
         if not raw:
             return []
         return [_parse_match_result(m) for m in raw]

@@ -234,8 +234,8 @@ export interface ExchangeOptions {
     /** Optional Polymarket Proxy/Smart Wallet address */
     proxyAddress?: string;
 
-    /** Optional signature type (0=EOA, 1=Proxy) */
-    signatureType?: number;
+    /** Optional signature type (0=EOA, 1=Proxy, or venue-specific string such as 'gnosis-safe') */
+    signatureType?: string | number;
 }
 
 /**
@@ -257,7 +257,7 @@ export abstract class Exchange {
     protected privateKey?: string;
     protected pmxtApiKey?: string;
     protected proxyAddress?: string;
-    protected signatureType?: number;
+    protected signatureType?: string | number;
     protected api: DefaultApi;
     protected config: Configuration;
     protected serverManager: ServerManager;

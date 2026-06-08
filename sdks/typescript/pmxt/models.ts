@@ -271,6 +271,9 @@ export interface Trade {
 
     /** Trade side */
     side: "buy" | "sell" | "unknown";
+
+    /** The outcome this trade belongs to */
+    outcomeId?: string;
 }
 
 /**

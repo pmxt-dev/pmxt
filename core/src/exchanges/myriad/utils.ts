@@ -47,6 +47,8 @@ export function mapMarketState(state: string): 'active' | 'inactive' | 'closed' 
             return 'inactive';
         case 'resolved':
             return 'closed';
+        case 'voided':
+            return 'closed';
         default:
             return 'active';
     }

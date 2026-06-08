@@ -179,7 +179,7 @@ export class ChainlinkFeed extends BaseDataFeed {
 
     protected watchTickerImpl(symbol: string, callback: (ticker: Ticker) => void): () => void {
         const sub: Subscription = { symbol: symbol.toUpperCase(), callback };
-        this.subscriptions = [...this.subscriptions, sub];
+        this.subscriptions.push(sub);
         this.ensureConnected().catch((err: unknown) => {
             logger.error('[ChainlinkFeed] initial connect failed in watchTickerImpl', { error: err instanceof Error ? err.message : String(err) });
         });
@@ -384,7 +384,10 @@ export class ChainlinkFeed extends BaseDataFeed {
         let msg: ChainlinkWsMessage;
         try {
             msg = JSON.parse(text) as ChainlinkWsMessage;
-        } catch {
+        } catch (error) {
+            logger.debug('[ChainlinkFeed] failed to parse relay message', {
+                error: error instanceof Error ? error.message : String(error),
+            });
             return;
         }
 

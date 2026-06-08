@@ -237,10 +237,15 @@ export class OpinionFetcher implements IExchangeFetcher<OpinionRawMarket, Opinio
     async fetchRawMarkets(params?: MarketFilterParams): Promise<OpinionRawMarket[]> {
         try {
             if (params?.marketId) {
-                const id = Number(params.marketId);
-                if (Number.isNaN(id)) {
-                    throw new Error(`Invalid Opinion market ID: "${params.marketId}"`);
+                const idStr = String(params.marketId).trim();
+                if (!/^\d+$/.test(idStr)) {
+                    const err = new Error(
+                        `Opinion market IDs must be integers, got: "${params.marketId}"`,
+                    );
+                    (err as any).status = 400;
+                    throw err;
                 }
+                const id = Number(idStr);
                 const market = await this.fetchRawMarketById(id);
                 return market ? [market] : [];
             }

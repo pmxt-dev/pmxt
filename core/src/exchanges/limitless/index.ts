@@ -32,7 +32,7 @@ import { FetcherContext } from '../interfaces';
 import { limitlessApiSpec } from './api';
 import { LimitlessAuth } from './auth';
 import { LimitlessClient } from './client';
-import { LIMITLESS_RPC_URL } from './config';
+import { LIMITLESS_CHAIN_ID, LIMITLESS_RPC_URL } from './config';
 import { limitlessErrorMapper } from './errors';
 import { LimitlessFetcher } from './fetcher';
 import { LimitlessNormalizer } from './normalizer';
@@ -572,7 +572,7 @@ export class LimitlessExchange extends PredictionMarketExchange {
         // Static network avoids ethers v5 auto-detect (eth_chainId), which can throw
         // noNetwork / NETWORK_ERROR on flaky public RPCs (#92).
         const provider = new providers.StaticJsonRpcProvider(LIMITLESS_RPC_URL, {
-            chainId: 8453,
+            chainId: LIMITLESS_CHAIN_ID,
             name: 'base',
         });
 

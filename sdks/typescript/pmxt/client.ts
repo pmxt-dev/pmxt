@@ -1394,11 +1394,11 @@ export abstract class Exchange {
         }
     }
 
-    async compareMarketPrices(params: any): Promise<any[]> {
+    async compareMarketPrices(params?: any): Promise<any[]> {
         await this.initPromise;
         try {
             const args: any[] = [];
-            args.push(params);
+            if (params !== undefined) args.push(params);
             const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/compareMarketPrices`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
@@ -1419,11 +1419,11 @@ export abstract class Exchange {
         }
     }
 
-    async fetchRelatedMarkets(params: any): Promise<any[]> {
+    async fetchRelatedMarkets(params?: any): Promise<any[]> {
         await this.initPromise;
         try {
             const args: any[] = [];
-            args.push(params);
+            if (params !== undefined) args.push(params);
             const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/fetchRelatedMarkets`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },

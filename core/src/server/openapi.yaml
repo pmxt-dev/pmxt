@@ -1941,11 +1941,8 @@ paths:
                   maxItems: 1
                   items:
                     $ref: '#/components/schemas/FetchMarketMatchesParams'
-                  minItems: 1
                 credentials:
                   $ref: '#/components/schemas/ExchangeCredentials'
-              required:
-                - args
       responses:
         '200':
           description: Compare Prices Across Venues response

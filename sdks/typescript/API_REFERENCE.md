@@ -1058,12 +1058,12 @@ Compare live prices for the same market across venues. Finds identity matches an
 **Signature:**
 
 ```typescript
-async compareMarketPrices(params: FetchMatchesParams): Promise<PriceComparison[]>
+async compareMarketPrices(params?: FetchMatchesParams): Promise<PriceComparison[]>
 ```
 
 **Parameters:**
 
-- `params` (FetchMatchesParams): Match filter parameters (uses relation: 'identity' internally)
+- `params` (FetchMatchesParams) - **Optional**: Match filter parameters (uses relation: 'identity' internally)
 
 **Returns:** Promise<[PriceComparison](#pricecomparison)[]> - Array of price comparisons across venues
 
@@ -1083,12 +1083,12 @@ Find related markets across venues. Discovers subset/superset market relationshi
 **Signature:**
 
 ```typescript
-async fetchRelatedMarkets(params: FetchMatchesParams): Promise<PriceComparison[]>
+async fetchRelatedMarkets(params?: FetchMatchesParams): Promise<PriceComparison[]>
 ```
 
 **Parameters:**
 
-- `params` (FetchMatchesParams): Match filter parameters
+- `params` (FetchMatchesParams) - **Optional**: Match filter parameters
 
 **Returns:** Promise<[PriceComparison](#pricecomparison)[]> - Array of subset/superset matches with live prices
 

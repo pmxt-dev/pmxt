@@ -449,7 +449,7 @@
       {
         "name": "params",
         "kind": "object",
-        "optional": false
+        "optional": true
       }
     ]
   },
@@ -459,7 +459,7 @@
       {
         "name": "params",
         "kind": "object",
-        "optional": false
+        "optional": true
       }
     ]
   },

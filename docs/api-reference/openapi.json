@@ -6210,16 +6210,12 @@
                     "maxItems": 1,
                     "items": {
                       "$ref": "#/components/schemas/FetchMarketMatchesParams"
-                    },
-                    "minItems": 1
+                    }
                   },
                   "credentials": {
                     "$ref": "#/components/schemas/ExchangeCredentials"
                   }
-                },
-                "required": [
-                  "args"
-                ]
+                }
               }
             }
           }

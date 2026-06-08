@@ -1260,12 +1260,13 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def compare_market_prices(self, params: dict, **kwargs) -> List[Any]:
+    def compare_market_prices(self, params: Optional[dict] = None, **kwargs) -> List[Any]:
         try:
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
-            args.append(_convert_params_to_camel(params))
+            if params is not None:
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:
@@ -1282,12 +1283,13 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def fetch_related_markets(self, params: dict, **kwargs) -> List[Any]:
+    def fetch_related_markets(self, params: Optional[dict] = None, **kwargs) -> List[Any]:
         try:
             args = []
             if kwargs:
                 params = {**(params or {}), **kwargs}
-            args.append(_convert_params_to_camel(params))
+            if params is not None:
+                args.append(_convert_params_to_camel(params))
             body: dict = {"args": args}
             creds = self._get_credentials_dict()
             if creds:

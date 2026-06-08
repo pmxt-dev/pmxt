@@ -1055,12 +1055,12 @@ Compare live prices for the same market across venues. Finds identity matches an
 **Signature:**
 
 ```python
-def compare_market_prices(params: FetchMatchesParams) -> List[PriceComparison]:
+def compare_market_prices(params: Optional[FetchMatchesParams] = None) -> List[PriceComparison]:
 ```
 
 **Parameters:**
 
-- `params` (FetchMatchesParams): Match filter parameters (uses relation: 'identity' internally)
+- `params` (FetchMatchesParams) - **Optional**: Match filter parameters (uses relation: 'identity' internally)
 
 **Returns:** List[[PriceComparison](#pricecomparison)] - Array of price comparisons across venues
 
@@ -1080,12 +1080,12 @@ Find related markets across venues. Discovers subset/superset market relationshi
 **Signature:**
 
 ```python
-def fetch_related_markets(params: FetchMatchesParams) -> List[PriceComparison]:
+def fetch_related_markets(params: Optional[FetchMatchesParams] = None) -> List[PriceComparison]:
 ```
 
 **Parameters:**
 
-- `params` (FetchMatchesParams): Match filter parameters
+- `params` (FetchMatchesParams) - **Optional**: Match filter parameters
 
 **Returns:** List[[PriceComparison](#pricecomparison)] - Array of subset/superset matches with live prices
 

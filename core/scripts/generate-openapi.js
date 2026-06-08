@@ -1047,13 +1047,36 @@ function typeNodeToSchema(node, sourceFile) {
 
     case ts.SyntaxKind.UnionType: {
       const members = node.types;
+      // Track whether the union includes `null` (an explicit `null` member
+      // means the field is nullable on the wire even if also `?:` optional).
+      // We strip `null` / `undefined` before classifying the union shape,
+      // then re-apply `nullable: true` to the resulting schema so the JSON
+      // shape stays a single type rather than a `oneOf [T, null]`.
+      // TS parses `null` inside a union as `LiteralType` wrapping
+      // `NullKeyword` (not bare `NullKeyword`), so check both forms.
+      const isNullMember = (t) =>
+        t.kind === ts.SyntaxKind.NullKeyword ||
+        (t.kind === ts.SyntaxKind.LiteralType &&
+          t.literal &&
+          t.literal.kind === ts.SyntaxKind.NullKeyword);
+      const isUndefinedMember = (t) =>
+        t.kind === ts.SyntaxKind.UndefinedKeyword;
+      const includesNull = members.some(isNullMember);
       const nonNull = members.filter(
-        t =>
-          t.kind !== ts.SyntaxKind.NullKeyword &&
-          t.kind !== ts.SyntaxKind.UndefinedKeyword
+        t => !isNullMember(t) && !isUndefinedMember(t)
       );
 
       if (nonNull.length === 0) return null;
+
+      const withNullable = (schema) => {
+        if (!includesNull || !schema) return schema;
+        // OpenAPI 3.0: nullable is a sibling keyword on the schema itself.
+        // For $ref values we wrap in allOf so nullable doesn't get dropped.
+        if (schema.$ref) {
+          return { allOf: [schema], nullable: true };
+        }
+        return { ...schema, nullable: true };
+      };
 
       // All string literals → enum
       if (
@@ -1063,17 +1086,22 @@ function typeNodeToSchema(node, sourceFile) {
             t.literal.kind === ts.SyntaxKind.StringLiteral
         )
       ) {
-        return { type: 'string', enum: nonNull.map(t => t.literal.text) };
+        return withNullable({
+          type: 'string',
+          enum: nonNull.map(t => t.literal.text),
+        });
       }
 
-      if (nonNull.length === 1) return typeNodeToSchema(nonNull[0], sourceFile);
+      if (nonNull.length === 1) {
+        return withNullable(typeNodeToSchema(nonNull[0], sourceFile));
+      }
 
       const schemas = nonNull
         .map(t => typeNodeToSchema(t, sourceFile))
         .filter(s => s !== null);
       if (schemas.length === 0) return null;
-      if (schemas.length === 1) return schemas[0];
-      return { oneOf: schemas };
+      if (schemas.length === 1) return withNullable(schemas[0]);
+      return withNullable({ oneOf: schemas });
     }
 
     case ts.SyntaxKind.LiteralType: {
@@ -1664,8 +1692,129 @@ const STATIC_SCHEMAS = {
   },
   ErrorDetail: {
     type: 'object',
+    description:
+      'Structured error envelope returned inside `BaseResponse.error` and `ErrorResponse.error`. ' +
+      'Hosted-mode endpoints populate `code`, `retryable`, and optionally `exchange` / `detail`; ' +
+      'legacy local-mode endpoints may still return only `message`.',
     properties: {
-      message: { type: 'string' },
+      message: {
+        type: 'string',
+        description: 'Human-readable error message.',
+      },
+      code: {
+        type: 'string',
+        description:
+          'Stable machine-readable error code. Hosted-mode errors use the `HostedTradingError` family ' +
+          '(e.g. `INSUFFICIENT_ESCROW_BALANCE`, `BUILT_ORDER_EXPIRED`); pre-hosted local errors use the ' +
+          'legacy family (e.g. `BAD_REQUEST`, `NOT_FOUND`).',
+        enum: [
+          // Hosted-mode error codes (v2.49.0+)
+          'HOSTED_TRADING_ERROR',
+          'INSUFFICIENT_ESCROW_BALANCE',
+          'ORDER_SIZE_TOO_SMALL',
+          'INVALID_API_KEY',
+          'OUTCOME_NOT_FOUND',
+          'CATALOG_UNAVAILABLE',
+          'BUILT_ORDER_EXPIRED',
+          'INVALID_SIGNATURE',
+          'NO_LIQUIDITY',
+          'MISSING_WALLET_ADDRESS',
+          // Pre-hosted (legacy) error codes
+          'BAD_REQUEST',
+          'AUTHENTICATION_ERROR',
+          'PERMISSION_DENIED',
+          'NOT_FOUND',
+          'ORDER_NOT_FOUND',
+          'MARKET_NOT_FOUND',
+          'EVENT_NOT_FOUND',
+          'RATE_LIMIT_EXCEEDED',
+          'INVALID_ORDER',
+          'INSUFFICIENT_FUNDS',
+          'VALIDATION_ERROR',
+          'NETWORK_ERROR',
+          'EXCHANGE_NOT_AVAILABLE',
+          'NOT_SUPPORTED',
+        ],
+      },
+      retryable: {
+        type: 'boolean',
+        description:
+          'Hint for clients: when `true`, the same request may succeed on retry (e.g. transient network ' +
+          'or rate-limit conditions); when `false`, the caller should not retry without modifying the ' +
+          'request.',
+      },
+      exchange: {
+        type: 'string',
+        nullable: true,
+        description:
+          "Venue the error originated from, when known (e.g. 'polymarket', 'kalshi').",
+      },
+      detail: {
+        type: 'object',
+        additionalProperties: {},
+        nullable: true,
+        description:
+          'Free-form hosted-mode detail blob. Shape depends on `code` — e.g. for ' +
+          '`INSUFFICIENT_ESCROW_BALANCE` it may include `{ requested, available }`; for ' +
+          '`ORDER_SIZE_TOO_SMALL` it may include `{ min }`; for `BUILT_ORDER_EXPIRED` it may include ' +
+          '`{ expiry }`.',
+      },
+    },
+  },
+  ExchangeOptions: {
+    type: 'object',
+    description:
+      'Constructor-level options for venue clients (Polymarket, Kalshi, Opinion, etc.).\n' +
+      'Hosted mode is the default when pmxtApiKey is set; otherwise the SDK runs against\n' +
+      'a local sidecar with venue credentials.',
+    properties: {
+      pmxtApiKey: {
+        type: 'string',
+        description:
+          'PMXT customer API key. When set, the SDK routes to api.pmxt.dev (catalog) and ' +
+          'trade.pmxt.dev (trading). Get one at pmxt.dev/dashboard.',
+      },
+      walletAddress: {
+        type: 'string',
+        nullable: true,
+        description:
+          'EVM wallet address for hosted reads/writes. Required for endpoints that operate on a wallet ' +
+          '(balances, positions, trades, open orders).',
+      },
+      signer: {
+        type: 'object',
+        nullable: true,
+        description:
+          'Optional pre-built signer for hosted writes. If absent and privateKey is set, the SDK ' +
+          'auto-wraps privateKey into a signer.',
+      },
+      privateKey: {
+        type: 'string',
+        nullable: true,
+        description:
+          'Private key. In hosted mode, used to derive an EIP-712 signer for writes (wraps into ' +
+          'EthAccountSigner/EthersSigner). In self-hosted mode, used as the venue credential directly.',
+      },
+      baseUrl: {
+        type: 'string',
+        nullable: true,
+        description:
+          'Explicit base URL override. When unset, the SDK uses api.pmxt.dev when pmxtApiKey is set, ' +
+          'or the local sidecar otherwise.',
+      },
+      apiKey: {
+        type: 'string',
+        nullable: true,
+        description:
+          'Venue-side API key (e.g. Polymarket CLOB key). Only relevant for self-hosted mode.',
+      },
+      autoStartServer: {
+        type: 'boolean',
+        nullable: true,
+        description:
+          'Auto-start the local sidecar when running self-hosted. Defaults to true when no pmxtApiKey ' +
+          'is set, false when hosted.',
+      },
     },
   },
   BaseRequest: {

@@ -203,6 +203,12 @@ export interface Trade {
 export interface UserTrade extends Trade {
     /** The order that produced this trade, if known. */
     orderId?: string;
+    /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */
+    txHash?: string | null;
+    /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */
+    chain?: string | null;
+    /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */
+    blockNumber?: number | null;
 }
 
 
@@ -242,24 +248,46 @@ export interface Order {
     fee?: number;
     /** Fee rate in basis points applied to this order (e.g. 100 = 1%). */
     feeRateBps?: number;
+    /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */
+    txHash?: string | null;
+    /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */
+    chain?: string | null;
+    /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */
+    blockNumber?: number | null;
 }
 
+/**
+ * A current position in a market.
+ *
+ * In hosted mode, `outcomeLabel`, `entryPrice`, `currentPrice` and
+ * `unrealizedPnL` may be null when the server cannot derive them
+ * (e.g. `with_mtm=false` or no fill history). Venue-direct callers
+ * continue to populate every field.
+ */
 export interface Position {
     /** The market this position is held in. */
     marketId: string;
     /** The outcome this position is held in. */
     outcomeId: string;
-    /** Human-readable label for the outcome held. */
-    outcomeLabel: string;
+    /** Human-readable label for the outcome held. Optional in hosted mode. */
+    outcomeLabel?: string | null;
     size: number;  // Positive for long, negative for short
-    /** Average entry price for the position (probability between 0.0 and 1.0). */
-    entryPrice: number;
-    /** Current mark price for the position (probability between 0.0 and 1.0). */
-    currentPrice: number;
-    /** Unrealized profit or loss at the current price (USD). */
-    unrealizedPnL: number;
+    /** Average entry price for the position (probability between 0.0 and 1.0). Optional in hosted mode when no fill history is available. */
+    entryPrice?: number | null;
+    /** Current mark price for the position (probability between 0.0 and 1.0). Optional in hosted mode when mark-to-market data is unavailable. */
+    currentPrice?: number | null;
+    /** Current market value of the position (size * currentPrice). Null when currentPrice is unavailable. */
+    currentValue?: number | null;
+    /** Unrealized profit or loss at the current price (USD). Optional in hosted mode when mark-to-market data is unavailable. */
+    unrealizedPnL?: number | null;
     /** Realized profit or loss booked so far (USD). */
     realizedPnL?: number;
+    /** Populated in hosted mode after on-chain settlement (from the last fill); null for local-mode and for non-on-chain venues. */
+    txHash?: string | null;
+    /** Populated in hosted mode after on-chain settlement (from the last fill); null for local-mode and for non-on-chain venues. */
+    chain?: string | null;
+    /** Populated in hosted mode after on-chain settlement (from the last fill); null for local-mode and for non-on-chain venues. */
+    blockNumber?: number | null;
 }
 
 export interface Balance {
@@ -269,6 +297,8 @@ export interface Balance {
     /** Balance available to trade (excludes locked funds). */
     available: number;
     locked: number;  // In open orders
+    /** Hosted-mode: which venue this balance belongs to in a multi-venue response. Null when the balance is venue-agnostic. */
+    venue?: string | null;
 }
 
 export interface CreateOrderParams {
@@ -311,4 +341,9 @@ export interface BuiltOrder {
     };
     /** The raw, exchange-native payload. Always present. */
     raw: unknown;
+    /**
+     * Unix epoch (ms) when this built order expires server-side.
+     * Submitting after expiry returns BUILT_ORDER_EXPIRED.
+     */
+    expiry?: number | null;
 }

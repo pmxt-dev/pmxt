@@ -2872,9 +2872,108 @@ components:
           $ref: '#/components/schemas/ErrorDetail'
     ErrorDetail:
       type: object
+      description: >-
+        Structured error envelope returned inside `BaseResponse.error` and `ErrorResponse.error`. Hosted-mode endpoints
+        populate `code`, `retryable`, and optionally `exchange` / `detail`; legacy local-mode endpoints may still return
+        only `message`.
       properties:
         message:
           type: string
+          description: Human-readable error message.
+        code:
+          type: string
+          description: >-
+            Stable machine-readable error code. Hosted-mode errors use the `HostedTradingError` family (e.g.
+            `INSUFFICIENT_ESCROW_BALANCE`, `BUILT_ORDER_EXPIRED`); pre-hosted local errors use the legacy family (e.g.
+            `BAD_REQUEST`, `NOT_FOUND`).
+          enum:
+            - HOSTED_TRADING_ERROR
+            - INSUFFICIENT_ESCROW_BALANCE
+            - ORDER_SIZE_TOO_SMALL
+            - INVALID_API_KEY
+            - OUTCOME_NOT_FOUND
+            - CATALOG_UNAVAILABLE
+            - BUILT_ORDER_EXPIRED
+            - INVALID_SIGNATURE
+            - NO_LIQUIDITY
+            - MISSING_WALLET_ADDRESS
+            - BAD_REQUEST
+            - AUTHENTICATION_ERROR
+            - PERMISSION_DENIED
+            - NOT_FOUND
+            - ORDER_NOT_FOUND
+            - MARKET_NOT_FOUND
+            - EVENT_NOT_FOUND
+            - RATE_LIMIT_EXCEEDED
+            - INVALID_ORDER
+            - INSUFFICIENT_FUNDS
+            - VALIDATION_ERROR
+            - NETWORK_ERROR
+            - EXCHANGE_NOT_AVAILABLE
+            - NOT_SUPPORTED
+        retryable:
+          type: boolean
+          description: >-
+            Hint for clients: when `true`, the same request may succeed on retry (e.g. transient network or rate-limit
+            conditions); when `false`, the caller should not retry without modifying the request.
+        exchange:
+          type: string
+          nullable: true
+          description: 'Venue the error originated from, when known (e.g. ''polymarket'', ''kalshi'').'
+        detail:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          description: >-
+            Free-form hosted-mode detail blob. Shape depends on `code` — e.g. for `INSUFFICIENT_ESCROW_BALANCE` it may
+            include `{ requested, available }`; for `ORDER_SIZE_TOO_SMALL` it may include `{ min }`; for
+            `BUILT_ORDER_EXPIRED` it may include `{ expiry }`.
+    ExchangeOptions:
+      type: object
+      description: |-
+        Constructor-level options for venue clients (Polymarket, Kalshi, Opinion, etc.).
+        Hosted mode is the default when pmxtApiKey is set; otherwise the SDK runs against
+        a local sidecar with venue credentials.
+      properties:
+        pmxtApiKey:
+          type: string
+          description: >-
+            PMXT customer API key. When set, the SDK routes to api.pmxt.dev (catalog) and trade.pmxt.dev (trading). Get
+            one at pmxt.dev/dashboard.
+        walletAddress:
+          type: string
+          nullable: true
+          description: >-
+            EVM wallet address for hosted reads/writes. Required for endpoints that operate on a wallet (balances,
+            positions, trades, open orders).
+        signer:
+          type: object
+          nullable: true
+          description: >-
+            Optional pre-built signer for hosted writes. If absent and privateKey is set, the SDK auto-wraps privateKey
+            into a signer.
+        privateKey:
+          type: string
+          nullable: true
+          description: >-
+            Private key. In hosted mode, used to derive an EIP-712 signer for writes (wraps into
+            EthAccountSigner/EthersSigner). In self-hosted mode, used as the venue credential directly.
+        baseUrl:
+          type: string
+          nullable: true
+          description: >-
+            Explicit base URL override. When unset, the SDK uses api.pmxt.dev when pmxtApiKey is set, or the local
+            sidecar otherwise.
+        apiKey:
+          type: string
+          nullable: true
+          description: Venue-side API key (e.g. Polymarket CLOB key). Only relevant for self-hosted mode.
+        autoStartServer:
+          type: boolean
+          nullable: true
+          description: >-
+            Auto-start the local sidecar when running self-hosted. Defaults to true when no pmxtApiKey is set, false
+            when hosted.
     BaseRequest:
       type: object
       description: Base request structure with optional credentials
@@ -3107,14 +3206,12 @@ components:
           type: string
           description: 'Human-readable series title (e.g. "ATP Match Winner", "WTA").'
         description:
-          oneOf:
-            - type: string
-            - {}
+          type: string
+          nullable: true
           description: Long-form series description.
         recurrence:
-          oneOf:
-            - type: string
-            - {}
+          type: string
+          nullable: true
           description: 'Recurrence cadence the venue reports (''daily'', ''weekly'', ''annual'', ...).'
         events:
           type: array
@@ -3122,14 +3219,12 @@ components:
             $ref: '#/components/schemas/UnifiedEvent'
           description: Child events. Populated when fetched by id; the list form usually omits this to keep payloads small.
         url:
-          oneOf:
-            - type: string
-            - {}
+          type: string
+          nullable: true
           description: Canonical venue URL for the series.
         image:
-          oneOf:
-            - type: string
-            - {}
+          type: string
+          nullable: true
           description: Venue-hosted image.
         sourceExchange:
           type: string
@@ -3263,6 +3358,18 @@ components:
         orderId:
           type: string
           description: 'The order that produced this trade, if known.'
+        txHash:
+          type: string
+          nullable: true
+          description: Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
+        chain:
+          type: string
+          nullable: true
+          description: Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
+        blockNumber:
+          type: number
+          nullable: true
+          description: Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
       required:
         - id
         - timestamp
@@ -3326,6 +3433,18 @@ components:
         feeRateBps:
           type: number
           description: Fee rate in basis points applied to this order (e.g. 100 = 1%).
+        txHash:
+          type: string
+          nullable: true
+          description: Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
+        chain:
+          type: string
+          nullable: true
+          description: Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
+        blockNumber:
+          type: number
+          nullable: true
+          description: Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
       required:
         - id
         - marketId
@@ -3339,6 +3458,10 @@ components:
         - timestamp
     Position:
       type: object
+      description: >-
+        A current position in a market. In hosted mode, `outcomeLabel`, `entryPrice`, `currentPrice` and `unrealizedPnL`
+        may be null when the server cannot derive them (e.g. `with_mtm=false` or no fill history). Venue-direct callers
+        continue to populate every field.
       properties:
         marketId:
           type: string
@@ -3348,30 +3471,58 @@ components:
           description: The outcome this position is held in.
         outcomeLabel:
           type: string
-          description: Human-readable label for the outcome held.
+          nullable: true
+          description: Human-readable label for the outcome held. Optional in hosted mode.
         size:
           type: number
           description: 'Positive for long, negative for short'
         entryPrice:
           type: number
-          description: Average entry price for the position (probability between 0.0 and 1.0).
+          nullable: true
+          description: >-
+            Average entry price for the position (probability between 0.0 and 1.0). Optional in hosted mode when no fill
+            history is available.
         currentPrice:
           type: number
-          description: Current mark price for the position (probability between 0.0 and 1.0).
+          nullable: true
+          description: >-
+            Current mark price for the position (probability between 0.0 and 1.0). Optional in hosted mode when
+            mark-to-market data is unavailable.
+        currentValue:
+          type: number
+          nullable: true
+          description: Current market value of the position (size * currentPrice). Null when currentPrice is unavailable.
         unrealizedPnL:
           type: number
-          description: Unrealized profit or loss at the current price (USD).
+          nullable: true
+          description: >-
+            Unrealized profit or loss at the current price (USD). Optional in hosted mode when mark-to-market data is
+            unavailable.
         realizedPnL:
           type: number
           description: Realized profit or loss booked so far (USD).
+        txHash:
+          type: string
+          nullable: true
+          description: >-
+            Populated in hosted mode after on-chain settlement (from the last fill); null for local-mode and for
+            non-on-chain venues.
+        chain:
+          type: string
+          nullable: true
+          description: >-
+            Populated in hosted mode after on-chain settlement (from the last fill); null for local-mode and for
+            non-on-chain venues.
+        blockNumber:
+          type: number
+          nullable: true
+          description: >-
+            Populated in hosted mode after on-chain settlement (from the last fill); null for local-mode and for
+            non-on-chain venues.
       required:
         - marketId
         - outcomeId
-        - outcomeLabel
         - size
-        - entryPrice
-        - currentPrice
-        - unrealizedPnL
     Balance:
       type: object
       properties:
@@ -3387,6 +3538,12 @@ components:
         locked:
           type: number
           description: In open orders
+        venue:
+          type: string
+          nullable: true
+          description: >-
+            Hosted-mode: which venue this balance belongs to in a multi-venue response. Null when the balance is
+            venue-agnostic.
       required:
         - currency
         - total
@@ -3717,6 +3874,12 @@ components:
             populates this.
         raw:
           description: 'The raw, exchange-native payload. Always present.'
+        expiry:
+          type: number
+          nullable: true
+          description: >-
+            Unix epoch (ms) when this built order expires server-side. Submitting after expiry returns
+            BUILT_ORDER_EXPIRED.
       required:
         - exchange
         - params
@@ -4026,17 +4189,14 @@ components:
         confidence:
           type: number
         reasoning:
-          oneOf:
-            - type: string
-            - {}
+          type: string
+          nullable: true
         bestBid:
-          oneOf:
-            - type: number
-            - {}
+          type: number
+          nullable: true
         bestAsk:
-          oneOf:
-            - type: number
-            - {}
+          type: number
+          nullable: true
       required:
         - market
         - relation
@@ -4073,17 +4233,14 @@ components:
         confidence:
           type: number
         reasoning:
-          oneOf:
-            - type: string
-            - {}
+          type: string
+          nullable: true
         bestBid:
-          oneOf:
-            - type: number
-            - {}
+          type: number
+          nullable: true
         bestAsk:
-          oneOf:
-            - type: number
-            - {}
+          type: number
+          nullable: true
         venue:
           type: string
       required:
@@ -4184,9 +4341,8 @@ components:
           type: number
           description: Match confidence score (0.0 to 1.0).
         reasoning:
-          oneOf:
-            - type: string
-            - {}
+          type: string
+          nullable: true
           description: Why the two markets were matched.
       required:
         - marketA

@@ -2082,7 +2082,7 @@ export abstract class Exchange {
      * });
      * ```
      */
-    async createOrder(params: any): Promise<Order> {
+    async createOrder(params: CreateOrderParams & { outcome?: MarketOutcome }): Promise<Order> {
         if (this.isHosted) {
             if (this.exchangeName === 'sor' && this.privateKey) {
                 return this._executeSorOrder(params);

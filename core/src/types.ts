@@ -183,6 +183,12 @@ export interface OrderBook {
     timestamp?: number;
     /** ISO 8601 datetime string of the snapshot (CCXT-compatible). */
     datetime?: string;
+    /** Whether the venue marks this snapshot as a negative-risk market. */
+    isNegRisk?: boolean;
+    /** Last traded price from venues that include it with the book snapshot. */
+    lastTradePrice?: number;
+    /** Venue-specific metadata preserved from the raw order book snapshot. */
+    sourceMetadata?: Record<string, unknown>;
 }
 
 export interface Trade {

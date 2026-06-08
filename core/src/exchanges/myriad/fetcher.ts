@@ -10,15 +10,25 @@ export interface MyriadRawMarket {
     id: number;
     networkId: number;
     title?: string;
+    shortName?: string;
     description?: string;
     slug?: string;
     imageUrl?: string;
     expiresAt?: string;
+    publishedAt?: string;
     volume24h?: number;
     volume?: number;
+    volumeNotional?: number;
+    volumeNotional24h?: number;
     liquidity?: number;
     eventId?: number;
+    outcomeIndex?: number;
+    tradingModel?: string;
+    negRisk?: boolean;
+    executionMode?: string;
+    oracle?: Record<string, unknown>;
     topics?: string[];
+    tags?: string[];
     outcomes?: MyriadRawOutcome[];
     [key: string]: unknown;
 }
@@ -42,6 +52,7 @@ export interface MyriadRawQuestion {
 export interface MyriadRawTradeEvent {
     action?: string;
     blockNumber?: number;
+    txId?: string;
     timestamp?: number;
     value?: number;
     shares?: number;

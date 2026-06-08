@@ -147,6 +147,9 @@ export interface GeminiRawPosition {
     isAboveAutoStartThreshold?: boolean;
     isLive?: boolean;
     realizedPl?: string;
+    marketValue?: string;
+    unrealizedPnl?: string;
+    unrealizedPct?: number;
 }
 
 export interface GeminiRawActiveOrdersResponse {

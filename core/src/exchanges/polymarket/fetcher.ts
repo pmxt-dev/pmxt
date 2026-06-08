@@ -83,6 +83,8 @@ export interface PolymarketRawOrderBook {
     bids?: PolymarketRawOrderBookLevel[];
     asks?: PolymarketRawOrderBookLevel[];
     timestamp?: string | number;
+    neg_risk?: boolean;
+    last_trade_price?: string;
 }
 
 export interface PolymarketRawTrade {

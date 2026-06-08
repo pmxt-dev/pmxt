@@ -44,19 +44,24 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
         const maxResults = params.limit ?? 250000;
 
         while (allEvents.length < maxResults) {
-            const queryParams: Record<string, string> = {
+            const queryParams: Record<string, string | string[]> = {
                 limit: String(Math.min(pageSize, maxResults - allEvents.length)),
                 offset: String(offset),
             };
 
-            if (params.status && params.status !== 'all') {
-                queryParams.status = params.status === 'active' ? 'active' : params.status;
-            } else if (!params.status) {
+            const status = params.status as string | string[] | undefined;
+            if (Array.isArray(status)) {
+                const statuses = status.filter(s => s !== 'all');
+                if (statuses.length > 0) queryParams.status = statuses;
+            } else if (status && status !== 'all') {
+                queryParams.status = status === 'active' ? 'active' : status;
+            } else if (!status) {
                 queryParams.status = 'active';
             }
 
-            if (params.category) {
-                queryParams.category = params.category;
+            const category = params.category as string | string[] | undefined;
+            if (category) {
+                queryParams.category = category;
             }
 
             if (params.query) {
@@ -171,12 +176,18 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
 
     // -- HTTP helpers ----------------------------------------------------------
 
-    private async get<T>(path: string, params?: Record<string, string>): Promise<T> {
+    private async get<T>(path: string, params?: Record<string, string | string[]>): Promise<T> {
         try {
             const url = new URL(path, this.baseUrl);
             if (params) {
                 for (const [key, value] of Object.entries(params)) {
-                    url.searchParams.set(key, value);
+                    if (Array.isArray(value)) {
+                        for (const item of value) {
+                            url.searchParams.append(key, item);
+                        }
+                    } else {
+                        url.searchParams.set(key, value);
+                    }
                 }
             }
             const response = await this.ctx.http.get(url.toString());

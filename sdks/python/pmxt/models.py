@@ -134,7 +134,7 @@ class UnifiedMarket:
         return self.title
 
 
-class MarketList(list):
+class MarketList(List[UnifiedMarket]):
     """A list of UnifiedMarket objects with a convenience match() method."""
 
     def match(
@@ -549,9 +549,42 @@ class SubscribedAddressSnapshot:
     """Balances of this address"""
     balances: Optional[List[Balance]] = None
 
-# ----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Public SDK option types
+# -----------------------------------------------------------------------------
+
+class ExchangeOptions(TypedDict, total=False):
+    """Constructor options shared by the exchange clients."""
+    pmxt_api_key: str
+    base_url: str
+    auto_start_server: bool
+    api_key: str
+    private_key: str
+    api_token: str
+    proxy_address: str
+    signature_type: Union[str, int]
+
+
+class PolymarketOptions(ExchangeOptions, total=False):
+    """Constructor options for Polymarket clients."""
+    signature_type: Union[Literal["eoa", "poly-proxy", "gnosis-safe"], int]
+
+
+class RouterOptions(TypedDict, total=False):
+    """Constructor options for Router clients."""
+    pmxt_api_key: str
+    base_url: str
+    auto_start_server: bool
+
+
+class FeedClientOptions(TypedDict, total=False):
+    """Constructor options for FeedClient."""
+    pmxt_api_key: str
+    base_url: str
+
+# -----------------------------------------------------------------------------
 # Filtering Types
-# ----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 from typing import TypedDict, Callable
 
@@ -652,9 +685,35 @@ class EventFetchParams(TypedDict, total=False):
     filter: EventFilterCriteria
 
 
-# ----------------------------------------------------------------------------
+class SeriesFetchParams(TypedDict, total=False):
+    """Parameters for fetching recurring venue series."""
+    id: str
+    slug: str
+    query: str
+    recurrence: str
+    limit: int
+    offset: int
+
+
+class TradesParams(TypedDict, total=False):
+    """Parameters for fetching public trade history."""
+    since: int
+    until: int
+    limit: int
+    cursor: str
+
+
+class FetchOrderBookParams(TypedDict, total=False):
+    """Parameters for historical order book queries."""
+    side: Literal["yes", "no"]
+    outcome: str
+    since: int
+    until: int
+
+
+# -----------------------------------------------------------------------------
 # Router Types
-# ----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 MatchRelation = Literal["identity", "complement", "subset", "superset", "overlap", "disjoint"]
 ClusterSortOption = Literal["volume", "confidence"]
@@ -663,6 +722,7 @@ VenueFilter = Union[str, List[str]]
 
 class MatchedMarketClusterParams(TypedDict, total=False):
     """Parameters for fetching matched market clusters."""
+    market: UnifiedMarket
     market_id: str
     slug: str
     url: str
@@ -685,6 +745,7 @@ class MatchedMarketClusterParams(TypedDict, total=False):
 
 class MatchedEventClusterParams(TypedDict, total=False):
     """Parameters for fetching matched event clusters."""
+    event: UnifiedEvent
     event_id: str
     slug: str
     url: str
@@ -746,6 +807,11 @@ class EventMatchResult:
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.event, name)
+
+
+MatchedClusterSort = ClusterSortOption
+FetchMatchedMarketClustersParams = MatchedMarketClusterParams
+FetchMatchedEventClustersParams = MatchedEventClusterParams
 
 
 @dataclass

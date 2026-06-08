@@ -1,6 +1,6 @@
 /**
- * Auto-generated from /Users/samueltinnerholm/Documents/GitHub/pmxt/core/specs/polymarket/PolymarketClobAPI.yaml
- * Generated at: 2026-05-22T18:49:00.795Z
+ * Auto-generated from /opt/data/repos/pmxt/.worktrees/hermes-42dac47d/core/specs/polymarket/PolymarketClobAPI.yaml
+ * Generated at: 2026-06-05T12:40:10.090Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const polymarketClobSpec = {
@@ -346,6 +346,24 @@ export const polymarketClobSpec = {
                 ]
             }
         },
+        "/v1/heartbeats": {
+            "post": {
+                "summary": "Refresh authenticated session heartbeat",
+                "tags": [
+                    "Orders"
+                ],
+                "security": [
+                    {
+                        "L2Auth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/L2Headers"
+                    }
+                ]
+            }
+        },
         "/data/order/{id}": {
             "get": {
                 "summary": "Get Order",
@@ -403,6 +421,13 @@ export const polymarketClobSpec = {
                     },
                     {
                         "name": "asset_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "next_cursor",
                         "in": "query",
                         "schema": {
                             "type": "string"

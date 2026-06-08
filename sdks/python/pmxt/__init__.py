@@ -19,6 +19,7 @@ Example:
 from typing import Any, Dict, List
 
 from .client import Exchange
+from .constants import ENV, ENV_BASE_URL, ENV_API_KEY
 from ._exchanges import Polymarket, Limitless, Kalshi, KalshiDemo, Probable, Baozi, Myriad, Opinion, Metaculus, Smarkets, PolymarketUS, Polymarket_us, Hyperliquid, GeminiTitan, SuiBets, Suibets, Mock, Router
 from .router import Router
 from .feed_client import FeedClient
@@ -61,6 +62,13 @@ from .models import (
     EventFilterCriteria,
     MarketFetchParams,
     EventFetchParams,
+    SeriesFetchParams,
+    TradesParams,
+    FetchOrderBookParams,
+    ExchangeOptions,
+    PolymarketOptions,
+    RouterOptions,
+    FeedClientOptions,
     MatchResult,
     EventMatchResult,
     MatchedMarketCluster,
@@ -73,6 +81,9 @@ from .models import (
     ExecutionPriceResult,
     MatchRelation,
     ClusterSortOption,
+    MatchedClusterSort,
+    FetchMatchedMarketClustersParams,
+    FetchMatchedEventClustersParams,
     SortOption,
     SearchIn,
     OrderSide,
@@ -170,6 +181,14 @@ __all__ = [
     "Router",
     "Exchange",
     "FeedClient",
+    "ExchangeOptions",
+    "PolymarketOptions",
+    "RouterOptions",
+    "FeedClientOptions",
+    # Environment
+    "ENV",
+    "ENV_BASE_URL",
+    "ENV_API_KEY",
     # Server Management
     "ServerManager",
     "server",
@@ -220,10 +239,16 @@ __all__ = [
     "SubscribedAddressSnapshot",
     "MatchRelation",
     "ClusterSortOption",
+    "MatchedClusterSort",
+    "FetchMatchedMarketClustersParams",
+    "FetchMatchedEventClustersParams",
     "MarketFilterCriteria",
     "EventFilterCriteria",
     "MarketFetchParams",
     "EventFetchParams",
+    "SeriesFetchParams",
+    "TradesParams",
+    "FetchOrderBookParams",
     "SortOption",
     "SearchIn",
     "OrderSide",

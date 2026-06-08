@@ -1,6 +1,6 @@
 /**
- * Auto-generated from /Users/ndmeiri/Developer/pmxt/core/specs/myriad/myriad.yaml
- * Generated at: 2026-04-21T22:01:26.565Z
+ * Auto-generated from /opt/data/repos/pmxt/.worktrees/hermes-42dac47d/core/specs/myriad/myriad.yaml
+ * Generated at: 2026-06-05T12:40:10.188Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const myriadApiSpec = {
@@ -163,8 +163,16 @@ export const myriadApiSpec = {
                             "enum": [
                                 "open",
                                 "closed",
-                                "resolved"
+                                "resolved",
+                                "voided"
                             ]
+                        }
+                    },
+                    {
+                        "name": "trading_model",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     {
@@ -647,6 +655,13 @@ export const myriadApiSpec = {
                     },
                     {
                         "name": "state",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "trading_model",
                         "in": "query",
                         "schema": {
                             "type": "string"

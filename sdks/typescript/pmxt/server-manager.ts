@@ -122,6 +122,13 @@ export class ServerManager {
     }
 
     /**
+     * Backwards-compatible alias for `isServerRunning()`.
+     */
+    async isServerAlive(): Promise<boolean> {
+        return this.isServerRunning();
+    }
+
+    /**
      * Wait for the server to be ready.
      * Requires a lock file to be present to avoid falsely matching an unrelated
      * server that may already be running on the default port.

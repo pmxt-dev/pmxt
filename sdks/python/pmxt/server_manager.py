@@ -70,7 +70,7 @@ class ServerManager:
             from urllib.parse import urlparse
             parsed = urlparse(url)
             return parsed.port or self.DEFAULT_PORT
-        except:
+        except (ValueError, AttributeError):
             return self.DEFAULT_PORT
     
     def ensure_server_running(self) -> None:
@@ -153,7 +153,7 @@ class ServerManager:
                     # This allows 1.0.0 and 1.0.0-b4 to coexist in dev
                     if expected_base != server_base:
                         return True
-            except Exception:
+            except (OSError, json.JSONDecodeError, AttributeError, KeyError, TypeError, ValueError):
                 pass
 
         return False
@@ -294,7 +294,7 @@ class ServerManager:
 
                 if result.stdout.strip():
                     time.sleep(0.5)
-        except Exception:
+        except (OSError, subprocess.TimeoutExpired, ValueError):
             pass
 
     def _kill_old_server(self) -> None:
@@ -312,7 +312,7 @@ class ServerManager:
                     import signal
                     os.kill(pid, signal.SIGTERM)
                 time.sleep(0.5)
-            except Exception:
+            except (OSError, subprocess.TimeoutExpired):
                 pass
 
             # Verify the process is actually dead; escalate to SIGKILL if not
@@ -324,7 +324,7 @@ class ServerManager:
                     try:
                         os.kill(pid, signal.SIGKILL)
                         time.sleep(0.2)
-                    except Exception:
+                    except OSError:
                         pass
                 except (OSError, ProcessLookupError):
                     pass  # Process is dead — good
@@ -362,11 +362,7 @@ class ServerManager:
                 return False
             
             # Quick health check to verify server is responsive
-            try:
-                return self._check_health(port, timeout=1)
-            except:
-                # Process exists but not responding
-                return False
+            return self._check_health(port, timeout=1)
                 
         except (json.JSONDecodeError, OSError):
             return False
@@ -398,7 +394,7 @@ class ServerManager:
         """Remove stale lock file."""
         try:
             self.lock_path.unlink()
-        except:
+        except OSError:
             pass
     
     def _start_server_via_launcher(self) -> None:
@@ -468,12 +464,9 @@ class ServerManager:
         start_time = time.time()
 
         while time.time() - start_time < self.HEALTH_CHECK_TIMEOUT:
-            try:
-                port = self.get_running_port()
-                if self._check_health(port):
-                    return
-            except:
-                pass
+            port = self.get_running_port()
+            if self._check_health(port):
+                return
 
             time.sleep(self.HEALTH_CHECK_INTERVAL)
 
@@ -517,7 +510,7 @@ class ServerManager:
         
         try:
             return json.loads(self.lock_path.read_text())
-        except:
+        except (OSError, json.JSONDecodeError):
             return None
     
     def get_running_port(self) -> int:

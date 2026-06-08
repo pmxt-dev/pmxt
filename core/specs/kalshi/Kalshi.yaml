@@ -5,7 +5,7 @@ info:
   description: Manually defined OpenAPI spec for endpoints being migrated to spec-first approach
 
 servers:
-  - url: https://{env}.elections.kalshi.com/trade-api/v2
+  - url: https://{env}.external-api.kalshi.com/trade-api/v2
     description: Kalshi Trade API
     variables:
       env:

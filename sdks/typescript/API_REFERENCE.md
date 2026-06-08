@@ -1456,7 +1456,7 @@ title: string; // The market title (e.g., "Will BTC close above $100k on Dec 31?
 description: string; // Long-form market description or resolution criteria.
 slug: string; // URL-friendly slug for the market.
 outcomes: MarketOutcome[]; // The possible outcomes for this market.
-resolutionDate: string; // When the market is scheduled to resolve.
+resolutionDate: string; // When the market is scheduled to resolve. Optional because some venues do not publish a cutoff for every market (e.g. Opinion categorical children) — emit `undefined` rather than coercing to epoch.
 volume24h: number; // Trading volume over the past 24 hours (USD).
 volume: number; // Total / Lifetime volume
 liquidity: number; // Current market liquidity (USD).

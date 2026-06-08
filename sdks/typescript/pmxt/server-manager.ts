@@ -8,6 +8,7 @@ import { DefaultApi, Configuration } from "../generated/src/index.js";
 import { readFileSync, existsSync } from "fs";
 import { homedir } from "os";
 import { join, dirname } from "path";
+import { logger } from "./logger.js";
 
 export interface ServerManagerOptions {
     baseUrl?: string;
@@ -145,8 +146,8 @@ export class ServerManager {
                         const data = await response.json() as any;
                         if (data.status === "ok") return;
                     }
-                } catch {
-                    // Not ready yet
+                } catch (err) {
+                    logger.debug('server-manager: health poll error', { error: String(err) });
                 }
             }
             await new Promise((resolve) => setTimeout(resolve, this.retryDelayMs));
@@ -264,8 +265,8 @@ export class ServerManager {
                     return true;
                 }
             }
-        } catch {
-            // Ignore errors
+        } catch (err) {
+            logger.warn('server-manager: version check failed', { error: String(err) });
         }
         return false;
     }
@@ -385,6 +386,9 @@ export class ServerManager {
         try {
             const { unlinkSync } = await import('fs');
             unlinkSync(this.lockPath);
-        } catch { }
+        } catch (err) {
+            // Best-effort — expected when file was already removed.
+            logger.debug('server-manager: lock file removal failed', { path: this.lockPath, error: String(err) });
+        }
     }
 }

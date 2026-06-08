@@ -2,6 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { execSync } from 'child_process';
+import { logger } from '../../utils/logger';
 
 export class LockFile {
     public lockPath: string;
@@ -31,8 +32,10 @@ export class LockFile {
     async remove(): Promise<void> {
         try {
             await fs.unlink(this.lockPath);
-        } catch {
-            // Ignore errors if file doesn't exist
+        } catch (err: any) {
+            if (err?.code !== 'ENOENT') {
+                logger.warn('LockFile: failed to remove lock', { path: this.lockPath, error: String(err) });
+            }
         }
     }
 

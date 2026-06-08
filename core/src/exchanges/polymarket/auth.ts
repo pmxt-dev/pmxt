@@ -104,7 +104,6 @@ export class PolymarketAuth {
         let creds: ApiKeyCreds | undefined;
 
         try {
-            // console.log('Trying to derive existing API key...');
             creds = await l1Client.deriveApiKey();
             if (!creds || !creds.key || !creds.secret || !creds.passphrase) {
                 // If derived creds are missing, throw to trigger catch -> create
@@ -124,7 +123,6 @@ export class PolymarketAuth {
             throw new Error('Authentication failed: Derived credentials are incomplete.');
         }
 
-        // console.log(`[PolymarketAuth] Successfully obtained API credentials for key ${creds.key.substring(0, 8)}...`);
         this.apiCreds = creds;
         return creds;
     }
@@ -153,8 +151,6 @@ export class PolymarketAuth {
                 timeout: 10_000,
             });
             const profile = response.data;
-            // console.log(`[PolymarketAuth] Profile for ${address}:`, JSON.stringify(profile));
-
             if (profile && profile.proxyAddress) {
                 this.discoveredProxyAddress = profile.proxyAddress;
                 // Determine signature type. 
@@ -162,7 +158,6 @@ export class PolymarketAuth {
                 // If it's a proxy address but we don't know the type, 1 is a safe default for Polymarket.
                 this.discoveredSignatureType = profile.isGnosisSafe ? SIG_TYPE_GNOSIS_SAFE : SIG_TYPE_POLY_PROXY;
 
-                // console.log(`[PolymarketAuth] Auto-discovered proxy for ${address}: ${this.discoveredProxyAddress} (Type: ${this.discoveredSignatureType})`);
                 if (!this.discoveredProxyAddress || this.discoveredSignatureType === undefined) {
                     throw new Error('[polymarket] Proxy discovery incomplete — missing proxyAddress or signatureType');
                 }
@@ -274,8 +269,6 @@ export class PolymarketAuth {
         const finalSignatureType: number = signatureType;
 
         // Create L2-authenticated client
-        // console.log(`[PolymarketAuth] Initializing ClobClient | Signer: ${signerAddress} | Funder: ${finalProxyAddress} | SigType: ${finalSignatureType}`);
-
         this.clobClient = new ClobClient({
             host: this.host,
             chain: POLYMARKET_CHAIN_ID,

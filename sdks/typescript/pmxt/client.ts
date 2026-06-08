@@ -53,6 +53,7 @@ import { buildArgsWithOptionalOptions } from "./args.js";
 import { PmxtError, fromServerError } from "./errors.js";
 import { LOCAL_URL, resolvePmxtBaseUrl } from "./constants.js";
 import { SidecarWsClient } from "./ws-client.js";
+import { logger } from "./logger.js";
 
 interface RawWebSocketLike {
     send(data: string): void;
@@ -430,8 +431,8 @@ export abstract class Exchange {
                 if (attempt === 0 && !this.isHosted) {
                     try {
                         await this.serverManager.ensureServerRunning();
-                    } catch {
-                        // Restart failed — continue retrying anyway
+                    } catch (err) {
+                        logger.warn('PmxtClient: server restart failed during retry', { attempt, error: String(err) });
                     }
                 }
                 await new Promise(resolve => setTimeout(resolve, delays[attempt]));
@@ -477,7 +478,8 @@ export abstract class Exchange {
             if (!client.connected) {
                 throw new Error("WS handshake failed");
             }
-        } catch {
+        } catch (err) {
+            logger.warn('PmxtClient: WebSocket probe failed, falling back to HTTP', { error: String(err) });
             this._wsUnsupported = true;
             client.close();
             return null;
@@ -2014,7 +2016,10 @@ export abstract class Exchange {
                         const body = await res.json();
                         this._hostedAccount = { depositWallet: body.deposit_wallet, signatureType: body.signature_type };
                     } else { this._hostedAccount = {}; }
-                } catch { this._hostedAccount = {}; }
+                } catch (err) {
+                    logger.warn('PmxtClient: hosted account discovery failed', { error: String(err) });
+                    this._hostedAccount = {};
+                }
             })();
         }
         await this._accountDiscoveryPromise;

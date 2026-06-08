@@ -547,5 +547,3 @@ class Router(Exchange):
 # Backwards-compatible aliases for exchange classes generated before underscore handling.
 Polymarket_us = PolymarketUS
 Suibets = SuiBets
-
-from .router import Router as Router

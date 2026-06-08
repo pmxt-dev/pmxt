@@ -703,12 +703,47 @@ class TradesParams(TypedDict, total=False):
     cursor: str
 
 
+class HistoryFilterParams(TypedDict, total=False):
+    """Parameters for generic history queries."""
+    from_timestamp: int
+    until_timestamp: int
+    max_size: int
+    order: Literal["asc", "desc"]
+
+
+class OHLCVParams(TypedDict, total=False):
+    """Parameters for OHLCV candle queries."""
+    since: int
+    until: int
+    limit: int
+    resolution: str
+
+
 class FetchOrderBookParams(TypedDict, total=False):
     """Parameters for historical order book queries."""
     side: Literal["yes", "no"]
     outcome: str
     since: int
     until: int
+
+
+class MyTradesParams(TypedDict, total=False):
+    """Parameters for fetching authenticated user trades."""
+    outcome_id: str
+    market_id: str
+    since: int
+    until: int
+    limit: int
+    cursor: str
+
+
+class OrderHistoryParams(TypedDict, total=False):
+    """Parameters for fetching authenticated order history."""
+    market_id: str
+    since: int
+    until: int
+    limit: int
+    cursor: str
 
 
 # -----------------------------------------------------------------------------

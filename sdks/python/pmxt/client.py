@@ -50,6 +50,7 @@ from .models import (
     TradesParams,
     FetchOrderBookParams,
     SubscribedAddressSnapshot,
+    SubscriptionOption,
     FirehoseEvent,
     MatchResult,
     EventMatchResult,
@@ -1683,6 +1684,7 @@ class Exchange(ABC):
         since: Optional[int] = None,
         start: Optional[Union[str, int]] = None,
         end: Optional[Union[str, int]] = None,
+        resolution: Optional[str] = None,
         **kwargs
     ) -> List[Trade]:
         """
@@ -1696,6 +1698,7 @@ class Exchange(ABC):
             since: Return trades since this timestamp (Unix milliseconds)
             start: Start of time range (ISO 8601 string or epoch seconds/ms)
             end: End of time range (ISO 8601 string or epoch seconds/ms)
+            resolution: Optional trade resolution/status filter forwarded to the venue
             **kwargs: Additional parameters
 
         Returns:
@@ -1717,6 +1720,8 @@ class Exchange(ABC):
                 params_dict["start"] = start
             if end is not None:
                 params_dict["end"] = end
+            if resolution is not None:
+                params_dict["resolution"] = resolution
 
             # Add any extra keyword arguments
             for key, value in kwargs.items():
@@ -2078,7 +2083,7 @@ class Exchange(ABC):
     def watch_address(
         self,
         address: str,
-        types: Optional[List[str]] = None,
+        types: Optional[List[SubscriptionOption]] = None,
     ) -> SubscribedAddressSnapshot:
         """
         Watch real-time updates of a public wallet via WebSocket.

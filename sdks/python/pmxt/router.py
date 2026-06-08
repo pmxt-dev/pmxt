@@ -25,7 +25,7 @@ from .models import (
 from pmxt_internal.exceptions import ApiException
 
 
-def _parse_market(raw: Any) -> UnifiedMarket:
+def _parse_market(raw: Any) -> Any:
     """Best-effort parse of a raw market dict into UnifiedMarket."""
     if isinstance(raw, UnifiedMarket):
         return raw
@@ -34,7 +34,7 @@ def _parse_market(raw: Any) -> UnifiedMarket:
     return raw
 
 
-def _parse_event(raw: Any) -> UnifiedEvent:
+def _parse_event(raw: Any) -> Any:
     """Best-effort parse of a raw event dict into UnifiedEvent."""
     if isinstance(raw, UnifiedEvent):
         return raw
@@ -124,7 +124,7 @@ class Router(Exchange):
         pmxt_api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         auto_start_server: bool = False,
-    ):
+    ) -> None:
         """
         Initialize the Router.
 
@@ -306,7 +306,7 @@ class Router(Exchange):
             results.append(EventMatchResult(event=event, market_matches=market_matches))
         return results
 
-    def _get_catalog_path(self, path: str, params: Dict[str, Any]) -> Any:
+    def _get_catalog_path(self, path: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """GET a hosted catalog /v0 path and return its raw JSON body."""
         qs = self._build_sidecar_query_string(params)
         url = f"{self._resolve_sidecar_host()}{path}{'?' + qs if qs else ''}"

@@ -170,6 +170,8 @@ export class PolymarketNormalizer implements IExchangeNormalizer<PolymarketRawEv
             bids,
             asks,
             timestamp: raw.timestamp ? (typeof raw.timestamp === 'string' ? (isFinite(Number(raw.timestamp)) ? Number(raw.timestamp) : new Date(raw.timestamp).getTime()) : Number(raw.timestamp)) : Date.now(),
+            tickSize: raw.tick_size != null ? parseFloat(raw.tick_size) : undefined,
+            minOrderSize: raw.min_order_size != null ? parseFloat(raw.min_order_size) : undefined,
         };
     }
 

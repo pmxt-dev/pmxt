@@ -989,7 +989,7 @@ paths:
         - L2Auth: []
       parameters:
         - $ref: '#/components/parameters/L2Headers'
-        - name: orderId
+        - name: order_id
           in: query
           required: true
           schema:

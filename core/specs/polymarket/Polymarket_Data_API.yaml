@@ -373,21 +373,41 @@ paths:
           schema:
             $ref: '#/components/schemas/Address'
         - in: query
+          name: maker_address
+          schema:
+            $ref: '#/components/schemas/Address'
+          description: Maker address filter for trade lookups.
+        - in: query
           name: side
           schema:
             type: string
             enum:
               - BUY
               - SELL
+        - in: query
+          name: next_cursor
+          schema:
+            type: string
+          description: Cursor for fetching the next page of trades.
       responses:
         '200':
           description: Success
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Trade'
+                type: object
+                properties:
+                  limit:
+                    type: integer
+                  next_cursor:
+                    type: string
+                    nullable: true
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Trade'
         '400':
           description: Bad Request
           content:

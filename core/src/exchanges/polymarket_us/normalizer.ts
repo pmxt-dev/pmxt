@@ -39,11 +39,12 @@ const POLYMARKET_US_PROMOTED_SERIES_KEYS = [
 ] as const;
 
 // marketSides and outcomePrices feed the outcomes array and are therefore
-// treated as promoted. orderPriceMinTickSize maps to tickSize.
+// treated as promoted. orderPriceMinTickSize maps to tickSize and
+// minimumTradeQty maps to minOrderSize.
 const POLYMARKET_US_PROMOTED_MARKET_KEYS = [
     'slug', 'question', 'title', 'description', 'category', 'tags',
     'endDate', 'marketSides', 'outcomePrices', 'orderPriceMinTickSize',
-    'eventSlug', 'volume', 'liquidity',
+    'minimumTradeQty', 'eventSlug', 'volume', 'liquidity',
 ] as const;
 
 // ----------------------------------------------------------------------------
@@ -84,6 +85,8 @@ interface RealMarket {
     // `UnifiedMarket.tickSize` so price-sensitive helpers can honour the
     // real tick rather than falling back to the hard-coded default.
     orderPriceMinTickSize?: number;
+    // Per-market minimum tradeable quantity for partial-contract markets.
+    minimumTradeQty?: number;
     eventSlug?: string;
     volume?: number;
     liquidity?: number;
@@ -426,6 +429,9 @@ export class PolymarketUSNormalizer {
             tags: [...effectiveTags],
             tickSize: typeof market.orderPriceMinTickSize === 'number'
                 ? market.orderPriceMinTickSize
+                : undefined,
+            minOrderSize: typeof market.minimumTradeQty === 'number'
+                ? market.minimumTradeQty
                 : undefined,
             sourceMetadata: buildSourceMetadata(
                 market as unknown as Record<string, unknown>,

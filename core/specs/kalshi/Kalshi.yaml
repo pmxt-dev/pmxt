@@ -4096,8 +4096,7 @@ components:
           format: int64
           description: Unix timestamp of the last update to the balance.
         balance_dollars:
-          type: number
-          format: double
+          $ref: '#/components/schemas/FixedPointDollars'
           description: Member's available balance in USD dollars.
 
     CreateSubaccountResponse:
@@ -4853,8 +4852,8 @@ components:
         - price
         - yes_price
         - no_price
-        - yes_price_fixed
-        - no_price_fixed
+        - yes_price_dollars
+        - no_price_dollars
         - is_taker
         - fee_cost
       properties:
@@ -4896,11 +4895,11 @@ components:
         no_price:
           type: integer
           description: Fill price for the no side in cents
-        yes_price_fixed:
-          type: string
+        yes_price_dollars:
+          $ref: '#/components/schemas/FixedPointDollars'
           description: Fill price for the yes side in fixed point dollars
-        no_price_fixed:
-          type: string
+        no_price_dollars:
+          $ref: '#/components/schemas/FixedPointDollars'
           description: Fill price for the no side in fixed point dollars
         is_taker:
           type: boolean

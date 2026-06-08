@@ -83,6 +83,8 @@ export interface PolymarketRawOrderBook {
     bids?: PolymarketRawOrderBookLevel[];
     asks?: PolymarketRawOrderBookLevel[];
     timestamp?: string | number;
+    tick_size?: string;
+    min_order_size?: string;
 }
 
 export interface PolymarketRawTrade {
@@ -278,8 +280,8 @@ export class PolymarketFetcher implements IExchangeFetcher<PolymarketRawEvent, P
                 queryParams.before = Math.floor(ensureDate(params.end).getTime() / 1000);
             }
 
-            const trades = await this.ctx.callApi('getTrades', queryParams) || [];
-            return trades;
+            const data = await this.ctx.callApi('getTrades', queryParams);
+            return Array.isArray(data) ? data : (data?.data ?? []);
         } catch (error: any) {
             throw polymarketErrorMapper.mapError(error);
         }

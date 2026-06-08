@@ -89,6 +89,7 @@ export interface UnifiedMarket {
     /** Optional list of tags. More granular than category — e.g. ["Crypto", "Crypto Prices", "Bitcoin"] or ["Politics", "Elections", "Trump"]. Tags vary by venue: Polymarket markets carry several, Kalshi typically one. */
     tags?: string[];
     tickSize?: number; // Minimum price increment (e.g., 0.01, 0.001)
+    minOrderSize?: number; // Minimum tradeable quantity/contracts for this market, when venue-provided
 
     /** Venue-native lifecycle status (e.g. 'active', 'closed', 'archived'). */
     status?: string;
@@ -183,6 +184,10 @@ export interface OrderBook {
     timestamp?: number;
     /** ISO 8601 datetime string of the snapshot (CCXT-compatible). */
     datetime?: string;
+    /** Venue-provided minimum price increment for orders against this book. */
+    tickSize?: number;
+    /** Venue-provided minimum order size/contracts for this book. */
+    minOrderSize?: number;
 }
 
 export interface Trade {

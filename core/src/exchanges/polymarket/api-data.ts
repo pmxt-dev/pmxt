@@ -331,6 +331,13 @@ export const polymarketDataSpec = {
                     },
                     {
                         "in": "query",
+                        "name": "maker_address",
+                        "schema": {
+                            "$ref": "#/components/schemas/Address"
+                        }
+                    },
+                    {
+                        "in": "query",
                         "name": "side",
                         "schema": {
                             "type": "string",
@@ -338,6 +345,13 @@ export const polymarketDataSpec = {
                                 "BUY",
                                 "SELL"
                             ]
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "next_cursor",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ]

@@ -53,9 +53,9 @@ components:
         title:
           type: string
           example: "Binary Post title"
-        url_title:
+        short_title:
           type: string
-          example: "Binary Post url title"
+          example: "Binary Post short title"
         slug:
           type: string
           example: "numeric-post"

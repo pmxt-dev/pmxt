@@ -54,12 +54,12 @@ export function fromCoinEncoding(encoding: number): { outcomeId: number; side: '
 /**
  * Convert an outcome ID to the allMids lookup key.
  *
- * The allMids endpoint keys prediction-market outcomes as "@{outcomeId}"
- * (e.g. "@8"), which is distinct from the "#encoding" coin notation used
- * for orders and positions.
+ * The allMids endpoint keys HIP-4 prediction-market outcomes using the same
+ * "#encoding" form as coin notation. For the Yes side, encoding is
+ * 10 * outcomeId + 0 (e.g. outcome 8 -> "#80").
  */
 export function toMidKey(outcomeId: number): string {
-    return `@${outcomeId}`;
+    return toCoinNotation(outcomeId, 'yes');
 }
 
 /**

@@ -314,7 +314,8 @@ export class ServerManager {
         let uptimeSeconds: number | null = null;
         if (info && typeof info.timestamp === "number") {
             const nowSeconds = Date.now() / 1000;
-            const tsSeconds = info.timestamp > 1e12 ? info.timestamp / 1000 : info.timestamp;
+            const epochSecondsThreshold = 10_000_000_000;
+            const tsSeconds = info.timestamp >= epochSecondsThreshold ? info.timestamp / 1000 : info.timestamp;
             const delta = nowSeconds - tsSeconds;
             if (delta >= 0) uptimeSeconds = delta;
         }

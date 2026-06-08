@@ -204,7 +204,8 @@ class ServerManager:
         if isinstance(timestamp, (int, float)):
             # Lock file timestamps may be epoch seconds or epoch milliseconds.
             now_seconds = time.time()
-            ts_seconds = timestamp / 1000.0 if timestamp > 1e12 else float(timestamp)
+            epoch_seconds_threshold = 10_000_000_000
+            ts_seconds = timestamp / 1000.0 if timestamp >= epoch_seconds_threshold else float(timestamp)
             delta = now_seconds - ts_seconds
             if delta >= 0:
                 uptime = delta

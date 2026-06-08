@@ -13,6 +13,7 @@ import {
 } from '../../types';
 import { IExchangeNormalizer } from '../interfaces';
 import { addBinaryOutcomes } from '../../utils/market-utils';
+import { timestampToMs } from '../../utils/time';
 import { mapMarketToUnified, mapEventToUnified, enrichMarketsWithPrices } from './utils';
 import {
     ProbableRawMarket,
@@ -106,7 +107,7 @@ export class ProbableNormalizer implements IExchangeNormalizer<ProbableRawMarket
         }
         return {
             id: String(raw.id ?? raw.tradeId),
-            timestamp: raw.time < 1e12 ? raw.time * 1000 : raw.time,
+            timestamp: timestampToMs(raw.time),
             price: parseFloat(String(raw.price)),
             amount: parseFloat(String(raw.size)),
             side: raw.side === 'BUY' ? 'buy' as const
@@ -133,7 +134,7 @@ export class ProbableNormalizer implements IExchangeNormalizer<ProbableRawMarket
         }
         return {
             id: String(raw.tradeId ?? raw.id),
-            timestamp: raw.time > 1e12 ? raw.time : raw.time * 1000,
+            timestamp: timestampToMs(raw.time),
             price: parseFloat(String(raw.price)),
             amount: parseFloat(String(raw.size)),
             side: String(raw.side).toLowerCase() === 'buy' ? 'buy' as const : 'sell' as const,

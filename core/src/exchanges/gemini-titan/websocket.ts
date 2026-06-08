@@ -1,6 +1,7 @@
 import WebSocket from 'ws';
 import { OrderBook, Trade, OrderLevel } from '../../types';
 import { logger } from '../../utils/logger';
+import { DEFAULT_RECONNECT_INTERVAL_MS } from '../../utils/time';
 import { DEFAULT_WATCH_TIMEOUT_MS, withWatchTimeout } from '../../utils/watch-timeout';
 import { GeminiAuth } from './auth';
 
@@ -130,7 +131,7 @@ export class GeminiWebSocket {
             this.connect().catch((err: unknown) => {
                 logger.warn(`[gemini-titan] reconnect failed: ${err instanceof Error ? err.message : String(err)}`);
             });
-        }, this.config.reconnectIntervalMs ?? 5000);
+        }, this.config.reconnectIntervalMs ?? DEFAULT_RECONNECT_INTERVAL_MS);
     }
 
     // -------------------------------------------------------------------------

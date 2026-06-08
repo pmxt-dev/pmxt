@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import { OrderBook, Trade, OrderLevel, QueuedPromise } from "../../types";
 import { logger } from '../../utils/logger';
+import { DEFAULT_RECONNECT_INTERVAL_MS } from "../../utils/time";
 import { DEFAULT_WATCH_TIMEOUT_MS, withWatchTimeout } from "../../utils/watch-timeout";
 
 export interface OpinionWebSocketConfig {
@@ -146,7 +147,7 @@ export class OpinionWebSocket {
     this.reconnectTimer = setTimeout(() => {
       logger.info("Attempting to reconnect Opinion WebSocket...");
       this.connect().catch((err) => logger.error("Opinion WebSocket reconnect failed", { error: String(err) }));
-    }, this.config.reconnectIntervalMs ?? 5000);
+    }, this.config.reconnectIntervalMs ?? DEFAULT_RECONNECT_INTERVAL_MS);
   }
 
   private resubscribeAll(): void {

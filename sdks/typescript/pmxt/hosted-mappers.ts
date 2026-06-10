@@ -108,7 +108,11 @@ export function userTradeFromV0(payload: Record<string, unknown>): UserTrade {
     const trade: UserTrade = {
         id: strOrEmpty(payload["id"]),
         price: floatOrZero(payload["price"]),
-        amount: floatOrZero(payload["amount"]),
+        // The v0 wire sends trade amounts in 6-dec micro-shares (verified
+        // live: 58139533.0 == 58.139533 shares, matching the same position's
+        // decimal `shares`). Normalize so UserTrade.amount means shares,
+        // like everywhere else in the SDK.
+        amount: floatOrZero(payload["amount"]) / 1_000_000,
         side,
         timestamp: timestampToMs(payload["timestamp"]),
     };
@@ -130,7 +134,8 @@ export function userTradeToV0(trade: UserTrade): Record<string, unknown> {
     const out: Record<string, unknown> = {
         id: trade.id,
         side: trade.side,
-        amount: trade.amount,
+        // Inverse of userTradeFromV0: decimal shares -> 6-dec micro-shares.
+        amount: Math.round(trade.amount * 1_000_000),
         price: trade.price,
         timestamp: msToTimestamp(trade.timestamp),
     };

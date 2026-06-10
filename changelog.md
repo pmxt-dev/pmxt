@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.49.8] - 2026-06-10
+
+Hosted trading quickstart actually works now. The SDKs' client-side economics validator was rejecting every server-built market order before signing (`economic mismatch: worst_price expected <= ... got 0.999`), because the hosted trading API deliberately pins market-order `worst_price` to the tick-grid extreme and caps the user with `max_cost_usdc` / `shares_6dec` instead ("textbook market semantics"). Verified live against `trade.pmxt.dev` with a real $5 fill end-to-end.
+
+### Fixed
+
+- **TS `pmxt/hosted-typed-data.ts` + Python `pmxt/_hosted_typeddata.py`**: `validateWorstPrice` / `_validate_worst_price` no longer apply the limit-order slippage bound to **market** orders. For market orders the binding user protection is `max_cost_usdc` (buys) / `shares_6dec` (sells) — both already strictly validated — so the validator now only sanity-checks that `worst_price` lies inside the open `(0, 1)` price domain. Limit orders keep the existing slippage-bound check. This unblocks `create_order` / `createOrder` market orders in hosted mode, which previously failed pre-sign, every time.
+- **TS `pmxt/hosted-mappers.ts` + Python `pmxt/_hosted_mappers.py`**: `userTradeFromV0` / `user_trade_from_v0` now normalize the v0 wire `amount` (6-dec micro-shares, e.g. `58139533.0`) to decimal shares (`58.139533`), so `UserTrade.amount` means shares — consistent with `Position.size` and the rest of the SDK. The reverse mappers scale back to micros symmetrically.
+- **Python `client.py`**: `create_order` docstring claimed "Not available through the hosted API" — it is; corrected to describe the hosted build → local-sign → submit flow.
+
+### Changed
+
+- **`docs/trading-quickstart.mdx`**: Removed the "use aggressive `slippage_pct`" workaround warning (the validator bug it papered over is fixed); market-order examples no longer pass `slippage_pct` and note that market orders are budget-capped, not price-capped. Fixed the TypeScript `createOrder` example to use `type` (the actual `CreateOrderParams` field) instead of the nonexistent `orderType`. Fixed step-6 verification snippets to use real model fields (`Position.size` / `outcome_label`, `Balance.available`) instead of nonexistent `quantity` / `notional` / `free`. Documented that hosted limit orders currently return `501`.
+
 ## [2.49.7] - 2026-06-09
 
 API Reference sidebar reorder: `Trading` and `Orders & Positions` move from near the bottom of the tab to immediately under `Events & Markets`, so the customer's natural path is walkable top-to-bottom — discover (Events & Markets) → act (Trading) → inspect state (Orders & Positions) → niche features.

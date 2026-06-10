@@ -469,13 +469,52 @@ def test_validate_economics_rejects_tampered_max_cost_usdc() -> None:
         )
 
 
-def test_validate_economics_rejects_worst_price_outside_slippage_bound() -> None:
+def test_validate_economics_rejects_worst_price_outside_slippage_bound_for_limit() -> None:
     fixture = _fixture("polymarket_buy")
+    build_request = {**_copy(fixture["build_request"]), "order_type": "limit"}
     response = _with_response_field(
         fixture["build_response"],
         "worstPrice",
         "worst_price",
         900_000,
+    )
+
+    with pytest.raises(InvalidSignature):
+        validate_economics(
+            route=fixture["route"],
+            build_request=build_request,
+            build_response=response,
+        )
+
+
+def test_validate_economics_accepts_pinned_worst_price_for_market_orders() -> None:
+    """Hosted market orders pin worst_price to the tick-grid extreme by
+    design — max_cost_usdc is the binding user protection. The validator
+    must NOT apply the limit-order slippage bound (regression: every
+    documented quickstart market buy was rejected pre-sign)."""
+    fixture = _fixture("polymarket_buy")
+    response = _with_response_field(
+        fixture["build_response"],
+        "worstPrice",
+        "worst_price",
+        999_000,
+    )
+
+    validate_economics(
+        route=fixture["route"],
+        build_request=_copy(fixture["build_request"]),
+        build_response=response,
+    )
+
+
+@pytest.mark.parametrize("pinned", [0, 1_000_000, 2_000_000])
+def test_validate_economics_rejects_market_worst_price_outside_domain(pinned: int) -> None:
+    fixture = _fixture("polymarket_buy")
+    response = _with_response_field(
+        fixture["build_response"],
+        "worstPrice",
+        "worst_price",
+        pinned,
     )
 
     with pytest.raises(InvalidSignature):

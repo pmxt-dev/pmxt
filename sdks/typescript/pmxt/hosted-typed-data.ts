@@ -442,6 +442,28 @@ function validateWorstPrice(
 ): void {
     const worstPriceMicro = messageBigInt(message, "worst_price", "worstPrice");
     const worstPrice = Number(worstPriceMicro) / SIX_DEC_DIVISOR;
+
+    // Hosted MARKET orders pin worst_price to the tick-grid extreme by
+    // design ("textbook market semantics"): the binding user protection is
+    // max_cost_usdc (buys) / shares_6dec (sells), validated above. A
+    // slippage bound on worst_price would reject every server-built market
+    // order, so only sanity-check the price domain here.
+    const orderType = String(
+        firstPresent(
+            getField(buildRequest, "order_type"),
+            getField(buildRequest, "orderType"),
+            "market",
+        ),
+    ).toLowerCase();
+    if (orderType === "market") {
+        if (!(worstPrice > 0 && worstPrice < 1)) {
+            economicFail(
+                `worst_price expected within (0, 1) got ${worstPrice}`,
+            );
+        }
+        return;
+    }
+
     const slippagePctRaw = firstPresent(
         getField(buildRequest, "slippage_pct"),
         getField(buildRequest, "slippagePct"),

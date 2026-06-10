@@ -2963,7 +2963,9 @@ class Exchange(ABC):
         """
         Create a new order.
 
-        Not available through the hosted API — trades execute locally.
+        In hosted mode (``pmxt_api_key`` + ``wallet_address`` + ``private_key``)
+        this wraps build -> local EIP-712 sign -> submit against the hosted
+        trading API. Venue-direct mode executes locally with raw credentials.
 
         You can specify the market either with explicit market_id/outcome_id,
         or by passing an outcome object directly (e.g., market.yes).

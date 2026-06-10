@@ -80,11 +80,16 @@ def order_to_v0(order: Order | Mapping[str, Any]) -> dict[str, Any]:
 def user_trade_from_v0(payload: Mapping[str, Any] | Any) -> UserTrade:
     """Map a ``UserTradeV0`` JSON object to :class:`pmxt.models.UserTrade`."""
     data = _as_dict(payload)
+    raw_amount = _float_or_none(data.get("amount"))
     values = {
         "id": _str_or_none(data.get("id")),
         "timestamp": _timestamp_to_ms(data.get("timestamp")),
         "price": _float_or_none(data.get("price")),
-        "amount": _float_or_none(data.get("amount")),
+        # The v0 wire sends trade amounts in 6-dec micro-shares (verified
+        # live: 58139533.0 == 58.139533 shares, matching the same position's
+        # decimal ``shares``). Normalize so UserTrade.amount means shares,
+        # like everywhere else in the SDK.
+        "amount": raw_amount / 1_000_000 if raw_amount is not None else None,
         "side": data.get("side") or "unknown",
         "order_id": _str_or_none(data.get("order_id")),
         "market_id": _str_or_none(data.get("market_id")),
@@ -101,12 +106,14 @@ def user_trade_from_v0(payload: Mapping[str, Any] | Any) -> UserTrade:
 def user_trade_to_v0(trade: UserTrade | Mapping[str, Any]) -> dict[str, Any]:
     """Map :class:`pmxt.models.UserTrade` back to a ``UserTradeV0`` object."""
     data = _as_dict(trade)
+    decimal_amount = _float_or_none(data.get("amount"))
     out = {
         "id": _str_or_none(data.get("id")),
         "market_id": _str_or_none(data.get("market_id")),
         "outcome_id": _str_or_none(data.get("outcome_id")),
         "side": data.get("side"),
-        "amount": _float_or_none(data.get("amount")),
+        # Inverse of user_trade_from_v0: decimal shares -> 6-dec micro-shares.
+        "amount": round(decimal_amount * 1_000_000) if decimal_amount is not None else None,
         "price": _float_or_none(data.get("price")),
         "fee": _float_or_none(data.get("fee")),
         "timestamp": _ms_to_timestamp(data.get("timestamp")),

@@ -84,7 +84,8 @@ def _user_trade_v0(timestamp="2026-06-08T10:12:13.456Z"):
         "market_id": "market-003",
         "outcome_id": "outcome-yes",
         "side": "sell",
-        "amount": 4.5,
+        # Wire amounts are 6-dec micro-shares; the SDK normalizes to decimal.
+        "amount": 4_500_000,
         "price": 0.71,
         "fee": 0.02,
         "timestamp": timestamp,

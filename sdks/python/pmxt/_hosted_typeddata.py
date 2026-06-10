@@ -419,6 +419,24 @@ def _validate_worst_price(
     build_response: Any,
 ) -> None:
     worst_price = Decimal(_message_int(message, "worst_price", "worstPrice")) / _SIX_DEC_SCALE
+
+    # Hosted MARKET orders pin worst_price to the tick-grid extreme by design
+    # ("textbook market semantics"): the binding user protection is
+    # max_cost_usdc (buys) / shares_6dec (sells), validated above. A slippage
+    # bound on worst_price would reject every server-built market order, so
+    # only sanity-check the price domain here.
+    order_type = str(
+        _first_present(
+            _value(build_request, "order_type"),
+            _value(build_request, "orderType"),
+            "market",
+        )
+    ).lower()
+    if order_type == "market":
+        if not (Decimal("0") < worst_price < Decimal("1")):
+            _economic_fail(f"worst_price expected within (0, 1) got {worst_price}")
+        return
+
     slippage_pct = _decimal(
         _first_present(
             _value(build_request, "slippage_pct"),

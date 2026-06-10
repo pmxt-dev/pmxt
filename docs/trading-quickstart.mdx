@@ -97,8 +97,8 @@ deposit_tx = client.escrow.deposit_tx(amount=10.0)
 # Sign and send deposit_tx with your wallet library...
 
 # 3. Confirm the deposit landed
-balance = client.fetch_balance()
-print(f"Escrow USDC: {balance.free}")
+balances = client.fetch_balance()
+print(f"Escrow USDC: {balances[0].available}")
 ```
 
 ```typescript TypeScript
@@ -111,8 +111,8 @@ const depositTx = await client.escrow.depositTx(10);
 // Sign and send depositTx with your wallet library...
 
 // 3. Confirm the deposit landed
-const balance = await client.fetchBalance();
-console.log(`Escrow USDC: ${balance.free}`);
+const balances = await client.fetchBalance();
+console.log(`Escrow USDC: ${balances[0].available}`);
 ```
 </CodeGroup>
 </Accordion>
@@ -131,11 +131,9 @@ order = client.create_order(
     outcome=yes,
     side="buy",
     order_type="market",
-    amount=5.0,
-    denom="usdc",
-    slippage_pct=30.0,
+    amount=5.0,   # market buys are denominated in USDC: spend exactly $5
 )
-print(f"Order {order.id}: {order.status}")
+print(f"Order {order.id}: {order.status} filled={order.filled}")
 ```
 
 ```typescript TypeScript
@@ -146,12 +144,10 @@ const yes = market.outcomes.find((o) => o.label.toLowerCase() === "yes")!;
 const order = await client.createOrder({
   outcome: yes,
   side: "buy",
-  orderType: "market",
-  amount: 5,
-  denom: "usdc",
-  slippagePct: 30,
+  type: "market",
+  amount: 5, // market buys are denominated in USDC: spend exactly $5
 });
-console.log(`Order ${order.id}: ${order.status}`);
+console.log(`Order ${order.id}: ${order.status} filled=${order.filled}`);
 ```
 
 ```bash curl
@@ -169,26 +165,32 @@ The hosted trading API accepts either the venue-native identifier (returned by `
 **Polymarket has a 5-share minimum per order.** At ~$0.78/share, a 5 USDC buy is ~6.4 shares — fine. But $2 at the same price is only 2.5 shares and will be rejected with `OrderSizeTooSmall`. Size up or switch to a cheaper outcome.
 </Warning>
 
-<Warning>
-**Use aggressive `slippage_pct`** until the upstream economic validator tightens its `worst_price` checks. Pragmatic defaults: `slippage_pct=30` for buys, `slippage_pct=99.9` for sells. Lower values frequently trip a precision check that has nothing to do with actual slippage.
-</Warning>
+<Note>
+**Market orders are budget-capped, not price-capped.** A market buy spends exactly `amount` USDC and a market sell sells exactly `amount` shares — the on-chain authorization caps the spend, so `slippage_pct` is not needed (and is ignored) for market orders. Hosted **limit** orders are not yet available and currently return `501`; use the self-hosted server for resting limit orders.
+</Note>
 
 ## 6. Verify the fill
 
-Hosted positions appear immediately on `fetch_positions`. The position's `quantity` and `notional` reflect the escrow-side accounting.
+Hosted positions appear immediately on `fetch_positions`. The position's `size` is your share count; the remaining USDC sits in `fetch_balance`.
 
 <CodeGroup>
 ```python Python
 positions = client.fetch_positions()
 for p in positions:
-    print(f"{p.market_id}  qty={p.quantity}  notional={p.notional}")
+    print(f"{p.market_id}  {p.outcome_label}  size={p.size}")
+
+balances = client.fetch_balance()
+print(f"Escrow USDC left: {balances[0].available}")
 ```
 
 ```typescript TypeScript
 const positions = await client.fetchPositions();
 for (const p of positions) {
-  console.log(`${p.marketId}  qty=${p.quantity}  notional=${p.notional}`);
+  console.log(`${p.marketId}  ${p.outcomeLabel}  size=${p.size}`);
 }
+
+const balances = await client.fetchBalance();
+console.log(`Escrow USDC left: ${balances[0].available}`);
 ```
 </CodeGroup>
 

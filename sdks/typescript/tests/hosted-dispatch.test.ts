@@ -137,6 +137,25 @@ describe("hosted read dispatch", () => {
     expect(reqs[0].url).toContain("/v0/orders/abc");
     expect(reqs[0].init?.method).toBe("GET");
   });
+
+  it("getExecutionPriceDetailed sends hosted bearer auth header", async () => {
+    const spy = installFetchSpy(() =>
+      jsonResponse({
+        success: true,
+        data: { price: 0.51, total: 5.1, slippage: 0, fills: [] },
+      }),
+    );
+    const api = makePolymarket();
+
+    await api.getExecutionPriceDetailed({ bids: [], asks: [] } as any, "buy", 10);
+
+    const reqs = captured(spy);
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0].url).toContain("/api/polymarket/getExecutionPriceDetailed");
+    expect(reqs[0].init?.method).toBe("POST");
+    const headers = reqs[0].init?.headers as Record<string, string> | undefined;
+    expect(headers?.Authorization).toBe(`Bearer ${PMXT_API_KEY}`);
+  });
 });
 
 // --------------------------------------------------------------------------

@@ -2691,7 +2691,7 @@ export abstract class Exchange {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...this.config.headers
+                    ...this.getAuthHeaders()
                 },
                 body: JSON.stringify(body)
             });

@@ -7,13 +7,15 @@ OpenAPI client, matching the JavaScript API exactly.
 
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
 import uuid
 from abc import ABC
 from datetime import datetime
-from typing import Callable, List, Optional, Dict, Any, Literal, Union, Type
+from decimal import Decimal, InvalidOperation
+from typing import Callable, List, Optional, Dict, Any, Literal, Union, Tuple, Type
 
 # Add generated client to path
 _GENERATED_PATH = os.path.join(os.path.dirname(__file__), "..", "generated")
@@ -50,6 +52,7 @@ from .models import (
     TradesParams,
     FetchOrderBookParams,
     SubscribedAddressSnapshot,
+    SubscriptionOption,
     FirehoseEvent,
     MatchResult,
     EventMatchResult,
@@ -57,7 +60,40 @@ from .models import (
     ArbitrageOpportunity,
 )
 from .constants import LOCAL_URL, resolve_pmxt_base_url
-from .errors import PmxtError, ValidationError, from_server_error
+from .errors import (
+    InvalidOrder,
+    InvalidSignature,
+    MissingWalletAddress,
+    NotSupported,
+    PmxtError,
+    ValidationError,
+    from_server_error,
+)
+from ._hosted_routing import (
+    HOSTED_METHOD_ROUTES,
+    HOSTED_TRADING_VENUES,
+    _trading_request,
+    ensure_hosted_method_supported,
+    ensure_hosted_trading_supported,
+    format_route_path,
+    get_hosted_route,
+    hosted_route_url,
+    resolve_wallet_address,
+)
+from ._hosted_mappers import (
+    balance_from_v0,
+    built_order_from_v0,
+    order_from_v0,
+    position_from_v0,
+    to_6dec,
+    user_trade_from_v0,
+)
+from ._hosted_typeddata import (
+    validate_economics,
+    validate_typed_data,
+    verify_signature,
+)
+from .escrow import Escrow
 from .server_manager import ServerManager
 
 import dataclasses as _dc
@@ -298,6 +334,8 @@ class Exchange(ABC):
         signature_type: Optional[str] = None,
         wallet_address: Optional[str] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[Any] = None,
     ) -> None:
         """
         Initialize an exchange client.
@@ -322,6 +360,13 @@ class Exchange(ABC):
                 env) and no explicit ``base_url`` is set, the SDK auto-routes
                 to the hosted pmxt endpoint and injects ``Authorization:
                 Bearer`` on every request.
+            wallet_address: EVM wallet address used for hosted reads/writes.
+                Required for all hosted endpoints that operate on a wallet
+                (balances, positions, trades, open orders, build/submit/cancel).
+            signer: Optional EIP-712 signer object exposing
+                ``sign_typed_data(typed_data) -> 0x-prefixed hex``. When
+                ``private_key`` is supplied without ``signer`` in hosted mode,
+                an :class:`EthAccountSigner` is created automatically.
         """
         self.exchange_name = exchange_name.lower()
         self.api_key = api_key
@@ -330,6 +375,7 @@ class Exchange(ABC):
         self.proxy_address = proxy_address
         self.signature_type = signature_type
         self.wallet_address = wallet_address
+        self.signer = signer
         self.markets: Dict[str, "UnifiedMarket"] = {}
         self.markets_by_slug: Dict[str, "UnifiedMarket"] = {}
         self._loaded_markets: bool = False
@@ -354,6 +400,20 @@ class Exchange(ABC):
         effective_base_url = resolved.base_url
         self.pmxt_api_key = resolved.pmxt_api_key
         self.is_hosted = resolved.is_hosted
+
+        # Bridge private_key -> EthAccountSigner for hosted trading mode.
+        # Lazy import keeps the eth-account dep optional.
+        if (
+            self.pmxt_api_key
+            and self.private_key
+            and self.signer is None
+        ):
+            from .signers import EthAccountSigner
+            self.signer = EthAccountSigner(self.private_key)
+
+        # Hosted trading exposes an escrow namespace for deposits/withdrawals.
+        if self.pmxt_api_key and self.exchange_name in HOSTED_TRADING_VENUES:
+            self.escrow = Escrow(self)
 
         # Default auto_start_server: true locally, false when hosted.
         if auto_start_server is None:
@@ -519,6 +579,465 @@ class Exchange(ABC):
         if self.wallet_address:
             creds["walletAddress"] = self.wallet_address
         return creds if creds else None
+
+    # ------------------------------------------------------------------
+    # Hosted trading dispatch helpers
+    # ------------------------------------------------------------------
+
+    def _hosted_method_enabled(self, method_name: str) -> bool:
+        """Return True when the caller should route ``method_name`` to v0."""
+        if not self.pmxt_api_key:
+            return False
+        if self.exchange_name == "sor":
+            return False
+        if self.exchange_name not in HOSTED_TRADING_VENUES:
+            return False
+        ensure_hosted_method_supported(self, method_name)
+        return True
+
+    def _hosted_request(
+        self,
+        method_name: str,
+        *,
+        body: Optional[Dict[str, Any]] = None,
+        params: Optional[Dict[str, Any]] = None,
+        path_params: Optional[Dict[str, Any]] = None,
+    ) -> Any:
+        route = ensure_hosted_method_supported(self, method_name)
+        path = format_route_path(route, path_params)
+        return _trading_request(
+            self,
+            method=route.method,
+            path=path,
+            body=body,
+            params=params,
+        )
+
+    @staticmethod
+    def _hosted_response_data(payload: Any, collection_key: Optional[str] = None) -> Any:
+        if not isinstance(payload, dict):
+            return payload
+        if collection_key and collection_key in payload:
+            return payload[collection_key]
+        if "built_order_id" in payload or "cancel_id" in payload:
+            return payload
+        if payload.get("success") is True and "data" in payload:
+            data = payload["data"]
+            if collection_key and isinstance(data, dict) and collection_key in data:
+                return data[collection_key]
+            return data
+        data = payload.get("data")
+        if collection_key and isinstance(data, dict) and collection_key in data:
+            return data[collection_key]
+        return payload
+
+    def _hosted_collection(
+        self,
+        payload: Any,
+        collection_key: str,
+        mapper: Callable[[Any], Any],
+    ) -> List[Any]:
+        data = self._hosted_response_data(payload, collection_key)
+        if data is None:
+            return []
+        if isinstance(data, dict) and collection_key in data:
+            data = data[collection_key]
+        if not isinstance(data, list):
+            raise PmxtError(
+                f"Hosted response field {collection_key!r} must be a list"
+            )
+        return [mapper(item) for item in data]
+
+    def _hosted_single(
+        self,
+        payload: Any,
+        collection_key: str,
+        mapper: Callable[[Any], Any],
+    ) -> Any:
+        data = self._hosted_response_data(payload, collection_key)
+        if data is None:
+            raise PmxtError(f"Hosted response missing {collection_key!r}")
+        return mapper(data)
+
+    @staticmethod
+    def _hosted_order_target(
+        market_id: Optional[str],
+        outcome_id: Optional[str],
+        outcome: Optional["MarketOutcome"],
+    ) -> Tuple[Optional[str], str]:
+        """Resolve (market_id, outcome_id) for a hosted order request.
+
+        Returns a tuple ``(market_id_or_None, outcome_id)``. The returned
+        ``outcome_id`` may be either a catalog UUID OR a venue-native
+        identifier -- the caller is responsible for inspecting its shape
+        and choosing the correct wire field (``outcome_id`` vs.
+        ``(venue, venue_outcome_id)``). ``market_id`` is optional in
+        hosted mode -- the trading backend derives it from ``outcome_id``
+        (when a catalog UUID is supplied) or from
+        ``(venue, venue_outcome_id)`` when a venue-native id is supplied.
+        Callers may still pass ``market_id`` for backward compatibility,
+        in which case it is forwarded as-is.
+        """
+        if outcome is not None:
+            if market_id is not None or outcome_id is not None:
+                raise ValueError(
+                    "Cannot specify both 'outcome' and 'market_id'/'outcome_id'. "
+                    "Use one or the other."
+                )
+            if not outcome.outcome_id:
+                raise ValueError(
+                    "outcome.outcome_id is not set. Ensure the outcome comes "
+                    "from a fetched market."
+                )
+            # outcome.market_id may be empty -- the backend derives it from outcome_id.
+            return outcome.market_id or None, outcome.outcome_id
+        if outcome_id is None:
+            raise ValueError(
+                "Either provide 'outcome' or 'outcome_id' (with optional 'market_id')."
+            )
+        return market_id, outcome_id
+
+    # Match a canonical 8-4-4-4-12 UUID string. The hosted catalog emits
+    # UUIDs in this exact shape, so a regex is both faster and stricter than
+    # stdlib ``uuid.UUID(...)`` parsing (which also accepts braces, urns,
+    # and other variants we never want to forward as catalog ids).
+    _UUID_RE = re.compile(
+        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        re.IGNORECASE,
+    )
+
+    @classmethod
+    def _looks_like_catalog_uuid(cls, value: str) -> bool:
+        """True iff ``value`` parses as a canonical catalog UUID string."""
+        return bool(cls._UUID_RE.match(value))
+
+    @staticmethod
+    def _hosted_amount_6dec(amount: float) -> int:
+        try:
+            amount_6dec = to_6dec(amount)
+        except InvalidOrder:
+            raise
+        except (InvalidOperation, TypeError, ValueError) as exc:
+            raise InvalidOrder("amount must be a finite positive number") from exc
+        if amount_6dec <= 0:
+            raise InvalidOrder("amount must be positive")
+        return amount_6dec
+
+    @staticmethod
+    def _hosted_denom(side: str, order_type: str, denom: Optional[str]) -> str:
+        if side not in {"buy", "sell"}:
+            raise InvalidOrder("side must be 'buy' or 'sell'")
+        if order_type not in {"market", "limit"}:
+            raise InvalidOrder("order_type must be 'market' or 'limit'")
+        expected = "usdc" if order_type == "market" and side == "buy" else "shares"
+        normalized = expected if denom is None else str(denom).lower()
+        if normalized != expected:
+            if order_type == "market":
+                raise InvalidOrder(f"market {side} requires denom={expected!r}")
+            raise InvalidOrder("limit orders require denom='shares'")
+        return normalized
+
+    def _hosted_build_order_request(
+        self,
+        market_id: Optional[str],
+        outcome_id: Optional[str],
+        *,
+        side: str,
+        order_type: str,
+        amount: float,
+        price: Optional[float],
+        fee: Optional[int],
+        outcome: Optional["MarketOutcome"],
+        denom: Optional[str],
+        slippage_pct: Optional[float],
+    ) -> Dict[str, Any]:
+        resolved_market_id, resolved_outcome_id = self._hosted_order_target(
+            market_id, outcome_id, outcome
+        )
+        amount_6dec = self._hosted_amount_6dec(amount)
+        normalized_denom = self._hosted_denom(side, order_type, denom)
+        if order_type == "limit" and price is None:
+            raise InvalidOrder("price is required for limit orders")
+        if price is not None and price <= 0:
+            raise InvalidOrder("price must be positive")
+        # The resolved outcome id may be a catalog UUID OR a venue-native id
+        # (e.g. a Polymarket tokenId or an Opinion market hash). Catalog UUIDs
+        # are forwarded as ``outcome_id``; venue-native ids are forwarded as
+        # ``(venue, venue_outcome_id)`` so the backend resolver picks the
+        # right path. Either shape is accepted by the v0 trading API.
+        base: Dict[str, Any] = {
+            "side": side,
+            "order_type": order_type,
+            "amount": amount,
+            "amount_6dec": amount_6dec,
+            "denom": normalized_denom,
+            "user_address": resolve_wallet_address(self),
+        }
+        if self._looks_like_catalog_uuid(resolved_outcome_id):
+            base["outcome_id"] = resolved_outcome_id
+            # market_id is optional in hosted mode: backend derives it from
+            # outcome_id (UUID) when omitted. Forward only when the caller
+            # supplied a non-empty UUID -- "absent" and "null" are not
+            # equivalent under some Pydantic configs on the backend.
+            if resolved_market_id and self._looks_like_catalog_uuid(
+                resolved_market_id
+            ):
+                base["market_id"] = resolved_market_id
+        else:
+            # Venue-native form: backend resolves the row from
+            # (source_exchange, pmxt_id). market_id from a venue client is
+            # itself venue-native and would fail backend UUID validation
+            # if forwarded -- suppress it.
+            base["venue"] = self.exchange_name
+            base["venue_outcome_id"] = resolved_outcome_id
+        with_price = {**base, "price": price} if price is not None else base
+        with_fee = {**with_price, "fee": fee} if fee is not None else with_price
+        return (
+            {**with_fee, "slippage_pct": slippage_pct}
+            if slippage_pct is not None
+            else with_fee
+        )
+
+    @staticmethod
+    def _hosted_nested(payload: Dict[str, Any], *keys: str) -> Any:
+        value: Any = payload
+        for key in keys:
+            if not isinstance(value, dict):
+                return None
+            value = value.get(key)
+        return value
+
+    def _validate_hosted_limit_price(
+        self,
+        build_request: Dict[str, Any],
+        build_response: Dict[str, Any],
+    ) -> None:
+        if build_request.get("order_type") != "limit" or build_request.get("price") is None:
+            return
+        tick_size = (
+            self._hosted_nested(build_response, "quote", "tick_size")
+            or self._hosted_nested(build_response, "resolved", "tick_size")
+        )
+        if tick_size is None:
+            return
+        try:
+            price = Decimal(str(build_request["price"]))
+            tick = Decimal(str(tick_size))
+        except (InvalidOperation, TypeError, ValueError) as exc:
+            raise InvalidOrder("price must be numeric") from exc
+        if tick <= 0:
+            return
+        if (price / tick) != (price / tick).to_integral_value():
+            raise InvalidOrder(f"price must be a multiple of tick_size {tick_size}")
+
+    def _hosted_order_validation_route(self, side: str) -> str:
+        if self.exchange_name == "polymarket":
+            return f"polymarket_{side}"
+        if self.exchange_name == "opinion" and side == "buy":
+            return "opinion_buy"
+        if self.exchange_name == "opinion" and side == "sell":
+            return "opinion_sell_polygon"
+        raise NotSupported("Hosted trading is only supported for Polymarket and Opinion.")
+
+    def _hosted_order_pull_validation_route(self, side: str) -> Optional[str]:
+        if self.exchange_name == "opinion" and side == "sell":
+            return "opinion_sell_bsc_pull"
+        return None
+
+    def _hosted_cancel_validation_routes(self) -> Tuple[str, Optional[str]]:
+        if self.exchange_name == "polymarket":
+            return "cancel_polymarket", None
+        if self.exchange_name == "opinion":
+            return "cancel_opinion_polygon", "cancel_opinion_bsc_pull"
+        raise NotSupported("Hosted trading is only supported for Polymarket and Opinion.")
+
+    @staticmethod
+    def _hosted_typed_data(payload: Dict[str, Any], key: str) -> Dict[str, Any]:
+        typed_data = payload.get(key)
+        if not isinstance(typed_data, dict):
+            raise InvalidSignature(f"{key} missing from hosted build response")
+        return typed_data
+
+    def _validate_hosted_build_response(
+        self,
+        build_response: Dict[str, Any],
+        build_request: Dict[str, Any],
+    ) -> None:
+        route = self._hosted_order_validation_route(str(build_request["side"]))
+        wallet_address = str(build_request["user_address"])
+        typed_data = self._hosted_typed_data(build_response, "typed_data")
+        validate_typed_data(typed_data, route, wallet_address)
+        validate_economics(typed_data, route, build_request, build_response)
+        self._validate_hosted_limit_price(build_request, build_response)
+        pull_route = self._hosted_order_pull_validation_route(str(build_request["side"]))
+        if pull_route and build_response.get("pull_typed_data"):
+            validate_typed_data(
+                self._hosted_typed_data(build_response, "pull_typed_data"),
+                pull_route,
+                wallet_address,
+            )
+
+    @staticmethod
+    def _call_hosted_signer(signer: Any, typed_data: Dict[str, Any]) -> str:
+        if signer is None:
+            raise InvalidSignature("signer is required for hosted trading")
+        signature = None
+        for method_name in ("sign_typed_data", "sign"):
+            method = getattr(signer, method_name, None)
+            if callable(method):
+                signature = method(typed_data)
+                break
+        if signature is None:
+            if not callable(signer):
+                raise InvalidSignature(
+                    "signer must be callable or expose sign_typed_data()"
+                )
+            signature = signer(typed_data)
+        if isinstance(signature, bytes):
+            return "0x" + signature.hex()
+        if isinstance(signature, str) and not signature.startswith("0x"):
+            return f"0x{signature}"
+        return signature
+
+    def _sign_hosted_typed_data(
+        self,
+        build_response: Dict[str, Any],
+        typed_data_key: str,
+        route: str,
+        wallet_address: str,
+        build_request: Dict[str, Any],
+        *,
+        signer: Optional[Any] = None,
+        validate_economics_check: bool = True,
+    ) -> str:
+        typed_data = self._hosted_typed_data(build_response, typed_data_key)
+        validate_typed_data(typed_data, route, wallet_address)
+        if validate_economics_check:
+            validate_economics(typed_data, route, build_request, build_response)
+        signature = self._call_hosted_signer(signer or self.signer, typed_data)
+        return verify_signature(typed_data, signature, wallet_address)
+
+    @staticmethod
+    def _hosted_built_payload(built: "BuiltOrder") -> Dict[str, Any]:
+        raw = dict(built.raw) if isinstance(built.raw, dict) else {}
+        params = dict(built.params or {})
+        payload = raw
+        for key in (
+            "built_order_id",
+            "typed_data",
+            "pull_typed_data",
+            "side",
+            "quote",
+            "resolved",
+            "build_request",
+        ):
+            if key not in payload and key in params:
+                payload = {**payload, key: params[key]}
+        return payload
+
+    def _hosted_build_request_from_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        request = payload.get("build_request")
+        if isinstance(request, dict):
+            return request
+        params_request = self._hosted_nested(payload, "params", "build_request")
+        if isinstance(params_request, dict):
+            return params_request
+        params = payload.get("params")
+        if isinstance(params, dict) and {"side", "amount", "denom"}.issubset(params.keys()):
+            return params
+        if {"side", "amount", "denom"}.issubset(payload.keys()):
+            return payload
+        raise InvalidSignature(
+            "hosted built order is missing the original build_request; "
+            "rebuild with build_order()"
+        )
+
+    @staticmethod
+    def _with_hosted_build_request(
+        built: "BuiltOrder",
+        build_response: Dict[str, Any],
+        build_request: Dict[str, Any],
+    ) -> "BuiltOrder":
+        return BuiltOrder(
+            exchange=built.exchange,
+            params={**built.params, "build_request": build_request},
+            raw={**build_response, "build_request": build_request},
+            signed_order=built.signed_order,
+            tx=built.tx,
+        )
+
+    def _hosted_submit_body(
+        self,
+        build_payload: Dict[str, Any],
+        build_request: Dict[str, Any],
+        signer: Optional[Any] = None,
+    ) -> Dict[str, Any]:
+        wallet_address = resolve_wallet_address(self)
+        side = str(build_request.get("side") or build_payload.get("side"))
+        route = self._hosted_order_validation_route(side)
+        signature = self._sign_hosted_typed_data(
+            build_payload,
+            "typed_data",
+            route,
+            wallet_address,
+            build_request,
+            signer=signer,
+        )
+        built_order_id = build_payload.get("built_order_id")
+        if not built_order_id:
+            raise InvalidSignature("built_order_id missing from hosted build response")
+        body = {"built_order_id": built_order_id, "signature": signature}
+        pull_route = self._hosted_order_pull_validation_route(side)
+        if pull_route and build_payload.get("pull_typed_data"):
+            pull_signature = self._sign_hosted_typed_data(
+                build_payload,
+                "pull_typed_data",
+                pull_route,
+                wallet_address,
+                build_request,
+                signer=signer,
+                validate_economics_check=False,
+            )
+            return {**body, "pull_signature": pull_signature}
+        return body
+
+    def _hosted_cancel_order(
+        self,
+        order_id: str,
+        signer: Optional[Any] = None,
+    ) -> "Order":
+        wallet_address = resolve_wallet_address(self)
+        build_request = {"order_id": order_id, "user_address": wallet_address}
+        build_payload = self._hosted_response_data(
+            self._hosted_request("cancel_order_build", body=build_request)
+        )
+        if not isinstance(build_payload, dict):
+            raise InvalidSignature("cancel build response must be an object")
+        route, pull_route = self._hosted_cancel_validation_routes()
+        signature = self._sign_hosted_typed_data(
+            build_payload,
+            "typed_data",
+            route,
+            wallet_address,
+            build_request,
+            signer=signer,
+        )
+        cancel_id = build_payload.get("cancel_id")
+        if not cancel_id:
+            raise InvalidSignature("cancel_id missing from hosted cancel build response")
+        body = {"cancel_id": cancel_id, "signature": signature}
+        if pull_route and build_payload.get("pull_typed_data"):
+            pull_signature = self._sign_hosted_typed_data(
+                build_payload,
+                "pull_typed_data",
+                pull_route,
+                wallet_address,
+                build_request,
+                signer=signer,
+            )
+            body = {**body, "pull_signature": pull_signature}
+        response = self._hosted_request("cancel_order", body=body)
+        return self._hosted_single(response, "order", order_from_v0)
 
     def _default_watch_all_order_book_venues(self) -> Optional[List[str]]:
         if self.exchange_name in self._OBDATA_WATCH_ALL_SOURCES:
@@ -775,7 +1294,8 @@ class Exchange(ABC):
 
         for market in markets:
             self.markets[market.market_id] = market
-            self.markets_by_slug[market.slug] = market
+            if market.slug:
+                self.markets_by_slug[market.slug] = market
 
         self._loaded_markets = True
         return self.markets
@@ -976,6 +1496,8 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def cancel_order(self, order_id: str) -> Order:
+        if self.is_hosted:
+            return self._hosted_cancel_order(order_id)
         try:
             args = []
             args.append(order_id)
@@ -996,6 +1518,12 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def fetch_order(self, order_id: str) -> Order:
+        if self.is_hosted:
+            payload = self._hosted_request(
+                "fetch_order",
+                path_params={"order_id": order_id},
+            )
+            return self._hosted_single(payload, "order", order_from_v0)
         try:
             args = []
             args.append(order_id)
@@ -1016,6 +1544,13 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def fetch_open_orders(self, market_id: Optional[str] = None) -> List[Order]:
+        if self.is_hosted:
+            address = resolve_wallet_address(self)
+            params: Dict[str, Any] = {"address": address}
+            if market_id is not None:
+                params["market_id"] = market_id
+            payload = self._hosted_request("fetch_open_orders", params=params)
+            return self._hosted_collection(payload, "orders", order_from_v0)
         try:
             args = []
             if market_id is not None:
@@ -1037,6 +1572,21 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def fetch_my_trades(self, params: Optional[dict] = None, **kwargs) -> List[UserTrade]:
+        if self.is_hosted:
+            merged = dict(params or {})
+            if kwargs:
+                merged.update(kwargs)
+            address = merged.pop("address", None) or merged.pop("addr", None)
+            resolved_address = resolve_wallet_address(self, address)
+            query_params = {
+                key: value for key, value in merged.items() if value is not None
+            }
+            payload = self._hosted_request(
+                "fetch_my_trades",
+                path_params={"address": resolved_address},
+                params=query_params if query_params else None,
+            )
+            return self._hosted_collection(payload, "trades", user_trade_from_v0)
         try:
             args = []
             if kwargs:
@@ -1060,6 +1610,11 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def fetch_closed_orders(self, params: Optional[dict] = None, **kwargs) -> List[Order]:
+        if self.is_hosted:
+            raise NotSupported(
+                "fetch_closed_orders is not available in hosted mode; "
+                "settled orders are modeled as trades, use fetch_my_trades() instead."
+            )
         try:
             args = []
             if kwargs:
@@ -1083,6 +1638,11 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def fetch_all_orders(self, params: Optional[dict] = None, **kwargs) -> List[Order]:
+        if self.is_hosted:
+            raise NotSupported(
+                "fetch_all_orders is not available in hosted mode; "
+                "use fetch_open_orders() and fetch_my_trades() separately."
+            )
         try:
             args = []
             if kwargs:
@@ -1106,6 +1666,13 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def fetch_positions(self, address: Optional[str] = None) -> List[Position]:
+        if self.is_hosted:
+            resolved_address = resolve_wallet_address(self, address)
+            payload = self._hosted_request(
+                "fetch_positions",
+                path_params={"address": resolved_address},
+            )
+            return self._hosted_collection(payload, "positions", position_from_v0)
         try:
             args = []
             if address is not None:
@@ -1127,6 +1694,25 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def fetch_balance(self, address: Optional[str] = None) -> List[Balance]:
+        if self.is_hosted:
+            resolved_address = resolve_wallet_address(self, address)
+            payload = self._hosted_request(
+                "fetch_balance",
+                path_params={"address": resolved_address},
+            )
+            data = self._hosted_response_data(payload, "balances")
+            if data is None:
+                return []
+            if isinstance(data, dict) and "balances" in data:
+                data = data["balances"]
+            if isinstance(data, dict):
+                # Some servers return a single balance object rather than a list.
+                return [balance_from_v0(data)]
+            if not isinstance(data, list):
+                raise PmxtError(
+                    "Hosted fetch_balance response must be a list or dict"
+                )
+            return [balance_from_v0(item) for item in data]
         try:
             args = []
             if address is not None:
@@ -1695,6 +2281,7 @@ class Exchange(ABC):
         since: Optional[int] = None,
         start: Optional[Union[str, int]] = None,
         end: Optional[Union[str, int]] = None,
+        resolution: Optional[str] = None,
         **kwargs
     ) -> List[Trade]:
         """
@@ -1708,6 +2295,7 @@ class Exchange(ABC):
             since: Return trades since this timestamp (Unix milliseconds)
             start: Start of time range (ISO 8601 string or epoch seconds/ms)
             end: End of time range (ISO 8601 string or epoch seconds/ms)
+            resolution: Optional trade resolution/status filter forwarded to the venue
             **kwargs: Additional parameters
 
         Returns:
@@ -1729,6 +2317,8 @@ class Exchange(ABC):
                 params_dict["start"] = start
             if end is not None:
                 params_dict["end"] = end
+            if resolution is not None:
+                params_dict["resolution"] = resolution
 
             # Add any extra keyword arguments
             for key, value in kwargs.items():
@@ -2090,7 +2680,7 @@ class Exchange(ABC):
     def watch_address(
         self,
         address: str,
-        types: Optional[List[str]] = None,
+        types: Optional[List[SubscriptionOption]] = None,
     ) -> SubscribedAddressSnapshot:
         """
         Watch real-time updates of a public wallet via WebSocket.
@@ -2379,6 +2969,8 @@ class Exchange(ABC):
         neg_risk: Optional[bool] = None,
         on_behalf_of: Optional[int] = None,
         outcome: Optional[MarketOutcome] = None,
+        denom: Optional[Literal["usdc", "shares"]] = None,
+        slippage_pct: Optional[float] = None,
     ) -> Order:
         """
         Create a new order.
@@ -2427,11 +3019,33 @@ class Exchange(ABC):
                     type=order_type, amount=amount, price=price, outcome=outcome,
                     tick_size=tick_size, neg_risk=neg_risk, on_behalf_of=on_behalf_of,
                 )
-            raise PmxtError(
-                "Trade execution is not available through the hosted API. "
-                "Use the local PMXT SDK with your venue credentials instead. "
-                "See https://pmxt.dev/docs/quickstart for setup instructions."
+            if self.signer is None:
+                raise InvalidSignature(
+                    "create_order requires a signer (or private_key) in hosted "
+                    "trading mode; construct the exchange with private_key= or "
+                    "signer=."
+                )
+            build_request = self._hosted_build_order_request(
+                market_id,
+                outcome_id,
+                side=side,
+                order_type=order_type,
+                amount=amount,
+                price=price,
+                fee=fee,
+                outcome=outcome,
+                denom=denom,
+                slippage_pct=slippage_pct,
             )
+            build_payload = self._hosted_response_data(
+                self._hosted_request("create_order", body=build_request)
+            )
+            if not isinstance(build_payload, dict):
+                raise InvalidSignature("hosted build response must be an object")
+            self._validate_hosted_build_response(build_payload, build_request)
+            submit_body = self._hosted_submit_body(build_payload, build_request)
+            response = self._hosted_request("submit_order", body=submit_body)
+            return self._hosted_single(response, "order", order_from_v0)
         try:
             # Resolve outcome shorthand
             if outcome is not None:
@@ -2507,6 +3121,8 @@ class Exchange(ABC):
         neg_risk: Optional[bool] = None,
         on_behalf_of: Optional[int] = None,
         outcome: Optional[MarketOutcome] = None,
+        denom: Optional[Literal["usdc", "shares"]] = None,
+        slippage_pct: Optional[float] = None,
     ) -> BuiltOrder:
         """
         Build an order payload without submitting it to the exchange.
@@ -2553,11 +3169,26 @@ class Exchange(ABC):
             ... )
         """
         if self.is_hosted:
-            raise PmxtError(
-                "Trade execution is not available through the hosted API. "
-                "Use the local PMXT SDK with your venue credentials instead. "
-                "See https://pmxt.dev/docs/quickstart for setup instructions."
+            build_request = self._hosted_build_order_request(
+                market_id,
+                outcome_id,
+                side=side,
+                order_type=order_type,
+                amount=amount,
+                price=price,
+                fee=fee,
+                outcome=outcome,
+                denom=denom,
+                slippage_pct=slippage_pct,
             )
+            build_payload = self._hosted_response_data(
+                self._hosted_request("build_order", body=build_request)
+            )
+            if not isinstance(build_payload, dict):
+                raise InvalidSignature("hosted build response must be an object")
+            self._validate_hosted_build_response(build_payload, build_request)
+            built = built_order_from_v0(build_payload)
+            return self._with_hosted_build_request(built, build_payload, build_request)
         try:
             # Resolve outcome shorthand
             if outcome is not None:
@@ -2641,11 +3272,17 @@ class Exchange(ABC):
             >>> print(order.id, order.status)
         """
         if self.is_hosted:
-            raise PmxtError(
-                "Trade execution is not available through the hosted API. "
-                "Use the local PMXT SDK with your venue credentials instead. "
-                "See https://pmxt.dev/docs/quickstart for setup instructions."
-            )
+            if self.signer is None:
+                raise InvalidSignature(
+                    "submit_order requires a signer (or private_key) in hosted "
+                    "trading mode; construct the exchange with private_key= or "
+                    "signer=."
+                )
+            build_payload = self._hosted_built_payload(built)
+            build_request = self._hosted_build_request_from_payload(build_payload)
+            submit_body = self._hosted_submit_body(build_payload, build_request)
+            response = self._hosted_request("submit_order", body=submit_body)
+            return self._hosted_single(response, "order", order_from_v0)
         try:
             built_dict = {
                 "exchange": built.exchange,

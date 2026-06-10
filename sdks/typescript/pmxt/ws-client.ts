@@ -343,8 +343,8 @@ export class SidecarWsClient {
         if (this.ws) {
             try {
                 this.ws.close();
-            } catch {
-                // ignore
+            } catch (err) {
+                logger.debug('[SidecarWsClient] error during ws.close()', { error: String(err) });
             }
             this.ws = null;
         }

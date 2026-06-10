@@ -83,6 +83,8 @@ export interface PolymarketRawOrderBook {
     bids?: PolymarketRawOrderBookLevel[];
     asks?: PolymarketRawOrderBookLevel[];
     timestamp?: string | number;
+    neg_risk?: boolean;
+    last_trade_price?: string;
 }
 
 export interface PolymarketRawTrade {
@@ -111,6 +113,9 @@ export interface PolymarketRawPosition {
 }
 
 const GAMMA_MARKETS_URL = process.env.POLYMARKET_GAMMA_MARKETS_URL || 'https://gamma-api.polymarket.com/markets';
+
+// Cloudflare blocks large single-shot Gamma lookups (~50 condition_ids / ~3.5KB query).
+const GAMMA_CONDITION_IDS_BATCH_SIZE = 40;
 
 export class PolymarketFetcher implements IExchangeFetcher<PolymarketRawEvent, PolymarketRawEvent> {
     private readonly ctx: FetcherContext;
@@ -327,14 +332,17 @@ export class PolymarketFetcher implements IExchangeFetcher<PolymarketRawEvent, P
     }
 
     private async resolveConditionIds(conditionIds: string[]): Promise<Map<string, string>> {
-        const response = await this.http.get(GAMMA_MARKETS_URL, {
-            params: { condition_ids: conditionIds.join(',') },
-        });
-        const markets: any[] = Array.isArray(response.data) ? response.data : [];
         const result = new Map<string, string>();
-        for (const market of markets) {
-            if (market.conditionId && market.id) {
-                result.set(market.conditionId, String(market.id));
+        for (let offset = 0; offset < conditionIds.length; offset += GAMMA_CONDITION_IDS_BATCH_SIZE) {
+            const batch = conditionIds.slice(offset, offset + GAMMA_CONDITION_IDS_BATCH_SIZE);
+            const response = await this.http.get(GAMMA_MARKETS_URL, {
+                params: { condition_ids: batch.join(',') },
+            });
+            const markets: any[] = Array.isArray(response.data) ? response.data : [];
+            for (const market of markets) {
+                if (market.conditionId && market.id) {
+                    result.set(market.conditionId, String(market.id));
+                }
             }
         }
         return result;

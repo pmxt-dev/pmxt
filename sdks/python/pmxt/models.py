@@ -18,6 +18,7 @@ SearchIn = Literal["title", "description", "both"]
 OrderSide = Literal["buy", "sell"]
 OrderType = Literal["market", "limit"]
 OutcomeType = Literal["yes", "no", "up", "down"]
+SubscriptionOption = Literal["trades", "positions", "balances"]
 
 
 @dataclass
@@ -391,6 +392,24 @@ class UserTrade(Trade):
     market_id: Optional[str] = None
     """The market this trade belongs to"""
 
+    fee: Optional[float] = None
+    """Trading fee, when available."""
+
+    tx_hash: str | None = None
+    """On-chain transaction hash (hosted mode only; None in venue-direct mode)."""
+
+    chain: str | None = None
+    """Chain identifier where the trade settled (hosted mode only; None in venue-direct mode)."""
+
+    block_number: int | None = None
+    """Block number of the settling transaction (hosted mode only; None in venue-direct mode)."""
+
+    venue: Optional[str] = None
+    """Venue that produced this trade, when available."""
+
+    raw: Optional[Any] = None
+    """Raw venue-specific payload, when available."""
+
 
 @dataclass
 class PaginatedMarketsResult:
@@ -447,24 +466,36 @@ class Order:
     
     filled: float
     """Amount filled"""
-    
-    filled_shares: Optional[float] = None
-    """Amount filled in shares/contracts (if different from USDC-denominated `filled`)."""
-    
+
     remaining: float
     """Amount remaining"""
-    
+
     timestamp: int
     """Unix timestamp (milliseconds)"""
-    
+
+    filled_shares: Optional[float] = None
+    """Amount filled in shares/contracts (if different from USDC-denominated `filled`)."""
+
     price: Optional[float] = None
     """Limit price (for limit orders)"""
-    
+
     fee: Optional[float] = None
     """Trading fee"""
 
     fee_rate_bps: Optional[float] = None
     """Fee rate in basis points applied to this order (e.g. 100 = 1%)."""
+
+    tx_hash: str | None = None
+    """On-chain transaction hash (hosted mode only; None in venue-direct mode)."""
+
+    chain: str | None = None
+    """Chain identifier where the order settled (hosted mode only; None in venue-direct mode)."""
+
+    block_number: int | None = None
+    """Block number of the settling transaction (hosted mode only; None in venue-direct mode)."""
+
+    raw: Optional[Any] = None
+    """Raw venue-specific payload, when available."""
 
 
 @dataclass
@@ -474,7 +505,7 @@ class BuiltOrder:
     exchange: str
     """The exchange name this order was built for."""
 
-    params: Dict[str, Any]
+    params: "CreateOrderParams"
     """The original params used to build this order."""
 
     raw: Any
@@ -483,54 +514,108 @@ class BuiltOrder:
     signed_order: Optional[Dict[str, Any]] = None
     """For CLOB exchanges (Polymarket): the EIP-712 signed order."""
 
-    tx: Optional[Dict[str, Any]] = None
+    tx: Optional["TxPayload"] = None
     """For on-chain AMM exchanges: the EVM transaction payload."""
 
 
+class CreateOrderParams(TypedDict, total=False):
+    """Parameters used to build or create an order."""
+    market_id: str
+    outcome_id: str
+    side: OrderSide
+    type: OrderType
+    amount: float
+    price: float
+    fee: int
+
+
+class TxPayload(TypedDict):
+    """EVM transaction payload returned for on-chain AMM orders."""
+    to: str
+    data: str
+    value: str
+    chainId: int
+
 @dataclass
 class Position:
-    """A current position in a market."""
-    
+    """A current position in a market.
+
+    In hosted mode, ``outcome_label``, ``entry_price``, ``current_price`` and
+    ``unrealized_pnl`` may be ``None`` when the server cannot derive them
+    (e.g. ``with_mtm=false`` or no fill history). Venue-direct callers
+    continue to populate every field.
+    """
+
     market_id: str
     """Market ID"""
-    
+
     outcome_id: str
     """Outcome ID"""
-    
-    outcome_label: str
-    """Outcome label"""
-    
+
     size: float
     """Position size (positive for long, negative for short)"""
-    
-    entry_price: float
-    """Average entry price"""
-    
-    current_price: float
-    """Current market price"""
-    
-    unrealized_pnl: float
-    """Unrealized profit/loss"""
-    
+
+    outcome_label: str | None = None
+    """Outcome label (None in hosted mode when the server cannot enrich)."""
+
+    entry_price: float | None = None
+    """Average entry price (None in hosted mode when no fill history is available)."""
+
+    current_price: float | None = None
+    """Current market price (None in hosted mode when ``with_mtm=false``)."""
+
+    unrealized_pnl: float | None = None
+    """Unrealized profit/loss (None when entry_price or current_price is None)."""
+
     realized_pnl: Optional[float] = None
     """Realized profit/loss"""
+
+    tx_hash: str | None = None
+    """On-chain transaction hash of the position-creating event (hosted mode only)."""
+
+    chain: str | None = None
+    """Chain identifier (hosted mode only; None in venue-direct mode)."""
+
+    block_number: int | None = None
+    """Block number of the position-creating transaction (hosted mode only)."""
+
+    venue: Optional[str] = None
+    """Venue that produced this position, when available."""
+
+    current_value: Optional[float] = None
+    """Current mark-to-market value, when available."""
+
+    raw: Optional[Any] = None
+    """Raw venue-specific payload, when available."""
 
 
 @dataclass
 class Balance:
     """Account balance."""
-    
+
     currency: str
     """Currency (e.g., "USDC")"""
-    
+
     total: float
     """Total balance"""
-    
+
     available: float
     """Available for trading"""
-    
+
     locked: float
     """Locked in open orders"""
+
+    tx_hash: str | None = None
+    """On-chain transaction hash of the latest balance-affecting event (hosted mode only)."""
+
+    chain: str | None = None
+    """Chain identifier (hosted mode only; None in venue-direct mode)."""
+
+    block_number: int | None = None
+    """Block number of the latest balance-affecting transaction (hosted mode only)."""
+
+    venue: Optional[str] = None
+    """Venue or hosted account source, when available."""
 
 
 @dataclass
@@ -704,6 +789,23 @@ class TradesParams(TypedDict, total=False):
     until: int
     limit: int
     cursor: str
+    resolution: str
+
+
+class HistoryFilterParams(TypedDict, total=False):
+    """Parameters for generic history queries."""
+    from_timestamp: int
+    until_timestamp: int
+    max_size: int
+    order: Literal["asc", "desc"]
+
+
+class OHLCVParams(TypedDict, total=False):
+    """Parameters for OHLCV candle queries."""
+    since: int
+    until: int
+    limit: int
+    resolution: str
 
 
 class FetchOrderBookParams(TypedDict, total=False):
@@ -712,6 +814,25 @@ class FetchOrderBookParams(TypedDict, total=False):
     outcome: str
     since: int
     until: int
+
+
+class MyTradesParams(TypedDict, total=False):
+    """Parameters for fetching authenticated user trades."""
+    outcome_id: str
+    market_id: str
+    since: int
+    until: int
+    limit: int
+    cursor: str
+
+
+class OrderHistoryParams(TypedDict, total=False):
+    """Parameters for fetching authenticated order history."""
+    market_id: str
+    since: int
+    until: int
+    limit: int
+    cursor: str
 
 
 # -----------------------------------------------------------------------------
@@ -836,11 +957,11 @@ class MatchedMarketCluster:
     confidence: float
     """Cluster confidence score."""
 
+    volume_24h: float
+    """Total 24-hour volume across markets in the cluster."""
+
     category: Optional[str] = None
     """Canonical category selected by the hosted API."""
-
-    volume_24h: Optional[float] = None
-    """Total 24-hour volume across markets in the cluster."""
 
     raw_matches: Optional[List[Dict[str, Any]]] = None
     """Pairwise match edges used to build the cluster when requested."""
@@ -865,11 +986,11 @@ class MatchedEventCluster:
     confidence: float
     """Cluster confidence score."""
 
+    volume_24h: float
+    """Total 24-hour volume across events in the cluster."""
+
     category: Optional[str] = None
     """Canonical category selected by the hosted API."""
-
-    volume_24h: Optional[float] = None
-    """Total 24-hour volume across events in the cluster."""
 
     raw_matches: Optional[List[Dict[str, Any]]] = None
     """Pairwise match edges used to build the cluster when requested."""

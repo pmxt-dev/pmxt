@@ -2,6 +2,7 @@ import { MarketFilterParams, EventFetchParams, OHLCVParams, TradesParams, MyTrad
 import { IExchangeFetcher, FetcherContext } from '../interfaces';
 import { DEFAULT_BASE_URL, mapStatusToMyriad } from './utils';
 import { myriadErrorMapper } from './errors';
+import { logger } from '../../utils/logger';
 
 const MAX_PAGE_SIZE = 100;
 
@@ -10,15 +11,25 @@ export interface MyriadRawMarket {
     id: number;
     networkId: number;
     title?: string;
+    shortName?: string;
     description?: string;
     slug?: string;
     imageUrl?: string;
     expiresAt?: string;
+    publishedAt?: string;
     volume24h?: number;
     volume?: number;
+    volumeNotional?: number;
+    volumeNotional24h?: number;
     liquidity?: number;
     eventId?: number;
+    outcomeIndex?: number;
+    tradingModel?: string;
+    negRisk?: boolean;
+    executionMode?: string;
+    oracle?: Record<string, unknown>;
     topics?: string[];
+    tags?: string[];
     outcomes?: MyriadRawOutcome[];
     [key: string]: unknown;
 }
@@ -42,6 +53,7 @@ export interface MyriadRawQuestion {
 export interface MyriadRawTradeEvent {
     action?: string;
     blockNumber?: number;
+    txId?: string;
     timestamp?: number;
     value?: number;
     shares?: number;
@@ -200,7 +212,8 @@ export class MyriadFetcher implements IExchangeFetcher<MyriadRawMarket, MyriadRa
             const data = response.data;
             if (data.error) return null;
             return { bids: data.bids || [], asks: data.asks || [] };
-        } catch {
+        } catch (err) {
+            logger.warn('MyriadFetcher: fetchClobOrderBook failed', { marketId, error: String(err) });
             return null;
         }
     }

@@ -1564,6 +1564,9 @@ bids: OrderLevel[]; // Order book bid levels, sorted by price descending.
 asks: OrderLevel[]; // Order book ask levels, sorted by price ascending.
 timestamp: number; // Unix timestamp in milliseconds when the snapshot was taken.
 datetime: string; // ISO 8601 datetime string of the snapshot (CCXT-compatible).
+isNegRisk: boolean; // Whether the venue marks this snapshot as a negative-risk market.
+lastTradePrice: number; // Last traded price from venues that include it with the book snapshot.
+sourceMetadata: object; // Venue-specific metadata preserved from the raw order book snapshot.
 }
 ```
 

@@ -236,7 +236,7 @@ export class MyriadNormalizer implements IExchangeNormalizer<MyriadRawMarket, My
 
     normalizeTrade(raw: MyriadRawTradeEvent, index: number): Trade {
         return {
-            id: `${raw.blockNumber || raw.timestamp}-${index}`,
+            id: raw.txId ?? `${raw.blockNumber || raw.timestamp}-${index}`,
             timestamp: (raw.timestamp || 0) * 1000,
             price: resolveMyriadPrice(raw),
             amount: Number(raw.shares || 0),
@@ -246,7 +246,7 @@ export class MyriadNormalizer implements IExchangeNormalizer<MyriadRawMarket, My
 
     normalizeUserTrade(raw: MyriadRawTradeEvent, index: number): UserTrade {
         return {
-            id: `${raw.blockNumber || raw.timestamp}-${index}`,
+            id: raw.txId ?? `${raw.blockNumber || raw.timestamp}-${index}`,
             timestamp: (raw.timestamp || 0) * 1000,
             price: resolveMyriadPrice(raw),
             amount: Number(raw.shares || 0),

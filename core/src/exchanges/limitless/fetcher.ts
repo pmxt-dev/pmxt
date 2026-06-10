@@ -20,7 +20,8 @@ export interface LimitlessRawMarket {
         buy?: { market?: number[]; limit?: number[] };
         sell?: { market?: number[]; limit?: number[] };
     };
-    expirationTimestamp?: string;
+    expirationDate?: string;
+    expirationTimestamp?: number | string;
     volumeFormatted?: number;
     volume?: number;
     logo?: string | null;

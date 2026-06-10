@@ -1,0 +1,78 @@
+---
+title: Prediction Markets 101
+description: "What a prediction market is, what an outcome is, and what 'price' means here."
+---
+
+A glossary for engineers landing in prediction markets for the first time. Skim it once; come back when an unfamiliar term shows up.
+
+## Core concepts
+
+### Prediction market
+
+A market where the traded asset is a share in a possible future outcome. The share pays $1 if the outcome resolves true and $0 if it resolves false. Example: a "Yes" share on *"Will the Fed cut rates in March?"* pays $1 if the cut happens.
+
+### Event, Market, Outcome
+
+PMXT's catalog is three levels deep. An **Event** is a real-world question ("2024 US Presidential Election"). A **Market** is a specific tradable framing of that event ("Will Trump win the 2024 election?"). An **Outcome** is a single side of the market ("Yes" or "No"). One event can have many markets; one market always has two or more outcomes. See [Unified schema](/concepts/unified-schema) for the schema-level detail.
+
+### Price as probability
+
+Outcome prices are in the closed interval [0, 1] and are read as the market's implied probability that the outcome resolves true. A "Yes" share trading at 0.31 pays $1 if Yes resolves true, so the market is implying a roughly 31% chance. The "Yes" price plus the "No" price for a binary market sum to approximately 1 (minus venue spread).
+
+### Catalog UUID vs venue ID
+
+PMXT assigns its own stable UUID to every market and outcome. The underlying venue (Polymarket, Kalshi, etc.) also has its own native ID — a hex condition ID, a ticker, a hash. Hosted trading requires the catalog UUID. Per-venue read endpoints return venue-native IDs. See [Catalog UUID vs Venue ID](/concepts/catalog-uuid-vs-venue-id) for which surfaces use which.
+
+## Crypto / EVM terms (for the non-crypto reader)
+
+### Wallet
+
+An on-chain account, identified by a public address (e.g. `0xAbc...`). It can hold tokens and sign transactions. A wallet is controlled by a **private key**.
+
+### EVM private key
+
+A 32-byte secret that controls a wallet address on any Ethereum-compatible (EVM) chain. The same key works across Ethereum, Polygon, BSC, Arbitrum, and other EVM chains — the address derives from the key, not the chain. PMXT only uses your private key for local signing; it never leaves your machine.
+
+### Polygon
+
+A specific EVM-compatible chain (chainId 137). PMXT's `PreFundedEscrow` contract and Polymarket's CLOB exchange both live on Polygon. This is the only chain you fund.
+
+### USDC
+
+A US-dollar-pegged stablecoin (1 USDC ≈ $1) issued on many chains. PMXT uses the **Polygon-native** USDC for hosted trading. Bridged versions on other chains are not interchangeable.
+
+### EIP-712
+
+The typed-data signing standard PMXT uses for hosted writes. Instead of signing an opaque hex blob, your wallet signs a structured payload with named fields — making the signature human-auditable and replay-resistant. Every hosted order, cancel, and escrow action is an EIP-712 signature. See [Signing](/guides/signing).
+
+### PreFundedEscrow
+
+The non-custodial smart contract on Polygon that holds USDC for hosted trading. You deposit USDC once; subsequent trades spend from the escrow balance until you withdraw. Funds can only move against an EIP-712 signature from your wallet, so your wallet retains beneficial ownership the entire time. See [Hosted Trading](/concepts/hosted-trading) and [Escrow Lifecycle](/guides/escrow-lifecycle).
+
+## Trading terms
+
+### CLOB
+
+Central Limit Order Book. The matching-engine model where bids and asks are stored in a sorted book and orders match against the best available price. Most prediction-market venues (Polymarket, Kalshi) run a CLOB.
+
+### Market order
+
+An order that executes immediately at the best available price, walking the book until filled. You specify size, not price. Set a generous `slippage_pct` to bound the worst price you'll accept.
+
+### Limit order
+
+An order that rests on the book at a specified price and only executes when a counterparty crosses it. You specify both price and size.
+
+### Group A methods
+
+In PMXT, **Group A** refers to the venue-agnostic trading and read methods that work identically across every hosted venue — `create_order`, `fetch_balance`, `fetch_positions`, `fetch_my_trades`, and friends. The unified surface that makes PMXT a single SDK across venues. See [API Reference](/api-reference/overview).
+
+## Hosted vs self-hosted
+
+### Hosted (default)
+
+PMXT operates the catalog, the escrow contract, and the venue-submit path. You hold a `pmxt_api_key` and a wallet private key; PMXT does everything else. See [Hosted Trading](/concepts/hosted-trading).
+
+### Self-hosted
+
+You run `pmxt-core` on your own machine, supply raw venue credentials, and the SDK talks directly to the venues. No API key, no escrow, no PMXT in the trade path. See [Hosted vs Self-hosted](/concepts/hosted-vs-self-hosted) for the comparison.

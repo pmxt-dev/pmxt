@@ -16,6 +16,24 @@
       "bearerAuth": []
     }
   ],
+  "tags": [
+    {
+      "name": "Trading (Hosted)",
+      "description": "Hosted trading endpoints. Build / submit / cancel orders via `trade.pmxt.dev/v0/*`. Hosted-mode is the default when `pmxt_api_key` is set."
+    },
+    {
+      "name": "Orders & Positions (Hosted)",
+      "description": "Hosted account reads. Open orders, fills, balances, and positions via `trade.pmxt.dev/v0/*`. Requires `pmxt_api_key` + `wallet_address`."
+    },
+    {
+      "name": "MatchedMarkets",
+      "description": "Cross-venue matched market and event clusters."
+    },
+    {
+      "name": "SQL",
+      "description": "Direct read-only SQL access to the catalog (Enterprise)."
+    }
+  ],
   "paths": {
     "/v0/matched-event-clusters": {
       "get": {
@@ -850,6 +868,490 @@
           },
           "window": {
             "type": "string"
+          }
+        }
+      },
+      "HostedErrorResponse": {
+        "type": "object",
+        "description": "Error envelope returned by `trade.pmxt.dev/v0/*` endpoints. Mirrors the `ErrorDetail` shape used inside `BaseResponse.error` from the sidecar spec.",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string",
+                "description": "Stable hosted-mode error code.",
+                "enum": [
+                  "HOSTED_TRADING_ERROR",
+                  "INSUFFICIENT_ESCROW_BALANCE",
+                  "ORDER_SIZE_TOO_SMALL",
+                  "INVALID_API_KEY",
+                  "OUTCOME_NOT_FOUND",
+                  "CATALOG_UNAVAILABLE",
+                  "BUILT_ORDER_EXPIRED",
+                  "INVALID_SIGNATURE",
+                  "NO_LIQUIDITY",
+                  "MISSING_WALLET_ADDRESS",
+                  "ORDER_NOT_FOUND",
+                  "INVALID_ORDER"
+                ]
+              },
+              "retryable": {
+                "type": "boolean"
+              },
+              "exchange": {
+                "type": "string",
+                "nullable": true
+              },
+              "detail": {
+                "type": "object",
+                "additionalProperties": {},
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "BuildOrderHostedRequest": {
+        "type": "object",
+        "description": "Hosted build-order request. Keys mirror the SDK constructor of an `Order`: pass catalog UUIDs (`market_id`, `outcome_id`), not venue-native ids.",
+        "required": [
+          "market_id",
+          "outcome_id",
+          "side",
+          "amount",
+          "user_address"
+        ],
+        "properties": {
+          "market_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Catalog market UUID."
+          },
+          "outcome_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Catalog outcome UUID."
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "order_type": {
+            "type": "string",
+            "enum": [
+              "market",
+              "limit"
+            ],
+            "default": "market"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Order size. For `market` buys, in USDC; for `market` sells / `limit`, in shares."
+          },
+          "denom": {
+            "type": "string",
+            "enum": [
+              "shares",
+              "usdc"
+            ],
+            "default": "shares"
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "nullable": true,
+            "description": "Required for `limit` orders. Probability in [0, 1]."
+          },
+          "slippage_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "nullable": true
+          },
+          "user_address": {
+            "type": "string",
+            "description": "EVM wallet address that will sign the resulting typed data."
+          }
+        }
+      },
+      "BuildOrderHostedResponse": {
+        "type": "object",
+        "description": "Hosted build-order response. The caller must sign `typed_data` locally (and `pull_typed_data` if present) and POST the signatures back via `submitOrderHosted` before the order expires.",
+        "required": [
+          "built_order_id",
+          "side",
+          "typed_data",
+          "quote"
+        ],
+        "properties": {
+          "built_order_id": {
+            "type": "string",
+            "description": "Opaque server-side key used by `submitOrderHosted` to look up the build context."
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "typed_data": {
+            "type": "object",
+            "description": "EIP-712 typed data for the order. Sign locally with the wallet that matches `user_address`."
+          },
+          "pull_typed_data": {
+            "type": "object",
+            "nullable": true,
+            "description": "Optional secondary EIP-712 payload for venues that require a pull-authorization (e.g. Polymarket neg-risk markets)."
+          },
+          "quote": {
+            "type": "object",
+            "description": "Pre-trade quote: expected average fill price, slippage, and fees.",
+            "properties": {
+              "best_price": {
+                "type": "number"
+              },
+              "expected_avg_price": {
+                "type": "number"
+              },
+              "expected_slippage_pct": {
+                "type": "number"
+              },
+              "estimated_cost_or_proceeds": {
+                "type": "number"
+              },
+              "fillable": {
+                "type": "boolean"
+              },
+              "liquidity": {
+                "type": "number"
+              },
+              "fee_amount": {
+                "type": "number"
+              },
+              "tick_size": {
+                "type": "string"
+              }
+            }
+          },
+          "resolved": {
+            "type": "object",
+            "nullable": true,
+            "description": "Venue-native fields resolved from the catalog UUIDs (`venue`, `token_id`, `neg_risk`, `tick_size`).",
+            "properties": {
+              "venue": {
+                "type": "string",
+                "enum": [
+                  "polymarket",
+                  "opinion"
+                ]
+              },
+              "token_id": {
+                "type": "string"
+              },
+              "neg_risk": {
+                "type": "boolean"
+              },
+              "tick_size": {
+                "type": "number"
+              },
+              "opinion_market_id": {
+                "type": "integer",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "SubmitOrderHostedRequest": {
+        "type": "object",
+        "description": "Hosted submit-order request. `signature` is the local EIP-712 signature over `BuildOrderHostedResponse.typed_data`.",
+        "required": [
+          "built_order_id",
+          "signature"
+        ],
+        "properties": {
+          "built_order_id": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Hex-encoded EIP-712 signature."
+          },
+          "pull_signature": {
+            "type": "string",
+            "nullable": true,
+            "description": "Signature for the secondary pull-authorization, required when `pull_typed_data` was returned."
+          },
+          "wait": {
+            "type": "boolean",
+            "default": false,
+            "description": "When `true`, the server waits for on-chain settlement before responding."
+          }
+        }
+      },
+      "CancelBuildHostedRequest": {
+        "type": "object",
+        "required": [
+          "order_id",
+          "user_address"
+        ],
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "description": "Unified order id, as returned by `fetchOpenOrdersHosted`."
+          },
+          "user_address": {
+            "type": "string"
+          }
+        }
+      },
+      "CancelBuildHostedResponse": {
+        "type": "object",
+        "required": [
+          "cancel_id",
+          "typed_data",
+          "deadline"
+        ],
+        "properties": {
+          "cancel_id": {
+            "type": "string"
+          },
+          "typed_data": {
+            "type": "object"
+          },
+          "pull_typed_data": {
+            "type": "object",
+            "nullable": true
+          },
+          "deadline": {
+            "type": "integer",
+            "description": "Unix epoch (s) after which the cancel build expires."
+          }
+        }
+      },
+      "OrderV0": {
+        "type": "object",
+        "description": "Hosted-mode `Order` shape. Mirrors `pmxt.Order` so the SDK can return it directly. `tx_hash`, `chain`, and `block_number` populate once execution settles on-chain.",
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "market_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "outcome_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ],
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "market",
+              "limit"
+            ],
+            "nullable": true
+          },
+          "amount": {
+            "type": "number",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "nullable": true
+          },
+          "filled": {
+            "type": "number"
+          },
+          "remaining": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "fee": {
+            "type": "number",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "tx_hash": {
+            "type": "string",
+            "nullable": true,
+            "description": "On-chain transaction hash. Null until settled."
+          },
+          "chain": {
+            "type": "string",
+            "nullable": true
+          },
+          "block_number": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "UserTradeV0": {
+        "type": "object",
+        "description": "Hosted-mode `UserTrade` shape. Mirrors `pmxt.UserTrade`.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "market_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "outcome_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ],
+            "nullable": true
+          },
+          "amount": {
+            "type": "number",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "nullable": true
+          },
+          "fee": {
+            "type": "number",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "tx_hash": {
+            "type": "string",
+            "nullable": true
+          },
+          "chain": {
+            "type": "string",
+            "nullable": true
+          },
+          "venue": {
+            "type": "string",
+            "enum": [
+              "polymarket",
+              "opinion"
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "PositionV0": {
+        "type": "object",
+        "description": "Hosted-mode `Position` shape. `current_price`, `current_value`, `entry_price`, `realized_pnl`, and `outcome_label` may be null when the server doesn't yet have the data.",
+        "required": [
+          "venue",
+          "shares"
+        ],
+        "properties": {
+          "market_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "outcome_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "venue": {
+            "type": "string",
+            "enum": [
+              "polymarket",
+              "opinion"
+            ]
+          },
+          "shares": {
+            "type": "number"
+          },
+          "current_price": {
+            "type": "number",
+            "nullable": true
+          },
+          "current_value": {
+            "type": "number",
+            "nullable": true
+          },
+          "outcome_label": {
+            "type": "string",
+            "nullable": true
+          },
+          "entry_price": {
+            "type": "number",
+            "nullable": true
+          },
+          "realized_pnl": {
+            "type": "number",
+            "nullable": true
+          }
+        }
+      },
+      "BalanceV0": {
+        "type": "object",
+        "description": "Hosted-mode `Balance` shape. Returns USDC held inside the PMXT `PreFundedEscrow` contract.",
+        "required": [
+          "currency",
+          "amount"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "default": "USDC"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "venue": {
+            "type": "string",
+            "enum": [
+              "polymarket",
+              "opinion"
+            ],
+            "nullable": true,
+            "description": "Set when the hosted backend returns a per-venue breakdown; null when balance is venue-agnostic."
           }
         }
       }

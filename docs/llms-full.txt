@@ -17,35 +17,53 @@ API Base: https://api.pmxt.dev
 
 Source: https://pmxt.dev/docs/introduction
 
+> **Note:**
+  New here? Start with [Quickstart](https://pmxt.dev/docs/quickstart) (read-only, 30 seconds)
+  or [Trading Quickstart](https://pmxt.dev/docs/trading-quickstart) (hosted writes, 5 minutes).
+
+
 PMXT is a unified API for every major prediction market — Polymarket,
 Kalshi, Limitless, Smarkets, and [8 more venues](https://pmxt.dev/docs/concepts/venues). Same
 SDK methods, same response shape, regardless of which venue you're
 talking to.
 
+
+> **Note:**
+New to prediction markets? Start at the [101](https://pmxt.dev/docs/concepts/prediction-markets-101) page for the vocabulary — outcome, price-as-probability, EIP-712, escrow, USDC on Polygon, and Group A methods.
+
+
 It runs two ways:
 
-- **Locally** — the open-source [pmxt](https://github.com/pmxt-dev/pmxt)
-  local server runs on your machine. No API key, no external dependency. Your
-  requests go directly to the venues.
-- **Hosted** — `api.pmxt.dev` adds a shared catalog, cross-venue search,
-  and you skip running infrastructure. Set an API key and the SDK
-  switches automatically.
+- **Hosted (default)** — `api.pmxt.dev` and `trade.pmxt.dev` give you a
+  shared catalog, cross-venue search, and end-to-end [hosted
+  trading](https://pmxt.dev/docs/concepts/hosted-trading) with [PreFundedEscrow](https://pmxt.dev/docs/concepts/prediction-markets-101#prefundedescrow) custody. Set
+  an API key and the SDK is fully operational.
+- **Self-hosted (advanced)** — for users who run
+  [pmxt-core](https://github.com/pmxt-dev/pmxt) on their own machine.
+  No API key, no external dependency. Your requests go directly to the
+  venues. See [self-hosted](https://pmxt.dev/docs/guides/self-hosted).
 
 The code is identical either way:
 
 ```python
 import pmxt
 
-# Local: talks directly to Polymarket
-poly = pmxt.Polymarket()
-
-# Hosted: talks to api.pmxt.dev (add an API key and that's it)
+# Hosted (default): talks to api.pmxt.dev / trade.pmxt.dev
 poly = pmxt.Polymarket(pmxt_api_key="pmxt_live_...")
 
 markets = poly.fetch_markets(query="fed rate cut", limit=5)
 for m in markets:
 print(m.title, m.outcomes[0].price)
 ```
+
+If you'd rather run pmxt-core yourself, drop the API key:
+
+```python
+# Self-hosted: SDK spawns pmxt-core on localhost
+poly = pmxt.Polymarket()
+```
+
+See [self-hosted](https://pmxt.dev/docs/guides/self-hosted) for when that's the right choice.
 
 Swap the venue class — `pmxt.Kalshi(...)`, `pmxt.Limitless(...)` — and
 the methods and response shapes stay the same.
@@ -214,6 +232,210 @@ search everything.
   - **[Unified schema](https://pmxt.dev/docs/concepts/unified-schema)** — `Event` / `Market` / `Outcome` — the shape that works everywhere.
   - **[Supported venues](https://pmxt.dev/docs/concepts/venues)** — Every venue PMXT speaks, and what each supports.
 
+### Trading Quickstart
+
+Source: https://pmxt.dev/docs/trading-quickstart
+
+This page walks you from a fresh `pmxt_api_key` to a confirmed position on Polymarket in under a minute. Hosted mode is the default: USDC sits in a non-custodial [`PreFundedEscrow`](https://pmxt.dev/docs/guides/escrow-lifecycle) smart contract that PMXT cannot move without your EIP-712 signature, and your wallet only ever signs typed-data payloads — no private key leaves your machine when you trade.
+
+
+> **Note:**
+Hosted trading currently supports **Polymarket** (Polygon) and **Opinion** (cross-chain). Other venues are read-only via the hosted catalog. To trade on those, run the [self-hosted server](https://pmxt.dev/docs/guides/self-hosted) with raw venue credentials.
+
+
+#### 1. Get an API key
+
+Go to [pmxt.dev/dashboard](https://pmxt.dev/dashboard), create a key, and copy it. It looks like `pmxt_live_...` and works immediately.
+
+```bash
+export PMXT_API_KEY="pmxt_live_..."
+```
+
+#### 2. Install the SDK
+
+<CodeGroup>
+```bash Python
+pip install pmxt
+```
+
+```bash TypeScript
+npm install pmxtjs
+```
+</CodeGroup>
+
+#### 3. Construct a hosted client
+
+A hosted trading client takes three things: your PMXT API key, the wallet address you'll trade from, and the private key for that wallet (used only to sign EIP-712 messages locally — it is never sent to PMXT). The SDK auto-wraps `private_key` into an `EthAccountSigner` / `EthersSigner` for you.
+
+<CodeGroup>
+```python Python
+import pmxt
+
+client = pmxt.Polymarket(
+pmxt_api_key="pmxt_live_...",
+wallet_address="0xYourWallet...",
+private_key="0xYourPrivateKey...",
+)
+```
+
+```typescript TypeScript
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWallet...",
+  privateKey: "0xYourPrivateKey...",
+});
+```
+
+```bash curl
+# Trading via curl is possible but tedious — you have to build the
+# EIP-712 payload, sign it locally, and POST it yourself. The SDK
+# does all of this for you. See /guides/signing for the protocol.
+echo "Use an SDK for the quickstart."
+```
+</CodeGroup>
+
+
+> **Warning:**
+Use a **dedicated trading wallet**. The private key only stays on your machine for local signing, but treat the wallet as compromised if the host is ever compromised. Read [Security](https://pmxt.dev/docs/security) before funding production wallets.
+
+
+#### 4. Approve and deposit USDC into escrow
+
+Hosted trades execute against your balance in the non-custodial `PreFundedEscrow` contract. The first time you trade, you need to approve the escrow to pull USDC from your wallet and make an initial deposit. The fastest way is the dashboard.
+
+##### Recommended: deposit from the dashboard
+
+Open [pmxt.dev/dashboard](https://pmxt.dev/dashboard), connect the wallet that matches `0xYourWallet`, and use the Deposit flow. Your wallet (MetaMask, Rabby, WalletConnect, etc.) prompts you to sign each transaction — PMXT never sees your private key.
+
+1. Go to [pmxt.dev/dashboard](https://pmxt.dev/dashboard) and connect the same wallet address you passed to the SDK.
+2. Click **Deposit** and enter the USDC amount.
+3. Approve the USDC allowance in your wallet (one-time per token).
+4. Confirm the deposit transaction in your wallet.
+
+
+> **Note:**
+Approval and deposit are one-time setup. Subsequent trades just spend from escrow until you withdraw. See [Escrow Lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) for the full deposit / withdraw flow.
+
+
+<Accordion title="Advanced: programmatic deposit">
+If you're scripting deposits (CI, treasury automation, custom wallet integrations), `client.escrow` builds **unsigned** transactions you sign and broadcast with your own wallet library (web3, ethers, viem, etc.).
+
+<CodeGroup>
+```python Python
+# 1. Build an unsigned ERC-20 approval tx for USDC
+approve_tx = client.escrow.approve_tx("usdc")
+# Sign and send approve_tx with your wallet library...
+
+# 2. Build an unsigned deposit tx for 10 USDC
+deposit_tx = client.escrow.deposit_tx(amount=10.0)
+# Sign and send deposit_tx with your wallet library...
+
+# 3. Confirm the deposit landed
+balance = client.fetch_balance()
+print(f"Escrow USDC: {balance.free}")
+```
+
+```typescript TypeScript
+// 1. Build an unsigned ERC-20 approval tx for USDC
+const approveTx = await client.escrow.approveTx("usdc");
+// Sign and send approveTx with your wallet library...
+
+// 2. Build an unsigned deposit tx for 10 USDC
+const depositTx = await client.escrow.depositTx(10);
+// Sign and send depositTx with your wallet library...
+
+// 3. Confirm the deposit landed
+const balance = await client.fetchBalance();
+console.log(`Escrow USDC: ${balance.free}`);
+```
+</CodeGroup>
+</Accordion>
+
+#### 5. Find a market and place your first order
+
+`client.fetch_markets` queries the venue's live catalog and returns markets you can trade directly. Pass any returned outcome straight to `create_order` — no UUID lookup required.
+
+<CodeGroup>
+```python Python
+markets = client.fetch_markets({"query": "knicks 2026 nba champion"})
+market = markets[0]
+yes = next(o for o in market.outcomes if o.label.lower() == "yes")
+
+order = client.create_order(
+outcome=yes,
+side="buy",
+order_type="market",
+amount=5.0,
+denom="usdc",
+slippage_pct=30.0,
+)
+print(f"Order {order.id}: {order.status}")
+```
+
+```typescript TypeScript
+const markets = await client.fetchMarkets({ query: "knicks 2026 nba champion" });
+const market = markets[0];
+const yes = market.outcomes.find((o) => o.label.toLowerCase() === "yes")!;
+
+const order = await client.createOrder({
+  outcome: yes,
+  side: "buy",
+  orderType: "market",
+  amount: 5,
+  denom: "usdc",
+  slippagePct: 30,
+});
+console.log(`Order ${order.id}: ${order.status}`);
+```
+
+```bash curl
+# create_order is a convenience wrapper. The hosted API exposes a
+# build → sign → submit flow. See /guides/signing for the raw protocol.
+echo "Use an SDK for create_order."
+```
+</CodeGroup>
+
+
+> **Note:**
+The hosted trading API accepts either the venue-native identifier (returned by `client.fetch_markets`) or a catalog UUID (returned by [Router](https://pmxt.dev/docs/router/overview)) — whichever you have. The SDK picks the right wire field automatically. See [Catalog UUID vs Venue ID](https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id) when cross-venue identity matters.
+
+
+> **Warning:**
+**Polymarket has a 5-share minimum per order.** At ~$0.78/share, a 5 USDC buy is ~6.4 shares — fine. But $2 at the same price is only 2.5 shares and will be rejected with `OrderSizeTooSmall`. Size up or switch to a cheaper outcome.
+
+
+> **Warning:**
+**Use aggressive `slippage_pct`** until the upstream economic validator tightens its `worst_price` checks. Pragmatic defaults: `slippage_pct=30` for buys, `slippage_pct=99.9` for sells. Lower values frequently trip a precision check that has nothing to do with actual slippage.
+
+
+#### 6. Verify the fill
+
+Hosted positions appear immediately on `fetch_positions`. The position's `quantity` and `notional` reflect the escrow-side accounting.
+
+<CodeGroup>
+```python Python
+positions = client.fetch_positions()
+for p in positions:
+print(f"{p.market_id}  qty={p.quantity}  notional={p.notional}")
+```
+
+```typescript TypeScript
+const positions = await client.fetchPositions();
+for (const p of positions) {
+  console.log(`${p.marketId}  qty=${p.quantity}  notional=${p.notional}`);
+}
+```
+</CodeGroup>
+
+That's it — you placed a real trade through hosted PMXT. From here:
+
+- [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) — deposits, withdrawals, the request/claim timelock.
+- [Hosted errors](https://pmxt.dev/docs/guides/hosted-errors) — what each error means and how to recover.
+- [Signing](https://pmxt.dev/docs/guides/signing) — the EIP-712 protocol underneath `create_order`.
+- [Self-hosted](https://pmxt.dev/docs/guides/self-hosted) — when to skip hosted and run pmxt-core yourself.
+
 ### Authentication
 
 Source: https://pmxt.dev/docs/authentication
@@ -275,9 +497,38 @@ Explicit argument takes precedence over the environment variable.
 
 #### Venue credentials
 
-Your PMXT API key authenticates you to **PMXT**. Venue credentials
-(Polymarket private key, Kalshi API key, etc.) authenticate you to the
-**venue** and are passed in the request body for calls that need them:
+##### Hosted writes (recommended)
+
+In hosted mode, trade writes use **PMXT's PreFundedEscrow custody** plus a
+locally-signed EIP-712 payload. You pass your `pmxt_api_key`, the wallet
+address you trade from, and a private key used only for local signing —
+the private key never leaves your machine, and PMXT custodies USDC in
+the escrow contract on your behalf.
+
+```python
+import pmxt
+
+client = pmxt.Polymarket(
+pmxt_api_key="pmxt_live_...",
+wallet_address="0xYourWallet...",
+private_key="0xYourPrivateKey...",
+)
+
+# One-time: approve + deposit USDC into PreFundedEscrow
+deposit_tx = client.escrow.deposit_tx(amount=10.0)
+# (sign + broadcast deposit_tx with your wallet library)
+```
+
+See [Trading quickstart](https://pmxt.dev/docs/trading-quickstart) for the full 60-second flow
+and [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) for the approve / deposit /
+withdraw mechanics. Hosted writes today: Polymarket and Opinion.
+
+##### Self-hosted / direct venue credentials (advanced)
+
+When you run [pmxt-core locally](https://pmxt.dev/docs/guides/self-hosted), or when you need a
+venue that hosted writes don't yet support, you pass venue-native
+credentials (Polymarket private key, Kalshi RSA, Smarkets session, etc.)
+directly:
 
 ```python
 order = poly.create_order(
@@ -289,15 +540,15 @@ amount=100,
 )
 ```
 
-PMXT never stores venue credentials. They are forwarded to the venue
-and dropped when the call completes.
+PMXT never stores venue credentials. They are forwarded to the venue and
+dropped when the call completes.
 
 
 > **Note:**
 Some venues (Polymarket, Limitless, Probable, Opinion, Baozi) require
 raw wallet private keys with full fund control. **Use a dedicated
 trading wallet** and read [Security & Credential Handling](https://pmxt.dev/docs/security)
-before passing private keys to the hosted API.
+before passing private keys to PMXT — hosted or self-hosted.
 
 
 #### Rotating keys
@@ -317,11 +568,14 @@ All revocations are logged under **Settings > Audit Log**.
 
 #### Errors
 
-| Status | Body                                     | Meaning                                   |
-| ------ | ---------------------------------------- | ----------------------------------------- |
-| `401`  | `{"error": "missing api key"}`           | No `Authorization` header on the request. |
-| `401`  | `{"error": "invalid api key"}`           | Key unknown, revoked, or expired.         |
-| `429`  | `{"error": "rate_limit_exceeded", ... }` | See [Plans & Limits](https://pmxt.dev/docs/rate-limits).       |
+| Status | Body                                     | Meaning                                   | SDK exception |
+| ------ | ---------------------------------------- | ----------------------------------------- | ------------- |
+| `401`  | `{"error": "missing api key"}`           | No `Authorization` header on the request. | [`InvalidApiKey`](https://pmxt.dev/docs/api-reference/errors#invalidapikey) |
+| `401`  | `{"error": "invalid api key"}`           | Key unknown, revoked, or expired.         | [`InvalidApiKey`](https://pmxt.dev/docs/api-reference/errors#invalidapikey) |
+| `429`  | `{"error": "rate_limit_exceeded", ... }` | See [Plans & Limits](https://pmxt.dev/docs/rate-limits).       | `RateLimitExceeded` |
+
+See [API Reference / Errors](https://pmxt.dev/docs/api-reference/errors) for the full error
+class hierarchy.
 
 ### MCP Server
 
@@ -554,28 +808,53 @@ stays automatically up to date, and works in cloud-hosted editors.
 
 Source: https://pmxt.dev/docs/security
 
-#### How credentials flow
+PMXT has two execution modes, and they have **different credential surfaces**. Most of the confusion about "does my key touch PMXT's server" comes from mixing them up. This page is scoped explicitly to each mode.
 
-When you make a trading call through the hosted API, your venue credentials
-follow this path:
+| Mode | What you give PMXT | What touches PMXT's server | Custody |
+| ---- | ------------------ | -------------------------- | ------- |
+| [**Hosted**](https://pmxt.dev/docs/concepts/hosted-trading) (default) | An EIP-712 signature per order — **never your private key** | Catalog UUIDs, signatures, public wallet address | USDC in the on-chain [`PreFundedEscrow`](https://pmxt.dev/docs/concepts/hosted-custody) you control via the timelock |
+| [**Self-hosted**](https://pmxt.dev/docs/guides/self-hosted) | Raw venue credentials — given to a PMXT process **you run** on your machine | Nothing — PMXT's cloud is not in the loop | Your venue account / wallet, directly |
+
+If you're picking one, hosted is the default for almost everyone. Self-hosted is for users who need raw venue credentials (Polymarket L2 API keys, Kalshi RSA, etc.), sub-100ms latency, or regulatory custody constraints.
+
+#### Hosted mode: how credentials flow
+
+In hosted mode, **your private key never leaves your process.** PMXT's server sees signatures, never the key that produced them.
 
 ```
-Your app  ──HTTPS──>  api.pmxt.dev  ──signs locally──>  venue API
-                  (TLS terminates)   (in memory)       (HTTPS)
+Your app  ──HTTPS──>  trade.pmxt.dev  ──submits──>  venue API
+   │
+   └── signs EIP-712 locally with your private key (key never sent)
 ```
 
-1. Your credentials travel **encrypted over TLS** to our Cloud Run container.
-2. pmxt-core's `sign()` method runs **inside the container** — it signs the
-   request using your key and sends only the **signature** to the venue.
-3. Your credentials are **garbage collected** after the request completes.
+1. The SDK calls `POST /v0/trade/build-order` with catalog UUIDs and parameters. No key, no signature yet.
+2. The server returns an unsigned EIP-712 typed-data payload bound to the Polygon [`PreFundedEscrow`](https://pmxt.dev/docs/concepts/hosted-custody) domain.
+3. The SDK signs the payload **locally**, in your process, with your private key.
+4. The SDK calls `POST /v0/trade/submit-order` with the signature. The server forwards the signed order to the venue.
 
-**We never store, log, cache, or persist your venue credentials.** They exist
-in process memory only for the duration of the request.
+What PMXT's server receives on the wire: catalog UUIDs, your public wallet address, and the signature. **Not the private key.** Even if PMXT's server were fully compromised, an attacker could not extract your key from a signature.
 
-#### What venues require
+Funds custody: USDC sits in the on-chain `PreFundedEscrow`. Withdrawals are timelocked and user-only — PMXT's operator key cannot move USDC without a per-order EIP-712 signature from you. See [Hosted Custody Model](https://pmxt.dev/docs/concepts/hosted-custody) for the deployed addresses, the full admin model, and the raw contract calls that get your USDC out without PMXT's server.
 
-Not all venues are equal. Some accept scoped API keys; others require raw
-wallet private keys with full fund control.
+The on-wire authorization to call `trade.pmxt.dev` is the `pmxt_api_key`. The key alone cannot move funds; it can only forward signed orders and read public position data. Keep it server-side, never in a browser bundle.
+
+#### Self-hosted mode: how credentials flow
+
+In self-hosted mode, you run `pmxt-core` as a local sidecar on your own machine. The SDK talks to your local sidecar; the sidecar talks directly to the venue. **PMXT's cloud is not in the request path.**
+
+```
+Your app  ──localhost──>  pmxt-core (your machine)  ──HTTPS──>  venue API
+                      ▲
+                      └── holds venue credentials in process memory
+```
+
+Because the sidecar runs on your host, the venue credentials you pass it stay on that host's RAM for the duration of the request. They are **garbage collected** after the call returns; the sidecar does not persist, log, or cache them. But "in process memory" here means **your process, on your machine** — not PMXT's cloud. This is the part that has been confusing: the ephemeral-memory claim applies to whichever process holds the venue credential, and in self-hosted mode that process is yours.
+
+For on-chain venues, "venue credential" means a raw private key — Polymarket, Limitless, Probable, Opinion all sign their own transactions and there is no scoped API-key alternative at the protocol layer. If you don't want any process besides your own holding a private key, self-hosted is the mode for you.
+
+#### What each venue requires
+
+Same table for both modes — the credential type is a property of the venue, not of PMXT:
 
 | Venue | Credential type | Controls funds? |
 | ------------- | --------------------------------- | --------------- |
@@ -588,70 +867,47 @@ wallet private keys with full fund control.
 | Smarkets | Email + password (session-scoped) | No |
 | Myriad | API key (read-scoped) | No |
 
-For on-chain venues (Polymarket, Limitless, Probable, Opinion, Baozi), there
-is no "scoped API key" option — the protocol requires a private key to sign
-transactions. This is the same for every trading bot, aggregator, and SDK
-that interacts with these venues.
+The difference between modes is **where that credential lives**:
+
+- **Hosted (Polymarket, Opinion):** PMXT never sees the venue private key. You sign EIP-712 orders locally against the Polygon `PreFundedEscrow` domain; PMXT's operator key submits the resulting transactions on Polygon (and BSC for Opinion's cross-chain leg) using its **own** key for gas. Funds are constrained by the contract — see [Hosted Custody Model](https://pmxt.dev/docs/concepts/hosted-custody).
+- **Self-hosted (any venue):** the venue credential lives on your machine, in your `pmxt-core` process. PMXT's cloud is not involved.
+
+Hosted mode does not currently support every venue (see [Hosted trading](https://pmxt.dev/docs/concepts/hosted-trading#whats-supported-today)). For unsupported venues, self-hosted is the only path and you provide the venue's raw credential to your local sidecar.
 
 #### Recommendations
 
 
 > **Warning:**
-**Use a dedicated trading wallet.** Do not use your primary wallet or a
-wallet holding funds beyond what you intend to trade. Create a separate
-wallet, fund it with only what you need, and use that wallet's private key
-with PMXT.
+**Use a dedicated trading wallet.** Do not use your primary wallet or one holding funds beyond what you intend to trade. Create a separate wallet, fund only what you need, and use that wallet's private key with PMXT — for signing EIP-712 in hosted mode or as a venue credential in self-hosted mode.
 
 
-> **Warning:**
-**For maximum security, run pmxt locally.** The hosted API exists for
-convenience. If you are not comfortable sending your private key to a
-third-party server — even over HTTPS — you can run pmxt-core locally and
-retain full custody of your credentials. They will never leave your machine.
+> **Note:**
+**Pick hosted unless you have a specific reason not to.** Hosted gives you on-chain custody you control via the timelock, and PMXT's server never sees a private key. Self-host when you need raw venue credentials, sub-100ms latency, or have regulatory custody requirements.
 
 ```bash
-npm install pmxt-core
+npm install pmxtjs
 # or
 pip install pmxt
 ```
 
-See the [quickstart](https://pmxt.dev/docs/quickstart) for local setup.
-
 
 ##### Best practices
 
-- **Rotate credentials regularly.** If a venue supports key rotation (Kalshi,
-  Polymarket L2 API keys), rotate on a schedule.
-- **Monitor your positions.** Set up alerts on your venue accounts for
-  unexpected trades or withdrawals.
-- **Limit wallet balances.** Keep only active trading capital in the wallet
-  you use with PMXT.
-- **Revoke unused PMXT API keys.** If you stop using the hosted API, revoke
-  your key from the [dashboard](https://pmxt.dev/dashboard) so it cannot be
-  used to make calls on your behalf.
+- **Rotate credentials regularly.** If a venue supports key rotation (Kalshi, Polymarket L2 API keys), rotate on a schedule.
+- **Monitor your positions.** Set up alerts on your venue accounts for unexpected trades or withdrawals.
+- **Limit wallet balances.** Keep only active trading capital in the wallet you use with PMXT.
+- **Revoke unused PMXT API keys.** If you stop using hosted, revoke your key from the [dashboard](https://pmxt.dev/dashboard) so it cannot be used to make calls on your behalf. (Self-hosted does not need a `pmxt_api_key`.)
 
 #### Disclaimer
 
-**PMXT is provided "as is" without warranty of any kind.** By using the hosted
-API with venue credentials that control funds, you acknowledge and accept the
-following:
+**PMXT is provided "as is" without warranty of any kind.** By using PMXT in either mode, you acknowledge and accept the following:
 
-- **You are solely responsible for the security of your credentials.** PMXT
-  processes your credentials ephemerally and does not store them, but you are
-  choosing to transmit them to a third-party service.
-- **PMXT is not responsible for any lost, stolen, or mismanaged funds.**
-  This includes but is not limited to losses arising from unauthorized
-  trades, venue API changes, software bugs, service outages, or security
-  incidents.
-- **On-chain transactions are irreversible.** Unlike traditional financial
-  systems, blockchain transactions cannot be reversed or charged back.
-  Funds sent or traded through on-chain venues are final.
-- **You should only risk what you can afford to lose.** Prediction markets
-  carry inherent financial risk independent of the software used to access
-  them.
+- **You are responsible for the security of your credentials.** In hosted mode, your private key never reaches PMXT, but your `pmxt_api_key` and your signing wallet are still yours to protect. In self-hosted mode, the entire venue credential surface is on your machine and on you.
+- **PMXT is not responsible for any lost, stolen, or mismanaged funds.** This includes but is not limited to losses from unauthorized trades, venue API changes, software bugs, service outages, smart-contract bugs in the unaudited `PreFundedEscrow` (see [Hosted Custody Model](https://pmxt.dev/docs/concepts/hosted-custody#audit-status)), or security incidents.
+- **On-chain transactions are irreversible.** Blockchain transactions cannot be reversed or charged back. Funds sent or traded through on-chain venues are final.
+- **You should only risk what you can afford to lose.** Prediction markets carry inherent financial risk independent of the software used to access them.
 
-For users who require full custody and zero third-party trust, we strongly
-recommend the [local pmxt installation](https://pmxt.dev/docs/quickstart) over the hosted API.
+For users who require full custody and zero third-party trust, [self-hosted](https://pmxt.dev/docs/guides/self-hosted) is the right mode.
 
 ### Rate Limits
 
@@ -918,6 +1174,84 @@ Every query returns:
 
 ## Concepts
 
+### Prediction Markets 101
+
+Source: https://pmxt.dev/docs/concepts/prediction-markets-101
+
+A glossary for engineers landing in prediction markets for the first time. Skim it once; come back when an unfamiliar term shows up.
+
+#### Core concepts
+
+##### Prediction market
+
+A market where the traded asset is a share in a possible future outcome. The share pays $1 if the outcome resolves true and $0 if it resolves false. Example: a "Yes" share on *"Will the Fed cut rates in March?"* pays $1 if the cut happens.
+
+##### Event, Market, Outcome
+
+PMXT's catalog is three levels deep. An **Event** is a real-world question ("2024 US Presidential Election"). A **Market** is a specific tradable framing of that event ("Will Trump win the 2024 election?"). An **Outcome** is a single side of the market ("Yes" or "No"). One event can have many markets; one market always has two or more outcomes. See [Unified schema](https://pmxt.dev/docs/concepts/unified-schema) for the schema-level detail.
+
+##### Price as probability
+
+Outcome prices are in the closed interval [0, 1] and are read as the market's implied probability that the outcome resolves true. A "Yes" share trading at 0.31 pays $1 if Yes resolves true, so the market is implying a roughly 31% chance. The "Yes" price plus the "No" price for a binary market sum to approximately 1 (minus venue spread).
+
+##### Catalog UUID vs venue ID
+
+PMXT assigns its own stable UUID to every market and outcome. The underlying venue (Polymarket, Kalshi, etc.) also has its own native ID — a hex condition ID, a ticker, a hash. Hosted trading requires the catalog UUID. Per-venue read endpoints return venue-native IDs. See [Catalog UUID vs Venue ID](https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id) for which surfaces use which.
+
+#### Crypto / EVM terms (for the non-crypto reader)
+
+##### Wallet
+
+An on-chain account, identified by a public address (e.g. `0xAbc...`). It can hold tokens and sign transactions. A wallet is controlled by a **private key**.
+
+##### EVM private key
+
+A 32-byte secret that controls a wallet address on any Ethereum-compatible (EVM) chain. The same key works across Ethereum, Polygon, BSC, Arbitrum, and other EVM chains — the address derives from the key, not the chain. PMXT only uses your private key for local signing; it never leaves your machine.
+
+##### Polygon
+
+A specific EVM-compatible chain (chainId 137). PMXT's `PreFundedEscrow` contract and Polymarket's CLOB exchange both live on Polygon. This is the only chain you fund.
+
+##### USDC
+
+A US-dollar-pegged stablecoin (1 USDC ≈ $1) issued on many chains. PMXT uses the **Polygon-native** USDC for hosted trading. Bridged versions on other chains are not interchangeable.
+
+##### EIP-712
+
+The typed-data signing standard PMXT uses for hosted writes. Instead of signing an opaque hex blob, your wallet signs a structured payload with named fields — making the signature human-auditable and replay-resistant. Every hosted order, cancel, and escrow action is an EIP-712 signature. See [Signing](https://pmxt.dev/docs/guides/signing).
+
+##### PreFundedEscrow
+
+The non-custodial smart contract on Polygon that holds USDC for hosted trading. You deposit USDC once; subsequent trades spend from the escrow balance until you withdraw. Funds can only move against an EIP-712 signature from your wallet, so your wallet retains beneficial ownership the entire time. See [Hosted Trading](https://pmxt.dev/docs/concepts/hosted-trading) and [Escrow Lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle).
+
+#### Trading terms
+
+##### CLOB
+
+Central Limit Order Book. The matching-engine model where bids and asks are stored in a sorted book and orders match against the best available price. Most prediction-market venues (Polymarket, Kalshi) run a CLOB.
+
+##### Market order
+
+An order that executes immediately at the best available price, walking the book until filled. You specify size, not price. Set a generous `slippage_pct` to bound the worst price you'll accept.
+
+##### Limit order
+
+An order that rests on the book at a specified price and only executes when a counterparty crosses it. You specify both price and size.
+
+##### Group A methods
+
+In PMXT, **Group A** refers to the venue-agnostic trading and read methods that work identically across every hosted venue — `create_order`, `fetch_balance`, `fetch_positions`, `fetch_my_trades`, and friends. The unified surface that makes PMXT a single SDK across venues. See [API Reference](https://pmxt.dev/docs/api-reference/overview).
+
+#### Hosted vs self-hosted
+
+##### Hosted (default)
+
+PMXT operates the catalog, the escrow contract, and the venue-submit path. You hold a `pmxt_api_key` and a wallet private key; PMXT does everything else. See [Hosted Trading](https://pmxt.dev/docs/concepts/hosted-trading).
+
+##### Self-hosted
+
+You run `pmxt-core` on your own machine, supply raw venue credentials, and the SDK talks directly to the venues. No API key, no escrow, no PMXT in the trade path. See [Hosted vs Self-hosted](https://pmxt.dev/docs/concepts/hosted-vs-self-hosted) for the comparison.
+
 ### Unified Schema
 
 Source: https://pmxt.dev/docs/concepts/unified-schema
@@ -971,7 +1305,7 @@ once, switch venues with a config change.
 
 | Field          | Type              | Notes                                                        |
 | -------------- | ----------------- | ------------------------------------------------------------ |
-| `eventId`      | `string`          | Stable PMXT id.                                              |
+| `id`           | `string`          | Stable PMXT event id.                                        |
 | `title`        | `string`          | Event title.                                                 |
 | `slug`         | `string \| null`  |                                                              |
 | `description`  | `string \| null`  |                                                              |
@@ -1153,12 +1487,1656 @@ Not every venue supports every method. Broadly:
 See the [API Reference](https://pmxt.dev/docs/api-reference/overview) for the per-method
 matrix (inferred from the OpenAPI `operationId`s).
 
+### Hosted Trading
 
-## SDK
+Source: https://pmxt.dev/docs/concepts/hosted-trading
+
+Hosted trading is PMXT's default execution path. You provide an API key and a wallet; your [USDC](https://pmxt.dev/docs/concepts/prediction-markets-101#usdc) sits in a non-custodial [`PreFundedEscrow`](https://pmxt.dev/docs/concepts/prediction-markets-101#prefundedescrow) smart contract on [Polygon](https://pmxt.dev/docs/concepts/prediction-markets-101#polygon) that can only move funds against an EIP-712 signature from your wallet; orders are built server-side, signed in your browser/server with your private key, and submitted by PMXT to the underlying venue. You never run a local server, never integrate with venue-specific signature schemes, and never expose your private key over the wire.
+
+This page explains what hosted mode actually is, what flows through where, and when it's the right choice.
+
+
+> **Note:**
+  **One chain to fund: Polygon.** All hosted trading uses a single Polygon-based `PreFundedEscrow` contract for every supported venue. Fund USDC on Polygon once and your same wallet and key trade Polymarket *and* Opinion (and future venues). For non-Polygon venues like Opinion (on BSC), PMXT handles cross-chain settlement transparently — you never sign anything on a chain other than Polygon. Pass any EVM-compatible private key.
+
+
+#### When to use hosted mode
+
+Hosted is the right default for:
+
+- **Web and mobile apps** — your backend holds the `pmxt_api_key`; users keep their own private keys on their devices.
+- **Trading bots that don't need sub-100ms latency** — typical hosted round-trip is ~150–300ms including the venue submit.
+- **Multi-venue strategies** — you stay on one HTTP surface even when you're trading across Polymarket and Opinion.
+- **Anyone who doesn't want to operate infrastructure.**
+
+Choose [self-hosted](https://pmxt.dev/docs/concepts/hosted-vs-self-hosted) instead when you need sub-100ms latency, want to use raw venue credentials (Polymarket L2 API keys, Kalshi RSA, etc.), or have regulatory custody constraints.
+
+#### The mental model
+
+A hosted trade has three actors:
+
+1. **Your client** — your application code, holding the `pmxt_api_key` and (for writes) the user's `private_key`.
+2. **`trade.pmxt.dev`** — PMXT's hosted trading API. Routes orders, operates against the escrow contract under user-signed authorization, talks to the venue.
+3. **The venue** — Polymarket's CLOB, Opinion's matching engine, etc. Sees PMXT as the submitter.
+
+Reads (`fetch_balance`, `fetch_positions`, `fetch_my_trades`, etc.) only need the API key and a wallet address. Writes (`create_order`, `cancel_order`) require the user to sign an [EIP-712](https://pmxt.dev/docs/concepts/prediction-markets-101#eip-712) typed-data payload locally.
+
+#### The trade flow
+
+```
+┌──────────┐  1. POST /v0/trade/build-order   ┌──────────────────┐
+│  client  │ ───────────────────────────────► │ trade.pmxt.dev   │
+│          │                                  │                  │
+│          │  2. unsigned typed-data + id     │                  │
+│          │ ◄─────────────────────────────── │                  │
+│          │                                  │                  │
+│  signs   │ ─── EIP-712 (local only) ────►   │                  │
+│          │                                  │                  │
+│          │  3. POST /v0/trade/submit-order  │                  │
+│          │     { built_order_id, signature }│                  │
+│          │ ───────────────────────────────► │                  │
+│          │                                  │  4. Venue submit │
+│          │  5. order id + status            │ ───────────────► │
+│          │ ◄─────────────────────────────── │     (Polygon /   │
+└──────────┘                                  │      BSC chain)  │
+                                          └──────────────────┘
+```
+
+Step-by-step:
+
+1. **Build.** The SDK calls `POST /v0/trade/build-order` with the catalog UUIDs (`market_id`, `outcome_id`), side, and amount. The server resolves the venue-native fields (token IDs, salt, expiry, fees), packages them into the venue's EIP-712 typed-data shape, and returns a `built_order_id` plus the payload to sign.
+2. **Sign.** The SDK signs the typed-data payload locally with your `private_key`. This step never leaves your process. See [Signing](https://pmxt.dev/docs/guides/signing) for the exact shape.
+3. **Submit.** The SDK calls `POST /v0/trade/submit-order` with the `built_order_id` and the signature. The server attaches the signature to the prepared order and submits to the venue.
+4. **Settle.** The venue matches the order. On Polymarket, fills come from the CLOB and are settled on Polygon via the CTF exchange. On Opinion, settlement uses a dual-signature cross-chain flow.
+
+`create_order` is a convenience wrapper that chains build → sign → submit in one call. `build_order` and `submit_order` are the lower-level primitives if you want to inspect or modify the typed-data before signing.
+
+#### Catalog UUIDs are the address space
+
+Every hosted endpoint speaks in **catalog UUIDs**, not venue-native IDs. A Polymarket condition ID, a Kalshi ticker, an Opinion market hash — none of those work directly against `trade.pmxt.dev`. Instead, PMXT's catalog assigns a stable UUID to every `prediction_markets.markets` row and every `prediction_markets.outcomes` row, and the trading API uses those UUIDs as the addressable identifiers.
+
+The catalog UUIDs are the same ones returned by the Router (`/v0/markets`, `/v0/events`). They are stable across venue API changes and survive venue re-listings.
+
+
+> **Warning:**
+`fetch_markets` against a venue exchange (`pmxt.Polymarket(...).fetch_markets(...)`) currently returns **venue-native IDs**, not catalog UUIDs. To trade against those rows, you need to reverse-resolve to the UUID. See [Catalog UUID vs venue ID](https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id) for the workaround.
+
+
+#### Custody: PreFundedEscrow
+
+**Non-custodial by construction** — the `PreFundedEscrow` contract enforces that funds can only move against an EIP-712 signature from the user's wallet. PMXT does not hold USDC in a hot wallet, an exchange-style omnibus account, or a multisig. USDC sits in the `PreFundedEscrow` smart contract on **Polygon** (chainId 137, sometimes called `HomeEscrow`). The same contract backs every hosted venue:
+
+- **Polymarket** is on Polygon. Escrow-held USDC is spent directly via Polymarket's CTF exchange — same-chain settlement.
+- **Opinion** is on BSC (chainId 56). Escrow-held USDC funds a cross-chain settlement leg into a BSC-side `VenueEscrow` that holds Opinion [outcome](https://pmxt.dev/docs/concepts/prediction-markets-101#event-market-outcome) tokens. The user never deposits to or signs on BSC — PMXT operates the cross-chain hop, still gated by the user's signature on the Polygon side.
+
+All EIP-712 order signatures use the Polygon `PreFundedEscrow` domain regardless of venue. The user's wallet retains beneficial ownership at all times. Funds enter via `client.escrow.deposit()`, exit via `client.escrow.withdraw()`. Both are unsigned-tx builders — your wallet signs and submits them. See [Escrow Lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle).
+
+For the deployed contract addresses, admin model, audit status, and the raw on-chain calls that get your USDC out without PMXT's server, see [Hosted Custody Model](https://pmxt.dev/docs/concepts/hosted-custody).
+
+#### Trust model
+
+The `pmxt_api_key` is a **service-role credential**:
+
+- The key holder can read any user's escrow data and forward signed orders for any wallet.
+- Writes are still gated by the user's EIP-712 signature against their own wallet. **The key alone cannot move funds.**
+- Reads (`fetch_balance`, `fetch_positions`) are NOT gated by a signature — anyone holding the key can read any associated wallet's hosted positions.
+
+Keep `pmxt_api_key` on a server. Never ship it to a browser bundle. Never log it.
+
+#### What's supported today
+
+| Venue | Hosted writes | Hosted reads | Notes |
+| ----- | ------------- | ------------ | ----- |
+| Polymarket | Yes | Yes | Polygon escrow, CLOB exchange |
+| Opinion | Yes | Yes | Cross-chain (BSC settlement, dual-signature) |
+| Kalshi, Limitless, Smarkets, Probable, Myriad, Metaculus, etc. | No | Read-only via catalog | Use [self-hosted](https://pmxt.dev/docs/guides/self-hosted) for writes |
+
+If a venue you need isn't here, run pmxt-core locally and pass raw venue credentials — see [Self-hosted](https://pmxt.dev/docs/guides/self-hosted).
+
+#### Next
+
+- [Trading quickstart](https://pmxt.dev/docs/trading-quickstart) — 60-second guided path.
+- [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) — deposits, withdrawals, the timelock.
+- [Hosted errors](https://pmxt.dev/docs/guides/hosted-errors) — every error class and how to recover.
+- [Hosted vs self-hosted](https://pmxt.dev/docs/concepts/hosted-vs-self-hosted) — one-page comparison.
+
+### Hosted Custody Model
+
+Source: https://pmxt.dev/docs/concepts/hosted-custody
+
+This page documents the non-custodial on-chain escrow used by [hosted trading](https://pmxt.dev/docs/concepts/hosted-trading): what the escrow contracts can and cannot do, who controls them, what's been audited, and the exact contract calls that get your funds back if `trade.pmxt.dev` is unreachable. **Non-custodial by construction** — every value-moving operator call requires an EIP-712 signature from the user's wallet (or, for cross-chain buys, an additional independent oracle attestation); PMXT cannot unilaterally move user funds.
+
+If anything here disagrees with what you read in [Hosted trading](https://pmxt.dev/docs/concepts/hosted-trading) or [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle), this page is the source of truth — those pages describe the happy path, this one describes the trust model.
+
+#### Deployed contracts
+
+There are two contracts, on two chains. Both are non-upgradeable, non-pausable, with no Ownable role — only an immutable `operator` set at deploy time.
+
+| Contract | Chain | ChainId | Mainnet address | Source |
+| -------- | ----- | ------- | --------------- | ------ |
+| `PreFundedEscrow` (HomeEscrow) | Polygon | 137 | `0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2` | [PreFundedEscrow.sol](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/PreFundedEscrow.sol) |
+| `VenueEscrow` | BSC | 56 | `0x6a273643d84edbb603b808d8a724fb963c7a298a` | [VenueEscrow.sol](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/VenueEscrow.sol) |
+
+Verify each one on the explorer before you fund:
+
+- Polygon `PreFundedEscrow`: `https://polygonscan.com/address/0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2`
+- BSC `VenueEscrow`: `https://bscscan.com/address/0x6a273643d84edbb603b808d8a724fb963c7a298a`
+
+
+> **Note:**
+The SDK reads the live address from the trading API at runtime; if PMXT ever migrates the escrow, the SDK picks it up automatically. The mainnet addresses above are the current production deployment. Testnet deployments are environment-scoped and not listed here — check `trade.pmxt.dev`'s config endpoint, or your self-hosted trading-api's `PREFUNDED_ESCROW_ADDRESS` / `VENUE_ESCROW_ADDRESS` env vars.
+
+
+#### What the contracts can and cannot do
+
+The trust property worth checking is "PMXT (the operator) cannot drain user funds." It holds because every value-moving call requires either (a) the user's EIP-712 signature, (b) the user as `msg.sender`, or (c) for cross-chain buys, a delivery attestation signed by an independent settlement oracle.
+
+##### `PreFundedEscrow` (Polygon) — what the operator can do
+
+| Function | What it moves | Required authorization |
+| -------- | ------------- | ---------------------- |
+| `settleBuy` | USDC out of user balance → operator, real CTF in | User's EIP-712 `OrderParams` signature + worst-price / max-cost check |
+| `settleSellPay` | User's CTF out → operator; credits worst-price floor USDC | User's EIP-712 `SellOrderParams` signature |
+| `reimburseSell` | Operator USDC → user (surplus above floor) | Prior `settleSellPay` on same nonce; cannot exceed user's balance change |
+| `settleCrossChainBuy` | USDC out of user balance → operator | User's EIP-712 `CrossChainOrderParams` signature + delivery attestation signed by `settlementOracle` |
+| `settleCrossChainSellUSDC` | Operator USDC → user | User's EIP-712 `CrossChainSellPayParams` signature |
+
+##### `PreFundedEscrow` — what only the user can do
+
+| Function | Effect |
+| -------- | ------ |
+| `deposit(amount)` | Pull USDC from `msg.sender` (after ERC-20 approve) |
+| `withdraw(amount)` | Start a timelocked withdrawal |
+| `claimWithdrawal()` | Pull matured USDC back to `msg.sender` |
+| `cancelWithdrawal()` | Re-credit a pending withdrawal back to balance |
+| `cancelWithSig(...)` | Burn a resting order nonce (permissionless relay against user signature) |
+
+##### `VenueEscrow` (BSC) — what the operator can do
+
+| Function | What it moves | Required authorization |
+| -------- | ------------- | ---------------------- |
+| `depositForUser` | Operator's outcome tokens → escrow, credited to user | Operator-only; only credits, never debits |
+| `settleCrossChainSellTokens` | User's outcome tokens → operator | User's EIP-712 `CrossChainSellPullParams` signature |
+
+`VenueEscrow` never holds user USDC — it only holds Opinion outcome tokens, and only the user can move them back out. Withdrawing tokens back to your wallet (`withdrawTokens` → `claimTokensWithdrawal`) is user-only, mirroring the USDC withdrawal flow on Polygon.
+
+#### Operator / admin model
+
+There is no admin. The contracts have **no `Ownable`, no `Pausable`, no upgrade proxy, no upgrade timelock, no fee setter**. Read the source: the entire privileged surface is the `onlyOperator` modifier in [OutcomeCustody.sol](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/OutcomeCustody.sol), and the `operator` address is `immutable` — set once in the constructor and unchangeable for the life of the contract.
+
+What this means concretely:
+
+- **No one can pause withdrawals.** Even if PMXT's operator key is compromised, `withdraw` / `claimWithdrawal` keep working.
+- **No one can change the operator.** A compromised PMXT cannot rotate to a new operator and skip user signatures.
+- **No one can upgrade the contract.** What's deployed is what runs forever; bugs cannot be hot-patched, which is part of why this surface is intentionally minimal.
+
+If a security flaw were discovered, the only remediation is deploying a new escrow at a new address and migrating users to it — there is no admin lever to flip.
+
+Current operator addresses (immutable on the deployed contracts above):
+
+- Polygon `PreFundedEscrow.operator`: `0x84194eae9c63C1e3A769976bb762506d3443156d`
+- BSC `VenueEscrow.operator`: `0x84194eae9c63C1e3A769976bb762506d3443156d`
+- Polygon `PreFundedEscrow.settlementOracle`: `0x8aD93c0D15bC655b460dD700B1E25C86D1a728EE`
+
+The operator address is currently an EOA controlled by PMXT. **TBD — multisig migration:** a multisig replacement is planned but not yet deployed; we'll update this page with the multisig address and signers when it lands.
+
+#### Audit status
+
+**Unaudited as of 2026-06-09.** The contracts have not undergone a third-party security review. Treat the escrow as you would any unaudited DeFi primitive: only fund what you can afford to lose, and prefer the timelock as a kill-switch (see below).
+
+We will link the audit report here when one is completed.
+
+#### Emergency exit: get your USDC out without PMXT
+
+If `trade.pmxt.dev` is down, the operator is compromised, or you simply want to exit without using the SDK, your USDC is recoverable with **two raw on-chain calls**. PMXT's server is not required — only a Polygon RPC and your wallet.
+
+The full ABI you need from `PreFundedEscrow`:
+
+```solidity
+function balances(address user) external view returns (uint256);
+function withdraw(uint256 amount) external;
+function pendingWithdrawals(address user) external view returns (uint256 amount, uint256 claimableAt);
+function claimWithdrawal() external;
+function cancelWithdrawal() external;
+```
+
+##### Step 1 — Check your balance
+
+```solidity
+uint256 balance = PreFundedEscrow.balances(msg.sender);  // USDC micro-units (6 decimals)
+```
+
+##### Step 2 — Request the withdrawal
+
+```solidity
+PreFundedEscrow.withdraw(amount);  // amount in USDC micro-units
+```
+
+This debits your in-escrow balance immediately and records a pending withdrawal claimable after `WITHDRAWAL_DELAY` seconds.
+
+
+> **Warning:**
+The deployed `WITHDRAWAL_DELAY` is **60 seconds**, set as a constant in [OutcomeCustody.sol#L36](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/OutcomeCustody.sol). Older versions of [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) referred to "~1 hour" — that was a forward-looking value; the production contract uses 60 seconds today. We will lengthen the timelock before raising the value of funds the operator manages; this page will reflect the change.
+
+
+##### Step 3 — Wait the timelock, then claim
+
+```solidity
+(uint256 amount, uint256 claimableAt) = PreFundedEscrow.pendingWithdrawals(msg.sender);
+require(block.timestamp >= claimableAt);
+PreFundedEscrow.claimWithdrawal();  // USDC transferred to msg.sender
+```
+
+That's it — your USDC is back in your wallet without any signature from or call to PMXT.
+
+##### If you also hold Opinion outcome tokens on BSC
+
+`VenueEscrow` exposes the same shape on BSC. Use `withdrawTokens(tokenId, amount)` → wait → `claimTokensWithdrawal(tokenId)`. Source: [OutcomeCustody.sol](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/OutcomeCustody.sol#L129).
+
+#### Failure modes
+
+Concrete behavior under specific failure conditions:
+
+- **`trade.pmxt.dev` is offline.** Your funds are unaffected. New orders cannot be built or submitted, but `withdraw` / `claimWithdrawal` work directly against Polygon — see the emergency exit above. Existing on-chain positions remain redeemable through the venue's own redemption flow.
+- **The PMXT operator key is compromised.** The operator still cannot move USDC without your EIP-712 signature; the worst they can do is force-settle resting orders that you already signed at prices no worse than your `worstPrice`, or stall the system. Withdraw immediately via the raw contract calls above; the timelock window is your safety budget.
+- **Polygon RPC is down.** Use a different Polygon RPC (Alchemy, Infura, Ankr, `polygon-rpc.com`, etc.). The escrow lives on Polygon mainnet — any RPC pointing at chainId 137 reaches it.
+- **The contract is "paused."** It can't be. There is no pause function. See the admin model section above.
+- **BSC `VenueEscrow` has an issue mid-Opinion trade.** Opinion buys settle with the dual signature `user order + oracle delivery attestation`; if the BSC side fails to deliver, the Polygon `settleCrossChainBuy` will never receive a valid attestation, and your USDC stays in your Polygon balance — the buy simply does not settle. Cross-chain sells use parallel signed legs; if the BSC pull leg stalls, you can burn the pull nonce permissionlessly via `VenueEscrow.cancelPullWithSig` against your own signature, then re-issue. The Polygon pay nonce can be burned via `PreFundedEscrow.cancelWithSig(path=XCHAIN_SELL)`.
+- **Settlement oracle is compromised.** A bad oracle signature alone is not enough to drain funds — `settleCrossChainBuy` requires both the user's signed order *and* an attestation whose `(user, tokenId, destEscrow)` match the order. A malicious oracle could only "confirm" deliveries you already signed for, and only up to your `maxCostUsdc` and `worstPrice`.
+
+#### See also
+
+- [Hosted trading](https://pmxt.dev/docs/concepts/hosted-trading) — the happy-path execution model.
+- [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) — SDK-level deposit / trade / withdraw flow.
+- [Security & credentials](https://pmxt.dev/docs/security) — credential handling by mode.
+
+### Hosted vs Self-hosted
+
+Source: https://pmxt.dev/docs/concepts/hosted-vs-self-hosted
+
+PMXT runs two ways. **Hosted** is the default — it's what `pmxt.Polymarket(pmxt_api_key=...)` does when an API key is set. **Self-hosted** is the advanced escape hatch — you run `pmxt-core` on your own machine and the SDK talks to `localhost`. Both expose the same SDK surface; the difference is where execution happens and who holds keys.
+
+#### At a glance
+
+| | Hosted (`pmxt_api_key` set) | Self-hosted (no API key) |
+| - | --------------------------- | ------------------------ |
+| **Install footprint** | `pip install pmxt` / `npm i pmxtjs` | SDK + pmxt-core local server |
+| **Who holds the API key?** | You (backend secret) | Not used |
+| **Who holds venue credentials?** | Non-custodial `PreFundedEscrow` contract holds USDC; PMXT holds no venue credentials | You, on your machine |
+| **Trading auth (writes)** | Your EIP-712 signature, signed locally | Raw venue credential (private key, Kalshi RSA, etc.) |
+| **Reads** | `trade.pmxt.dev/v0/user/...` | Direct to the venue API |
+| **Writes** | `trade.pmxt.dev/v0/trade/{build,submit}-order` | Direct to the venue API |
+| **Custody** | Non-custodial: USDC in `PreFundedEscrow`, movable only against your EIP-712 signature | You retain venue-native custody |
+| **Latency** | ~150–300ms round-trip | Limited by venue + your network |
+| **Trading venues** | Polymarket, Opinion | Every venue PMXT supports |
+| **Read-only venues** | All catalog venues via Router | All catalog venues via Router |
+| **Infra to run** | None | One local process |
+| **Regulatory posture** | Non-custodial escrow; user retains beneficial ownership and unilateral withdrawal | You as direct counterparty to the venue |
+
+#### When hosted is the right choice
+
+- You're building a **web or mobile app** and want to keep `pmxt_api_key` server-side while end users keep their private keys client-side.
+- You want **one HTTP surface** across Polymarket and Opinion without learning each venue's order schema.
+- You want the **non-custodial `PreFundedEscrow`** model instead of managing venue-native accounts.
+- You don't want to operate the pmxt-core process, manage upgrades, or run a local PMXT service.
+
+#### When self-hosted is the right choice
+
+- You need **sub-100ms latency** — colocated arbitrage, market-making, latency-sensitive HFT-style strategies.
+- You **prefer raw venue credentials** — Polymarket L2 API keys, Kalshi RSA keys, Smarkets sessions — and don't want PMXT in the settlement path at all.
+- You have **regulatory requirements** that mandate direct counterparty status with the venue.
+- You want to **trade on venues not yet supported by hosted** (Kalshi, Limitless, Smarkets, Probable, Myriad, etc.).
+- You're an **OSS contributor** developing or debugging pmxt-core itself.
+
+See [Self-hosted](https://pmxt.dev/docs/guides/self-hosted) for setup.
+
+#### What's identical either way
+
+The SDK surface is the same. Code written against hosted will run against self-hosted with no changes except dropping the `pmxt_api_key` argument:
+
+```python
+# Hosted (default)
+client = pmxt.Polymarket(pmxt_api_key="pmxt_live_...", wallet_address="0x...", private_key="0x...")
+
+# Self-hosted (drop the API key — talks to http://localhost:3847)
+client = pmxt.Polymarket(private_key="0x...")
+```
+
+`fetch_markets`, `fetch_order_book`, `create_order`, `fetch_positions` — same signatures, same response shapes.
+
+#### What differs subtly
+
+- **`fetch_balance`**: hosted returns escrow USDC; self-hosted returns the venue-native balance (e.g. Polymarket's CLOB-proxy USDC). Same shape, different source. See the [migration guide](https://pmxt.dev/docs/guides/migrate-to-hosted-trading) for the implications.
+- **`Position` fields**: hosted may surface `None`/`undefined` on `entry_price`, `current_price`, `unrealized_pnl`, `outcome_label` when the server doesn't yet have the data. Self-hosted always populates them.
+- **Catalog UUIDs vs venue IDs**: hosted-mode `create_order` requires catalog UUIDs (`market_id`, `outcome_id`). Self-hosted accepts the venue-native ID directly. See [Catalog UUID vs venue ID](https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id).
+- **Error classes**: hosted produces `HostedTradingError` subclasses with semantic parents (`InsufficientEscrowBalance` is also `InsufficientFunds`). Self-hosted produces the parent classes directly. Catch the parent and you handle both paths. See [Hosted errors](https://pmxt.dev/docs/guides/hosted-errors).
+
+#### Mixing modes
+
+You can run **hosted reads with self-hosted writes** (or vice versa) — they're independent SDK instances. A common pattern is:
+
+```python
+# Hosted client for cross-venue research
+hosted = pmxt.Polymarket(pmxt_api_key="pmxt_live_...")
+markets = hosted.fetch_markets(query="election")
+
+# Self-hosted client for trading with raw venue creds
+local = pmxt.Polymarket(private_key="0x...")
+order = local.create_order(...)
+```
+
+This is useful if you trust PMXT enough for catalog and price data but want execution to settle directly against the venue.
+
+### Catalog UUID vs Venue ID
+
+Source: https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id
+
+PMXT speaks two market identifier languages:
+
+- The **catalog UUID** is PMXT's stable identifier — a UUID assigned to every row in `prediction_markets.markets` and `prediction_markets.outcomes`.
+- The **venue-native ID** is whatever the underlying venue uses — a Polymarket `conditionId` hex string + `tokenId` integer, a Kalshi ticker, an Opinion market hash, etc.
+
+**The hosted trading API accepts either.** Whichever you have in hand, you can pass it straight to `create_order` / `build_order` — the SDK picks the right wire field and the backend resolves it. No conversion step required.
+
+```python
+# Both of these work identically against trade.pmxt.dev:
+
+# Via the venue client — outcome carries a venue-native id from fetch_markets.
+client = pmxt.Polymarket(pmxt_api_key=..., wallet_address=..., private_key=...)
+market = client.fetch_markets({"query": "trump 2028"})[0]
+order = client.create_order(outcome=market.yes, side="buy", amount=10, ...)
+
+# Via the Router — outcome carries a catalog UUID.
+router = pmxt.Router(pmxt_api_key=...)
+events = router.fetch_events(query="trump 2028")
+yes = events[0].markets[0].outcomes[0]
+order = client.create_order(outcome=yes, side="buy", amount=10, ...)
+```
+
+#### When the distinction matters
+
+It matters in exactly two places.
+
+##### 1. Cross-venue identity
+
+A single real-world outcome (e.g. "Trump wins 2028") can exist on multiple venues. Each venue has its own native id — they don't agree. The **catalog UUID** is the only identifier stable across venues. Use it when:
+
+- You're consuming `fetch_matched_market_clusters` / `fetch_matched_event_clusters` to find the same outcome on multiple venues.
+- You're building portfolio analytics that span venues.
+- You're storing references that need to survive a venue re-listing (venue-native ids can change; the catalog UUID stays).
+
+##### 2. Self-hosted trading
+
+In [self-hosted mode](https://pmxt.dev/docs/guides/self-hosted) — `POST /api/{exchange}/createOrder` — there is no PMXT catalog in the path. You're talking to the venue directly. **Venue-native ids only.** Catalog UUIDs won't resolve.
+
+#### Reverse-resolving a venue id to a catalog UUID
+
+If you already have a venue-native id (e.g. a saved database of Polymarket `conditionId`s) and want the catalog UUID for cross-venue work:
+
+```python
+clusters = router.fetch_matched_market_clusters(
+venue="polymarket",
+venue_market_id="0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5",
+)
+catalog_uuid = clusters[0].market_id
+```
+
+For batch workflows, the [SQL endpoint](https://pmxt.dev/docs/sql) gives you direct access to `prediction_markets.markets` and `prediction_markets.outcomes` with the canonical UUID alongside the venue-native fields (`venue_market_id`, `venue_outcome_id` / `token_id`).
+
+#### Examples (the two ids for one market)
+
+A single Polymarket binary market carries:
+
+- Catalog `market_id`: `2eeb03dc-404b-41d5-bc57-6aeb37927ae6`
+- Polymarket `conditionId`: `0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5`
+
+Each outcome carries:
+
+- Catalog `outcome_id`: `a114f052-1fd1-4bcd-b9cf-de019db81b67`
+- Polymarket `tokenId`: `104932610032177696635191871147557737718087870958469629338467406422339967452218`
+
+Both forms work against `trade.pmxt.dev/v0/trade/*`. Pick whichever your code already has.
+
+
+## Hosted Trading
+
+### Escrow Lifecycle
+
+Source: https://pmxt.dev/docs/guides/escrow-lifecycle
+
+Hosted trading on PMXT settles through a non-custodial `PreFundedEscrow` smart contract on **Polygon** (chainId 137). USDC sits in the escrow under your wallet's beneficial ownership; PMXT cannot move funds without an EIP-712 signature from your wallet. This page walks through the full lifecycle: approve, deposit, trade, withdraw.
+
+
+> **Note:**
+  **You fund Polygon only.** USDC always sits in the Polygon `PreFundedEscrow` — the single funding location for *every* hosted venue (Polymarket today, Opinion today, more coming). For venues that don't live on Polygon (e.g. Opinion on BSC), PMXT operates an internal cross-chain leg that holds outcome tokens on the venue's chain; you neither fund nor sign anything on that side. Pass any EVM-compatible private key — the same key handles every venue.
+
+
+#### Why escrow at all?
+
+Polymarket's CLOB exchange expects the submitter to be the operator of the user's CLOB proxy wallet. That proxy is created by Polymarket's USDC.e adapter and is non-trivial to operate from a third-party context. PMXT's `PreFundedEscrow` solves this by acting as a pre-funded operator: the user deposits USDC once, PMXT routes orders against that balance, and the user can withdraw at any time. The user signs every order with EIP-712 against the Polygon escrow's domain; the escrow contract can only spend USDC against signed orders, never unilaterally.
+
+For Opinion, the same Polygon escrow balance funds a cross-chain settlement leg into a BSC-side `VenueEscrow` that holds Opinion outcome tokens — you still only deposit on Polygon, and your EIP-712 signature still targets the Polygon escrow domain. The BSC hop is PMXT's plumbing.
+
+#### The `client.escrow` namespace
+
+Hosted exchange clients (Polymarket, Opinion) expose an `escrow` namespace. Every method **builds an unsigned transaction**. Your wallet — MetaMask, ethers `Wallet`, viem, web3.py, etc. — is responsible for signing and broadcasting it. PMXT never holds your private key.
+
+| Method (Python / TypeScript) | Description |
+| ---------------------------- | ----------- |
+| `escrow.approve_tx(token, amount_wei=None)` / `escrow.approveTx(token, amountWei?)` | Build an unsigned ERC-20 approval for USDC or CTF. |
+| `escrow.deposit_tx(amount)` / `escrow.depositTx(amount)` | Build an unsigned USDC deposit into PreFundedEscrow. |
+| `escrow.withdraw_tx(action, amount=None)` / `escrow.withdrawTx(action, amount?)` | Build an unsigned `request` / `claim` / `cancel` withdrawal. |
+| `escrow.withdrawals(include="pending,events")` / `escrow.withdrawals({ include })` | Read pending withdrawal state and historical events. |
+
+See the source: [`sdks/python/pmxt/escrow.py`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/python/pmxt/escrow.py) and [`sdks/typescript/pmxt/escrow.ts`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/typescript/pmxt/escrow.ts).
+
+#### 1. Approve and deposit
+
+Before the first deposit, the escrow contract needs permission to pull USDC from your wallet (a standard ERC-20 approval). Then you deposit. For most users, the dashboard handles both in a single connected-wallet flow.
+
+##### Recommended: use the dashboard
+
+Open [pmxt.dev/dashboard](https://pmxt.dev/dashboard), connect the wallet whose address you passed to the SDK, and use the Deposit flow. Your wallet (MetaMask, Rabby, WalletConnect, etc.) prompts you to sign — PMXT never sees your private key.
+
+1. Go to [pmxt.dev/dashboard](https://pmxt.dev/dashboard) and connect the matching wallet.
+2. Click **Deposit** and enter the USDC amount.
+3. Approve the USDC allowance in your wallet (one-time per token).
+4. Confirm the deposit transaction in your wallet.
+
+
+> **Note:**
+Approval is one-time per token + spender; the deposit itself is one-time setup before your first trade. If you ever rotate the escrow contract (rare, gated on a PMXT migration announcement), you'll need to re-approve.
+
+
+<Accordion title="Advanced: programmatic approve + deposit">
+If you're scripting deposits (CI, treasury automation, custom wallet integrations), `client.escrow` builds **unsigned** transactions you sign and broadcast with your own wallet library.
+
+**Approve**
+
+<CodeGroup>
+```python Python
+# Unlimited approval for USDC (most common)
+tx = client.escrow.approve_tx("usdc")
+# tx is a dict like:
+#   { "to": "0x...", "data": "0x...", "value": "0", "chain_id": 137 }
+# Sign and broadcast it with your preferred wallet library.
+
+# Or scope the approval to a specific wei amount
+tx = client.escrow.approve_tx("usdc", amount_wei=1_000_000_000)  # 1,000 USDC
+
+# Approve the Polymarket CTF token (only needed for direct CTF transfers)
+tx = client.escrow.approve_tx("ctf")
+```
+
+```typescript TypeScript
+// Unlimited approval for USDC (most common)
+const tx = await client.escrow.approveTx("usdc");
+// tx is an object like:
+//   { to: "0x...", data: "0x...", value: "0", chainId: 137 }
+
+// Or scope the approval to a specific wei amount (bigint)
+const txScoped = await client.escrow.approveTx("usdc", 1_000_000_000n);
+
+// Approve the CTF token
+const ctfTx = await client.escrow.approveTx("ctf");
+```
+</CodeGroup>
+
+**Deposit**
+
+Amounts are in **whole USDC** (6 decimals); the SDK validates precision and rejects values like `0.0000001`.
+
+<CodeGroup>
+```python Python
+# Deposit 10 USDC
+tx = client.escrow.deposit_tx(amount=10.0)
+# Sign and send with your wallet library.
+
+# Decimals up to 6 places are supported
+tx = client.escrow.deposit_tx(amount=10.5)
+tx = client.escrow.deposit_tx(amount=10.123456)
+```
+
+```typescript TypeScript
+// Deposit 10 USDC — number, decimal string, or wei BigInt all accepted
+const tx = await client.escrow.depositTx(10);
+const tx2 = await client.escrow.depositTx("10.5");
+const tx3 = await client.escrow.depositTx(10_500_000n); // wei micro-USDC
+```
+</CodeGroup>
+
+
+> **Warning:**
+USDC precision is 6 decimals. The SDK rejects `0.0000001` with `ValidationError`. Pre-round before passing the value in.
+
+</Accordion>
+
+#### 2. Confirm the deposit
+
+After the deposit transaction confirms on-chain, the balance shows up in escrow. `fetch_balance` is the canonical check.
+
+<CodeGroup>
+```python Python
+balance = client.fetch_balance()
+print(f"Free: {balance.free}, Used: {balance.used}, Total: {balance.total}")
+```
+
+```typescript TypeScript
+const balance = await client.fetchBalance();
+console.log(`Free: ${balance.free}, Used: ${balance.used}, Total: ${balance.total}`);
+```
+</CodeGroup>
+
+
+> **Note:**
+On-chain confirmation usually takes 2–5 seconds on Polygon. If `fetch_balance` still reads zero 30 seconds after broadcast, check the tx on Polygonscan — a failed deposit (e.g. due to missing approval) will not update escrow state.
+
+
+#### 3. Trade
+
+With escrow funded, you can trade. `create_order` and `submit_order` debit the escrow balance; `cancel_order` releases the reservation. No additional escrow calls are needed during normal trading — the balance just gets spent.
+
+```python
+order = client.create_order(
+market_id="2eeb03dc-404b-41d5-bc57-6aeb37927ae6",
+outcome_id="a114f052-1fd1-4bcd-b9cf-de019db81b67",
+side="buy",
+order_type="market",
+amount=5.0,
+denom="usdc",
+slippage_pct=30.0,
+)
+```
+
+#### 4. Withdraw
+
+Withdrawals are a **two-step timelock**. You first `request` a withdrawal; after a contract-enforced delay (~1 hour in production), you `claim` it. You can also `cancel` a pending request.
+
+The timelock is a security feature — it gives you a window to detect and abort an unauthorized withdrawal even if the operator key were compromised. Because the escrow is non-custodial, every withdrawal step requires a signature from your wallet.
+
+##### Recommended: withdraw from the dashboard
+
+The dashboard handles the full request → wait → claim journey as one user flow.
+
+1. Open [pmxt.dev/dashboard](https://pmxt.dev/dashboard) and connect your wallet.
+2. Click **Withdraw**, enter the USDC amount, and confirm the request transaction in your wallet.
+3. Wait for the timelock to elapse (~1 hour in production). The dashboard shows a countdown for each pending request.
+4. Come back, click **Claim** on the matured request, and confirm the claim transaction in your wallet. Funds move from escrow to your wallet.
+
+If you change your mind during the timelock window, the dashboard exposes a **Cancel** action on the pending request — the funds stay in escrow as free balance.
+
+<Accordion title="Advanced: programmatic withdraw">
+For scripted withdrawals, `client.escrow.withdraw_tx` builds **unsigned** request / claim / cancel transactions you sign and broadcast with your own wallet library.
+
+**Request**
+
+<CodeGroup>
+```python Python
+tx = client.escrow.withdraw_tx("request", amount=10.0)
+# Sign and send. After the timelock, the funds become claimable.
+```
+
+```typescript TypeScript
+const tx = await client.escrow.withdrawTx("request", 10);
+```
+</CodeGroup>
+
+**Inspect pending withdrawals**
+
+<CodeGroup>
+```python Python
+state = client.escrow.withdrawals(include="pending,events")
+# state.pending is a list of pending requests with their `claimable_at` timestamps.
+for req in state["pending"]:
+print(req["amount"], "claimable at", req["claimable_at"])
+```
+
+```typescript TypeScript
+const state = await client.escrow.withdrawals({ include: "pending,events" });
+// state.pending lists requests with claimable_at timestamps
+for (const req of state.pending) {
+  console.log(req.amount, "claimable at", req.claimable_at);
+}
+```
+</CodeGroup>
+
+**Claim**
+
+Once `claimable_at` has passed, claim the funds — they move from escrow to your wallet.
+
+<CodeGroup>
+```python Python
+tx = client.escrow.withdraw_tx("claim")
+```
+
+```typescript TypeScript
+const tx = await client.escrow.withdrawTx("claim");
+```
+</CodeGroup>
+
+
+> **Note:**
+`claim` does not take an `amount`. It claims all matured requests at once. The escrow tracks individual request maturities; only matured ones settle.
+
+
+**Cancel**
+
+If you change your mind during the timelock window, cancel a pending request and the funds remain in escrow as free balance.
+
+<CodeGroup>
+```python Python
+tx = client.escrow.withdraw_tx("cancel")
+```
+
+```typescript TypeScript
+const tx = await client.escrow.withdrawTx("cancel");
+```
+</CodeGroup>
+</Accordion>
+
+#### Errors you might hit
+
+- `MissingWalletAddress` — `client.escrow.*` requires `wallet_address` on the exchange constructor. Pass it explicitly.
+- `ValidationError: amount precision exceeds 6 decimals` — round before passing.
+- `InsufficientEscrowBalance` (during a trade) — deposit more before retrying, or wait for matured withdrawals to clear pending positions.
+- `HostedTradingError` (5xx) — transient server error; retry with backoff. See [Hosted errors](https://pmxt.dev/docs/guides/hosted-errors).
+
+#### Source references
+
+- Python: [`sdks/python/pmxt/escrow.py`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/python/pmxt/escrow.py)
+- TypeScript: [`sdks/typescript/pmxt/escrow.ts`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/typescript/pmxt/escrow.ts)
+
+### Signing Orders
+
+Source: https://pmxt.dev/docs/guides/signing
+
+Hosted trading writes are authenticated by an **EIP-712 typed-data signature** produced by the user's wallet. The signature is computed locally on your machine; PMXT never sees your private key. The `pmxt_api_key` authenticates you to PMXT; the signature authenticates the order to the venue's on-chain settlement contract.
+
+This page covers (1) what the SDK does automatically, (2) the EIP-712 payload shape for each venue, and (3) how to bring your own signer (hardware wallet, remote signer, MPC, etc.).
+
+#### What the SDK does for you
+
+If you pass `private_key` to the exchange constructor, the SDK auto-wraps it into an internal signer and signs every order for you. You never see the typed-data shape.
+
+<CodeGroup>
+```python Python
+import pmxt
+
+# Python: private_key is wrapped into an EthAccountSigner internally
+client = pmxt.Polymarket(
+pmxt_api_key="pmxt_live_...",
+wallet_address="0xYourWallet...",
+private_key="0xYourPrivateKey...",
+)
+
+# create_order signs locally with EthAccountSigner before submitting
+order = client.create_order(
+market_id="2eeb03dc-404b-41d5-bc57-6aeb37927ae6",
+outcome_id="a114f052-1fd1-4bcd-b9cf-de019db81b67",
+side="buy",
+order_type="market",
+amount=5.0,
+denom="usdc",
+slippage_pct=30.0,
+)
+```
+
+```typescript TypeScript
+import { Polymarket } from "pmxtjs";
+
+// TypeScript: privateKey is wrapped into an EthersSigner internally
+const client = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWallet...",
+  privateKey: "0xYourPrivateKey...",
+});
+
+// createOrder signs with EthersSigner before submitting
+const order = await client.createOrder({
+  marketId: "2eeb03dc-404b-41d5-bc57-6aeb37927ae6",
+  outcomeId: "a114f052-1fd1-4bcd-b9cf-de019db81b67",
+  side: "buy",
+  orderType: "market",
+  amount: 5,
+  denom: "usdc",
+  slippagePct: 30,
+});
+```
+</CodeGroup>
+
+In Python, the wrapper is `EthAccountSigner` (uses `eth_account` under the hood). In TypeScript, it's `EthersSigner` (uses ethers v6 `Wallet._signTypedData`). Both implement a tiny protocol: a single async `signTypedData(domain, types, message) -> hex` method.
+
+#### Why reads only need a wallet address
+
+For reads (`fetch_balance`, `fetch_positions`, `fetch_my_trades`), no signature is required — the `pmxt_api_key` is enough. You can construct a hosted client with only `pmxt_api_key` and `wallet_address` and read all hosted state for that wallet:
+
+```python
+read_only = pmxt.Polymarket(
+pmxt_api_key="pmxt_live_...",
+wallet_address="0xSomeOtherWallet...",
+# no private_key
+)
+balance = read_only.fetch_balance()  # works
+```
+
+
+> **Warning:**
+Because reads don't require a signature, anyone with the `pmxt_api_key` can read any wallet's hosted state. Keep the key on the server. See the [trust model](https://pmxt.dev/docs/concepts/hosted-trading#trust-model).
+
+
+#### The EIP-712 payload — Polymarket
+
+Polymarket orders use the `Order` primary type on the Polygon CTF exchange domain.
+
+**Domain**
+
+```json
+{
+  "name": "Polymarket CTF Exchange",
+  "version": "1",
+  "chainId": 137,
+  "verifyingContract": "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E"
+}
+```
+
+**Types**
+
+```json
+{
+  "Order": [
+{ "name": "salt", "type": "uint256" },
+{ "name": "maker", "type": "address" },
+{ "name": "signer", "type": "address" },
+{ "name": "taker", "type": "address" },
+{ "name": "tokenId", "type": "uint256" },
+{ "name": "makerAmount", "type": "uint256" },
+{ "name": "takerAmount", "type": "uint256" },
+{ "name": "expiration", "type": "uint256" },
+{ "name": "nonce", "type": "uint256" },
+{ "name": "feeRateBps", "type": "uint256" },
+{ "name": "side", "type": "uint8" },
+{ "name": "signatureType", "type": "uint8" }
+  ]
+}
+```
+
+The `Order.maker` is the user's wallet. `signer` is also the user's wallet (no operator-on-behalf-of for hosted PMXT — the operator role is played by the escrow contract). `taker` is `0x000...` (open order).
+
+The full `message` is what `build_order` returns; you sign it and pass the result back to `submit_order`.
+
+#### The EIP-712 payload — Opinion
+
+Opinion uses a **dual-signature cross-chain** flow. Two typed-data payloads must be signed:
+
+1. **`typed_data`** — the Opinion order itself, signed against the Opinion settlement contract on BSC.
+2. **`pull_typed_data`** — a USDC pull authorization, signed against the BSC USDC contract for the cross-chain settlement leg.
+
+Both are returned by `build_order` and both must be signed before `submit_order` is called. The SDK signs both with the same private key by default.
+
+```python
+built = client.build_order(...)
+# built has two typed-data payloads
+sig_order = signer.sign_typed_data(built.typed_data)
+sig_pull  = signer.sign_typed_data(built.pull_typed_data)
+client.submit_order(
+built_order_id=built.built_order_id,
+signature=sig_order,
+pull_signature=sig_pull,
+)
+```
+
+#### Bringing your own signer
+
+If your key lives in a hardware wallet, an HSM, an MPC service, or anything else that isn't a raw hex private key string, skip `private_key` and use the lower-level `build_order` / `submit_order` flow.
+
+<CodeGroup>
+```python Python
+import pmxt
+
+client = pmxt.Polymarket(
+pmxt_api_key="pmxt_live_...",
+wallet_address="0xYourWallet...",
+# NO private_key — we'll sign with a custom signer
+)
+
+# 1. Build the order. Returns the typed-data payload plus a built_order_id.
+built = client.build_order(
+market_id="2eeb03dc-...",
+outcome_id="a114f052-...",
+side="buy",
+order_type="market",
+amount=5.0,
+denom="usdc",
+slippage_pct=30.0,
+)
+
+# 2. Sign with your own signer (Ledger, HSM, MPC, remote, etc.)
+signature = my_custom_signer.sign_typed_data(
+domain=built.typed_data["domain"],
+types=built.typed_data["types"],
+message=built.typed_data["message"],
+)
+
+# 3. Submit
+order = client.submit_order(
+built_order_id=built.built_order_id,
+signature=signature,
+)
+```
+
+```typescript TypeScript
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWallet...",
+  // NO privateKey
+});
+
+const built = await client.buildOrder({
+  marketId: "2eeb03dc-...",
+  outcomeId: "a114f052-...",
+  side: "buy",
+  orderType: "market",
+  amount: 5,
+  denom: "usdc",
+  slippagePct: 30,
+});
+
+// Sign with your own signer
+const signature = await myCustomSigner.signTypedData(
+  built.typedData.domain,
+  built.typedData.types,
+  built.typedData.message,
+);
+
+const order = await client.submitOrder({
+  builtOrderId: built.builtOrderId,
+  signature,
+});
+```
+</CodeGroup>
+
+#### The signer protocol
+
+Any signer that satisfies this interface works:
+
+```python
+class Signer(Protocol):
+def sign_typed_data(self, domain: dict, types: dict, message: dict) -> str:
+    """Return a 0x-prefixed hex signature."""
+```
+
+```typescript
+interface Signer {
+  signTypedData(
+domain: Eip712Domain,
+types: Record<string, Eip712Type[]>,
+message: Record<string, unknown>,
+  ): Promise<string>;
+}
+```
+
+The SDK's `EthAccountSigner` / `EthersSigner` are reference implementations of this protocol. For hardware wallets, ethers v6 supports Ledger out of the box. For MPC, see Fireblocks / Privy / Turnkey docs.
+
+#### Common pitfalls
+
+
+> **Warning:**
+**Don't sign the wrong domain.** Each venue (Polymarket / Opinion) has its own EIP-712 domain with a specific `chainId` and `verifyingContract`. The server constructs these in `build_order`. Signing against the wrong domain produces `InvalidSignature`.
+
+
+> **Warning:**
+**Built orders expire.** A `built_order_id` is single-use and time-bound (typically 30 seconds). If you sign slowly — e.g. waiting on a hardware wallet confirmation — you may hit `BuiltOrderExpired` on submit. Re-build to get a fresh payload.
+
+### Handling Hosted Errors
+
+Source: https://pmxt.dev/docs/guides/hosted-errors
+
+Hosted trading errors all descend from `HostedTradingError`. Each subclass also inherits from a **semantic parent** — `InsufficientEscrowBalance` is also an `InsufficientFunds`, `OrderSizeTooSmall` is also an `InvalidOrder`. Catch the parent and you handle both hosted and self-hosted paths with the same code. Catch the leaf and you can branch on the specific recovery action.
+
+In **Python**, this is true multi-inheritance — `isinstance(e, InsufficientFunds)` and `isinstance(e, HostedTradingError)` both work. In **TypeScript**, the same effect is achieved with a `static isHostedError = true` flag and the `isHostedError()` helper, since JS only allows single-extends.
+
+For the full class reference, see [API Reference / Errors](https://pmxt.dev/docs/api-reference/errors).
+
+This page covers the five errors you'll hit most often.
+
+#### InsufficientEscrowBalance
+
+**When it fires:** the order would draw more USDC than your escrow free balance. PMXT debits escrow when an order is submitted; if the requested `amount` exceeds `balance.free`, the build phase rejects the order.
+
+**Detail string:** `Insufficient escrow balance: requested 50.0 USDC, available 12.34 USDC`.
+
+**Parent classes:** `InsufficientFunds`, `HostedTradingError`.
+
+**Recovery:** deposit more, or shrink the order. See [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle).
+
+<CodeGroup>
+```python Python
+from pmxt.errors import InsufficientFunds
+from pmxt._hosted_errors import InsufficientEscrowBalance
+
+try:
+client.create_order(...)
+except InsufficientEscrowBalance as e:
+print(f"Need to deposit more. {e.detail}")
+# Build a deposit tx for the shortfall
+tx = client.escrow.deposit_tx(amount=20.0)
+# ... sign and broadcast, then retry the order
+except InsufficientFunds:
+# Self-hosted path also lands here
+...
+```
+
+```typescript TypeScript
+import { InsufficientEscrowBalance, isHostedError } from "pmxtjs";
+
+try {
+  await client.createOrder({ ... });
+} catch (e) {
+  if (e instanceof InsufficientEscrowBalance) {
+console.log(`Need to deposit. ${(e as any).detail}`);
+const tx = await client.escrow.depositTx(20);
+// sign and broadcast, retry
+  } else if (isHostedError(e)) {
+// any other hosted-error parent
+  } else {
+throw e;
+  }
+}
+```
+</CodeGroup>
+
+#### OrderSizeTooSmall
+
+**When it fires:** the resolved share count is below the venue's minimum. Polymarket's minimum is **5 shares per order**. A $2 buy at $0.78/share is only 2.5 shares — rejected.
+
+**Detail string:** `Order size 2.564 below the minimum 5 shares for venue polymarket`.
+
+**Parent classes:** `InvalidOrder`, `HostedTradingError`.
+
+**Recovery:** size up the order or pick a cheaper outcome.
+
+
+> **Warning:**
+The 5-share minimum is enforced **after** PMXT resolves your USDC amount into shares using the current price. If the price moves between price-check and submit, a borderline-sized order may flip from accepted to rejected. Add a buffer for marginal sizes.
+
+
+<CodeGroup>
+```python Python
+from pmxt._hosted_errors import OrderSizeTooSmall
+
+try:
+client.create_order(amount=2.0, ...)
+except OrderSizeTooSmall as e:
+# Resize: at $0.78/share, 5 shares ≈ $3.90. Round up with buffer.
+client.create_order(amount=5.0, ...)
+```
+
+```typescript TypeScript
+import { OrderSizeTooSmall } from "pmxtjs";
+
+try {
+  await client.createOrder({ amount: 2, ... });
+} catch (e) {
+  if (e instanceof OrderSizeTooSmall) {
+await client.createOrder({ amount: 5, ... });
+  } else {
+throw e;
+  }
+}
+```
+</CodeGroup>
+
+#### InvalidApiKey
+
+**When it fires:** the `pmxt_api_key` is missing, malformed, revoked, or expired. Surface is `HTTP 401` from `trade.pmxt.dev`.
+
+**Detail string:** `invalid api key` or `missing api key`.
+
+**Parent classes:** `AuthenticationError`, `HostedTradingError`.
+
+**Recovery:** rotate the key from [pmxt.dev/dashboard](https://pmxt.dev/dashboard). Update your deployed config. **Do not retry** with the same key.
+
+<CodeGroup>
+```python Python
+from pmxt.errors import AuthenticationError
+from pmxt._hosted_errors import InvalidApiKey
+
+try:
+client.fetch_balance()
+except InvalidApiKey:
+# Rotate the key; don't retry with the same one
+raise SystemExit("PMXT_API_KEY invalid — rotate from dashboard")
+```
+
+```typescript TypeScript
+import { InvalidApiKey } from "pmxtjs";
+
+try {
+  await client.fetchBalance();
+} catch (e) {
+  if (e instanceof InvalidApiKey) {
+throw new Error("PMXT_API_KEY invalid — rotate from dashboard");
+  }
+  throw e;
+}
+```
+</CodeGroup>
+
+#### BuiltOrderExpired
+
+**When it fires:** between `build_order` and `submit_order`, the built-order TTL elapsed (typically 30 seconds). Also fires for `cancel_id expired` in the cancel flow.
+
+**Detail string:** `built_order_id expired` or `cancel_id expired`.
+
+**Parent classes:** `InvalidOrder`, `HostedTradingError`.
+
+**Recovery:** re-build, then re-sign, then submit. Don't reuse the old `built_order_id`.
+
+
+> **Warning:**
+Hardware-wallet signing is the most common cause — Ledger confirmations can take 10–60 seconds, blowing past the TTL. If you sign with a hardware wallet, expect to retry once on `BuiltOrderExpired`.
+
+
+<CodeGroup>
+```python Python
+from pmxt._hosted_errors import BuiltOrderExpired
+
+def submit_with_retry(client, *, market_id, outcome_id, **kwargs):
+for attempt in range(2):
+    built = client.build_order(market_id=market_id, outcome_id=outcome_id, **kwargs)
+    sig = signer.sign_typed_data(built.typed_data)
+    try:
+        return client.submit_order(
+            built_order_id=built.built_order_id,
+            signature=sig,
+        )
+    except BuiltOrderExpired:
+        if attempt == 1:
+            raise
+        continue
+```
+
+```typescript TypeScript
+import { BuiltOrderExpired } from "pmxtjs";
+
+async function submitWithRetry(client, params) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+const built = await client.buildOrder(params);
+const sig = await signer.signTypedData(
+  built.typedData.domain,
+  built.typedData.types,
+  built.typedData.message,
+);
+try {
+  return await client.submitOrder({
+    builtOrderId: built.builtOrderId,
+    signature: sig,
+  });
+} catch (e) {
+  if (e instanceof BuiltOrderExpired && attempt === 0) continue;
+  throw e;
+}
+  }
+}
+```
+</CodeGroup>
+
+#### NoLiquidity
+
+**When it fires:** the side of the book you're crossing is empty — there are no resting asks for a market buy, or no resting bids for a market sell.
+
+**Detail string:** `book has no resting asks` or `book has no resting bids`.
+
+**Parent classes:** `InvalidOrder`, `HostedTradingError`.
+
+**Recovery:** wait for liquidity, post a limit order instead of a market order, or pick a different outcome.
+
+<CodeGroup>
+```python Python
+from pmxt._hosted_errors import NoLiquidity
+
+try:
+client.create_order(order_type="market", ...)
+except NoLiquidity:
+# Fall back to a limit order at a price you'd accept
+client.create_order(order_type="limit", price=0.50, ...)
+```
+
+```typescript TypeScript
+import { NoLiquidity } from "pmxtjs";
+
+try {
+  await client.createOrder({ orderType: "market", ... });
+} catch (e) {
+  if (e instanceof NoLiquidity) {
+await client.createOrder({ orderType: "limit", price: 0.5, ... });
+  } else {
+throw e;
+  }
+}
+```
+</CodeGroup>
+
+#### Workaround warnings
+
+
+> **Warning:**
+**Use aggressive `slippage_pct` until the upstream economic validator tightens its `worst_price` checks.** Pragmatic defaults: `slippage_pct=30` for buys, `slippage_pct=99.9` for sells. Lower values frequently trip a precision check that has nothing to do with actual slippage. This will tighten once the validator ships its fix.
+
+
+> **Warning:**
+**`fetch_markets` returns venue-native IDs**, but `create_order` needs catalog UUIDs. If you see `OutcomeNotFound` despite having a valid-looking ID, you are almost certainly passing a venue-native ID to a hosted endpoint. See [Catalog UUID vs venue ID](https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id).
+
+
+#### Catching everything hosted
+
+If you only want to know "did the hosted layer reject this?", catch `HostedTradingError` (Python) or use `isHostedError(e)` (TS):
+
+<CodeGroup>
+```python Python
+from pmxt._hosted_errors import HostedTradingError
+
+try:
+client.create_order(...)
+except HostedTradingError as e:
+log.error("hosted trade failed", status=e.status, detail=e.detail)
+```
+
+```typescript TypeScript
+import { isHostedError } from "pmxtjs";
+
+try {
+  await client.createOrder({ ... });
+} catch (e) {
+  if (isHostedError(e)) {
+log.error("hosted trade failed", e);
+  } else {
+throw e;
+  }
+}
+```
+</CodeGroup>
+
+For the full error class reference, parent classes, and status codes, see [API Reference / Errors](https://pmxt.dev/docs/api-reference/errors).
+
+### Migrate to Hosted Trading
+
+Source: https://pmxt.dev/docs/guides/migrate-to-hosted-trading
+
+If you've been using PMXT in **venue-direct** mode — passing raw venue credentials to a local `pmxt-core` server — moving to hosted mode is mostly additive. The SDK surface is unchanged; the constructor takes new arguments; a few read methods change their data source. This guide enumerates every observable difference so you can audit your code before flipping the switch.
+
+This is a port of `sdks/python/MIGRATION.md` and `sdks/typescript/MIGRATION.md` with extra context. The original notes are tagged with the SDK version that introduced each change (`2.18.0` and later).
+
+#### Coming from Polymarket's official SDK
+
+If your starting point is `@polymarket/clob-client` (or `py-clob-client`) wired directly against `clob.polymarket.com`, the migration is **not** a 1:1 credential swap. PMXT's hosted trading replaces Polymarket's L2 auth and CTF-proxy custody model with a service-role API key plus an EIP-712 escrow contract on Polygon. This section enumerates what you discard, what you keep, and what changes shape.
+
+##### L2 API keys → `pmxt_api_key` + EOA private key
+
+Polymarket's L2 auth is a triple — `apiKey`, `apiSecret`, `passphrase` — derived from a one-time signature against the CLOB and used to HMAC every order. **None of that translates.** Hosted PMXT collapses authentication to two things:
+
+- A single **`pmxt_api_key`** (service-role, server-side only). One key, all users, all venues.
+- The user's **EVM private key** — same one you already use for Polymarket EIP-712 signing. PMXT just signs different typed data with it.
+
+| Polymarket | PMXT hosted |
+| ---------- | ----------- |
+| `apiKey` + `apiSecret` + `passphrase` (L2) | `pmxt_api_key` (server secret) |
+| `signer` private key (EOA) | `private_key` (same EOA) |
+| `funder` address (proxy or EOA) | `wallet_address` (EOA, not the proxy) |
+
+**Discard:** the L2 key derivation flow, the HMAC code path, any persistence of `apiSecret` / `passphrase` per user.
+**Keep:** the EVM signer key. It still signs every trade.
+
+##### signatureType / proxy wallets → PreFundedEscrow custody
+
+Polymarket's `signatureType` is a CLOB-side flag that tells the matching engine which custody shape to expect:
+
+- `signatureType=0` — EOA signs, EOA holds funds (rare in production).
+- `signatureType=1` — EOA signs, a **USDC proxy** ("magic wallet") holds funds and is the on-chain trader.
+- `signatureType=2` — EOA signs, a **Gnosis Safe proxy** holds funds.
+
+Hosted PMXT does not speak any of these. The hosted exchange signs EIP-712 against the **`PreFundedEscrow`** contract on Polygon (chainId 137). Settlement happens via `PreFundedEscrow.settleBuy` / `.settleSell`, not via Polymarket's `Exchange.fillOrder` against a CTF proxy. The escrow contract holds your USDC.e and the CTF tokens you accumulate.
+
+What this means concretely:
+
+- Your **EOA still signs**. Any EVM key (raw key, hardware wallet, AA signer) works.
+- The **proxy wallet model is replaced**, not augmented. PMXT does not read from or write to your `signatureType=1` USDC proxy.
+- The hot path is `EOA -> EIP-712(PreFundedEscrow) -> trade.pmxt.dev -> on-chain settlement`. No CLOB intermediary at the venue layer.
+
+If you have order-construction code that branches on `signatureType`, delete the branches. There is one shape.
+
+##### USDC.e vs USDC — same token, no swap needed
+
+Both Polymarket and PMXT settle in Polygon **USDC.e** (the bridged USDC), contract `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174`. This is **not** native USDC (`0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`). No token swap is required — the USDC.e sitting against your Polymarket proxy is the same asset PreFundedEscrow accepts. You just need to move it into the escrow contract (next section).
+
+If your treasury code holds native USDC instead of USDC.e, you'll need to bridge or swap before depositing. PMXT does not auto-convert.
+
+##### Existing CTF-proxy allowances do not carry over
+
+If you've previously approved USDC.e to your Polymarket CTF proxy (the standard `signatureType=1` setup), **that allowance is to the proxy address — not to PreFundedEscrow**. The hosted exchange cannot use it. You need a fresh ERC-20 approval from your EOA to `PreFundedEscrow`, then a deposit.
+
+Two-step migration, once per EOA:
+
+<CodeGroup>
+```python Python
+# 1. Approve USDC.e -> PreFundedEscrow (one-time, unbounded by default)
+tx = client.escrow.approve_tx("usdc")
+# sign + broadcast via your existing signer
+
+# 2. Deposit (per top-up)
+tx = client.escrow.deposit_tx(amount=500.0)
+# sign + broadcast
+```
+
+```typescript TypeScript
+// 1. Approve USDC.e -> PreFundedEscrow
+const approve = await client.escrow.approveTx("usdc");
+// sign + broadcast
+
+// 2. Deposit
+const deposit = await client.escrow.depositTx(500);
+// sign + broadcast
+```
+</CodeGroup>
+
+Your existing Polymarket-proxy USDC.e balance is untouched. Two clean options:
+
+1. **Withdraw via Polymarket's UI** back to your EOA, then deposit to PreFundedEscrow.
+2. **Leave it parked** in the Polymarket proxy and fund PMXT with fresh capital. Both stacks can coexist on the same EOA — they don't share custody.
+
+##### Catalog UUID translation for saved markets
+
+Polymarket-native identifiers (`conditionId`, `tokenId` / position ID) are not accepted by `trade.pmxt.dev`. The hosted trading API requires **catalog UUIDs**. If you have a saved universe of Polymarket markets in your database, reverse-resolve them before sending orders:
+
+```python
+router = pmxt.Router(pmxt_api_key="pmxt_live_...")
+
+# Reverse-resolve a Polymarket conditionId -> PMXT catalog UUID
+clusters = router.fetch_matched_market_clusters(
+venue="polymarket",
+venue_market_id="0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5",
+)
+catalog_market_id = clusters[0].market_id
+# Now usable: client.create_order(market_id=catalog_market_id, ...)
+```
+
+For batch resolution against a saved universe, use the SQL endpoint to join your existing IDs against `prediction_markets.markets.venue_market_id`. Full pattern in [Catalog UUID vs venue ID](https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id).
+
+#### TL;DR
+
+1. Get a `pmxt_api_key` from [pmxt.dev/dashboard](https://pmxt.dev/dashboard).
+2. Pass `pmxt_api_key`, `wallet_address`, `private_key` to the exchange constructor.
+3. Approve + deposit USDC into PreFundedEscrow once (`client.escrow.approve_tx`, `client.escrow.deposit_tx`).
+4. Audit `fetch_balance()` consumers — the source changed.
+5. Audit `Position` field consumers — four fields are now Optional.
+6. Catch the new `HostedTradingError` tree where you used to catch broad `Exception`.
+
+#### 1. Constructor — new arguments
+
+In venue-direct mode you'd construct a Polymarket client with a raw private key only. In hosted mode you also pass `pmxt_api_key` and an explicit `wallet_address`.
+
+<CodeGroup>
+```python Python
+# Before (venue-direct)
+client = pmxt.Polymarket(private_key="0xYourPrivateKey...")
+
+# After (hosted)
+client = pmxt.Polymarket(
+pmxt_api_key="pmxt_live_...",
+wallet_address="0xYourWallet...",
+private_key="0xYourPrivateKey...",
+)
+```
+
+```typescript TypeScript
+// Before (venue-direct)
+const client = new Polymarket({ privateKey: "0xYourPrivateKey..." });
+
+// After (hosted)
+const client = new Polymarket({
+  pmxtApiKey: "pmxt_live_...",
+  walletAddress: "0xYourWallet...",
+  privateKey: "0xYourPrivateKey...",
+});
+```
+</CodeGroup>
+
+The `wallet_address` argument is new in hosted mode and is **required** for any `client.escrow.*` call — the SDK uses it to scope all escrow operations to a single user. If you've been deriving the address from the private key implicitly, make it explicit.
+
+#### 2. Trust model — `pmxt_api_key` is a service-role credential
+
+`pmxt_api_key` is not app-scoped per-user auth. The key holder can:
+
+- Read any user's escrow data (balance, positions, trades) by passing a different `wallet_address`.
+- Forward signed orders for any wallet (the signature still gates the write).
+
+Writes are still gated by the user's EIP-712 signature against their own wallet — the key alone cannot move funds. Reads (`fetch_balance`, `fetch_positions`, etc.) are NOT gated by signature.
+
+**Treat `pmxt_api_key` as a backend secret.** Keep it on a server. Never ship it to a browser bundle. Never log it.
+
+If your previous architecture had end-user private keys on the server, hosted mode lets you flip that — keep `pmxt_api_key` on the server and push private keys to the client, where they're signed locally and never leave the device.
+
+#### 3. `fetch_balance` — semantic change
+
+The shape of the `Balance` object is unchanged, but the source is different.
+
+| Mode | Source |
+| ---- | ------ |
+| Venue-direct (`pmxt_api_key=None`) | Wallet's CLOB-proxy USDC balance at the venue |
+| Hosted (`pmxt_api_key` set) | Wallet's USDC balance in PMXT's PreFundedEscrow on Polygon |
+
+If your code relied on venue-direct semantics — for example, comparing the balance against the raw on-chain USDC.e balance — audit it. The hosted balance reflects **available trading capital in escrow**, not the wallet's total USDC.
+
+<CodeGroup>
+```python Python
+balance = client.fetch_balance()
+# Hosted: `free` is the deposit-side escrow balance available for trading
+# Venue-direct: `free` is the wallet's CLOB-proxy USDC balance
+```
+
+```typescript TypeScript
+const balance = await client.fetchBalance();
+// Hosted: `free` is the escrow balance
+// Venue-direct: `free` is the CLOB-proxy USDC balance
+```
+</CodeGroup>
+
+#### 4. `Position` fields now Optional
+
+Four fields on `Position` became Optional in 2.18.0. Venue-direct mode still populates them; hosted mode returns `None` / `undefined` when the server doesn't have the data yet.
+
+<CodeGroup>
+```python Python
+# Python: these are now Optional[...]
+position.outcome_label   # Optional[str]
+position.entry_price     # Optional[float]
+position.current_price   # Optional[float]
+position.unrealized_pnl  # Optional[float]
+
+# If your code does math on these, guard the None
+if position.current_price is not None:
+pnl = position.current_price * position.quantity
+```
+
+```typescript TypeScript
+// TypeScript: these are now `| undefined`
+position.outcomeLabel   // string | undefined
+position.entryPrice     // number | undefined
+position.currentPrice   // number | undefined
+position.unrealizedPnL  // number | undefined
+
+if (position.currentPrice !== undefined) {
+  const pnl = position.currentPrice * position.quantity;
+}
+```
+</CodeGroup>
+
+`market_id`, `outcome_id`, `quantity`, `side`, `notional` are still required and always populated.
+
+#### 5. New error tree
+
+Hosted mode introduces `HostedTradingError` and a suite of semantic-parent subclasses. The parents are the same classes used in venue-direct mode (`InsufficientFunds`, `InvalidOrder`, `AuthenticationError`, etc.), so existing `except`/`catch` clauses keep working.
+
+```python
+# Before: catch the venue-direct error
+try:
+client.create_order(...)
+except InsufficientFunds:
+...
+
+# After: same catch still works for hosted (InsufficientEscrowBalance extends InsufficientFunds)
+try:
+client.create_order(...)
+except InsufficientFunds:
+...
+```
+
+If you want hosted-specific handling, catch the leaf:
+
+```python
+from pmxt._hosted_errors import InsufficientEscrowBalance
+try:
+client.create_order(...)
+except InsufficientEscrowBalance as e:
+# Specifically the hosted-escrow shortfall
+...
+```
+
+See [Hosted errors](https://pmxt.dev/docs/guides/hosted-errors) for the full cookbook.
+
+#### 6. Escrow setup — new one-time step
+
+Before your first hosted trade, USDC has to be in the PreFundedEscrow contract.
+
+<CodeGroup>
+```python Python
+# Once per wallet, once per token
+tx = client.escrow.approve_tx("usdc")
+# sign and broadcast via your wallet library
+
+# Once per top-up
+tx = client.escrow.deposit_tx(amount=100.0)
+# sign and broadcast
+```
+
+```typescript TypeScript
+const approve = await client.escrow.approveTx("usdc");
+// sign + broadcast
+
+const deposit = await client.escrow.depositTx(100);
+// sign + broadcast
+```
+</CodeGroup>
+
+There is no equivalent in venue-direct mode — direct venue trading uses the wallet's native balance. See [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) for details.
+
+#### 7. Catalog UUIDs replace venue-native IDs in trading calls
+
+Venue-direct trading lets you pass venue-native IDs (Polymarket condition IDs, token IDs). Hosted trading requires **catalog UUIDs**. The simplest path: discover markets via the [Router](https://pmxt.dev/docs/router/overview) instead of via `client.fetch_markets`, since the Router returns UUIDs natively.
+
+See [Catalog UUID vs venue ID](https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id) for the reverse-resolution workaround if you already have venue-native IDs in your database.
+
+#### 8. Network surface
+
+Venue-direct mode talks to a local `pmxt-core` server, which talks to venue APIs directly. Hosted mode talks to `trade.pmxt.dev` and `api.pmxt.dev`. Make sure both are reachable from your runtime if you flip — corporate firewalls that allow only `api.pmxt.dev` will need `trade.pmxt.dev` added.
+
+#### Rollback plan
+
+If you migrate and need to roll back, drop the `pmxt_api_key` argument. The SDK falls back to venue-direct mode and routes to the local pmxt-core server. No other changes needed. You'll lose the escrow funds until you withdraw them via `client.escrow.withdraw_tx`, but the venue-native trading flow is unchanged.
+
+#### See also
+
+- [Trading quickstart](https://pmxt.dev/docs/trading-quickstart) — 60-second guided path.
+- [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) — deposit, withdraw, claim.
+- [Hosted errors](https://pmxt.dev/docs/guides/hosted-errors) — error class reference and recovery.
+- [Self-hosted](https://pmxt.dev/docs/guides/self-hosted) — when not to migrate.
+
+
+## Self-host
+
+### Self-hosted (Advanced)
+
+Source: https://pmxt.dev/docs/guides/self-hosted
+
+Self-hosted PMXT runs the open-source `pmxt-core` server on your machine. The SDK detects the absence of a `pmxt_api_key` and routes every request through `http://localhost:3847` instead of `trade.pmxt.dev`. Venue credentials stay on your machine; you talk to venue APIs directly.
+
+This is the **advanced escape hatch**. Most users should use [hosted mode](https://pmxt.dev/docs/concepts/hosted-trading). Read on if you have specific reasons to run local.
+
+#### When to choose self-hosted
+
+- **Sub-100ms latency.** Hosted trading adds a network hop. If you're running latency-sensitive arbitrage or market-making, the local server colocates the venue submission step.
+- **Raw venue credentials.** You want to use Polymarket L2 API keys, Kalshi RSA keys, Smarkets session cookies — credentials that hosted mode doesn't accept.
+- **Regulatory custody requirements.** You need to be the direct counterparty to the venue with no third-party intermediary in the custody path.
+- **Venues hosted mode doesn't trade yet.** Hosted writes are Polymarket + Opinion. Self-hosted writes work on every venue PMXT supports (Kalshi, Limitless, Smarkets, Probable, Myriad, Metaculus, etc.).
+- **OSS contribution.** You're developing or debugging `pmxt-core` itself.
+
+If none of these apply, [hosted](https://pmxt.dev/docs/concepts/hosted-trading) is simpler.
+
+#### 1. Install pmxt-core
+
+The SDK installs and supervises `pmxt-core` for you. You don't run a separate binary; the SDK spawns it as a child process on first use.
+
+<CodeGroup>
+```bash Python
+pip install pmxt
+```
+
+```bash TypeScript
+npm install pmxtjs
+```
+</CodeGroup>
+
+That's it — `pmxt-core` is bundled.
+
+#### 2. Construct without an API key
+
+Drop the `pmxt_api_key` argument. The SDK detects the absence and starts the local server.
+
+<CodeGroup>
+```python Python
+import pmxt
+
+# No pmxt_api_key → SDK spawns and supervises pmxt-core locally
+poly = pmxt.Polymarket()
+
+markets = poly.fetch_markets(query="election", limit=3)
+```
+
+```typescript TypeScript
+import { Polymarket } from "pmxtjs";
+
+// No pmxtApiKey → SDK spawns and supervises pmxt-core locally
+const poly = new Polymarket({});
+
+const markets = await poly.fetchMarkets({ query: "election", limit: 3 });
+```
+</CodeGroup>
+
+The first call blocks briefly while the local server warms up; subsequent calls reuse the process.
+
+#### 3. Manage the local server
+
+For lifecycle control (start, stop, restart, status, logs), use the `server` namespace. See [Server Management](https://pmxt.dev/docs/sdk/server) for the full reference.
+
+```python
+pmxt.server.start()       # idempotent
+pmxt.server.health()      # bool
+pmxt.server.status()      # structured snapshot
+pmxt.server.stop()
+pmxt.server.restart()
+pmxt.server.logs(20)
+```
+
+Most users never call these — creating an exchange instance auto-starts the server.
+
+#### 4. Per-venue raw credentials
+
+Self-hosted unlocks the full venue-credential surface. Pass credentials directly to the exchange constructor.
+
+##### Polymarket — EVM private key
+
+```python
+import pmxt
+
+poly = pmxt.Polymarket(private_key="0xYourPrivateKey...")
+
+order = poly.create_order(
+outcome=market.yes,
+side="buy",
+type="limit",
+price=0.42,
+amount=100,
+)
+```
+
+##### Kalshi — RSA key pair
+
+```python
+import pmxt
+
+kalshi = pmxt.Kalshi(
+api_key_id="...",
+private_key_pem="-----BEGIN RSA PRIVATE KEY-----\n...",
+)
+```
+
+##### Limitless / Probable / Opinion (self-hosted) — EVM private key
+
+```python
+limitless = pmxt.Limitless(private_key="0x...")
+probable  = pmxt.Probable(private_key="0x...")
+opinion   = pmxt.Opinion(private_key="0x...")
+```
+
+##### Smarkets — email + password
+
+```python
+smarkets = pmxt.Smarkets(email="you@example.com", password="...")
+```
+
+##### Baozi — Solana keypair
+
+```python
+baozi = pmxt.Baozi(private_key="<base58 secret key>")
+```
+
+See [Supported Venues](https://pmxt.dev/docs/concepts/venues) for the full credential matrix.
+
+
+> **Warning:**
+**Use a dedicated trading wallet** for any venue that requires a private key with full fund control (Polymarket, Limitless, Probable, Opinion, Baozi). Self-hosted keeps the key on your machine — but a compromised host still compromises the wallet. Limit balances accordingly.
+
+
+#### 5. Environment overrides
+
+| Variable | Effect |
+| -------- | ------ |
+| `PMXT_LOCAL_PORT=3847` | Override the local server port (default `3847`). |
+| `PMXT_ALWAYS_RESTART=1` | Force-restart the local server on every `ensure_server_running` call. Useful during development. |
+| `PMXT_BASE_URL` | Point the SDK at a custom server URL (advanced — defaults to `http://localhost:3847`). |
+
+See [API Reference / Configuration](https://pmxt.dev/docs/api-reference/configuration) for the full env-var matrix.
+
+#### 6. Running multiple exchanges
+
+A single pmxt-core process can serve every venue. Construct multiple exchange clients against the same server — they all share the local process.
+
+```python
+poly = pmxt.Polymarket(private_key="0x...")
+kalshi = pmxt.Kalshi(api_key_id="...", private_key_pem="...")
+# Both clients reuse the same pmxt-core process at http://localhost:3847
+```
+
+#### 7. Production deployment
+
+For production self-hosted, the SDK + bundled server is sufficient — there's no separate daemon to manage. If you want to run `pmxt-core` as a long-lived process with systemd or similar, see the [pmxt-core README](https://github.com/pmxt-dev/pmxt) for standalone server commands.
+
+#### What you give up vs hosted
+
+- **Cross-venue search via Router** — still works, but requires the hosted `pmxt_api_key` for the catalog. If you want Router without trading-hosted, construct a separate `Router` client with the API key alongside your local trading clients. See [Hosted vs self-hosted / mixing modes](https://pmxt.dev/docs/concepts/hosted-vs-self-hosted#mixing-modes).
+- **Hosted error tree** — you'll get the parent classes (`InvalidOrder`, `InsufficientFunds`) but not the hosted leaves. Catching parents keeps your code portable.
+- **PreFundedEscrow custody** — irrelevant in self-hosted; you custody at the venue.
+
+#### Next
+
+- [Server Management](https://pmxt.dev/docs/sdk/server) — start/stop/status/logs.
+- [Hosted vs self-hosted](https://pmxt.dev/docs/concepts/hosted-vs-self-hosted) — full comparison.
+- [Supported Venues](https://pmxt.dev/docs/concepts/venues) — what each venue accepts.
 
 ### Server Management
 
 Source: https://pmxt.dev/docs/sdk/server
+
+> **Note:**
+This page covers the **self-hosted** local server. If you're using a
+`pmxt_api_key`, you can ignore this page — the SDK talks to
+`api.pmxt.dev` / `trade.pmxt.dev` directly and never spawns a local
+process. See [Hosted trading](https://pmxt.dev/docs/concepts/hosted-trading) for the default
+path, or [Self-hosted](https://pmxt.dev/docs/guides/self-hosted) for when running local is
+the right choice.
+
 
 The PMXT SDKs manage a local server automatically. When you
 create an exchange instance without a hosted API key, the SDK spawns a
@@ -1562,7 +3540,7 @@ curl "https://api.pmxt.dev/v0/events?query=election&limit=2" \
 {
   "data": [
 {
-  "eventId": "e344d660-5e22-411f-b516-ea37a0d9c3cb",
+  "id": "e344d660-5e22-411f-b516-ea37a0d9c3cb",
   "title": "2028 US Presidential Election",
   "volume24h": 12345678.9,
   "markets": [
@@ -3070,6 +5048,12 @@ curl "https://api.pmxt.dev/api/polymarket/fetchMarket?slug=will-gavin-newsom-win
 </CodeGroup>
 
 
+## Trading
+
+
+## Orders & Positions
+
+
 ## Cross Exchange
 
 ### Fetch matched event clusters
@@ -3464,7 +5448,7 @@ Batch variant of {@link fetchOrderBook}. Fetches order books for multiple outcom
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
+exchange = pmxt.Router(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_order_books()
@@ -3472,10 +5456,10 @@ result = exchange.fetch_order_books()
 
 **TypeScript:**
 ```typescript
-import { Kalshi } from "pmxtjs";
+import { Router } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
+const exchange = new Router({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchOrderBooks();
@@ -3502,7 +5486,7 @@ Fetch raw trade history for a specific outcome.
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
+exchange = pmxt.Router(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_trades(
@@ -3515,10 +5499,10 @@ result = exchange.fetch_trades(
 
 **TypeScript:**
 ```typescript
-import { Kalshi } from "pmxtjs";
+import { Router } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
+const exchange = new Router({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchTrades({
@@ -3605,520 +5589,6 @@ const result = await exchange.getExecutionPriceDetailed({
   side: "buy",
   amount: 10,
 });
-```
-
-
-
-## Trading
-
-### Create Order
-
-`POST /api/{exchange}/createOrder`
-
-Place a new order on the exchange.
-
-**Request body** (`args[0]`):
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `marketId` | string | Yes | The market to trade on. |
-| `outcomeId` | string | Yes | The outcome to trade. |
-| `side` | `buy` \| `sell` | Yes | Order side: buy or sell. |
-| `type` | `market` \| `limit` | Yes | Order type: market (execute immediately) or limit (resting at a price). |
-| `amount` | number | Yes | Size of the order in contracts/shares. |
-| `price` | number | No | Required for limit orders |
-| `fee` | number | No | Optional fee rate (e.g., 1000 for 0.1%) |
-| `tickSize` | number | No | Optional override for Limitless/Polymarket |
-| `negRisk` | boolean | No | Optional override to skip neg-risk lookup (Polymarket) |
-| `onBehalfOf` | number | No | Limitless delegated signing: profile ID to trade on behalf of |
-
-**Response:** `{ success: true, data: ... }`
-
-**Python:**
-```python
-import pmxt
-
-# Runs locally — never proxied through PMXT servers
-exchange = pmxt.Kalshi(
-    api_key="YOUR_API_KEY",
-    private_key="YOUR_PRIVATE_KEY",
-)
-result = exchange.create_order(
-    market_id="12345",
-    outcome_id="67890",
-    side="buy",
-    type="market",
-    amount=10,
-    price=0.55,
-    fee=1,
-    tick_size=1,
-    neg_risk=True,
-    on_behalf_of=1,
-)
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// Runs locally — never proxied through PMXT servers
-const exchange = new Kalshi({
-  apiKey: "YOUR_API_KEY",
-  privateKey: "YOUR_PRIVATE_KEY",
-});
-const result = await exchange.createOrder({
-  marketId: "12345",
-  outcomeId: "67890",
-  side: "buy",
-  type: "market",
-  amount: 10,
-  price: 0.55,
-  fee: 1,
-  tickSize: 1,
-  negRisk: true,
-  onBehalfOf: 1,
-});
-```
-
-
-### Build Order
-
-`POST /api/{exchange}/buildOrder`
-
-Build an order payload without submitting it to the exchange. Returns the exchange-native signed order or request body for inspection, forwarding through a middleware layer, or deferred submission via submitOrder().
-
-**Request body** (`args[0]`):
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `marketId` | string | Yes | The market to trade on. |
-| `outcomeId` | string | Yes | The outcome to trade. |
-| `side` | `buy` \| `sell` | Yes | Order side: buy or sell. |
-| `type` | `market` \| `limit` | Yes | Order type: market (execute immediately) or limit (resting at a price). |
-| `amount` | number | Yes | Size of the order in contracts/shares. |
-| `price` | number | No | Required for limit orders |
-| `fee` | number | No | Optional fee rate (e.g., 1000 for 0.1%) |
-| `tickSize` | number | No | Optional override for Limitless/Polymarket |
-| `negRisk` | boolean | No | Optional override to skip neg-risk lookup (Polymarket) |
-| `onBehalfOf` | number | No | Limitless delegated signing: profile ID to trade on behalf of |
-
-**Response:** `{ success: true, data: ... }`
-
-**Python:**
-```python
-import pmxt
-
-# Runs locally — never proxied through PMXT servers
-exchange = pmxt.Kalshi(
-    api_key="YOUR_API_KEY",
-    private_key="YOUR_PRIVATE_KEY",
-)
-result = exchange.build_order(
-    market_id="12345",
-    outcome_id="67890",
-    side="buy",
-    type="market",
-    amount=10,
-    price=0.55,
-    fee=1,
-    tick_size=1,
-    neg_risk=True,
-    on_behalf_of=1,
-)
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// Runs locally — never proxied through PMXT servers
-const exchange = new Kalshi({
-  apiKey: "YOUR_API_KEY",
-  privateKey: "YOUR_PRIVATE_KEY",
-});
-const result = await exchange.buildOrder({
-  marketId: "12345",
-  outcomeId: "67890",
-  side: "buy",
-  type: "market",
-  amount: 10,
-  price: 0.55,
-  fee: 1,
-  tickSize: 1,
-  negRisk: true,
-  onBehalfOf: 1,
-});
-```
-
-
-### Submit Order
-
-`POST /api/{exchange}/submitOrder`
-
-Submit a pre-built order returned by buildOrder().
-
-**Request body** (`args[0]`):
-
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `exchange` | string | Yes | The exchange name this order was built for. |
-| `params` | object | Yes | The original params used to build this order. |
-| `signedOrder` | object | No | For CLOB exchanges (Polymarket): the EIP-712 signed order ready to POST to the exchange's order endpoint. |
-| `tx` | object | No | For on-chain AMM exchanges: the EVM transaction payload. Reserved for future exchanges; no current exchange populates this. |
-| `raw` | object | Yes | The raw, exchange-native payload. Always present. |
-
-**Response:** `{ success: true, data: ... }`
-
-**Python:**
-```python
-import pmxt
-
-# Runs locally — never proxied through PMXT servers
-exchange = pmxt.Kalshi(
-    api_key="YOUR_API_KEY",
-    private_key="YOUR_PRIVATE_KEY",
-)
-built = exchange.build_order(market_id="12345", side="buy", type="limit", amount=10, price=0.55)
-result = exchange.submit_order(built)
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// Runs locally — never proxied through PMXT servers
-const exchange = new Kalshi({
-  apiKey: "YOUR_API_KEY",
-  privateKey: "YOUR_PRIVATE_KEY",
-});
-const built = await exchange.buildOrder({ marketId: "12345", side: "buy", type: "limit", amount: 10, price: 0.55 });
-const result = await exchange.submitOrder(built);
-```
-
-
-### Cancel Order
-
-`POST /api/{exchange}/cancelOrder`
-
-Cancel an existing open order.
-
-**Response:** `{ success: true, data: ... }`
-
-**Python:**
-```python
-import pmxt
-
-# Runs locally — never proxied through PMXT servers
-exchange = pmxt.Kalshi(
-    api_key="YOUR_API_KEY",
-    private_key="YOUR_PRIVATE_KEY",
-)
-result = exchange.cancel_order(order_id="ord-001")
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// Runs locally — never proxied through PMXT servers
-const exchange = new Kalshi({
-  apiKey: "YOUR_API_KEY",
-  privateKey: "YOUR_PRIVATE_KEY",
-});
-const result = await exchange.cancelOrder({ orderId: "ord-001" });
-```
-
-
-
-## Orders & Positions
-
-### Fetch Order
-
-`GET /api/{exchange}/fetchOrder`
-
-Fetch a specific order by ID.
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `orderId` | string | Yes |  |
-
-**Response:** `{ success: true, data: ... }`
-
-**Python:**
-```python
-import pmxt
-
-# API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
-    pmxt_api_key="YOUR_PMXT_API_KEY",
-)
-result = exchange.fetch_order(order_id="ord-001")
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
-  pmxtApiKey: "YOUR_PMXT_API_KEY",
-});
-const result = await exchange.fetchOrder({ orderId: "ord-001" });
-```
-
-
-### Fetch Open Orders
-
-`GET /api/{exchange}/fetchOpenOrders`
-
-Fetch all open orders, optionally filtered by market.
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `marketId` | string | No |  |
-
-**Response:** `{ success: true, data: Order[] }`
-
-**Python:**
-```python
-import pmxt
-
-# API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
-    pmxt_api_key="YOUR_PMXT_API_KEY",
-)
-result = exchange.fetch_open_orders(market_id="12345")
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
-  pmxtApiKey: "YOUR_PMXT_API_KEY",
-});
-const result = await exchange.fetchOpenOrders({ marketId: "12345" });
-```
-
-
-### Fetch My Trades
-
-`GET /api/{exchange}/fetchMyTrades`
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `outcomeId` | string | No | filter to specific outcome/ticker |
-| `marketId` | string | No | filter to specific market |
-| `since` | string | No | Only return records after this date |
-| `until` | string | No | Only return records before this date |
-| `limit` | number | No | Maximum number of results to return |
-| `cursor` | string | No | for Kalshi cursor pagination |
-
-**Response:** `{ success: true, data: UserTrade[] }`
-
-**Python:**
-```python
-import pmxt
-
-# API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
-    pmxt_api_key="YOUR_PMXT_API_KEY",
-)
-result = exchange.fetch_my_trades(
-    outcome_id="67890",
-    market_id="12345",
-    since="value",
-    until="value",
-    limit=10,
-    cursor="abc123",
-)
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
-  pmxtApiKey: "YOUR_PMXT_API_KEY",
-});
-const result = await exchange.fetchMyTrades({
-  outcomeId: "67890",
-  marketId: "12345",
-  since: "value",
-  until: "value",
-  limit: 10,
-  cursor: "abc123",
-});
-```
-
-
-### Fetch Closed Orders
-
-`GET /api/{exchange}/fetchClosedOrders`
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `marketId` | string | No | required for Limitless (slug) |
-| `since` | string | No | Only return records after this date |
-| `until` | string | No | Only return records before this date |
-| `limit` | number | No | Maximum number of results to return |
-| `cursor` | string | No | Opaque pagination cursor from a previous response |
-
-**Response:** `{ success: true, data: Order[] }`
-
-**Python:**
-```python
-import pmxt
-
-# API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
-    pmxt_api_key="YOUR_PMXT_API_KEY",
-)
-result = exchange.fetch_closed_orders(
-    market_id="12345",
-    since="value",
-    until="value",
-    limit=10,
-    cursor="abc123",
-)
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
-  pmxtApiKey: "YOUR_PMXT_API_KEY",
-});
-const result = await exchange.fetchClosedOrders({
-  marketId: "12345",
-  since: "value",
-  until: "value",
-  limit: 10,
-  cursor: "abc123",
-});
-```
-
-
-### Fetch All Orders
-
-`GET /api/{exchange}/fetchAllOrders`
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `marketId` | string | No | required for Limitless (slug) |
-| `since` | string | No | Only return records after this date |
-| `until` | string | No | Only return records before this date |
-| `limit` | number | No | Maximum number of results to return |
-| `cursor` | string | No | Opaque pagination cursor from a previous response |
-
-**Response:** `{ success: true, data: Order[] }`
-
-**Python:**
-```python
-import pmxt
-
-# API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
-    pmxt_api_key="YOUR_PMXT_API_KEY",
-)
-result = exchange.fetch_all_orders(
-    market_id="12345",
-    since="value",
-    until="value",
-    limit=10,
-    cursor="abc123",
-)
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
-  pmxtApiKey: "YOUR_PMXT_API_KEY",
-});
-const result = await exchange.fetchAllOrders({
-  marketId: "12345",
-  since: "value",
-  until: "value",
-  limit: 10,
-  cursor: "abc123",
-});
-```
-
-
-### Fetch Positions
-
-`GET /api/{exchange}/fetchPositions`
-
-Fetch current user positions across all markets.
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `address` | string | No |  |
-
-**Response:** `{ success: true, data: Position[] }`
-
-**Python:**
-```python
-import pmxt
-
-# API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
-    pmxt_api_key="YOUR_PMXT_API_KEY",
-)
-result = exchange.fetch_positions(address="0xabc...")
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
-  pmxtApiKey: "YOUR_PMXT_API_KEY",
-});
-const result = await exchange.fetchPositions({ address: "0xabc..." });
-```
-
-
-### Fetch Balance
-
-`GET /api/{exchange}/fetchBalance`
-
-Fetch account balances.
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `address` | string | No |  |
-
-**Response:** `{ success: true, data: Balance[] }`
-
-**Python:**
-```python
-import pmxt
-
-# API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
-    pmxt_api_key="YOUR_PMXT_API_KEY",
-)
-result = exchange.fetch_balance(address="0xabc...")
-```
-
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
-  pmxtApiKey: "YOUR_PMXT_API_KEY",
-});
-const result = await exchange.fetchBalance({ address: "0xabc..." });
 ```
 
 

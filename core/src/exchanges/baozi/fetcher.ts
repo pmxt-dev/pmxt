@@ -158,7 +158,8 @@ export class BaoziFetcher implements IExchangeFetcher<BaoziRawMarket, BaoziRawMa
             }
 
             return null;
-        } catch {
+        } catch (err) {
+            logger.warn('BaoziFetcher: fetchRawSingleMarket failed', { pubkey, error: String(err) });
             return null;
         }
     }

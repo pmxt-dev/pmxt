@@ -11,14 +11,25 @@ GitHub: https://github.com/pmxt-dev/pmxt
 
 - [Introduction](https://pmxt.dev/docs/introduction): One API for every prediction market. Unified data, cross-venue search, and trading.
 - [Quickstart](https://pmxt.dev/docs/quickstart): API key to working code in 30 seconds.
+- [Trading Quickstart](https://pmxt.dev/docs/trading-quickstart): Place your first hosted trade in 60 seconds — API key, escrow deposit, market order.
 - [Authentication](https://pmxt.dev/docs/authentication): API keys, SDK setup, and venue credentials.
 - [MCP Server](https://pmxt.dev/docs/mcp): Give AI assistants access to prediction markets via the Model Context Protocol.
-- [Security & Credential Handling](https://pmxt.dev/docs/security): How PMXT handles your venue credentials, what risks to understand, and how to protect yourself.
+- [Security & Credential Handling](https://pmxt.dev/docs/security): How PMXT handles credentials in hosted vs self-hosted modes, what risks to understand, and how to protect yourself.
 - [Rate Limits](https://pmxt.dev/docs/rate-limits): How much traffic your API key gives you.
 - [SQL](https://pmxt.dev/docs/sql): Query raw tick-level orderbook history with SQL.
+- [Prediction Markets 101](https://pmxt.dev/docs/concepts/prediction-markets-101): What a prediction market is, what an outcome is, and what 'price' means here.
 - [Unified Schema](https://pmxt.dev/docs/concepts/unified-schema): One shape for events, markets, and outcomes — across every venue.
 - [Catalog vs Live](https://pmxt.dev/docs/concepts/catalog-vs-live): Reads from Postgres, writes to the venue. How the hosted backend chooses.
 - [Supported Venues](https://pmxt.dev/docs/concepts/venues): Every venue PMXT currently speaks.
+- [Hosted Trading](https://pmxt.dev/docs/concepts/hosted-trading): The hosted-default execution path — how PMXT routes orders, why funds sit in the non-custodial PreFundedEscrow, and when to choose self-host instead.
+- [Hosted Custody Model](https://pmxt.dev/docs/concepts/hosted-custody): The non-custodial PreFundedEscrow contract, admin model, audit status, and how to get your USDC out without PMXT's server.
+- [Hosted vs Self-hosted](https://pmxt.dev/docs/concepts/hosted-vs-self-hosted): One-page comparison of the two PMXT execution paths.
+- [Catalog UUID vs Venue ID](https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id): Two ways to identify a market. The hosted trading API accepts either — here's when each matters.
+- [Escrow Lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle): Deposit, trade, withdraw — how USDC moves through PMXT's non-custodial PreFundedEscrow.
+- [Signing Orders](https://pmxt.dev/docs/guides/signing): EIP-712 typed-data signing for hosted trading — what the SDK does, what the protocol looks like, and how to bring your own signer.
+- [Handling Hosted Errors](https://pmxt.dev/docs/guides/hosted-errors): Every common hosted-trading error, when it fires, and how to recover.
+- [Migrate to Hosted Trading](https://pmxt.dev/docs/guides/migrate-to-hosted-trading): Move existing pmxt / pmxtjs code from venue-direct to hosted-mode trading.
+- [Self-hosted (Advanced)](https://pmxt.dev/docs/guides/self-hosted): Run pmxt-core on your own machine when hosted mode isn't the right fit.
 - [Server Management](https://pmxt.dev/docs/sdk/server): Start, stop, restart, and inspect the PMXT local server from your SDK code.
 - [What is the Router?](https://pmxt.dev/docs/router/overview): One API key. Every prediction market. Cross-venue search, matching, and price comparison.
 - [Search Events](https://pmxt.dev/docs/router/events): Search events across every venue in a single query.
@@ -44,17 +55,6 @@ GitHub: https://github.com/pmxt-dev/pmxt
 - [Fetch Trades](https://pmxt.dev/docs/api-reference/fetchTrades): Fetch raw trade history for a specific outcome.
 - [Get Execution Price](https://pmxt.dev/docs/api-reference/getExecutionPrice): Calculate the volume-weighted average execution price for a given order size. Returns 0 if the order cannot be fully filled.
 - [Get Execution Price Detailed](https://pmxt.dev/docs/api-reference/getExecutionPriceDetailed): Calculate detailed execution price information including partial fill data.
-- [Create Order](https://pmxt.dev/docs/api-reference/createOrder): Place a new order on the exchange.
-- [Build Order](https://pmxt.dev/docs/api-reference/buildOrder): Build an order payload without submitting it to the exchange. Returns the exchange-native signed order or request body for inspection, forwarding through a middleware layer, or deferred submission via submitOrder().
-- [Submit Order](https://pmxt.dev/docs/api-reference/submitOrder): Submit a pre-built order returned by buildOrder().
-- [Cancel Order](https://pmxt.dev/docs/api-reference/cancelOrder): Cancel an existing open order.
-- [Fetch Order](https://pmxt.dev/docs/api-reference/fetchOrder): Fetch a specific order by ID.
-- [Fetch Open Orders](https://pmxt.dev/docs/api-reference/fetchOpenOrders): Fetch all open orders, optionally filtered by market.
-- [Fetch My Trades](https://pmxt.dev/docs/api-reference/fetchMyTrades)
-- [Fetch Closed Orders](https://pmxt.dev/docs/api-reference/fetchClosedOrders)
-- [Fetch All Orders](https://pmxt.dev/docs/api-reference/fetchAllOrders)
-- [Fetch Positions](https://pmxt.dev/docs/api-reference/fetchPositions): Fetch current user positions across all markets.
-- [Fetch Balance](https://pmxt.dev/docs/api-reference/fetchBalance): Fetch account balances.
 - [WebSocket Overview](https://pmxt.dev/docs/api-reference/websocket): Real-time orderbook and trade streaming via WebSocket
 - [watchAllOrderBooks](https://pmxt.dev/docs/api-reference/watch-all-order-books): Stream live orderbook updates across one venue or all venues via WebSocket
 - [watchOrderBook](https://pmxt.dev/docs/api-reference/watch-order-book): Stream real-time orderbook updates for a single outcome via WebSocket

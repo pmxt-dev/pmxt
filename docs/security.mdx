@@ -1,30 +1,55 @@
 ---
 title: Security & Credential Handling
-description: "How PMXT handles your venue credentials, what risks to understand, and how to protect yourself."
+description: "How PMXT handles credentials in hosted vs self-hosted modes, what risks to understand, and how to protect yourself."
 ---
 
-## How credentials flow
+PMXT has two execution modes, and they have **different credential surfaces**. Most of the confusion about "does my key touch PMXT's server" comes from mixing them up. This page is scoped explicitly to each mode.
 
-When you make a trading call through the hosted API, your venue credentials
-follow this path:
+| Mode | What you give PMXT | What touches PMXT's server | Custody |
+| ---- | ------------------ | -------------------------- | ------- |
+| [**Hosted**](/concepts/hosted-trading) (default) | An EIP-712 signature per order — **never your private key** | Catalog UUIDs, signatures, public wallet address | USDC in the on-chain [`PreFundedEscrow`](/concepts/hosted-custody) you control via the timelock |
+| [**Self-hosted**](/guides/self-hosted) | Raw venue credentials — given to a PMXT process **you run** on your machine | Nothing — PMXT's cloud is not in the loop | Your venue account / wallet, directly |
+
+If you're picking one, hosted is the default for almost everyone. Self-hosted is for users who need raw venue credentials (Polymarket L2 API keys, Kalshi RSA, etc.), sub-100ms latency, or regulatory custody constraints.
+
+## Hosted mode: how credentials flow
+
+In hosted mode, **your private key never leaves your process.** PMXT's server sees signatures, never the key that produced them.
 
 ```
-Your app  ──HTTPS──>  api.pmxt.dev  ──signs locally──>  venue API
-                      (TLS terminates)   (in memory)       (HTTPS)
+Your app  ──HTTPS──>  trade.pmxt.dev  ──submits──>  venue API
+   │
+   └── signs EIP-712 locally with your private key (key never sent)
 ```
 
-1. Your credentials travel **encrypted over TLS** to our Cloud Run container.
-2. pmxt-core's `sign()` method runs **inside the container** — it signs the
-   request using your key and sends only the **signature** to the venue.
-3. Your credentials are **garbage collected** after the request completes.
+1. The SDK calls `POST /v0/trade/build-order` with catalog UUIDs and parameters. No key, no signature yet.
+2. The server returns an unsigned EIP-712 typed-data payload bound to the Polygon [`PreFundedEscrow`](/concepts/hosted-custody) domain.
+3. The SDK signs the payload **locally**, in your process, with your private key.
+4. The SDK calls `POST /v0/trade/submit-order` with the signature. The server forwards the signed order to the venue.
 
-**We never store, log, cache, or persist your venue credentials.** They exist
-in process memory only for the duration of the request.
+What PMXT's server receives on the wire: catalog UUIDs, your public wallet address, and the signature. **Not the private key.** Even if PMXT's server were fully compromised, an attacker could not extract your key from a signature.
 
-## What venues require
+Funds custody: USDC sits in the on-chain `PreFundedEscrow`. Withdrawals are timelocked and user-only — PMXT's operator key cannot move USDC without a per-order EIP-712 signature from you. See [Hosted Custody Model](/concepts/hosted-custody) for the deployed addresses, the full admin model, and the raw contract calls that get your USDC out without PMXT's server.
 
-Not all venues are equal. Some accept scoped API keys; others require raw
-wallet private keys with full fund control.
+The on-wire authorization to call `trade.pmxt.dev` is the `pmxt_api_key`. The key alone cannot move funds; it can only forward signed orders and read public position data. Keep it server-side, never in a browser bundle.
+
+## Self-hosted mode: how credentials flow
+
+In self-hosted mode, you run `pmxt-core` as a local sidecar on your own machine. The SDK talks to your local sidecar; the sidecar talks directly to the venue. **PMXT's cloud is not in the request path.**
+
+```
+Your app  ──localhost──>  pmxt-core (your machine)  ──HTTPS──>  venue API
+                          ▲
+                          └── holds venue credentials in process memory
+```
+
+Because the sidecar runs on your host, the venue credentials you pass it stay on that host's RAM for the duration of the request. They are **garbage collected** after the call returns; the sidecar does not persist, log, or cache them. But "in process memory" here means **your process, on your machine** — not PMXT's cloud. This is the part that has been confusing: the ephemeral-memory claim applies to whichever process holds the venue credential, and in self-hosted mode that process is yours.
+
+For on-chain venues, "venue credential" means a raw private key — Polymarket, Limitless, Probable, Opinion all sign their own transactions and there is no scoped API-key alternative at the protocol layer. If you don't want any process besides your own holding a private key, self-hosted is the mode for you.
+
+## What each venue requires
+
+Same table for both modes — the credential type is a property of the venue, not of PMXT:
 
 | Venue | Credential type | Controls funds? |
 | ------------- | --------------------------------- | --------------- |
@@ -37,66 +62,43 @@ wallet private keys with full fund control.
 | Smarkets | Email + password (session-scoped) | No |
 | Myriad | API key (read-scoped) | No |
 
-For on-chain venues (Polymarket, Limitless, Probable, Opinion, Baozi), there
-is no "scoped API key" option — the protocol requires a private key to sign
-transactions. This is the same for every trading bot, aggregator, and SDK
-that interacts with these venues.
+The difference between modes is **where that credential lives**:
+
+- **Hosted (Polymarket, Opinion):** PMXT never sees the venue private key. You sign EIP-712 orders locally against the Polygon `PreFundedEscrow` domain; PMXT's operator key submits the resulting transactions on Polygon (and BSC for Opinion's cross-chain leg) using its **own** key for gas. Funds are constrained by the contract — see [Hosted Custody Model](/concepts/hosted-custody).
+- **Self-hosted (any venue):** the venue credential lives on your machine, in your `pmxt-core` process. PMXT's cloud is not involved.
+
+Hosted mode does not currently support every venue (see [Hosted trading](/concepts/hosted-trading#whats-supported-today)). For unsupported venues, self-hosted is the only path and you provide the venue's raw credential to your local sidecar.
 
 ## Recommendations
 
 <Warning>
-**Use a dedicated trading wallet.** Do not use your primary wallet or a
-wallet holding funds beyond what you intend to trade. Create a separate
-wallet, fund it with only what you need, and use that wallet's private key
-with PMXT.
+**Use a dedicated trading wallet.** Do not use your primary wallet or one holding funds beyond what you intend to trade. Create a separate wallet, fund only what you need, and use that wallet's private key with PMXT — for signing EIP-712 in hosted mode or as a venue credential in self-hosted mode.
 </Warning>
 
-<Warning>
-**For maximum security, run pmxt locally.** The hosted API exists for
-convenience. If you are not comfortable sending your private key to a
-third-party server — even over HTTPS — you can run pmxt-core locally and
-retain full custody of your credentials. They will never leave your machine.
+<Note>
+**Pick hosted unless you have a specific reason not to.** Hosted gives you on-chain custody you control via the timelock, and PMXT's server never sees a private key. Self-host when you need raw venue credentials, sub-100ms latency, or have regulatory custody requirements.
 
 ```bash
-npm install pmxt-core
+npm install pmxtjs
 # or
 pip install pmxt
 ```
-
-See the [quickstart](/quickstart) for local setup.
-</Warning>
+</Note>
 
 ### Best practices
 
-- **Rotate credentials regularly.** If a venue supports key rotation (Kalshi,
-  Polymarket L2 API keys), rotate on a schedule.
-- **Monitor your positions.** Set up alerts on your venue accounts for
-  unexpected trades or withdrawals.
-- **Limit wallet balances.** Keep only active trading capital in the wallet
-  you use with PMXT.
-- **Revoke unused PMXT API keys.** If you stop using the hosted API, revoke
-  your key from the [dashboard](https://pmxt.dev/dashboard) so it cannot be
-  used to make calls on your behalf.
+- **Rotate credentials regularly.** If a venue supports key rotation (Kalshi, Polymarket L2 API keys), rotate on a schedule.
+- **Monitor your positions.** Set up alerts on your venue accounts for unexpected trades or withdrawals.
+- **Limit wallet balances.** Keep only active trading capital in the wallet you use with PMXT.
+- **Revoke unused PMXT API keys.** If you stop using hosted, revoke your key from the [dashboard](https://pmxt.dev/dashboard) so it cannot be used to make calls on your behalf. (Self-hosted does not need a `pmxt_api_key`.)
 
 ## Disclaimer
 
-**PMXT is provided "as is" without warranty of any kind.** By using the hosted
-API with venue credentials that control funds, you acknowledge and accept the
-following:
+**PMXT is provided "as is" without warranty of any kind.** By using PMXT in either mode, you acknowledge and accept the following:
 
-- **You are solely responsible for the security of your credentials.** PMXT
-  processes your credentials ephemerally and does not store them, but you are
-  choosing to transmit them to a third-party service.
-- **PMXT is not responsible for any lost, stolen, or mismanaged funds.**
-  This includes but is not limited to losses arising from unauthorized
-  trades, venue API changes, software bugs, service outages, or security
-  incidents.
-- **On-chain transactions are irreversible.** Unlike traditional financial
-  systems, blockchain transactions cannot be reversed or charged back.
-  Funds sent or traded through on-chain venues are final.
-- **You should only risk what you can afford to lose.** Prediction markets
-  carry inherent financial risk independent of the software used to access
-  them.
+- **You are responsible for the security of your credentials.** In hosted mode, your private key never reaches PMXT, but your `pmxt_api_key` and your signing wallet are still yours to protect. In self-hosted mode, the entire venue credential surface is on your machine and on you.
+- **PMXT is not responsible for any lost, stolen, or mismanaged funds.** This includes but is not limited to losses from unauthorized trades, venue API changes, software bugs, service outages, smart-contract bugs in the unaudited `PreFundedEscrow` (see [Hosted Custody Model](/concepts/hosted-custody#audit-status)), or security incidents.
+- **On-chain transactions are irreversible.** Blockchain transactions cannot be reversed or charged back. Funds sent or traded through on-chain venues are final.
+- **You should only risk what you can afford to lose.** Prediction markets carry inherent financial risk independent of the software used to access them.
 
-For users who require full custody and zero third-party trust, we strongly
-recommend the [local pmxt installation](/quickstart) over the hosted API.
+For users who require full custody and zero third-party trust, [self-hosted](/guides/self-hosted) is the right mode.

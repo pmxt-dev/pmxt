@@ -11,7 +11,7 @@ interface QueuedPromise<T> {
 export interface ProbableWebSocketConfig {
     /** WebSocket URL (default: wss://ws.probable.markets/public/api/v1) */
     wsUrl?: string;
-    /** Base URL for the CLOB client (default: https://api.probable.markets/public/api/v1) */
+    /** Base URL for the CLOB client (default: https://market-api.probable.markets/public/api/v1) */
     baseUrl?: string;
     /** Chain ID (default: 56 for BSC mainnet) */
     chainId?: number;
@@ -40,7 +40,7 @@ export class ProbableWebSocket {
 
         const chainId = this.config.chainId || parseInt(process.env.PROBABLE_CHAIN_ID || String(PROBABLE_CHAIN_ID), 10);
         const wsUrl = this.config.wsUrl || process.env.PROBABLE_WS_URL || 'wss://ws.probable.markets/public/api/v1';
-        const baseUrl = this.config.baseUrl || process.env.PROBABLE_BASE_URL || 'https://api.probable.markets/public/api/v1';
+        const baseUrl = this.config.baseUrl || process.env.PROBABLE_BASE_URL || 'https://market-api.probable.markets/public/api/v1';
 
         // Dynamically import @prob/clob using eval to bypass TS compilation to require()
         // which forces native import() usage, resolving ESM/CJS issues

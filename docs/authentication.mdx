@@ -56,9 +56,38 @@ Explicit argument takes precedence over the environment variable.
 
 ## Venue credentials
 
-Your PMXT API key authenticates you to **PMXT**. Venue credentials
-(Polymarket private key, Kalshi API key, etc.) authenticate you to the
-**venue** and are passed in the request body for calls that need them:
+### Hosted writes (recommended)
+
+In hosted mode, trade writes use **PMXT's PreFundedEscrow custody** plus a
+locally-signed EIP-712 payload. You pass your `pmxt_api_key`, the wallet
+address you trade from, and a private key used only for local signing —
+the private key never leaves your machine, and PMXT custodies USDC in
+the escrow contract on your behalf.
+
+```python
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="pmxt_live_...",
+    wallet_address="0xYourWallet...",
+    private_key="0xYourPrivateKey...",
+)
+
+# One-time: approve + deposit USDC into PreFundedEscrow
+deposit_tx = client.escrow.deposit_tx(amount=10.0)
+# (sign + broadcast deposit_tx with your wallet library)
+```
+
+See [Trading quickstart](/trading-quickstart) for the full 60-second flow
+and [Escrow lifecycle](/guides/escrow-lifecycle) for the approve / deposit /
+withdraw mechanics. Hosted writes today: Polymarket and Opinion.
+
+### Self-hosted / direct venue credentials (advanced)
+
+When you run [pmxt-core locally](/guides/self-hosted), or when you need a
+venue that hosted writes don't yet support, you pass venue-native
+credentials (Polymarket private key, Kalshi RSA, Smarkets session, etc.)
+directly:
 
 ```python
 order = poly.create_order(
@@ -70,14 +99,14 @@ order = poly.create_order(
 )
 ```
 
-PMXT never stores venue credentials. They are forwarded to the venue
-and dropped when the call completes.
+PMXT never stores venue credentials. They are forwarded to the venue and
+dropped when the call completes.
 
 <Info>
 Some venues (Polymarket, Limitless, Probable, Opinion, Baozi) require
 raw wallet private keys with full fund control. **Use a dedicated
 trading wallet** and read [Security & Credential Handling](/security)
-before passing private keys to the hosted API.
+before passing private keys to PMXT — hosted or self-hosted.
 </Info>
 
 ## Rotating keys
@@ -96,8 +125,11 @@ All revocations are logged under **Settings > Audit Log**.
 
 ## Errors
 
-| Status | Body                                     | Meaning                                   |
-| ------ | ---------------------------------------- | ----------------------------------------- |
-| `401`  | `{"error": "missing api key"}`           | No `Authorization` header on the request. |
-| `401`  | `{"error": "invalid api key"}`           | Key unknown, revoked, or expired.         |
-| `429`  | `{"error": "rate_limit_exceeded", ... }` | See [Plans & Limits](/rate-limits).       |
+| Status | Body                                     | Meaning                                   | SDK exception |
+| ------ | ---------------------------------------- | ----------------------------------------- | ------------- |
+| `401`  | `{"error": "missing api key"}`           | No `Authorization` header on the request. | [`InvalidApiKey`](/api-reference/errors#invalidapikey) |
+| `401`  | `{"error": "invalid api key"}`           | Key unknown, revoked, or expired.         | [`InvalidApiKey`](/api-reference/errors#invalidapikey) |
+| `429`  | `{"error": "rate_limit_exceeded", ... }` | See [Plans & Limits](/rate-limits).       | `RateLimitExceeded` |
+
+See [API Reference / Errors](/api-reference/errors) for the full error
+class hierarchy.

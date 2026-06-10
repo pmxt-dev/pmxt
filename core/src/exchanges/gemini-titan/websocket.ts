@@ -19,7 +19,7 @@ export interface GeminiWebSocketConfig {
  * Gemini Titan WebSocket for real-time order book and trade streaming.
  *
  * Subscribes to:
- *   - {symbol}@depth20  (L2 partial depth snapshots at 1s intervals)
+ *   - {symbol}@depth@100ms  (full depth snapshots/deltas at 100ms intervals)
  *   - {symbol}@trade    (executed trades)
  *
  * Auth headers are sent during the handshake if credentials are provided
@@ -75,7 +75,7 @@ export class GeminiWebSocket {
                     // Resubscribe on reconnect
                     const allStreams: string[] = [];
                     for (const sym of this.subscribedDepthSymbols) {
-                        allStreams.push(`${sym}@depth20`);
+                        allStreams.push(this.depthStream(sym));
                     }
                     for (const sym of this.subscribedTradeSymbols) {
                         allStreams.push(`${sym}@trade`);
@@ -152,7 +152,7 @@ export class GeminiWebSocket {
 
     private handleMessage(message: any): void {
         // Gemini sends flat objects, NOT wrapped in { stream, data }.
-        // Depth snapshots: { lastUpdateId, symbol, bids, asks }
+        // Depth snapshots: { lastUpdateId, s, bids, asks }
         // Depth deltas:    { e, E, s, U, u, b, a }
         // Trades:          { E, s, t, p, q, m }
         // Confirmations:   { id, status: 200 }
@@ -171,7 +171,12 @@ export class GeminiWebSocket {
     private handleDepthSnapshot(data: any): void {
         // symbol comes back lowercase from the API, but we subscribed with
         // uppercase. Normalize to uppercase for resolver lookup.
-        const symbol = (data.symbol as string).toUpperCase();
+        const rawSymbol = data.s ?? data.symbol;
+        if (typeof rawSymbol !== 'string' || rawSymbol.length === 0) {
+            logger.warn('[gemini-titan] depth snapshot missing symbol field');
+            return;
+        }
+        const symbol = rawSymbol.toUpperCase();
 
         const bids: OrderLevel[] = (data.bids ?? []).map((level: [string, string]) => ({
             price: parseFloat(level[0]),
@@ -277,7 +282,7 @@ export class GeminiWebSocket {
                 }
             });
         } else {
-            this.sendSubscribe([`${symbol}@depth20`]);
+            this.sendSubscribe([this.depthStream(symbol)]);
         }
 
         const dataPromise = new Promise<OrderBook>((resolve, reject) => {
@@ -336,6 +341,10 @@ export class GeminiWebSocket {
             this.config.watchTimeoutMs ?? DEFAULT_WATCH_TIMEOUT_MS,
             `watchTrades('${symbol}')`,
         );
+    }
+
+    private depthStream(symbol: string): string {
+        return `${symbol}@depth@100ms`;
     }
 
     async close(): Promise<void> {

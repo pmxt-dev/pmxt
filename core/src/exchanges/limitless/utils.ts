@@ -10,7 +10,7 @@ export const DEFAULT_LIMITLESS_API_URL = 'https://api.limitless.exchange';
 const LIMITLESS_PROMOTED_MARKET_KEYS = [
     'slug', 'title', 'question', 'description',
     'tokens', 'prices',
-    'expirationTimestamp',
+    'expirationDate', 'expirationTimestamp',
     'volumeFormatted', 'volume',
     'logo',
     'categories', 'tags',
@@ -111,7 +111,7 @@ export function mapMarketToUnified(market: any, context: LimitlessMarketContext 
         description: market.description || resolvedContext.eventDescription,
         slug: market.slug,
         outcomes: outcomes,
-        resolutionDate: market.expirationTimestamp ? new Date(market.expirationTimestamp) : new Date(),
+        resolutionDate: parseLimitlessExpiration(market),
         volume24h: Number(market.volumeFormatted || 0),
         volume: Number(market.volume || 0),
         liquidity: 0, // Not directly in the flat market list
@@ -129,6 +129,24 @@ export function mapMarketToUnified(market: any, context: LimitlessMarketContext 
 
     addBinaryOutcomes(um);
     return um;
+}
+
+function parseLimitlessExpiration(market: any): Date | undefined {
+    if (typeof market.expirationDate === 'string' && market.expirationDate.trim()) {
+        return new Date(market.expirationDate);
+    }
+    const rawTimestamp = market.expirationTimestamp;
+    if (typeof rawTimestamp === 'number' && Number.isFinite(rawTimestamp)) {
+        return new Date(rawTimestamp < 1e12 ? rawTimestamp * 1000 : rawTimestamp);
+    }
+    if (typeof rawTimestamp === 'string' && rawTimestamp.trim()) {
+        const numeric = Number(rawTimestamp);
+        if (Number.isFinite(numeric)) {
+            return new Date(numeric < 1e12 ? numeric * 1000 : numeric);
+        }
+        return new Date(rawTimestamp);
+    }
+    return new Date();
 }
 
 function getText(value: unknown): string | undefined {

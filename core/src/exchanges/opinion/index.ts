@@ -397,9 +397,11 @@ export class OpinionExchange extends PredictionMarketExchange {
             const client = await auth.getClobClient();
             const response = await client.placeOrder(built.raw);
 
-            if (response.errno !== 0) {
+            const errorCode = response.code ?? response.errno;
+            const errorMessage = response.msg || response.errmsg || 'Unknown error';
+            if (errorCode !== 0) {
                 throw new Error(
-                    `Order submission failed: ${response.errmsg} (errno: ${response.errno})`,
+                    `Order submission failed: ${errorMessage} (code: ${errorCode ?? 'unknown'})`,
                 );
             }
 
@@ -437,9 +439,11 @@ export class OpinionExchange extends PredictionMarketExchange {
 
             const response = await client.cancelOrder(orderId);
 
-            if (response.errno !== 0) {
+            const errorCode = response.code ?? response.errno;
+            const errorMessage = response.msg || response.errmsg || 'Unknown error';
+            if (errorCode !== 0) {
                 throw new Error(
-                    `Order cancellation failed: ${response.errmsg} (errno: ${response.errno})`,
+                    `Order cancellation failed: ${errorMessage} (code: ${errorCode ?? 'unknown'})`,
                 );
             }
 

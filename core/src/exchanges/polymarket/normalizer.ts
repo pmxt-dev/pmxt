@@ -170,6 +170,12 @@ export class PolymarketNormalizer implements IExchangeNormalizer<PolymarketRawEv
             bids,
             asks,
             timestamp: raw.timestamp ? (typeof raw.timestamp === 'string' ? (isFinite(Number(raw.timestamp)) ? Number(raw.timestamp) : new Date(raw.timestamp).getTime()) : Number(raw.timestamp)) : Date.now(),
+            isNegRisk: raw.neg_risk ?? false,
+            lastTradePrice: raw.last_trade_price != null ? parseFloat(raw.last_trade_price) : undefined,
+            sourceMetadata: buildSourceMetadata(
+                raw as unknown as Record<string, unknown>,
+                ['asset_id', 'bids', 'asks', 'timestamp', 'neg_risk', 'last_trade_price'],
+            ),
         };
     }
 

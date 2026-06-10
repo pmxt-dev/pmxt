@@ -23,6 +23,16 @@ export interface KalshiRawMarket {
     last_price_dollars?: string;
     yes_ask_dollars?: string;
     yes_bid_dollars?: string;
+    no_ask_dollars?: string;
+    no_bid_dollars?: string;
+    response_price_units?: string;
+    market_type?: string;
+    mve_collection_ticker?: string;
+    mve_selected_legs?: Array<{
+        event_ticker: string;
+        market_ticker: string;
+        side: string;
+    }>;
     yes_ask_size_fp?: string;
     yes_bid_size_fp?: string;
     rules_primary?: string;

@@ -1,0 +1,168 @@
+---
+title: Self-hosted (Advanced)
+description: "Run pmxt-core on your own machine when hosted mode isn't the right fit."
+---
+
+Self-hosted PMXT runs the open-source `pmxt-core` server on your machine. The SDK detects the absence of a `pmxt_api_key` and routes every request through `http://localhost:3847` instead of `trade.pmxt.dev`. Venue credentials stay on your machine; you talk to venue APIs directly.
+
+This is the **advanced escape hatch**. Most users should use [hosted mode](/concepts/hosted-trading). Read on if you have specific reasons to run local.
+
+## When to choose self-hosted
+
+- **Sub-100ms latency.** Hosted trading adds a network hop. If you're running latency-sensitive arbitrage or market-making, the local server colocates the venue submission step.
+- **Raw venue credentials.** You want to use Polymarket L2 API keys, Kalshi RSA keys, Smarkets session cookies — credentials that hosted mode doesn't accept.
+- **Regulatory custody requirements.** You need to be the direct counterparty to the venue with no third-party intermediary in the custody path.
+- **Venues hosted mode doesn't trade yet.** Hosted writes are Polymarket + Opinion. Self-hosted writes work on every venue PMXT supports (Kalshi, Limitless, Smarkets, Probable, Myriad, Metaculus, etc.).
+- **OSS contribution.** You're developing or debugging `pmxt-core` itself.
+
+If none of these apply, [hosted](/concepts/hosted-trading) is simpler.
+
+## 1. Install pmxt-core
+
+The SDK installs and supervises `pmxt-core` for you. You don't run a separate binary; the SDK spawns it as a child process on first use.
+
+<CodeGroup>
+```bash Python
+pip install pmxt
+```
+
+```bash TypeScript
+npm install pmxtjs
+```
+</CodeGroup>
+
+That's it — `pmxt-core` is bundled.
+
+## 2. Construct without an API key
+
+Drop the `pmxt_api_key` argument. The SDK detects the absence and starts the local server.
+
+<CodeGroup>
+```python Python
+import pmxt
+
+# No pmxt_api_key → SDK spawns and supervises pmxt-core locally
+poly = pmxt.Polymarket()
+
+markets = poly.fetch_markets(query="election", limit=3)
+```
+
+```typescript TypeScript
+import { Polymarket } from "pmxtjs";
+
+// No pmxtApiKey → SDK spawns and supervises pmxt-core locally
+const poly = new Polymarket({});
+
+const markets = await poly.fetchMarkets({ query: "election", limit: 3 });
+```
+</CodeGroup>
+
+The first call blocks briefly while the local server warms up; subsequent calls reuse the process.
+
+## 3. Manage the local server
+
+For lifecycle control (start, stop, restart, status, logs), use the `server` namespace. See [Server Management](/sdk/server) for the full reference.
+
+```python
+pmxt.server.start()       # idempotent
+pmxt.server.health()      # bool
+pmxt.server.status()      # structured snapshot
+pmxt.server.stop()
+pmxt.server.restart()
+pmxt.server.logs(20)
+```
+
+Most users never call these — creating an exchange instance auto-starts the server.
+
+## 4. Per-venue raw credentials
+
+Self-hosted unlocks the full venue-credential surface. Pass credentials directly to the exchange constructor.
+
+### Polymarket — EVM private key
+
+```python
+import pmxt
+
+poly = pmxt.Polymarket(private_key="0xYourPrivateKey...")
+
+order = poly.create_order(
+    outcome=market.yes,
+    side="buy",
+    type="limit",
+    price=0.42,
+    amount=100,
+)
+```
+
+### Kalshi — RSA key pair
+
+```python
+import pmxt
+
+kalshi = pmxt.Kalshi(
+    api_key_id="...",
+    private_key_pem="-----BEGIN RSA PRIVATE KEY-----\n...",
+)
+```
+
+### Limitless / Probable / Opinion (self-hosted) — EVM private key
+
+```python
+limitless = pmxt.Limitless(private_key="0x...")
+probable  = pmxt.Probable(private_key="0x...")
+opinion   = pmxt.Opinion(private_key="0x...")
+```
+
+### Smarkets — email + password
+
+```python
+smarkets = pmxt.Smarkets(email="you@example.com", password="...")
+```
+
+### Baozi — Solana keypair
+
+```python
+baozi = pmxt.Baozi(private_key="<base58 secret key>")
+```
+
+See [Supported Venues](/concepts/venues) for the full credential matrix.
+
+<Warning>
+**Use a dedicated trading wallet** for any venue that requires a private key with full fund control (Polymarket, Limitless, Probable, Opinion, Baozi). Self-hosted keeps the key on your machine — but a compromised host still compromises the wallet. Limit balances accordingly.
+</Warning>
+
+## 5. Environment overrides
+
+| Variable | Effect |
+| -------- | ------ |
+| `PMXT_LOCAL_PORT=3847` | Override the local server port (default `3847`). |
+| `PMXT_ALWAYS_RESTART=1` | Force-restart the local server on every `ensure_server_running` call. Useful during development. |
+| `PMXT_BASE_URL` | Point the SDK at a custom server URL (advanced — defaults to `http://localhost:3847`). |
+
+See [API Reference / Configuration](/api-reference/configuration) for the full env-var matrix.
+
+## 6. Running multiple exchanges
+
+A single pmxt-core process can serve every venue. Construct multiple exchange clients against the same server — they all share the local process.
+
+```python
+poly = pmxt.Polymarket(private_key="0x...")
+kalshi = pmxt.Kalshi(api_key_id="...", private_key_pem="...")
+# Both clients reuse the same pmxt-core process at http://localhost:3847
+```
+
+## 7. Production deployment
+
+For production self-hosted, the SDK + bundled server is sufficient — there's no separate daemon to manage. If you want to run `pmxt-core` as a long-lived process with systemd or similar, see the [pmxt-core README](https://github.com/pmxt-dev/pmxt) for standalone server commands.
+
+## What you give up vs hosted
+
+- **Cross-venue search via Router** — still works, but requires the hosted `pmxt_api_key` for the catalog. If you want Router without trading-hosted, construct a separate `Router` client with the API key alongside your local trading clients. See [Hosted vs self-hosted / mixing modes](/concepts/hosted-vs-self-hosted#mixing-modes).
+- **Hosted error tree** — you'll get the parent classes (`InvalidOrder`, `InsufficientFunds`) but not the hosted leaves. Catching parents keeps your code portable.
+- **PreFundedEscrow custody** — irrelevant in self-hosted; you custody at the venue.
+
+## Next
+
+- [Server Management](/sdk/server) — start/stop/status/logs.
+- [Hosted vs self-hosted](/concepts/hosted-vs-self-hosted) — full comparison.
+- [Supported Venues](/concepts/venues) — what each venue accepts.

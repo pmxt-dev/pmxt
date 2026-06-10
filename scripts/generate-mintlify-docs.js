@@ -162,20 +162,13 @@ const ENDPOINT_GROUPS = [
                 opId
             ),
     },
-    {
-        name: 'Trading',
-        match: (opId) =>
-            /^(createOrder|buildOrder|submitOrder|cancelOrder|editOrder)$/.test(
-                opId
-            ),
-    },
-    {
-        name: 'Orders & Positions',
-        match: (opId) =>
-            /^(fetchOrder|fetchOpenOrders|fetchClosedOrders|fetchAllOrders|fetchMyTrades|fetchPositions|fetchBalance|fetchOrderHistory)$/.test(
-                opId
-            ),
-    },
+    // "Trading" and "Orders & Positions" groups are intentionally NOT
+    // generated from the self-hosted openapi.json spec. The canonical
+    // surfaces for those endpoints are the hosted groups in docs.json
+    // (preserved via the `otherExternalGroups` path below) which render
+    // from openapi-hosted-trading.json. Auto-generating the self-hosted
+    // equivalents here would produce two same-named groups in the API
+    // Reference sidebar (one with "Local Only" badges, one without).
     {
         name: 'Realtime',
         match: (opId) => /^(watch|unwatch)/.test(opId),
@@ -225,6 +218,27 @@ const HIDDEN_OPERATIONS = new Set([
     'fetchEventMatches',
     'fetchMarketMatches',
     'testDummyMethod',
+    // Self-hosted Group A endpoints (`/api/{exchange}/createOrder`, etc.)
+    // are intentionally hidden from the auto-generated sidebar. The
+    // canonical "Trading" + "Orders & Positions" surfaces are the hosted
+    // groups in docs.json that render from openapi-hosted-trading.json.
+    // Auto-generating self-hosted equivalents would produce two same-named
+    // groups (one with "Local Only" badges, one without). Self-hosters
+    // still get the spec at docs/api-reference/openapi.json and reach the
+    // endpoints via /guides/self-hosted.
+    'createOrder',
+    'buildOrder',
+    'submitOrder',
+    'cancelOrder',
+    'editOrder',
+    'fetchOrder',
+    'fetchOpenOrders',
+    'fetchClosedOrders',
+    'fetchAllOrders',
+    'fetchMyTrades',
+    'fetchPositions',
+    'fetchBalance',
+    'fetchOrderHistory',
 ]);
 
 // Convert an operationId to its expected MDX file path (docs-relative,
@@ -372,21 +386,36 @@ function updateDocsJsonEndpoints(spec) {
     const otherExternalGroups = externalGroups.filter(
         (g) => g.group !== 'Cross Exchange' && g.group !== 'Enterprise'
     );
-    const apiGroups = insertGroupsAfter(
-        [
-            {
-                group: 'Overview',
-                pages: ['api-reference/overview'],
-            },
-            ...endpointGroups,
-        ],
+    // Order the API Reference tab so the customer's natural path is
+    // walkable top-to-bottom: discover (Events & Markets) -> act
+    // (Trading) -> inspect state (Orders & Positions) -> everything
+    // else. Cross Exchange (matched-cluster discovery) gets inserted
+    // first, then the hosted Trading + Orders & Positions groups are
+    // inserted immediately after Events & Markets — that pushes Cross
+    // Exchange one slot down, producing:
+    //   ... -> Events & Markets -> Trading -> Orders & Positions
+    //       -> Cross Exchange -> Order Book & Trades -> ...
+    let apiGroups = [
+        {
+            group: 'Overview',
+            pages: ['api-reference/overview'],
+        },
+        ...endpointGroups,
+    ];
+    apiGroups = insertGroupsAfter(
+        apiGroups,
         'Events & Markets',
         crossExchangeGroups
+    );
+    apiGroups = insertGroupsAfter(
+        apiGroups,
+        'Events & Markets',
+        otherExternalGroups
     );
 
     const apiTab = {
         tab: 'API Reference',
-        groups: [...apiGroups, ...otherExternalGroups, ...enterpriseGroups],
+        groups: [...apiGroups, ...enterpriseGroups],
     };
     if (apiTabIdx >= 0) {
         const updatedTabs = [...tabs];

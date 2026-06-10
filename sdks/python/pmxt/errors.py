@@ -163,3 +163,31 @@ def from_server_error(error_data: Dict[str, Any]) -> PmxtError:
         kwargs["field"] = error_data.get("field")
 
     return error_class(message, **kwargs)
+
+
+class NotSupported(PmxtError):
+    """The requested operation is not supported."""
+    pass
+
+
+_HOSTED_ERROR_EXPORTS = frozenset(
+    {
+        "HostedTradingError",
+        "InsufficientEscrowBalance",
+        "OrderSizeTooSmall",
+        "InvalidApiKey",
+        "OutcomeNotFound",
+        "CatalogUnavailable",
+        "BuiltOrderExpired",
+        "InvalidSignature",
+        "NoLiquidity",
+        "MissingWalletAddress",
+    }
+)
+
+
+def __getattr__(name: str) -> Any:
+    """Lazily re-export hosted errors without creating an import cycle."""
+    if name in _HOSTED_ERROR_EXPORTS:
+        from . import _hosted_errors
+        return getattr(_hosted_errors, name)

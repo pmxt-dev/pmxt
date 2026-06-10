@@ -180,8 +180,10 @@ export interface OpinionRawOrder {
 // ----------------------------------------------------------------------------
 
 interface OpinionApiResponse<T> {
-    errno: number;
-    errmsg: string;
+    code?: number;
+    msg?: string;
+    errno?: number;
+    errmsg?: string;
     result: T;
 }
 
@@ -589,9 +591,10 @@ export class OpinionFetcher implements IExchangeFetcher<OpinionRawMarket, Opinio
      * Validates that the API response envelope indicates success (code === 0).
      */
     private assertSuccess(data: OpinionApiResponse<any>): void {
-        if (data.errno !== 0) {
+        const code = data.code ?? data.errno;
+        if (code !== 0) {
             throw new Error(
-                `Opinion API error (errno ${data.errno}): ${data.errmsg || 'Unknown error'}`,
+                `Opinion API error (code ${code ?? 'unknown'}): ${data.msg || data.errmsg || 'Unknown error'}`,
             );
         }
     }

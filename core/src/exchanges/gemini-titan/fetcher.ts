@@ -7,6 +7,7 @@ import {
     GeminiRawEventsResponse,
     GeminiRawOrder,
     GeminiRawActiveOrdersResponse,
+    GeminiRawOrderHistoryResponse,
     GeminiRawPosition,
     GeminiRawPositionsResponse,
     GeminiRawOrderBook,
@@ -44,19 +45,24 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
         const maxResults = params.limit ?? 250000;
 
         while (allEvents.length < maxResults) {
-            const queryParams: Record<string, string> = {
+            const queryParams: Record<string, string | string[]> = {
                 limit: String(Math.min(pageSize, maxResults - allEvents.length)),
                 offset: String(offset),
             };
 
-            if (params.status && params.status !== 'all') {
-                queryParams.status = params.status === 'active' ? 'active' : params.status;
-            } else if (!params.status) {
+            const status = params.status as string | string[] | undefined;
+            if (Array.isArray(status)) {
+                const statuses = status.filter(s => s !== 'all');
+                if (statuses.length > 0) queryParams.status = statuses;
+            } else if (status && status !== 'all') {
+                queryParams.status = status === 'active' ? 'active' : status;
+            } else if (!status) {
                 queryParams.status = 'active';
             }
 
-            if (params.category) {
-                queryParams.category = params.category;
+            const category = params.category as string | string[] | undefined;
+            if (category) {
+                queryParams.category = category;
             }
 
             if (params.query) {
@@ -135,30 +141,50 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
         );
     }
 
-    async cancelRawOrder(orderId: number): Promise<{ result: string; message: string }> {
-        return this.postAuthenticated<{ result: string; message: string }>(
+    async cancelRawOrder(orderId: number): Promise<GeminiRawOrder> {
+        return this.postAuthenticated<GeminiRawOrder>(
             '/v1/prediction-markets/order/cancel',
             { orderId },
         );
     }
 
     async fetchRawActiveOrders(symbol?: string): Promise<GeminiRawOrder[]> {
-        const extra: Record<string, unknown> = {};
-        if (symbol) extra.symbol = symbol;
-
-        const response = await this.postAuthenticated<GeminiRawActiveOrdersResponse>(
-            '/v1/prediction-markets/orders/active',
-            extra,
-        );
-        return response.orders;
+        return this.fetchPaginatedOrders('/v1/prediction-markets/orders/active', symbol ? { symbol } : {});
     }
 
     async fetchRawOrderHistory(): Promise<GeminiRawOrder[]> {
-        const response = await this.postAuthenticated<GeminiRawOrder[]>(
-            '/v1/prediction-markets/orders/history',
-            {},
-        );
-        return Array.isArray(response) ? response : [];
+        return this.fetchPaginatedOrders('/v1/prediction-markets/orders/history', {});
+    }
+
+    private async fetchPaginatedOrders(
+        path: '/v1/prediction-markets/orders/active' | '/v1/prediction-markets/orders/history',
+        extra: Record<string, unknown>,
+    ): Promise<GeminiRawOrder[]> {
+        const allOrders: GeminiRawOrder[] = [];
+        const limit = 100;
+        let offset = 0;
+
+        while (true) {
+            const response = await this.postAuthenticated<GeminiRawActiveOrdersResponse | GeminiRawOrderHistoryResponse>(
+                path,
+                { ...extra, limit, offset },
+            );
+
+            const orders = response.orders ?? [];
+            allOrders.push(...orders);
+
+            const pagination = response.pagination;
+            const count = pagination?.count ?? orders.length;
+            const pageOffset = pagination?.offset ?? offset;
+
+            if (orders.length === 0 || pageOffset + orders.length >= count) {
+                break;
+            }
+
+            offset = pageOffset + orders.length;
+        }
+
+        return allOrders;
     }
 
     async fetchRawPositions(): Promise<GeminiRawPosition[]> {
@@ -171,12 +197,18 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
 
     // -- HTTP helpers ----------------------------------------------------------
 
-    private async get<T>(path: string, params?: Record<string, string>): Promise<T> {
+    private async get<T>(path: string, params?: Record<string, string | string[]>): Promise<T> {
         try {
             const url = new URL(path, this.baseUrl);
             if (params) {
                 for (const [key, value] of Object.entries(params)) {
-                    url.searchParams.set(key, value);
+                    if (Array.isArray(value)) {
+                        for (const item of value) {
+                            url.searchParams.append(key, item);
+                        }
+                    } else {
+                        url.searchParams.set(key, value);
+                    }
                 }
             }
             const response = await this.ctx.http.get(url.toString());

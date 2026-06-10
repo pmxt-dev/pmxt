@@ -15,6 +15,8 @@ import json
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, Tuple
 
+from .errors import PmxtError
+
 
 @dataclass(frozen=True)
 class Ticker:
@@ -190,10 +192,10 @@ class FeedClient:
         except urllib.error.HTTPError as e:
             body = json.loads(e.read()) if e.fp else {}
             msg = body.get("error", e.reason)
-            raise RuntimeError(f"Feed API error ({e.code}): {msg}") from e
+            raise PmxtError(f"Feed API error ({e.code}): {msg}") from e
 
         if not body.get("success"):
-            raise RuntimeError(f"Feed API error: {body.get('error', 'unknown')}")
+            raise PmxtError(f"Feed API error: {body.get('error', 'unknown')}")
         return body["data"]
 
     @staticmethod

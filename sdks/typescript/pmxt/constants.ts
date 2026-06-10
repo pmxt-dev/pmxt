@@ -65,3 +65,18 @@ export function resolvePmxtBaseUrl(args: {
     if (pmxtApiKey) return pick(HOSTED_URL);
     return pick(LOCAL_URL);
 }
+
+/**
+ * Lowercase 0x-prefixed escrow addresses that are pre-funded by pmxt for
+ * hosted trading. Orders routed through these addresses use the shared
+ * escrow balance rather than a per-venue deposit.
+ */
+export const PREFUNDED_ESCROW_ADDRESSES: ReadonlySet<string> = new Set([
+    "0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2",
+]);
+
+/**
+ * Lowercase 0x-prefixed escrow addresses that the hosted trading API treats
+ * as venue-owned escrows. Currently empty; populated as venues onboard.
+ */
+export const VENUE_ESCROW_ADDRESSES: ReadonlySet<string> = new Set<string>();

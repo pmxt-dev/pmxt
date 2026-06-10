@@ -18,13 +18,12 @@ class Polymarket(Exchange):
         private_key: Optional[str] = None,
         proxy_address: Optional[str] = None,
         signature_type: Optional[str] = "gnosis-safe",
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-        # NOTE: Generated wrapper; update the generator template in
-        # core/scripts/generate-python-exchanges.js in a follow-up.
-        wallet_address: Optional[str] = None,
-        signer: Optional[object] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Polymarket client.
@@ -36,11 +35,12 @@ class Polymarket(Exchange):
             private_key: Private key for authentication (optional)
             proxy_address: Proxy/smart wallet address (optional)
             signature_type: Signature type (optional)
+            wallet_address: Ethereum address for hosted reads/writes (optional)
+            signer: Optional callable for signing typed_data (optional)
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
-            wallet_address: Ethereum address for hosted reads/writes (optional)
-            signer: Optional callable for signing typed_data (optional)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="polymarket",
@@ -48,11 +48,12 @@ class Polymarket(Exchange):
             private_key=private_key,
             proxy_address=proxy_address,
             signature_type=signature_type,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
-            wallet_address=wallet_address,
-            signer=signer,
+            rate_limit=rate_limit,
         )
 
         self.api_secret = api_secret
@@ -84,6 +85,7 @@ class Limitless(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Limitless client.
@@ -96,6 +98,7 @@ class Limitless(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="limitless",
@@ -104,6 +107,7 @@ class Limitless(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
         self.api_secret = api_secret
@@ -128,6 +132,7 @@ class Kalshi(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Kalshi client.
@@ -138,6 +143,7 @@ class Kalshi(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="kalshi",
@@ -146,6 +152,7 @@ class Kalshi(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -159,6 +166,7 @@ class KalshiDemo(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize KalshiDemo client.
@@ -169,6 +177,7 @@ class KalshiDemo(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="kalshi-demo",
@@ -177,6 +186,7 @@ class KalshiDemo(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -192,6 +202,7 @@ class Probable(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Probable client.
@@ -204,6 +215,7 @@ class Probable(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="probable",
@@ -212,6 +224,7 @@ class Probable(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
         self.api_secret = api_secret
@@ -235,6 +248,7 @@ class Baozi(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Baozi client.
@@ -244,6 +258,7 @@ class Baozi(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="baozi",
@@ -251,6 +266,7 @@ class Baozi(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -264,6 +280,7 @@ class Myriad(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Myriad client.
@@ -274,6 +291,7 @@ class Myriad(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="myriad",
@@ -282,6 +300,7 @@ class Myriad(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -293,13 +312,12 @@ class Opinion(Exchange):
         api_key: Optional[str] = None,
         private_key: Optional[str] = None,
         proxy_address: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-        # NOTE: Generated wrapper; update the generator template in
-        # core/scripts/generate-python-exchanges.js in a follow-up.
-        wallet_address: Optional[str] = None,
-        signer: Optional[object] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Opinion client.
@@ -308,22 +326,24 @@ class Opinion(Exchange):
             api_key: API key for authentication (optional)
             private_key: Private key for authentication (optional)
             proxy_address: Proxy/smart wallet address (optional)
+            wallet_address: Ethereum address for hosted reads/writes (optional)
+            signer: Optional callable for signing typed_data (optional)
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
-            wallet_address: Ethereum address for hosted reads/writes (optional)
-            signer: Optional callable for signing typed_data (optional)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="opinion",
             api_key=api_key,
             private_key=private_key,
             proxy_address=proxy_address,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
-            wallet_address=wallet_address,
-            signer=signer,
+            rate_limit=rate_limit,
         )
 
 
@@ -336,6 +356,7 @@ class Metaculus(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Metaculus client.
@@ -345,6 +366,7 @@ class Metaculus(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="metaculus",
@@ -352,6 +374,7 @@ class Metaculus(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -365,6 +388,7 @@ class Smarkets(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Smarkets client.
@@ -375,6 +399,7 @@ class Smarkets(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="smarkets",
@@ -383,6 +408,7 @@ class Smarkets(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -396,6 +422,7 @@ class PolymarketUS(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize PolymarketUS client.
@@ -406,6 +433,7 @@ class PolymarketUS(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="polymarket_us",
@@ -414,6 +442,7 @@ class PolymarketUS(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -427,6 +456,7 @@ class Hyperliquid(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Hyperliquid client.
@@ -437,6 +467,7 @@ class Hyperliquid(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="hyperliquid",
@@ -445,6 +476,7 @@ class Hyperliquid(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -458,6 +490,7 @@ class GeminiTitan(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize GeminiTitan client.
@@ -468,6 +501,7 @@ class GeminiTitan(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="gemini-titan",
@@ -475,6 +509,7 @@ class GeminiTitan(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
         self.api_secret = api_secret
@@ -494,6 +529,7 @@ class SuiBets(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize SuiBets client.
@@ -502,12 +538,14 @@ class SuiBets(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="suibets",
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -519,6 +557,7 @@ class Mock(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Mock client.
@@ -527,12 +566,14 @@ class Mock(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="mock",
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 
@@ -544,6 +585,7 @@ class Router(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize Router client.
@@ -552,12 +594,14 @@ class Router(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)
         """
         super().__init__(
             exchange_name="router",
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            rate_limit=rate_limit,
         )
 
 # Backwards-compatible aliases for exchange classes generated before underscore handling.

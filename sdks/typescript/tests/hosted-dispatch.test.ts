@@ -80,6 +80,19 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
+describe("SDK rateLimit property", () => {
+  it("defaults to core-compatible 1000ms and can be changed at runtime", () => {
+    const defaultApi = new Polymarket({ pmxtApiKey: PMXT_API_KEY, autoStartServer: false });
+    expect(defaultApi.rateLimit).toBe(1000);
+
+    const api = new Polymarket({ pmxtApiKey: PMXT_API_KEY, autoStartServer: false, rateLimit: 25 });
+    expect(api.rateLimit).toBe(25);
+    api.rateLimit = 0;
+    expect(api.rateLimit).toBe(0);
+    expect(() => { api.rateLimit = -1; }).toThrow(RangeError);
+  });
+});
+
 // --------------------------------------------------------------------------
 // Read-method dispatch
 // --------------------------------------------------------------------------

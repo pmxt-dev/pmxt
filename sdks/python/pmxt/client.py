@@ -9,6 +9,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 import urllib.error
 import uuid
@@ -333,6 +334,7 @@ class Exchange(ABC):
         pmxt_api_key: Optional[str] = None,
         wallet_address: Optional[str] = None,
         signer: Optional[Any] = None,
+        rate_limit: Optional[float] = None,
     ) -> None:
         """
         Initialize an exchange client.
@@ -363,6 +365,8 @@ class Exchange(ABC):
                 ``sign_typed_data(typed_data) -> 0x-prefixed hex``. When
                 ``private_key`` is supplied without ``signer`` in hosted mode,
                 an :class:`EthAccountSigner` is created automatically.
+            rate_limit: Minimum delay in milliseconds between SDK HTTP
+                requests. Defaults to 1000, matching core BaseExchange.
         """
         self.exchange_name = exchange_name.lower()
         self.api_key = api_key
@@ -372,6 +376,11 @@ class Exchange(ABC):
         self.signature_type = signature_type
         self.wallet_address = wallet_address
         self.signer = signer
+        self._rate_limit: float = 1000.0
+        self._last_http_request_at: float = 0.0
+        self._rate_limit_lock = threading.Lock()
+        if rate_limit is not None:
+            self.rate_limit = rate_limit
         self.markets: Dict[str, "UnifiedMarket"] = {}
         self.markets_by_slug: Dict[str, "UnifiedMarket"] = {}
         self._loaded_markets: bool = False
@@ -442,6 +451,30 @@ class Exchange(ABC):
 
         self._api = DefaultApi(api_client=self._api_client)
 
+    @property
+    def rate_limit(self) -> float:
+        """Minimum delay, in milliseconds, between SDK HTTP requests."""
+        return self._rate_limit
+
+    @rate_limit.setter
+    def rate_limit(self, value: float) -> None:
+        value = float(value)
+        if value < 0:
+            raise ValueError("rate_limit must be a non-negative number of milliseconds")
+        self._rate_limit = value
+
+    def _throttle_http_request(self) -> None:
+        """Apply the SDK-side request delay configured by ``rate_limit``."""
+        with self._rate_limit_lock:
+            if self._rate_limit <= 0:
+                self._last_http_request_at = time.monotonic()
+                return
+            now = time.monotonic()
+            elapsed_ms = (now - self._last_http_request_at) * 1000.0
+            if self._last_http_request_at > 0 and elapsed_ms < self._rate_limit:
+                time.sleep((self._rate_limit - elapsed_ms) / 1000.0)
+            self._last_http_request_at = time.monotonic()
+
     def _handle_response(self, response: Dict[str, Any]) -> Any:
         """Handle API response and extract data."""
         if not response.get("success"):
@@ -498,6 +531,7 @@ class Exchange(ABC):
 
         for attempt in range(len(delays) + 1):
             try:
+                self._throttle_http_request()
                 return fn()
             except (ConnectionError, OSError, urllib.error.URLError) as e:
                 last_error = e

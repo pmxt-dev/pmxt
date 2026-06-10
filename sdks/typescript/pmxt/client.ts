@@ -284,6 +284,14 @@ export interface ExchangeOptions {
      * built from it lazily.
      */
     signer?: Signer;
+
+    /**
+     * Minimum delay in milliseconds between SDK HTTP requests.
+     *
+     * Defaults to 1000ms to mirror core BaseExchange.rateLimit. The value can
+     * also be inspected or changed at runtime via the `rateLimit` property.
+     */
+    rateLimit?: number;
 }
 
 /**
@@ -336,6 +344,8 @@ export abstract class Exchange {
     public escrow?: Escrow;
     private _hostedAccount?: { depositWallet?: string; signatureType?: number };
     private _accountDiscoveryPromise?: Promise<void>;
+    private _rateLimit: number = 1000;
+    private _lastHttpRequestAt: number = 0;
 
     /**
      * Sticky flag: set to `true` the first time a GET read is rejected by
@@ -358,6 +368,9 @@ export abstract class Exchange {
         this.signatureType = options.signatureType;
         this.walletAddress = options.walletAddress;
         this.signer = options.signer;
+        if (options.rateLimit !== undefined) {
+            this.rateLimit = options.rateLimit;
+        }
 
         // Resolve base URL + hosted API key via the shared precedence
         // rules. See constants.ts for the full resolution table.
@@ -408,6 +421,31 @@ export abstract class Exchange {
 
         // Initialize the server connection asynchronously
         this.initPromise = this.initializeServer(autoStartServer);
+    }
+
+    /** Minimum delay, in milliseconds, between SDK HTTP requests. */
+    get rateLimit(): number {
+        return this._rateLimit;
+    }
+
+    set rateLimit(value: number) {
+        if (!Number.isFinite(value) || value < 0) {
+            throw new RangeError("rateLimit must be a non-negative finite number of milliseconds");
+        }
+        this._rateLimit = value;
+    }
+
+    private async throttleHttpRequest(): Promise<void> {
+        if (this._rateLimit <= 0) {
+            this._lastHttpRequestAt = Date.now();
+            return;
+        }
+        const now = Date.now();
+        const elapsed = now - this._lastHttpRequestAt;
+        if (this._lastHttpRequestAt > 0 && elapsed < this._rateLimit) {
+            await new Promise(resolve => setTimeout(resolve, this._rateLimit - elapsed));
+        }
+        this._lastHttpRequestAt = Date.now();
     }
 
     private async initializeServer(autoStartServer: boolean): Promise<void> {
@@ -535,6 +573,7 @@ export abstract class Exchange {
 
         for (let attempt = 0; attempt <= delays.length; attempt++) {
             try {
+                await this.throttleHttpRequest();
                 return await fetch(input, {
                     ...init,
                     signal: AbortSignal.timeout(30_000),
@@ -3033,6 +3072,9 @@ export interface PolymarketOptions {
 
     /** Optional signature type */
     signatureType?: 'eoa' | 'poly-proxy' | 'gnosis-safe' | number;
+
+    /** Minimum delay in milliseconds between SDK HTTP requests. */
+    rateLimit?: number;
 }
 
 export class Polymarket extends Exchange {

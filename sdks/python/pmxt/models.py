@@ -629,6 +629,7 @@ class ExchangeOptions(TypedDict, total=False):
     api_token: str
     proxy_address: str
     signature_type: Union[str, int]
+    rate_limit: Union[int, float]
 
 
 class PolymarketOptions(ExchangeOptions, total=False):

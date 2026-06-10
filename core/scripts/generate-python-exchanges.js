@@ -18,6 +18,18 @@ const OVERRIDES = {
     polymarket: {
         // The Python SDK defaults to gnosis-safe to match historical behaviour.
         defaults: { signature_type: '"gnosis-safe"' },
+        extraParams: [
+            'wallet_address: Optional[str] = None',
+            'signer: Optional[object] = None',
+        ],
+        extraSuperArgs: [
+            'wallet_address=wallet_address',
+            'signer=signer',
+        ],
+        extraDocs: [
+            '            wallet_address: Ethereum address for hosted reads/writes (optional)',
+            '            signer: Optional callable for signing typed_data (optional)',
+        ],
         methods: [
             [
                 '    def init_auth(self) -> None:',
@@ -25,6 +37,20 @@ const OVERRIDES = {
                 '        self._call_method("initAuth")',
                 '        return None',
             ].join('\n'),
+        ],
+    },
+    opinion: {
+        extraParams: [
+            'wallet_address: Optional[str] = None',
+            'signer: Optional[object] = None',
+        ],
+        extraSuperArgs: [
+            'wallet_address=wallet_address',
+            'signer=signer',
+        ],
+        extraDocs: [
+            '            wallet_address: Ethereum address for hosted reads/writes (optional)',
+            '            signer: Optional callable for signing typed_data (optional)',
         ],
     },
     myriad: {
@@ -131,6 +157,9 @@ function generateClass(exchange) {
     const defaults = ov.defaults || {};
     const paramDocs = ov.paramDocs || {};
     const methods = ov.methods || [];
+    const extraParams = ov.extraParams || [];
+    const extraSuperArgs = ov.extraSuperArgs || [];
+    const extraDocs = ov.extraDocs || [];
 
     const constructorParams = [];
     const superArgs = [`exchange_name="${name}"`];
@@ -170,12 +199,16 @@ function generateClass(exchange) {
         constructorParams.push(`signature_type: Optional[str] = ${defaultVal}`);
         superArgs.push('signature_type=signature_type');
     }
+    constructorParams.push(...extraParams);
+    superArgs.push(...extraSuperArgs);
     constructorParams.push('base_url: Optional[str] = None');
     constructorParams.push('auto_start_server: Optional[bool] = None');
     constructorParams.push('pmxt_api_key: Optional[str] = None');
+    constructorParams.push('rate_limit: Optional[float] = None');
     superArgs.push('base_url=base_url');
     superArgs.push('auto_start_server=auto_start_server');
     superArgs.push('pmxt_api_key=pmxt_api_key');
+    superArgs.push('rate_limit=rate_limit');
 
     const docLines = [];
     if (creds.apiKey)        docLines.push('            api_key: API key for authentication (optional)');
@@ -189,9 +222,11 @@ function generateClass(exchange) {
     }
     if (creds.funderAddress) docLines.push('            proxy_address: Proxy/smart wallet address (optional)');
     if (creds.signatureType) docLines.push('            signature_type: Signature type (optional)');
+    docLines.push(...extraDocs);
     docLines.push('            base_url: Base URL of the PMXT sidecar server');
     docLines.push('            auto_start_server: Automatically start server if not running (default: True)');
     docLines.push('            pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)');
+    docLines.push('            rate_limit: Minimum delay in milliseconds between SDK HTTP requests (default: 1000)');
 
     const indent4 = s => `    ${s}`;
     const indent8 = s => `        ${s}`;

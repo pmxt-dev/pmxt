@@ -39,6 +39,7 @@ from .errors import (
     ValidationError,
     NetworkError,
     ExchangeNotAvailable,
+    NotSupported,
 )
 from .models import (
     UnifiedMarket,
@@ -216,6 +217,7 @@ __all__ = [
     "ValidationError",
     "NetworkError",
     "ExchangeNotAvailable",
+    "NotSupported",
     # Data Models
     "UnifiedMarket",
     "UnifiedEvent",

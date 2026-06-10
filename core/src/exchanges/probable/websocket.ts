@@ -4,11 +4,6 @@ import { timestampToMs } from '../../utils/time';
 import { DEFAULT_WATCH_TIMEOUT_MS, withWatchTimeout } from '../../utils/watch-timeout';
 import { PROBABLE_CHAIN_ID } from './config';
 
-interface QueuedPromise<T> {
-    resolve: (value: T | PromiseLike<T>) => void;
-    reject: (reason?: any) => void;
-}
-
 export interface ProbableWebSocketConfig {
     /** WebSocket URL (default: wss://ws.probable.markets/public/api/v1) */
     wsUrl?: string;

@@ -331,10 +331,9 @@ class Exchange(ABC):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         proxy_address: Optional[str] = None,
-        signature_type: Optional[str] = None,
+        signature_type: Optional[Union[str, int]] = None,
         wallet_address: Optional[str] = None,
         pmxt_api_key: Optional[str] = None,
-        wallet_address: Optional[str] = None,
         signer: Optional[Any] = None,
     ) -> None:
         """

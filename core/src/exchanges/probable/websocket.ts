@@ -1,12 +1,8 @@
 import type { createClobClient } from '@prob/clob';
-import { OrderBook, OrderLevel } from '../../types';
+import { OrderBook, OrderLevel, QueuedPromise } from '../../types';
+import { timestampToMs } from '../../utils/time';
 import { DEFAULT_WATCH_TIMEOUT_MS, withWatchTimeout } from '../../utils/watch-timeout';
 import { PROBABLE_CHAIN_ID } from './config';
-
-interface QueuedPromise<T> {
-    resolve: (value: T | PromiseLike<T>) => void;
-    reject: (reason?: any) => void;
-}
 
 export interface ProbableWebSocketConfig {
     /** WebSocket URL (default: wss://ws.probable.markets/public/api/v1) */
@@ -107,10 +103,7 @@ export class ProbableWebSocket {
         if (data.timestamp) {
             const parsed = typeof data.timestamp === 'number' ? data.timestamp : new Date(data.timestamp).getTime();
             if (!isNaN(parsed)) {
-                timestamp = parsed;
-                if (timestamp < 10000000000) {
-                    timestamp *= 1000;
-                }
+                timestamp = timestampToMs(parsed);
             }
         }
 

@@ -1,4 +1,5 @@
 import { CandleInterval } from '../../types';
+import { timestampToMs } from '../../utils/time';
 
 // Opinion market status codes
 export const OPINION_MARKET_STATUS = {
@@ -73,12 +74,12 @@ export function parseNumStr(value: string | undefined | null): number {
 }
 
 // Convert a raw timestamp to milliseconds.
-// If the value is under 10_000_000_000 it is assumed to be in seconds.
+// If the value is under EPOCH_SECONDS_THRESHOLD it is assumed to be in seconds.
 // Returns null when the input is missing/zero so callers can distinguish
 // "no timestamp" from "epoch" instead of coercing both to 1970-01-01.
 export function toMillis(ts: number | undefined | null): number | null {
     if (!ts) return null;
-    return ts < 10_000_000_000 ? ts * 1000 : ts;
+    return timestampToMs(ts);
 }
 
 // Return the bucket size in milliseconds for a given CandleInterval

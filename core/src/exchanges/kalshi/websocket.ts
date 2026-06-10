@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import { OrderBook, Trade, OrderLevel } from "../../types";
 import { logger } from '../../utils/logger';
+import { DEFAULT_RECONNECT_INTERVAL_MS, timestampToMs } from "../../utils/time";
 import { DEFAULT_WATCH_TIMEOUT_MS, withWatchTimeout } from "../../utils/watch-timeout";
 import { KalshiAuth } from "./auth";
 
@@ -156,7 +157,7 @@ export class KalshiWebSocket {
     this.reconnectTimer = setTimeout(() => {
       logger.info("Attempting to reconnect Kalshi WebSocket...");
       this.connect().catch((err) => logger.error("Kalshi WebSocket reconnect failed", { error: String(err) }));
-    }, this.config.reconnectIntervalMs || 5000);
+    }, this.config.reconnectIntervalMs ?? DEFAULT_RECONNECT_INTERVAL_MS);
   }
 
   private subscribeToOrderbook(marketTickers: string[]) {
@@ -419,17 +420,10 @@ export class KalshiWebSocket {
     if (rawTime) {
       const parsed = new Date(rawTime).getTime();
       if (!isNaN(parsed)) {
-        timestamp = parsed;
-        // If the timestamp is too small, it might be in seconds
-        if (timestamp < 10000000000) {
-          timestamp *= 1000;
-        }
+        timestamp = timestampToMs(parsed);
       } else if (typeof rawTime === "number") {
         // If it's already a number but new Date() failed (maybe it's a large timestamp)
-        timestamp = rawTime;
-        if (timestamp < 10000000000) {
-          timestamp *= 1000;
-        }
+        timestamp = timestampToMs(rawTime);
       }
     }
 

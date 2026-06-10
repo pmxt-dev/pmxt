@@ -2,6 +2,7 @@ import { AxiosInstance } from 'axios';
 import { MarketFilterParams, EventFetchParams, OHLCVParams, TradesParams, MyTradesParams } from '../../BaseExchange';
 import { NotFound, OrderNotFound } from '../../errors';
 import { IExchangeFetcher, FetcherContext } from '../interfaces';
+import { timestampToMs } from '../../utils/time';
 import { GAMMA_API_URL, GAMMA_SEARCH_URL, paginateParallel, paginateSearchParallel } from './utils';
 import { polymarketErrorMapper } from './errors';
 
@@ -13,8 +14,7 @@ import { polymarketErrorMapper } from './errors';
 function ensureDate(d: unknown): Date {
     if (d instanceof Date) return d;
     if (typeof d === 'number') {
-        // Heuristic: values < 1e12 are epoch seconds, otherwise ms
-        return new Date(d < 1e12 ? d * 1000 : d);
+        return new Date(timestampToMs(d));
     }
     if (typeof d === 'string') {
         if (!d.endsWith('Z') && !d.match(/[+-]\d{2}:\d{2}$/)) {

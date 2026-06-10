@@ -8,6 +8,7 @@ import {
 import { AddressWatcher, WatcherConfig } from "../../subscriber/watcher";
 import { OrderBook, Trade } from '../../types';
 import { logger } from '../../utils/logger';
+import { DEFAULT_RECONNECT_INTERVAL_MS } from '../../utils/time';
 // Limitless uses USDC with 6 decimals
 const USDC_DECIMALS = 6;
 const USDC_SCALE = Math.pow(10, USDC_DECIMALS);
@@ -65,7 +66,7 @@ export class LimitlessWebSocket {
             url: config.url || 'wss://ws.limitless.exchange',
             apiKey: config.apiKey,
             autoReconnect: config.autoReconnect ?? true,
-            reconnectDelay: config.reconnectDelay ?? config.reconnectIntervalMs ?? 1000,
+            reconnectDelay: config.reconnectDelay ?? config.reconnectIntervalMs ?? DEFAULT_RECONNECT_INTERVAL_MS,
         };
 
         this.client = new WebSocketClient(wsConfig, config.logger);

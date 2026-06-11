@@ -105,7 +105,7 @@ function parseExchanges(content) {
     }
     if (currentName) exchanges.push(build(currentName, currentBlock));
 
-    return exchanges;
+    return exchanges.filter(ex => ex.name !== 'router');
 }
 
 function build(name, block) {

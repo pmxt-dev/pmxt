@@ -424,10 +424,18 @@ function generateMethod(name, params, config, sf) {
     const argsCode = buildArgsLines(params, sf);
     const returnCode = buildReturnLines(config);
     const { returnTs } = config;
+    const localOnlyGuard = name === 'submitOrder'
+        ? [
+            `        if (this.isHosted) {`,
+            `            throw new PmxtError("submitOrder is not available in hosted mode. Use createOrder instead.");`,
+            `        }`,
+        ]
+        : [];
 
     return [
         `    async ${name}(${sig}): Promise<${returnTs}> {`,
         `        await this.initPromise;`,
+        ...localOnlyGuard,
         `        try {`,
         `            ${argsCode}`,
         `            const response = await this.fetchWithRetry(\`\${this.resolveBaseUrl()}/api/\${this.exchangeName}/${name}\`, {`,

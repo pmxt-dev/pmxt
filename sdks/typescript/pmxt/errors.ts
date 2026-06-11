@@ -116,6 +116,12 @@ export class ExchangeNotAvailable extends PmxtError {
     }
 }
 
+export class NotSupported extends PmxtError {
+    constructor(message: string, exchange?: string) {
+        super(message, "NOT_SUPPORTED", false, exchange);
+    }
+}
+
 // Error code to class mapping
 const ERROR_CODE_MAP: Record<string, new (...args: any[]) => PmxtError> = {
     BAD_REQUEST: BadRequest,
@@ -162,3 +168,8 @@ export function fromServerError(errorData: unknown): PmxtError {
 
     return new PmxtError(message, code, retryable, exchange);
 }
+
+// Hosted error classes live in ./hosted-errors. Re-exported from index.ts
+// at the package root, NOT here — re-exporting from errors.ts creates a
+// circular dependency (hosted-errors imports PmxtError from errors.ts)
+// that crashes tsx/CJS module loaders even though tsc and ts-jest tolerate it.

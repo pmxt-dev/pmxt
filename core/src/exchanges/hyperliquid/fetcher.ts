@@ -17,7 +17,6 @@ export interface HyperliquidRawOutcome {
     name: string;           // e.g. "BTC > $100K @ 2026-05-09 06:00 UTC"
     description: string;    // pipe-delimited contract spec
     sideSpecs: HyperliquidRawSideSpec[];
-    quoteToken: string;     // settlement currency, e.g. "USDC"
 }
 
 export interface HyperliquidRawQuestion {
@@ -106,7 +105,7 @@ export interface HyperliquidRawOpenOrder {
 export interface HyperliquidRawPosition {
     coin: string;
     entryPx: string | null;
-    leverage: { type: string; value: number };
+    leverage: { type: string; value: number; rawUsd?: string };
     liquidationPx: string | null;
     marginUsed: string;
     maxTradeSzs: [string, string];
@@ -114,6 +113,11 @@ export interface HyperliquidRawPosition {
     returnOnEquity: string;
     szi: string;
     unrealizedPnl: string;
+    cumFunding?: {
+        allTime?: string;
+        sinceChange?: string;
+        sinceOpen?: string;
+    };
 }
 
 export interface HyperliquidRawUserState {
@@ -133,6 +137,8 @@ export interface HyperliquidRawUserState {
         totalNtlPos: string;
         totalRawUsd: string;
     };
+    crossMaintenanceMarginUsed?: string;
+    time?: number;
     withdrawable: string;
 }
 

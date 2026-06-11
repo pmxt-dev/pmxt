@@ -64,7 +64,7 @@ export class ProbableAuth {
                 credential,
             });
         } else {
-            const baseUrl = process.env.PROBABLE_BASE_URL || 'https://api.probable.markets/public/api/v1';
+            const baseUrl = process.env.PROBABLE_BASE_URL || 'https://market-api.probable.markets/public/api/v1';
             this.clobClient = createClobClient({
                 chainId,
                 baseUrl,

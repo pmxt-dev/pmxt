@@ -22,8 +22,23 @@ const KALSHI_PROMOTED_MARKET_KEYS = [
     'volume_24h_fp', 'volume_24h', 'volume', 'volume_fp',
     'liquidity_dollars', 'liquidity', 'open_interest_fp', 'open_interest',
     'status', 'last_price_dollars', 'previous_price_dollars',
-    'yes_ask_dollars', 'yes_bid_dollars', 'last_price', 'yes_ask', 'yes_bid',
+    'yes_ask_dollars', 'yes_bid_dollars', 'no_ask_dollars', 'no_bid_dollars',
+    'response_price_units', 'last_price', 'yes_ask', 'yes_bid',
 ] as const;
+
+function parseKalshiPrice(value: string | number | undefined, responseUnits?: string): number | undefined {
+    if (value == null) return undefined;
+    const parsed = typeof value === 'number' ? value : parseFloat(value);
+    if (!Number.isFinite(parsed)) return undefined;
+    const normalizedUnits = responseUnits?.toLowerCase();
+    return normalizedUnits === 'cent' || normalizedUnits === 'cents' ? parsed / 100 : parsed;
+}
+
+function averageKalshiPrices(a: string | number, b: string | number, responseUnits?: string): number {
+    const average = averageDecimals(String(a), String(b));
+    const normalizedUnits = responseUnits?.toLowerCase();
+    return normalizedUnits === 'cent' || normalizedUnits === 'cents' ? average / 100 : average;
+}
 
 export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, KalshiRawEvent> {
 
@@ -48,13 +63,17 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
 
         // Kalshi API v2 migrated from cent integers to FixedPointDollars strings.
         // Prefer the _dollars fields; fall back to deprecated cent fields.
+        const yesBid = parseKalshiPrice(market.yes_bid_dollars, market.response_price_units);
+        const yesAsk = parseKalshiPrice(market.yes_ask_dollars, market.response_price_units);
+        const noBid = parseKalshiPrice(market.no_bid_dollars, market.response_price_units);
+        const noAsk = parseKalshiPrice(market.no_ask_dollars, market.response_price_units);
         let price = 0;
         if (market.last_price_dollars != null) {
-            price = parseFloat(market.last_price_dollars);
+            price = parseKalshiPrice(market.last_price_dollars, market.response_price_units) ?? 0;
         } else if (market.yes_ask_dollars != null && market.yes_bid_dollars != null) {
-            price = averageDecimals(market.yes_ask_dollars, market.yes_bid_dollars);
+            price = averageKalshiPrices(market.yes_ask_dollars, market.yes_bid_dollars, market.response_price_units);
         } else if (market.yes_ask_dollars != null) {
-            price = parseFloat(market.yes_ask_dollars);
+            price = parseKalshiPrice(market.yes_ask_dollars, market.response_price_units) ?? 0;
         } else if (market.last_price) {
             price = fromKalshiCents(market.last_price);
         } else if (market.yes_ask && market.yes_bid) {
@@ -70,6 +89,10 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
             priceChange = subtractDecimals(market.last_price_dollars, market.previous_price_dollars);
         }
 
+        const noPrice = noAsk != null && noBid != null
+            ? (noAsk + noBid) / 2
+            : noAsk ?? noBid ?? invertKalshiUnified(price);
+
         const outcomes: MarketOutcome[] = [
             {
                 outcomeId: market.ticker,
@@ -77,13 +100,15 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
                 label: candidateName || 'Yes',
                 price,
                 priceChange24h: priceChange,
+                metadata: { bid: yesBid, ask: yesAsk },
             },
             {
                 outcomeId: `${market.ticker}-NO`,
                 marketId: market.ticker,
                 label: candidateName ? `Not ${candidateName}` : 'No',
-                price: invertKalshiUnified(price),
+                price: noPrice,
                 priceChange24h: -priceChange,
+                metadata: { bid: noBid, ask: noAsk },
             },
         ];
 

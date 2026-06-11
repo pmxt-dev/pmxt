@@ -334,7 +334,9 @@ export class GeminiNormalizer implements IExchangeNormalizer<GeminiRawEvent, Gem
             size,
             entryPrice,
             currentPrice,
-            unrealizedPnL: multiplyDecimals(priceDelta, raw.totalQuantity),
+            unrealizedPnL: raw.unrealizedPnl != null
+                ? parseFloat(raw.unrealizedPnl)
+                : multiplyDecimals(priceDelta, raw.totalQuantity),
         };
     }
 }

@@ -60,11 +60,20 @@ async function main() {
     logger.info(`Lock file created at ${lockFile.lockPath}`);
 
     // Graceful shutdown
-    const shutdown = async () => {
+    let shuttingDown = false;
+    const shutdown = () => {
+        if (shuttingDown) return;
+        shuttingDown = true;
+
         logger.info('Shutting down gracefully...');
         server.close();
-        await lockFile.remove();
-        process.exit(0);
+        void lockFile.remove()
+            .catch((error) => {
+                logger.warn('Failed to remove lock file during shutdown:', error);
+            })
+            .finally(() => {
+                process.exit(0);
+            });
     };
 
     process.on('SIGTERM', shutdown);

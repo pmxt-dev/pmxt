@@ -74,3 +74,16 @@ def resolve_pmxt_base_url(
         return ResolvedBaseUrl(HOSTED_URL, resolved_key, True)
 
     return ResolvedBaseUrl(LOCAL_URL, None, False)
+
+
+#: Known PreFundedEscrow contract addresses on Polygon (chain 137).
+#:
+#: Hosted typed-data validation accepts these addresses as EIP-712
+#: ``verifyingContract`` values.
+PREFUNDED_ESCROW_ADDRESSES: frozenset[str] = frozenset({
+    "0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2",
+})
+
+#: Known VenueEscrow contract addresses on BSC (chain 56).
+#: Add the BSC VenueEscrow address before Opinion sells go live.
+VENUE_ESCROW_ADDRESSES: frozenset[str] = frozenset()

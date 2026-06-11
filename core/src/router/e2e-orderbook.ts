@@ -7,11 +7,12 @@
 import { Router } from './Router';
 import { PolymarketExchange } from '../exchanges/polymarket';
 import { LimitlessExchange } from '../exchanges/limitless';
+import { logger } from '../utils/logger';
 
 async function main() {
     const apiKey = process.env.PMXT_API_KEY;
     if (!apiKey) {
-        console.error('Set PMXT_API_KEY');
+        logger.error('Set PMXT_API_KEY');
         process.exit(1);
     }
 
@@ -26,16 +27,16 @@ async function main() {
     // Morocco FIFA World Cup market on Polymarket
     const marketId = 'f017596d-4d53-49d5-a7d6-36ed9c37fdc4';
 
-    console.log('Fetching unified orderbook for Morocco (Polymarket + Limitless)...');
-    console.log(`Input market ID: ${marketId}`);
-    console.log('---');
+    logger.info('Fetching unified orderbook for Morocco (Polymarket + Limitless)...');
+    logger.info(`Input market ID: ${marketId}`);
+    logger.info('---');
 
     const book = await router.fetchOrderBook(marketId, undefined, { side: 'yes' });
 
-    console.log(`Bids: ${book.bids.length} levels`);
-    console.log(`Asks: ${book.asks.length} levels`);
-    console.log('Top 5 bids:', book.bids.slice(0, 5));
-    console.log('Top 5 asks:', book.asks.slice(0, 5));
+    logger.info(`Bids: ${book.bids.length} levels`);
+    logger.info(`Asks: ${book.asks.length} levels`);
+    logger.info('Top 5 bids:', { bids: book.bids.slice(0, 5) });
+    logger.info('Top 5 asks:', { asks: book.asks.slice(0, 5) });
 
     // Verify we got data from BOTH exchanges
     // Polymarket top bid was 0.016, Limitless had 0.002
@@ -43,22 +44,22 @@ async function main() {
     const hasPoly = book.bids.some((b) => b.price === 0.016);
     const hasLimitless = book.bids.some((b) => b.price === 0.002);
 
-    console.log('---');
-    console.log(`Has Polymarket levels: ${hasPoly}`);
-    console.log(`Has Limitless levels: ${hasLimitless}`);
+    logger.info('---');
+    logger.info(`Has Polymarket levels: ${hasPoly}`);
+    logger.info(`Has Limitless levels: ${hasLimitless}`);
 
     if (hasPoly && hasLimitless) {
-        console.log('SUCCESS: Merged orderbook contains levels from both exchanges');
+        logger.info('SUCCESS: Merged orderbook contains levels from both exchanges');
     } else if (!hasPoly && hasLimitless) {
-        console.log('PARTIAL: Only Limitless book (source market fetch failed)');
+        logger.info('PARTIAL: Only Limitless book (source market fetch failed)');
     } else if (hasPoly && !hasLimitless) {
-        console.log('PARTIAL: Only Polymarket book (matched market fetch failed)');
+        logger.info('PARTIAL: Only Polymarket book (matched market fetch failed)');
     } else {
-        console.log('FAIL: No data from either exchange');
+        logger.info('FAIL: No data from either exchange');
     }
 }
 
 main().catch((err) => {
-    console.error(err);
+    logger.error('E2E orderbook script failed', { error: String(err) });
     process.exit(1);
 });

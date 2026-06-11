@@ -55,7 +55,7 @@ class NotFoundError(PmxtError):
 
 class OrderNotFound(NotFoundError):
     """404 Not Found - The requested order doesn't exist."""
-    def __init__(self, order_id: str, exchange: str | None = None):
+    def __init__(self, order_id: str, exchange: str | None = None) -> None:
         super().__init__(
             _format_not_found_message("Order not found: ", order_id),
             code="ORDER_NOT_FOUND",
@@ -65,7 +65,7 @@ class OrderNotFound(NotFoundError):
 
 class MarketNotFound(NotFoundError):
     """404 Not Found - The requested market doesn't exist."""
-    def __init__(self, market_id: str, exchange: str | None = None):
+    def __init__(self, market_id: str, exchange: str | None = None) -> None:
         super().__init__(
             _format_not_found_message("Market not found: ", market_id),
             code="MARKET_NOT_FOUND",
@@ -75,7 +75,7 @@ class MarketNotFound(NotFoundError):
 
 class EventNotFound(NotFoundError):
     """404 Not Found - The requested event doesn't exist."""
-    def __init__(self, identifier: str, exchange: str | None = None):
+    def __init__(self, identifier: str, exchange: str | None = None) -> None:
         super().__init__(
             _format_not_found_message("Event not found: ", identifier),
             code="EVENT_NOT_FOUND",
@@ -114,14 +114,14 @@ class ValidationError(PmxtError):
 class NetworkError(PmxtError):
     """503 Service Unavailable - Network connectivity issues."""
 
-    def __init__(self, message: str, exchange: str | None = None):
+    def __init__(self, message: str, exchange: str | None = None) -> None:
         super().__init__(message, code="NETWORK_ERROR", retryable=True, exchange=exchange)
 
 
 class ExchangeNotAvailable(PmxtError):
     """503 Service Unavailable - Exchange is down or unreachable."""
 
-    def __init__(self, message: str, exchange: str | None = None):
+    def __init__(self, message: str, exchange: str | None = None) -> None:
         super().__init__(message, code="EXCHANGE_NOT_AVAILABLE", retryable=True, exchange=exchange)
 
 

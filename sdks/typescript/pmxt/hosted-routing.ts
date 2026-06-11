@@ -44,6 +44,8 @@ export const HOSTED_METHOD_ROUTES: ReadonlyMap<string, HostedRoute> = new Map([
     ["fetchMyTrades",     { method: "GET",  path: "/v0/user/{address}/trades",        base: "trading", requiresWalletAddress: true }],
     ["fetchBalance",      { method: "GET",  path: "/v0/user/{address}/balances",      base: "trading", requiresWalletAddress: true }],
     ["fetchPositions",    { method: "GET",  path: "/v0/user/{address}/positions",     base: "trading", requiresWalletAddress: true }],
+    ["fetchOrderBook",    { method: "POST", path: "/api/{venue}/fetchOrderBook",      base: "catalog" }],
+    ["fetchOrderBooks",   { method: "POST", path: "/api/{venue}/fetchOrderBooks",     base: "catalog" }],
     ["escrowApproveTx",   { method: "POST", path: "/v0/escrow/approve",               base: "trading" }],
     ["escrowDepositTx",   { method: "POST", path: "/v0/escrow/deposit",               base: "trading" }],
     ["escrowWithdrawTx",  { method: "POST", path: "/v0/escrow/withdraw",              base: "trading" }],

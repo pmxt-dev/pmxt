@@ -63,6 +63,7 @@ import { logger } from "./logger.js";
 // once the matching files exist.
 import {
     HOSTED_TRADING_VENUES,
+    HOSTED_CATALOG_BASE_URL,
     _tradingRequest,
     resolveWalletAddress,
     ensureHostedTradingSupported,
@@ -1076,7 +1077,11 @@ export abstract class Exchange {
                 if (limit === undefined) args.push(null);
                 args.push(params);
             }
-            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/fetchOrderBook`, {
+            const route = this.pmxtApiKey ? HOSTED_METHOD_ROUTES.get("fetchOrderBook") : undefined;
+            const url = route
+                ? `${HOSTED_CATALOG_BASE_URL}${formatRoutePath(route, { venue: this.exchangeName })}`
+                : `${this.resolveBaseUrl()}/api/${this.exchangeName}/fetchOrderBook`;
+            const response = await this.fetchWithRetry(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                 body: JSON.stringify({ args, credentials: this.getCredentials() }),
@@ -1105,7 +1110,11 @@ export abstract class Exchange {
         try {
             const args: any[] = [];
             args.push(outcomeIds.map(resolveOutcomeId));
-            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/fetchOrderBooks`, {
+            const route = this.pmxtApiKey ? HOSTED_METHOD_ROUTES.get("fetchOrderBooks") : undefined;
+            const url = route
+                ? `${HOSTED_CATALOG_BASE_URL}${formatRoutePath(route, { venue: this.exchangeName })}`
+                : `${this.resolveBaseUrl()}/api/${this.exchangeName}/fetchOrderBooks`;
+            const response = await this.fetchWithRetry(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
                 body: JSON.stringify({ args, credentials: this.getCredentials() }),

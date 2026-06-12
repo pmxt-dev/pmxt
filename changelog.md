@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.49.10] - 2026-06-12
+
+Hosted custody docs now link to the public contract explorer pages instead of private GitHub source paths, and explicitly disclose that explorer source verification/public source publication is still pending.
+
+### Fixed
+
+- **`docs/concepts/hosted-custody.mdx`**: Replaced the broken private `pmxt-dev/pmxt-trading` source links in the deployed-contracts table with public Polygonscan/BscScan explorer links for the current Polygon `PreFundedEscrow` (`0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2`) and BSC `VenueEscrow` (`0x6a273643d84edbb603b808d8a724fb963c7a298a`) deployments. Added a warning that the explorers show deployed bytecode but are not source-verified yet, so users should treat the explorer addresses plus the unaudited status as the current public security posture. Removed remaining private-source links from the admin-model and withdrawal-delay copy.
+
 ## [2.49.9] - 2026-06-11
 
 Kalshi API hostname fix. The `api.external-api.kalshi.com` domain was decommissioned by Kalshi, causing all Kalshi ingest runs to fail with `ENOTFOUND` for approximately 2.6 days. Updated all hardcoded URLs to the current hostnames.

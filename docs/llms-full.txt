@@ -1614,15 +1614,19 @@ If anything here disagrees with what you read in [Hosted trading](https://pmxt.d
 
 There are two contracts, on two chains. Both are non-upgradeable, non-pausable, with no Ownable role — only an immutable `operator` set at deploy time.
 
-| Contract | Chain | ChainId | Mainnet address | Source |
-| -------- | ----- | ------- | --------------- | ------ |
-| `PreFundedEscrow` (HomeEscrow) | Polygon | 137 | `0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2` | [PreFundedEscrow.sol](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/PreFundedEscrow.sol) |
-| `VenueEscrow` | BSC | 56 | `0x6a273643d84edbb603b808d8a724fb963c7a298a` | [VenueEscrow.sol](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/VenueEscrow.sol) |
+| Contract | Chain | ChainId | Mainnet address | Explorer |
+| -------- | ----- | ------- | --------------- | -------- |
+| `PreFundedEscrow` (HomeEscrow) | Polygon | 137 | `0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2` | [Polygonscan](https://polygonscan.com/address/0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2) |
+| `VenueEscrow` | BSC | 56 | `0x6a273643d84edbb603b808d8a724fb963c7a298a` | [BscScan](https://bscscan.com/address/0x6a273643d84edbb603b808d8a724fb963c7a298a) |
 
 Verify each one on the explorer before you fund:
 
 - Polygon `PreFundedEscrow`: `https://polygonscan.com/address/0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2`
 - BSC `VenueEscrow`: `https://bscscan.com/address/0x6a273643d84edbb603b808d8a724fb963c7a298a`
+
+
+> **Warning:**
+The explorer pages currently show the deployed contract bytecode, but the source code is not explorer-verified yet. Public source links will be added here once verification/public source publication is complete; until then, treat the explorer addresses above as the public deployment identifiers and the unaudited status below as the security posture.
 
 
 > **Note:**
@@ -1664,7 +1668,7 @@ The trust property worth checking is "PMXT (the operator) cannot drain user fund
 
 #### Operator / admin model
 
-There is no admin. The contracts have **no `Ownable`, no `Pausable`, no upgrade proxy, no upgrade timelock, no fee setter**. Read the source: the entire privileged surface is the `onlyOperator` modifier in [OutcomeCustody.sol](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/OutcomeCustody.sol), and the `operator` address is `immutable` — set once in the constructor and unchangeable for the life of the contract.
+There is no admin. The contracts have **no `Ownable`, no `Pausable`, no upgrade proxy, no upgrade timelock, no fee setter**. The entire privileged surface is the `onlyOperator` modifier in the shared `OutcomeCustody` base contract, and the `operator` address is `immutable` — set once in the constructor and unchangeable for the life of the contract.
 
 What this means concretely:
 
@@ -1718,7 +1722,7 @@ This debits your in-escrow balance immediately and records a pending withdrawal 
 
 
 > **Warning:**
-The deployed `WITHDRAWAL_DELAY` is **60 seconds**, set as a constant in [OutcomeCustody.sol#L36](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/OutcomeCustody.sol). Older versions of [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) referred to "~1 hour" — that was a forward-looking value; the production contract uses 60 seconds today. We will lengthen the timelock before raising the value of funds the operator manages; this page will reflect the change.
+The deployed `WITHDRAWAL_DELAY` is **60 seconds**. Older versions of [Escrow lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle) referred to "~1 hour" — that was a forward-looking value; the production contract uses 60 seconds today. We will lengthen the timelock before raising the value of funds the operator manages; this page will reflect the change.
 
 
 ##### Step 3 — Wait the timelock, then claim
@@ -1733,7 +1737,7 @@ That's it — your USDC is back in your wallet without any signature from or cal
 
 ##### If you also hold Opinion outcome tokens on BSC
 
-`VenueEscrow` exposes the same shape on BSC. Use `withdrawTokens(tokenId, amount)` → wait → `claimTokensWithdrawal(tokenId)`. Source: [OutcomeCustody.sol](https://github.com/pmxt-dev/pmxt-trading/blob/main/contracts/src/OutcomeCustody.sol#L129).
+`VenueEscrow` exposes the same shape on BSC. Use `withdrawTokens(tokenId, amount)` → wait → `claimTokensWithdrawal(tokenId)`.
 
 #### Failure modes
 

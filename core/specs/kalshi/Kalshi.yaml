@@ -5,17 +5,10 @@ info:
   description: Manually defined OpenAPI spec for endpoints being migrated to spec-first approach
 
 servers:
-  - url: https://{env}.external-api.kalshi.com/trade-api/v2
-    description: Kalshi Trade API
-    variables:
-      env:
-        default: api
-        enum:
-          - api
-          - demo-api
-        description: >
-          'api' = production environment.
-          'demo-api' = demo environment.
+  - url: https://external-api.kalshi.com/trade-api/v2
+    description: Kalshi Trade API (production)
+  - url: https://external-api.demo.kalshi.co/trade-api/v2
+    description: Kalshi Trade API (demo)
 
 paths:
   /historical/cutoff:

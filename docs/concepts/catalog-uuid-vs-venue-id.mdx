@@ -1,0 +1,70 @@
+---
+title: Catalog UUID vs Venue ID
+description: "Two ways to identify a market. The hosted trading API accepts either — here's when each matters."
+---
+
+PMXT speaks two market identifier languages:
+
+- The **catalog UUID** is PMXT's stable identifier — a UUID assigned to every row in `prediction_markets.markets` and `prediction_markets.outcomes`.
+- The **venue-native ID** is whatever the underlying venue uses — a Polymarket `conditionId` hex string + `tokenId` integer, a Kalshi ticker, an Opinion market hash, etc.
+
+**The hosted trading API accepts either.** Whichever you have in hand, you can pass it straight to `create_order` / `build_order` — the SDK picks the right wire field and the backend resolves it. No conversion step required.
+
+```python
+# Both of these work identically against trade.pmxt.dev:
+
+# Via the venue client — outcome carries a venue-native id from fetch_markets.
+client = pmxt.Polymarket(pmxt_api_key=..., wallet_address=..., private_key=...)
+market = client.fetch_markets({"query": "trump 2028"})[0]
+order = client.create_order(outcome=market.yes, side="buy", amount=10, ...)
+
+# Via the Router — outcome carries a catalog UUID.
+router = pmxt.Router(pmxt_api_key=...)
+events = router.fetch_events(query="trump 2028")
+yes = events[0].markets[0].outcomes[0]
+order = client.create_order(outcome=yes, side="buy", amount=10, ...)
+```
+
+## When the distinction matters
+
+It matters in exactly two places.
+
+### 1. Cross-venue identity
+
+A single real-world outcome (e.g. "Trump wins 2028") can exist on multiple venues. Each venue has its own native id — they don't agree. The **catalog UUID** is the only identifier stable across venues. Use it when:
+
+- You're consuming `fetch_matched_market_clusters` / `fetch_matched_event_clusters` to find the same outcome on multiple venues.
+- You're building portfolio analytics that span venues.
+- You're storing references that need to survive a venue re-listing (venue-native ids can change; the catalog UUID stays).
+
+### 2. Self-hosted trading
+
+In [self-hosted mode](/guides/self-hosted) — `POST /api/{exchange}/createOrder` — there is no PMXT catalog in the path. You're talking to the venue directly. **Venue-native ids only.** Catalog UUIDs won't resolve.
+
+## Reverse-resolving a venue id to a catalog UUID
+
+If you already have a venue-native id (e.g. a saved database of Polymarket `conditionId`s) and want the catalog UUID for cross-venue work:
+
+```python
+clusters = router.fetch_matched_market_clusters(
+    venue="polymarket",
+    venue_market_id="0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5",
+)
+catalog_uuid = clusters[0].market_id
+```
+
+For batch workflows, the [SQL endpoint](/sql) gives you direct access to `prediction_markets.markets` and `prediction_markets.outcomes` with the canonical UUID alongside the venue-native fields (`venue_market_id`, `venue_outcome_id` / `token_id`).
+
+## Examples (the two ids for one market)
+
+A single Polymarket binary market carries:
+
+- Catalog `market_id`: `2eeb03dc-404b-41d5-bc57-6aeb37927ae6`
+- Polymarket `conditionId`: `0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5`
+
+Each outcome carries:
+
+- Catalog `outcome_id`: `a114f052-1fd1-4bcd-b9cf-de019db81b67`
+- Polymarket `tokenId`: `104932610032177696635191871147557737718087870958469629338467406422339967452218`
+
+Both forms work against `trade.pmxt.dev/v0/trade/*`. Pick whichever your code already has.

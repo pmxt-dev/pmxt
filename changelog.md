@@ -2,7 +2,223 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.48.6] - 2026-06-04
+## [2.49.9] - 2026-06-11
+
+Kalshi API hostname fix. The `api.external-api.kalshi.com` domain was decommissioned by Kalshi, causing all Kalshi ingest runs to fail with `ENOTFOUND` for approximately 2.6 days. Updated all hardcoded URLs to the current hostnames.
+
+### Fixed
+
+- **`core/src/exchanges/kalshi/config.ts`**: Updated production REST base URL from `https://api.external-api.kalshi.com` to `https://external-api.kalshi.com`, demo REST from `https://demo-api.external-api.kalshi.com` to `https://external-api.demo.kalshi.co`, production WebSocket from `wss://api.external-api.kalshi.com/trade-api/ws/v2` to `wss://external-api-ws.kalshi.com/trade-api/ws/v2`, and demo WebSocket to `wss://external-api-ws.demo.kalshi.co/trade-api/ws/v2`. The `KALSHI_BASE_URL` and `KALSHI_DEMO_BASE_URL` env var overrides remain supported and take precedence over these defaults.
+- **`core/specs/kalshi/Kalshi.yaml`**: Replaced the `{env}.external-api.kalshi.com` server-variable entry with two explicit server entries matching the new hostnames. Regenerated `core/src/exchanges/kalshi/api.ts` from the updated spec.
+
+## [2.49.8] - 2026-06-10
+
+Hosted trading quickstart actually works now. The SDKs' client-side economics validator was rejecting every server-built market order before signing (`economic mismatch: worst_price expected <= ... got 0.999`), because the hosted trading API deliberately pins market-order `worst_price` to the tick-grid extreme and caps the user with `max_cost_usdc` / `shares_6dec` instead ("textbook market semantics"). Verified live against `trade.pmxt.dev` with a real $5 fill end-to-end.
+
+### Fixed
+
+- **TS `pmxt/hosted-typed-data.ts` + Python `pmxt/_hosted_typeddata.py`**: `validateWorstPrice` / `_validate_worst_price` no longer apply the limit-order slippage bound to **market** orders. For market orders the binding user protection is `max_cost_usdc` (buys) / `shares_6dec` (sells) — both already strictly validated — so the validator now only sanity-checks that `worst_price` lies inside the open `(0, 1)` price domain. Limit orders keep the existing slippage-bound check. This unblocks `create_order` / `createOrder` market orders in hosted mode, which previously failed pre-sign, every time.
+- **TS `pmxt/hosted-mappers.ts` + Python `pmxt/_hosted_mappers.py`**: `userTradeFromV0` / `user_trade_from_v0` now normalize the v0 wire `amount` (6-dec micro-shares, e.g. `58139533.0`) to decimal shares (`58.139533`), so `UserTrade.amount` means shares — consistent with `Position.size` and the rest of the SDK. The reverse mappers scale back to micros symmetrically.
+- **Python `client.py`**: `create_order` docstring claimed "Not available through the hosted API" — it is; corrected to describe the hosted build → local-sign → submit flow.
+
+### Changed
+
+- **`docs/trading-quickstart.mdx`**: Removed the "use aggressive `slippage_pct`" workaround warning (the validator bug it papered over is fixed); market-order examples no longer pass `slippage_pct` and note that market orders are budget-capped, not price-capped. Fixed the TypeScript `createOrder` example to use `type` (the actual `CreateOrderParams` field) instead of the nonexistent `orderType`. Fixed step-6 verification snippets to use real model fields (`Position.size` / `outcome_label`, `Balance.available`) instead of nonexistent `quantity` / `notional` / `free`. Documented that hosted limit orders currently return `501`.
+
+## [2.49.7] - 2026-06-09
+
+API Reference sidebar reorder: `Trading` and `Orders & Positions` move from near the bottom of the tab to immediately under `Events & Markets`, so the customer's natural path is walkable top-to-bottom — discover (Events & Markets) → act (Trading) → inspect state (Orders & Positions) → niche features.
+
+### Changed
+
+- **`scripts/generate-mintlify-docs.js`**: The API-tab assembly now inserts both `crossExchangeGroups` and the hosted `otherExternalGroups` after `"Events & Markets"`. Because `insertGroupsAfter` pushes the existing target's neighbor down, the second insertion (`otherExternalGroups`) lands between `"Events & Markets"` and `"Cross Exchange"`, producing the order: `Overview → System → Events & Markets → Trading → Orders & Positions → Cross Exchange → Order Book & Trades → Realtime → Data Feeds → Other → Enterprise`. Idempotent — re-running the regenerator produces no diff.
+
+## [2.49.6] - 2026-06-09
+
+Generator-side hotfix for a regression introduced by the v2.49.5 auto-publish: the `generate:mintlify` step (`scripts/generate-mintlify-docs.js`, run by `.github/workflows/publish.yml` on every release tag) was re-injecting self-hosted Group A endpoints as a duplicate `"Trading"` group (with `"Local Only"` badges) into `docs.json`'s API Reference tab, sitting alongside the canonical hosted `"Trading"` group that this release line had just renamed and cleaned up. Result: every release pushed two same-named groups into the rendered sidebar.
+
+### Fixed
+
+- **`scripts/generate-mintlify-docs.js`**: Removed the hardcoded `"Trading"` and `"Orders & Positions"` entries from the `ENDPOINT_GROUPS` matcher array — the generator no longer manufactures those groups from the self-hosted `openapi.json`. Added the matching self-hosted operation ids (`createOrder`, `buildOrder`, `submitOrder`, `cancelOrder`, `editOrder`, `fetchOrder`, `fetchOpenOrders`, `fetchClosedOrders`, `fetchAllOrders`, `fetchMyTrades`, `fetchPositions`, `fetchBalance`, `fetchOrderHistory`) to the `HIDDEN_OPERATIONS` set so they don't fall through to the `"Other"` bucket either. Net effect: the next auto-publish keeps the manually-curated hosted `"Trading"` + `"Orders & Positions"` groups (rendered from `openapi-hosted-trading.json`) and never re-adds the self-hosted equivalents. Self-hosters who want the full reference still consume `openapi.json` directly or reach it via `/guides/self-hosted`.
+- **`docs/docs.json`**: Removed two stale duplicate groups (`"Trading (Hosted)"`, `"Orders & Positions (Hosted)"`) that the 2.49.5 auto-publish had left behind after the rename. The generator is now idempotent — regenerating produces a stable group list.
+
+## [2.49.5] - 2026-06-09
+
+Sidebar cleanup: drop "(Hosted)" suffixes everywhere and hide the parallel self-hosted Group A reference. The hosted endpoints are now the only Group A surface in the sidebar; the API reference reads as "Trading → Create Order" instead of "Trading (Hosted) → Create Order (Hosted)."
+
+### Changed
+
+- **Sidebar group labels (`docs.json`)**: `"Trading (Hosted)"` → `"Trading"`, `"Orders & Positions (Hosted)"` → `"Orders & Positions"` inside the API Reference tab. The "(Hosted)" disambiguation made sense when a sibling self-hosted group existed in the same sidebar; with that group removed (see below), the suffix is just noise.
+- **Operation summaries (`openapi-hosted-trading.json`)**: All 9 hosted op `summary` fields drop the `(Hosted)` suffix — `"Create Order (Hosted)"` → `"Create Order"`, etc. `"Cancel Order -- Build (Hosted)"` collapses to `"Cancel Order"` (the build / sign / submit two-step is already explained in the operation description; the user-facing name shouldn't telegraph internal mechanics).
+- **Operation tags (`openapi-hosted-trading.json`)**: `"Trading (Hosted)"` → `"Trading"`, `"Orders & Positions (Hosted)"` → `"Orders & Positions"` on every op. Mintlify derives URL slugs from the tag, so the rendered hosted endpoint URLs go from `/api-reference/trading-hosted/create-order` to `/api-reference/trading/create-order` (and equivalent for Orders & Positions). No external links pointed at the previous slugs.
+
+### Removed
+
+- **`"Self-host API reference"` sidebar group (`docs.json`)**: The 11-page nested group rendering the self-hosted Group A endpoints from `openapi.json` (each operation flagged with a `"Local Only"` badge) is dropped from the Documentation tab sidebar. It duplicated the hosted endpoints' purpose for most readers and made the sidebar feel cluttered (a "Trading" group with "Local Only"–badged entries sitting alongside the prominent hosted "Trading" group on the API Reference tab). The underlying `openapi.json` file is unchanged — self-hosters who want the full reference can still consume the spec directly or reach the per-method pages via the existing `/guides/self-hosted` narrative. Net effect on the rendered sidebar: one canonical "Trading" group in the API Reference tab, no parallel "Local Only" entries elsewhere.
+
+## [2.49.4] - 2026-06-09
+
+Hosted-trading docs QA pass. This patch also ships the 2.49.2 doc restructure work that had accumulated dirty in the working tree but never landed (Pattern E sidebar split, custody page, prediction-markets-101 glossary, terminology cleanup, etc. — see the 2.49.2 entry below for the full list).
+
+### Changed
+
+- **Hosted op descriptions (`openapi-hosted-trading.json`)**: All 9 hosted Group A operations (`createOrderHosted`, `buildOrderHosted`, `submitOrderHosted`, `cancelOrderHosted`, `fetchBalanceHosted`, `fetchPositionsHosted`, `fetchOpenOrdersHosted`, `fetchMyTradesHosted`, `fetchOrderHosted`) rewritten in a user-friendly style: lead with what the customer gets, demote internals (EIP-712, build/sign/submit decomposition, custodial-flow alternatives) to a final paragraph or remove entirely. `createOrderHosted` now opens with an inline code sample showing the natural `client.fetch_markets() → client.create_order(outcome=market.yes)` chain. No more "EIP-712 typed-data payload" or "PreFundedEscrow balance" in opening sentences.
+- **Non-custodial language sweep** across customer-facing concept docs: `docs/concepts/hosted-trading.mdx`, `docs/concepts/hosted-custody.mdx` (new), `docs/concepts/hosted-vs-self-hosted.mdx`, `docs/concepts/prediction-markets-101.mdx` (new), `docs/trading-quickstart.mdx`, `docs/guides/escrow-lifecycle.mdx` all reworded so the escrow story reads "USDC sits in a non-custodial `PreFundedEscrow` smart contract; PMXT cannot move funds without your EIP-712 signature" rather than "PMXT custodies USDC." `docs/security.mdx` left alone — its credential-handling discussion is intentional and scoped correctly.
+- **UI-first deposit / withdraw flow on `docs/trading-quickstart.mdx` and `docs/guides/escrow-lifecycle.mdx`**: Both pages now lead the deposit and withdraw sections with a "Recommended: use the dashboard" subsection (connect wallet at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) → click Deposit/Withdraw → confirm in your wallet). The previous `client.escrow.approve_tx(...)` / `deposit_tx(...)` / `withdraw_tx(...)` `<CodeGroup>` blocks are preserved verbatim but tucked inside `<Accordion title="Advanced: programmatic ...">` so they're one click away for the scripting / treasury-automation case.
+- **`x-mint.content` callouts on all 9 hosted ops (`openapi-hosted-trading.json`)**: The funding-prereq `<Note>` now links directly to [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) for the one-time deposit (with `/guides/escrow-lifecycle` as the programmatic-flow fallback), replacing the previous link to the lifecycle guide alone. The EVM-key `<Tip>` now reads "Your USDC sits in a non-custodial `PreFundedEscrow` on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature." Previous wording said "PMXT custodies USDC on Polygon for every hosted venue."
+
+### Removed
+
+- **`BuildOrderHostedRequest.outcome_id` (`openapi-hosted-trading.json`)**: Following the same logic as `market_id` (relaxed in 2.49.3), `outcome_id` is no longer documented as a request property. The schema now only documents `venue` + `venue_outcome_id` as the way to identify the target outcome. The hosted trading backend continues to accept `outcome_id` (UUID) for backward compatibility — existing callers that send it keep working — but the spec stops promising it as a supported input. Net effect: a new reader looking at the create-order page sees one clean way to identify the outcome instead of an "EITHER (a) catalog UUID OR (b) venue + venue_outcome_id" fork. Schema description tightened to a single sentence.
+- **Dual-identifier framing across the hosted spec**: All "catalog UUID" / "Provide this OR" / "venue-native id from fetch_markets()" / "catalog UUID lookup required" language scrubbed from operation descriptions, schema property descriptions, and `x-codeSamples` header comments. Net `grep -E "catalog UUID|Provide this OR" docs/api-reference/openapi-hosted-trading.json` count went from 14 → 0. Response-side `outcome_id` / `market_id` on `OrderV0`, `UserTradeV0`, `PositionV0` now described as plain "Identifier of the outcome / market this row refers to" without the "catalog UUID" / "cross-venue canonical" framing — readers no longer have to learn an ID-architecture taxonomy before reading a position.
+
+### Added
+
+- **Per-field descriptions across every hosted-trading spec schema (`openapi-hosted-trading.json`)**: ~129 `description` strings added to bare properties across 16 schemas (`BalanceV0`, `BuildOrderHostedRequest`, `BuildOrderHostedResponse` and nested `quote` / `resolved`, `CancelBuildHostedRequest`, `CancelBuildHostedResponse`, `ErrorResponse`, `HostedErrorResponse`, `ListMeta`, `OrderV0`, `PositionV0`, `RateLimitError`, `SubmitOrderHostedRequest`, `UnifiedEvent`, `UnifiedMarket`, `UnifiedOutcome`, `UserTradeV0`). Mintlify now renders meaningful per-field doc strings instead of bare `type | null` rows. Descriptions are grounded in the trading backend's `models_v0.py` Pydantic field semantics — e.g. `fee` is now documented as a USDC dollar amount net of per-fill venue fees, `PositionV0.shares` is documented as the ERC-1155 balance held by `PreFundedEscrow` on behalf of the wallet (*not* the wallet's on-chain balance), and `PositionV0.entry_price` is documented as the v1 cost-basis approximation (`sum(buy_quote_micros) / sum(buy_shares_micros)`, ignoring sells) — with the explicit caveat that `current_price`, `current_value`, and `unrealized_pnl` are reserved and currently return `null` in this release. Verify-grep on bare properties (`jq '... .description == null ...'`) returns zero records.
+
+### Not changed (deliberate)
+
+- **`docs/security.mdx`**: The mode-scoped credential-handling table is intentional — its "credentials hit process memory ephemerally" claim is scoped to **self-hosted** mode and correctly distinguishes from the hosted flow (where the private key never leaves the user's machine). Left alone in the non-custodial sweep.
+- **Auto-generated `docs/api-reference/openapi.json`** (self-hosted spec, regenerated by `core/scripts/generate-openapi.js`): the same description / friendly-rewrite passes were not applied because they'd be lost on the next regeneration. If self-hosted reference docs need the same polish later, the source is the `SCHEMAS` literal inside `core/scripts/generate-openapi.js`, not the rendered JSON.
+- **Backend `BuildOrderV0Req` Pydantic model** (`pmxt-trading`): `outcome_id` remains an accepted field at the API layer for backward compatibility with pre-2.49.3 callers. The spec-side removal is documentation-only — no breaking change on the wire.
+
+## [2.49.3] - 2026-06-09
+
+Backend-deploy patch for the venue-native outcome ID acceptance feature described in 2.49.2. Includes a follow-up SDK bug fix discovered during end-to-end verification on Polygon mainnet, plus the doc and test deltas that bring this release to a confirmed working state.
+
+### Fixed
+
+- **SDK (`sdks/python/pmxt/client.py`, `sdks/typescript/pmxt/client.ts`)**: When the caller supplies a venue-native outcome identifier (non-UUID string returned by `client.fetch_markets()` on a venue client), `_hosted_build_order_request` / `_hostedBuildOrderBody` now correctly **suppress `market_id` from the wire body** instead of forwarding the (also venue-native) value alongside `venue` + `venue_outcome_id`. Previous behavior caused the backend to reject the request with a UUID-validation error on `market_id` (`Input should be a valid UUID, invalid length: expected length 32 for simple format, found 6`). The catalog-UUID path is unchanged — `market_id` is still forwarded when both the supplied `outcome_id` and the supplied `market_id` are UUID-shaped.
+
+### Changed
+
+- **Docs (`docs/trading-quickstart.mdx`)**: Step 5 collapsed to the natural single-client chain — `client.fetch_markets({"query": "trump 2028"})[0]` → `client.create_order(outcome=market.yes, side="buy", amount=1.0, denom="usdc", order_type="market", slippage_pct=99.9)`. The previous Router round-trip + `<Warning>` against `pmxt.Polymarket().fetch_markets()` results is replaced by a `<Note>` clarifying that both UUID and venue-native ID forms are accepted by the trading API. Step 7 ("Verify the fill") renumbered to Step 6.
+- **Docs (`docs/concepts/catalog-uuid-vs-venue-id.mdx`)**: Rewritten (70 lines down from 91). The page no longer frames the two ID spaces as a footgun. New framing: hosted trading accepts either identifier; the catalog UUID matters specifically for cross-venue identity (matched clusters, portfolio analytics that span venues, stability across venue re-listings) and for self-hosted mode where the catalog isn't in the path. The `<Warning>` against `pmxt.Polymarket().fetch_markets()` results is removed.
+
+### Added
+
+- **SDK tests**: Python `tests/test_hosted_dispatch.py` and TypeScript `tests/hosted-dispatch.test.ts` gained `test_build_order_with_venue_native_id_sends_venue_pair` / `buildOrder with venue-native outcomeId sends (venue, venue_outcome_id)` cases asserting the new wire shape (`venue`, `venue_outcome_id` present; `outcome_id`, `market_id` absent). Existing test constants upgraded from `"market-uuid-1"` / `"outcome-uuid-1"` (which the new UUID detection regex would mis-classify as venue-native) to canonical 8-4-4-4-12 UUID strings so the backcompat-UUID test cases continue to assert the right behavior. Net: Python 26/26, TypeScript 18/18.
+
+### Verified
+
+- **End-to-end on Polygon mainnet**: Confirmed the full natural workflow `client.fetch_markets()[0]` → `client.create_order(outcome=market.yes)` → on-chain settlement → `fetch_positions` → `client.create_order(side="sell")` → on-chain settlement → position closed. Round-trip executed against PreFundedEscrow (`0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2`) on the Spain WC 2026 YES outcome: buy 1.000000 USDC → 6.25 shares (tx `0x16bcfa7e00c49325bd779b044f71a660899e9d0218b11656e2ca9646a208ba10`, block 88201299), sell 6.25 shares → 0.988781 USDC. Net round-trip −0.011 USDC (≈ 1.1%, expected CLOB spread).
+
+### Deploy prerequisite met
+
+- **`pmxt-trading` (`BuildOrderV0Req` accepts `(venue, venue_outcome_id)`)**: deployed in `pmxt-dev/pmxt-trading@9983e35`.
+
+## [2.49.2] - 2026-06-09
+
+Per-method docs follow-up to 2.49.1 paired with a terminology cleanup. Every Group A method (`createOrder`, `buildOrder`, `submitOrder`, `cancelOrder`, `fetchBalance`, `fetchPositions`, `fetchOpenOrders`, `fetchMyTrades`, `fetchOrder`, `fetchClosedOrders`, `fetchAllOrders`) now has a synchronized `Hosted (recommended)` / `Self-hosted` tab toggle on its reference page, so customers see the hosted endpoint and the v2.49 SDK constructor shape by default and can flip to the local-service variant in place. Mintlify synchronizes tab selection across pages via shared label keys, so the choice persists as the user navigates the API Reference. In parallel, per the 2026-05-27 ADR "Avoid Sidecar Terminology" in the company brain, user-facing references to the local PMXT runtime now use **"local PMXT service"** (or **"local service"** when unambiguous) across the READMEs and `concepts/hosted-vs-self-hosted.mdx`. Internal implementation identifiers and historical changelog entries from earlier releases are intentionally left as-is.
+
+### Added
+
+- **Docs (`docs/api-reference/`)**: 11 new shadow MDX files — one per Group A method — wrapping the existing OpenAPI auto-render in a `<Tabs>` toggle. `Hosted (recommended)` tab listed first on every page so it's the default; `Self-hosted` second. Tab labels are byte-identical across all 11 files for cross-page sync.
+- **Core (`openapi-hosted.json`)**: 9 new operations documenting the `trade.pmxt.dev/v0/*` trading surface — `buildOrderHosted` (POST `/v0/trade/build-order`), `submitOrderHosted` (POST `/v0/trade/submit-order`), `createOrderHosted` (SDK-convenience POST `/v0/trade/create-order` documentation entry), `cancelOrderHosted` (POST `/v0/orders/cancel/build`), `fetchBalanceHosted` (GET `/v0/user/{address}/balances`), `fetchPositionsHosted` (GET `/v0/user/{address}/positions`), `fetchOpenOrdersHosted` (GET `/v0/orders/open`), `fetchMyTradesHosted` (GET `/v0/user/{address}/trades`), `fetchOrderHosted` (GET `/v0/orders/{order_id}`). Each carries Python + TypeScript `x-codeSamples` using the v2.49 hosted constructor (`pmxtApiKey`, `walletAddress`, `privateKey`), error responses covering 401/403/404/410/422/503, and bearer auth via the existing `bearerAuth` security scheme. Plus 10 new component schemas for the v0 request/response shapes, all referencing existing components (`Order`, `Balance`, etc.) from 2.49.1.
+- **Docs (`docs.json`)**: Trading and "Orders & Positions" sidebar groups now reference the 11 shadow MDX slugs directly, so Mintlify renders the toggle pages instead of auto-generating from `openapi.json`.
+
+### Changed
+
+- **READMEs (`readme.md`, `sdks/python/README.md`, `sdks/typescript/README.md`)**: Every user-visible "sidecar" reference replaced with "local PMXT service" or "local service" depending on context. The Quick Start, "How it works (self-hosted)", and "Self-hosted trading (advanced)" sections now use the canonical terms.
+- **Docs (`docs/concepts/hosted-vs-self-hosted.mdx`)**: "...or run a sidecar" → "...or run a local PMXT service" in the "When hosted is the right choice" list.
+
+### Fixed
+
+- **Core (`createOrder` / `buildOrder` code samples)**: Pre-existing JSDoc rot — the auto-generated reference pages showed `type="market"` combined with `price=0.55`, an incoherent combination since price is only meaningful for limit orders. Replaced with coherent limit-order samples across all 16 venues (32 createOrder + 32 buildOrder samples, 64 line changes total). The fix lives in `core/scripts/generate-openapi.js`'s `PARAM_OVERRIDES` map so future regeneration emits the correct shape.
+
+### Not addressed (out of scope, flagged for follow-up)
+
+- **`fetchClosedOrdersHosted` / `fetchAllOrdersHosted`**: no underlying hosted endpoint exists — both methods raise `NotSupported` in hosted mode (closed orders are modeled as trades; use `fetchMyTrades` for historical fills). The shadow MDX files surface this via a `<Warning>` on the Hosted tab linking to `fetchMyTrades`.
+- **Escrow methods**: `client.escrow.{approve, deposit, withdraw, withdrawals}` aren't in Group A and so don't have toggle pages yet. They're hosted-only (no self-hosted variant exists), so a follow-up could add single-tab reference pages.
+- **Generator capability map gap**: `buildCapabilityMap()` in `core/scripts/generate-openapi.js` only instantiates 13 of the 16 exported exchange classes, omitting `Hyperliquid`, `GeminiTitan`, and `Mock`. Re-running the generator drops their `x-codeSamples`. The merged main spec retains the missing samples from a prior generator run; the surgical fix here didn't disturb them. Worth a real fix in a follow-up.
+
+### Not changed (deliberate)
+
+- **Internal implementation identifiers** (`_resolve_sidecar_host`, `_kill_orphan_sidecars`, `sidecarReadRequest`, `pmxt-ensure-server`, etc.) — per the ADR's scope ("Existing internal implementation identifiers may remain unchanged unless they are user-visible in generated outputs").
+- **Historical changelog entries** for 2.49.1 and earlier — they accurately describe what shipped at the time using the terms in use then.
+- **Auto-generated files** (`docs/api-reference/openapi.json`, `docs/llms-full.txt`, `docs/llms.txt`) — these are emitted by the generator pipeline. The terminology fix flows through the next regeneration via the source files; not hand-editing the artifacts here.
+
+## [2.49.1] - 2026-06-08
+
+Positioning-shift patch on top of 2.49.0 — the hosted trading mode shipped in 2.49.0 but the docs, READMEs, and OpenAPI schemas still defaulted to the self-hosted sidecar path. This release flips the default everywhere the SDK + docs surface a customer hits: hosted PMXT is the primary experience; self-hosting becomes the advanced escape hatch. No SDK runtime behavior changes — pure documentation, schema, and copy work. Marketing-site changes ship separately in a sibling pmxt-website PR.
+
+### Added
+
+- **Docs**: 11 new MDX pages on the Mintlify site covering the hosted trading mode end-to-end — `trading-quickstart` (60-second walkthrough), `concepts/hosted-trading` (feature landing), `concepts/hosted-vs-self-hosted` (one-pager comparison), `concepts/catalog-uuid-vs-venue-id` (the UUID/venue-id gotcha), `guides/escrow-lifecycle` (PreFundedEscrow walkthrough), `guides/signing` (EthAccountSigner / EthersSigner + EIP-712), `guides/hosted-errors` (the 5 most-common subclasses with `try/except` cookbook), `guides/migrate-to-hosted-trading` (ported `MIGRATION.md` content with language tabs), `guides/self-hosted` (consolidated local-sidecar story), `api-reference/errors` (full `HostedTradingError` tree with dual-parent semantic-map), `api-reference/configuration` (`ExchangeOptions` + env vars + base-URL resolution).
+- **Docs**: New "Hosted Trading" and "Self-host" sidebar groups in `docs.json`, plus a "Reference" group at the top of the API Reference tab. `sdk/server` moved out of the previous "SDK" group into "Self-host" (without slug rename — link-stability preserved for this release).
+- **Core**: New `ExchangeOptions` component schema in `core/src/server/openapi.yaml` documenting constructor-level options (`pmxtApiKey`, `walletAddress`, `signer`, `privateKey`, `baseUrl`, etc.) — previously only `ExchangeCredentials` (per-request body credentials) existed at the schema level.
+- **Core**: `BuiltOrder.expiry` field added to the OpenAPI schema (the TTL that triggers `BuiltOrderExpired` at submit time was implicit in the SDK and undocumented at the spec level).
+
+### Changed
+
+- **Docs**: `introduction.mdx` "It runs two ways" bullet order inverted — hosted listed first as the default, self-hosted second as the advanced path. First code block swapped from a dual-variant local/hosted snippet to a single hosted-default `pmxt.Polymarket(pmxt_api_key=...)` constructor.
+- **Docs**: `authentication.mdx` venue-credentials section reframed — "Hosted writes (recommended)" subsection added on top showing the `pmxt_api_key + wallet_address + private_key` constructor with a one-line `client.escrow.deposit()` example. The raw-private-key prose was preserved but relabeled as "Self-hosted / direct venue credentials (advanced)". Status/body/meaning error table picked up a fourth "SDK exception" column cross-linking to the new `/api-reference/errors` page.
+- **Docs**: `security.mdx` "Run pmxt locally" callout downgraded from `<Warning>` to `<Note>` and reworded — self-hosting is positioned as one option among several rather than the implicit "safer choice". PreFundedEscrow custody surfaced as the hosted alternative.
+- **Docs**: `sdk/server.mdx` got a top `<Note>` banner clarifying that the page applies to self-hosted mode only and hosted-mode users can skip it. (File location and slug intentionally not renamed in this release to preserve external links.)
+- **Docs**: `concepts/venues.mdx` gained a third table at the bottom — "Hosted-trading venues" — listing Polymarket and Opinion with custody type, cross-chain support, and minimum-order-size columns.
+- **READMEs (root, Python, TypeScript)**: All three flipped to hosted-default. Subtitles, "Why pmxt?" bullets, Quick Start, and Trading sections now lead with `pmxt.Polymarket(pmxt_api_key=...)`. Per-venue raw-credentials blocks preserved verbatim but moved into "Self-hosted trading (advanced)" subsections. Root README's "No API key required" bullet (actively anti-hosted-positioning) replaced with a "Hosted API" lead bullet. Net +176 lines across the three files.
+
+### Fixed
+
+- **Core**: `Order` schema in `core/src/server/openapi.yaml` (and the generated `docs/api-reference/openapi.json`) now includes the nullable `txHash`, `chain`, and `blockNumber` fields the SDK has been returning in hosted mode since 2.49.0. Previous spec was silent on these and downstream codegen consumers missed them.
+- **Core**: `UserTrade` schema gained the same `txHash` / `chain` / `blockNumber` nullable trio.
+- **Core**: `Position` schema — `required` list trimmed from `[marketId, outcomeId, outcomeLabel, size, entryPrice, currentPrice, unrealizedPnL]` to `[marketId, outcomeId, size]`. The other four became optional in 2.49.0 when the SDK stopped fabricating mark-to-market defaults for positions without a known current price; the schema kept claiming they were required, so generated clients with strict-null checking were rejecting valid responses. New `currentValue` field added (`size * currentPrice` when available). `txHash` / `chain` / `blockNumber` enrichment added.
+- **Core**: `Balance` schema gained the optional `venue` field that hosted-mode responses already carry on multi-venue queries.
+- **Core**: `ErrorDetail` schema expanded from `{ message: string }` to the full envelope shipping in production responses — `code` (with a populated enum covering all `HostedTradingError` codes plus the pre-existing tree), `retryable: boolean`, optional `exchange`, optional free-form `detail` object. Downstream codegen can now branch on `code`.
+
+### Docs
+
+- **`docs.json`**: First-time `redirects` array added (empty for this release; reserves the structure for future slug renames).
+
+## [2.49.0] - 2026-06-08
+
+### Added
+
+- **SDK (Python + TypeScript)**: Hosted trading mode now works end-to-end against `trade.pmxt.dev`. Constructing the client with a `pmxt_api_key` / `pmxtApiKey` switches every Group A public method — `create_order` / `createOrder`, `build_order` / `buildOrder`, `submit_order` / `submitOrder`, `cancel_order` / `cancelOrder`, `fetch_balance` / `fetchBalance`, `fetch_positions` / `fetchPositions`, `fetch_open_orders` / `fetchOpenOrders`, `fetch_my_trades` / `fetchMyTrades`, `fetch_order` / `fetchOrder` — to dispatch through PMXT's PreFundedEscrow custody on `trade.pmxt.dev/v0/*` instead of the local sidecar. Read methods that require a wallet raise `MissingWalletAddress` locally before any network call when neither an explicit `address` argument nor `wallet_address` on the client is set. `fetch_closed_orders` and `fetch_all_orders` raise `NotSupported` in hosted mode (settled orders are modeled as trades; callers should use `fetch_my_trades`). Both SDKs auto-wrap a raw `private_key` / `privateKey` into the venue signer (`EthAccountSigner` for Python via `eth-account`, `EthersSigner` for TypeScript via the optional `ethers >= 6` peer dep) so the user never has to construct a signer manually.
+- **SDK (Python + TypeScript)**: New `Escrow` namespace on hosted-mode Polymarket clients (`client.escrow.build_approve_tx(...)`, `build_deposit_tx`, `build_withdraw_tx`, `withdrawals(...)`) for the PreFundedEscrow deposit/withdraw flow. Mirrors the `/v0/escrow/*` surface; only instantiated on hosted-trading-allowlisted venues.
+- **SDK (Python + TypeScript)**: New hosted-mode error hierarchy (`HostedTradingError`, `InsufficientEscrowBalance`, `OrderSizeTooSmall`, `InvalidApiKey`, `OutcomeNotFound`, `CatalogUnavailable`, `BuiltOrderExpired`, `InvalidSignature`, `NoLiquidity`, `MissingWalletAddress`). Each hosted error keeps a semantic parent so existing catch-sites still work — e.g. `InsufficientEscrowBalance` extends `InsufficientFunds`, `OutcomeNotFound` extends `NotFoundError`, `CatalogUnavailable` extends `ExchangeNotAvailable`. Python uses true multi-inheritance; TypeScript uses a `static isHostedError = true` flag plus an `isHostedError(e)` helper to compensate for single-inheritance. The mapper (`raise_from_response` / `raiseFromResponse`) translates `trade.pmxt.dev` status codes and detail strings to the right subclass.
+- **SDK (Python)**: New `tests/e2e/hosted_driver.py` — runnable live driver that proves URL routing against prod. Hits `trade.pmxt.dev/v0/*` with a deliberately-bogus key so the server returns 401, captures the URL for every public method via an `httpx`-level transport hook, and asserts each URL starts with `https://trade.pmxt.dev/v0/`. Also verifies local-only failure paths (`MissingWalletAddress`, `NotSupported`, `InvalidOrder`, `InvalidSignature`) raise before any network call.
+- **SDK (TypeScript)**: New `tests/e2e/hosted-driver.ts` — equivalent live driver (tsx-runnable) covering the same routing and local-raise assertions, using `global.fetch` instrumentation.
+- **SDK (Python + TypeScript)**: 87 new in-process integration tests (`test_hosted_dispatch.py` + `test_hosted_error_mapping.py` in Python, `hosted-dispatch.test.ts` + `hosted-error-mapping.test.ts` in TypeScript). These mock the lowest reasonable HTTP layer (`httpx.MockTransport` / `jest.spyOn(global, 'fetch')`), construct a hosted client, call the public method, and assert exact URL / verb / body shape / response mapping for every Group A method plus the upstream status → SDK exception mapping.
+- **SDK (Python + TypeScript)**: Feed listing surface on SDK clients — callers can now enumerate available data feeds from the unified client instead of reaching into the internal feed-client submodule. (#869)
+
+### Changed
+
+- **SDK (Python)**: `pmxt` 2.17.1 → 2.18.0. New constructor kwargs `wallet_address: str | None` and `signer: Signer | None` on every Exchange subclass; both are pass-through to the base class. Existing non-hosted (sidecar) callers see no behavior change.
+- **SDK (TypeScript)**: `pmxtjs` 2.17.1 → 2.18.0. New `walletAddress` / `signer` / `privateKey` fields on `ExchangeOptions`. `ethers >= 6.0.0 < 7.0.0` declared as an optional `peerDependency` (only required for hosted writes; hosted reads work without it).
+- **SDK (Python + TypeScript)**: `Order`, `UserTrade`, `Position`, and `Balance` now carry optional `tx_hash` / `txHash`, `chain`, and `block_number` / `blockNumber` fields, populated in hosted mode after the trade settles on-chain. Non-hosted callers see `None` / `undefined` for these — unchanged behavior.
+- **SDK (Python + TypeScript)**: `Position` mark-to-market fields (`outcome_label`, `entry_price`, `current_price`, `current_value`) are now all `Optional`. Hosted endpoints populate `outcome_label` and `entry_price` from operator-side cost-basis enrichment when available, but downstream consumers must handle the missing case rather than relying on fabricated defaults.
+- **SDK (Python + TypeScript)**: Drift parity sweep across the two SDKs — model shapes, method signatures, capability flags, and generated outputs reconciled so the same call against the same venue returns identically-shaped objects regardless of which SDK you use. (#867)
+- **SDK (Python + TypeScript)**: Missing event/order parameters propagated through both SDK models so the full set of fields the core surface produces is actually reachable on the SDK objects. (#872)
+- **SDK (Python)**: Type annotations tightened across the Python SDK — narrower union types and `Optional` markers replacing implicit `Any` in several public signatures. (#868)
+- **Core**: Cached exchange specs (the test fixtures used to detect upstream API drift) reconciled with current live payloads from each venue. (#866)
+- **Core**: Magic chain IDs (`137`, `56`, etc.) replaced with named constants throughout the codebase. (#878)
+- **Deps**: npm dependency refresh to clear outstanding security advisories. (#864)
+- **Deps**: Python security dependency floors raised to clear outstanding security advisories. (#865)
+
+### Fixed
+
+- **SDK (Python)**: `Order` dataclass field ordering — `filled_shares: Optional[float] = None` was declared before the non-default fields `remaining: float` and `timestamp: int`, which Python 3.13 rejects with `TypeError: non-default argument 'remaining' follows default argument 'filled_shares'` on first instantiation. Moved `filled_shares` below the required fields.
+- **SDK (Python)**: `_error_detail_from_success_payload` no longer treats a successful 2xx response with a list or scalar JSON payload as an error envelope. Endpoints like `/v0/user/{addr}/balances` return JSON arrays (`[{"currency": "USDC", "amount": 12.5}]`); the previous logic stringified the array and re-raised it as `HostedTradingError`, so every successful read crashed. Only 2xx Mappings with explicit `error` / `errors` / `success: false` markers now count as an error envelope.
+- **SDK (Python)**: Duplicate `NotSupported` class in `_hosted_errors.py` was shadowing the canonical one in `errors.py`. Tests that did `from pmxt._hosted_errors import NotSupported` failed to catch raises from `client.py` that used `from .errors import NotSupported`, because the two classes were unrelated. `_hosted_errors.py` now re-exports the canonical `NotSupported` from `errors.py`.
+- **SDK (TypeScript)**: `_hostedBuildOrderBody` was writing the user's wallet to `body["wallet_address"]`, but `trade.pmxt.dev`'s `BuildOrderV0Req` expects the field as `user_address`. Every `createOrder` / `buildOrder` via the TS SDK previously 422-ed on a "missing user_address" Pydantic validation error before reaching the chain. Python SDK was already correct.
+- **SDK (TypeScript)**: Nine `HOSTED_METHOD_ROUTES.get("…")` lookups in `client.ts` used snake_case keys (`"submit_order"`, `"fetch_balance"`, etc.) against a Map whose keys are camelCase (`"submitOrder"`, `"fetchBalance"`, etc.). Every hosted call would have thrown `TypeError: Cannot read properties of undefined (reading 'method')` at runtime. `tsc` and Jest didn't catch this because the existing unit tests stub out the lookup. Fixed by switching all nine sites to the camelCase keys actually defined in the map.
+- **SDK (TypeScript)**: Removed the `errors.ts → hosted-errors.ts` re-export block that created a circular import. `tsc` and `ts-jest` tolerated the cycle, but `tsx` / Node CJS crashed at module load with `ReferenceError: Cannot access 'PmxtError' before initialization` because `errors.ts`'s body re-exports from `hosted-errors.ts`, which extends `PmxtError` defined later in the same `errors.ts` body. Hosted error classes are now re-exported once from `index.ts` instead of via `errors.ts`. The public surface is unchanged for consumers importing from `pmxtjs`.
+- **Server (Python sidecar)**: Bare and overly-broad `except:` handlers in the sidecar manager tightened to specific exception types, so genuine bugs surface instead of getting swallowed and reported as opaque "server failed to start" errors. Closes #813-#821. (#871)
+- **Server**: WebSocket and feed-client hygiene issues surfaced rather than swallowed — disconnects, malformed frames, and feed-side errors now propagate to the caller instead of silently dropping events. (#870)
+- **Core**: Exchange normalizers across all venues realigned with current live payload shapes; addresses cumulative drift that had been quietly producing inconsistent unified objects between SDKs and the server. (#873)
+- **Kalshi**: Pagination capped to prevent unbounded scrolling on `fetchMarkets` / `fetchEvents`, and `status=all` is now serialized as a single value rather than the array form that some Kalshi endpoints reject. (#874)
+- **Limitless**: Explicit fetch timeouts on every outbound HTTP call (and the local test server) so a slow upstream can no longer hang the entire SDK request indefinitely. (#875, #876)
+- **Limitless**: Throttler now rejects new work when its queue overflows instead of growing the queue unbounded — prevents memory blow-up under burst load. (#877)
+- **Myriad**: Balance precision preserved end-to-end by performing integer math in `bigint` before converting to JS number, matching the fix shipped for Limitless in 2.48.2. Raw on-chain balances above `Number.MAX_SAFE_INTEGER` (~9 × 10¹⁵) no longer lose low-order digits. (#879)
+- **SuiBets**: Four review-feedback fixes in the SuiBets venue integration: restored `fetchSeries: false` capability flag in series-fetch paths, added `params.series` guard to prevent an undefined spread, removed the unused `SuiBetsApiResponse` import, and wired a new `SuiBetsOptions.walletAddress` through the TypeScript client. (#663)
+
+### Docs
+
+- **API reference**: Historical fetch order book usage clarified — the docs previously implied the historical depth endpoint covered current state, leading to wrong assumptions about caller-side throttling. (#837)
+- **API reference**: hosted-pmxt custom endpoints (the value-add routes layered on top of the unified surface) documented in-tree so they show up in the published Mintlify docs. (#842)
+
+
 
 ### Fixed
 

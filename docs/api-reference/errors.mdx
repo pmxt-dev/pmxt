@@ -1,0 +1,211 @@
+---
+title: Error Reference
+description: "Every error class the SDK can raise, with status codes, detail shapes, parent classes, and catch examples."
+---
+
+PMXT's error hierarchy is designed so the **same `except`/`catch` clause works in both hosted and self-hosted modes**. Hosted errors descend from `HostedTradingError` *and* from a semantic parent (`InsufficientFunds`, `InvalidOrder`, `AuthenticationError`, etc.). Self-hosted errors raise the semantic parent directly. Catch the parent and you cover both paths.
+
+For recovery patterns and the five most-common errors with code, see [Handling hosted errors](/guides/hosted-errors).
+
+## Hierarchy
+
+```
+PmxtError                                    (root for the whole SDK)
+├── ValidationError                          (local-only — bad arguments)
+│   └── MissingWalletAddress                 (escrow call without wallet_address)
+├── AuthenticationError
+│   ├── InvalidApiKey                  ◄── hosted
+│   └── InvalidSignature               ◄── hosted
+├── InsufficientFunds
+│   └── InsufficientEscrowBalance      ◄── hosted
+├── InvalidOrder
+│   ├── OrderSizeTooSmall              ◄── hosted
+│   ├── BuiltOrderExpired              ◄── hosted
+│   └── NoLiquidity                    ◄── hosted
+├── NotFoundError
+│   └── OutcomeNotFound                ◄── hosted
+├── ExchangeNotAvailable
+│   └── CatalogUnavailable             ◄── hosted (retryable)
+├── NotSupported
+└── HostedTradingError                       (any 4xx/5xx from trade.pmxt.dev)
+    │
+    └── (all classes marked ◄── hosted above are also HostedTradingError)
+```
+
+In Python this is implemented via multi-inheritance: `class InsufficientEscrowBalance(InsufficientFunds, HostedTradingError)`. In TypeScript, JS single-inheritance means each hosted leaf extends only its semantic parent, and the `HostedTradingError` membership is carried by a `static isHostedError = true` flag. Use the `isHostedError(e)` helper to test for membership.
+
+## `HostedTradingError`
+
+**Root of all errors returned by `trade.pmxt.dev`.**
+
+| | |
+| - | - |
+| Status code | Any 4xx or 5xx from the hosted trading API |
+| Detail body | `{ "error": "..." }` or `{ "detail": "..." }` or `{ "success": false, "error": "..." }` |
+| Parents (Python) | `PmxtError` |
+| TS membership | `e instanceof HostedTradingError` or `isHostedError(e) === true` |
+| Retryable | 5xx → yes; 4xx → no (unless a leaf overrides) |
+| Fields | `e.status` (int), `e.detail` (str) |
+
+<CodeGroup>
+```python Python
+from pmxt._hosted_errors import HostedTradingError
+
+try:
+    client.create_order(...)
+except HostedTradingError as e:
+    print(e.status, e.detail)
+```
+
+```typescript TypeScript
+import { isHostedError, HostedTradingError } from "pmxtjs";
+
+try {
+  await client.createOrder({ ... });
+} catch (e) {
+  if (e instanceof HostedTradingError) {
+    console.log((e as any).status, (e as any).detail);
+  } else if (isHostedError(e)) {
+    // Subclass without the direct extends-chain — still hosted
+  }
+}
+```
+</CodeGroup>
+
+## `InsufficientEscrowBalance`
+
+**Escrow free balance is below the order's USDC requirement.**
+
+| | |
+| - | - |
+| Status code | `400` |
+| Detail starts with | `Insufficient escrow balance` |
+| Parents (Python) | `InsufficientFunds`, `HostedTradingError` |
+| TS extends | `InsufficientFunds`; `static isHostedError = true` |
+| Retryable | No (deposit and retry) |
+
+Recovery: top up via `client.escrow.deposit_tx(...)`.
+
+## `OrderSizeTooSmall`
+
+**Resolved share count is below the venue's minimum (Polymarket: 5 shares).**
+
+| | |
+| - | - |
+| Status code | `400` |
+| Detail contains | `below the minimum` |
+| Parents (Python) | `InvalidOrder`, `HostedTradingError` |
+| TS extends | `InvalidOrder`; `static isHostedError = true` |
+| Retryable | No (resize and retry) |
+
+## `InvalidApiKey`
+
+**`pmxt_api_key` is missing, malformed, revoked, or expired.**
+
+| | |
+| - | - |
+| Status code | `401` (always) |
+| Detail | `invalid api key` or `missing api key` |
+| Parents (Python) | `AuthenticationError`, `HostedTradingError` |
+| TS extends | `AuthenticationError`; `static isHostedError = true` |
+| Retryable | No |
+
+Recovery: rotate the key in the [dashboard](https://pmxt.dev/dashboard). Do not retry with the same key.
+
+## `OutcomeNotFound`
+
+**Catalog could not resolve the requested `outcome_id` (or `market_id`).**
+
+| | |
+| - | - |
+| Status code | `404` |
+| Detail contains | `catalog: no outcome` |
+| Parents (Python) | `NotFoundError`, `HostedTradingError` |
+| TS extends | `NotFoundError`; `static isHostedError = true` |
+| Retryable | No |
+
+Most often: you passed a **venue-native ID** to a hosted endpoint that expects a **catalog UUID**. See [Catalog UUID vs venue ID](/concepts/catalog-uuid-vs-venue-id).
+
+## `CatalogUnavailable`
+
+**The hosted catalog is temporarily unavailable.**
+
+| | |
+| - | - |
+| Status code | `502` / `503` |
+| Detail starts with | `catalog:` |
+| Parents (Python) | `ExchangeNotAvailable`, `HostedTradingError` |
+| TS extends | `ExchangeNotAvailable`; `static isHostedError = true` |
+| Retryable | **Yes** (override on `DEFAULT_RETRYABLE`) |
+
+Recovery: retry with exponential backoff.
+
+## `BuiltOrderExpired`
+
+**The `built_order_id` or `cancel_id` TTL elapsed before submit/cancel.**
+
+| | |
+| - | - |
+| Status code | `400` |
+| Detail contains | `built_order_id expired` or `cancel_id expired` |
+| Parents (Python) | `InvalidOrder`, `HostedTradingError` |
+| TS extends | `InvalidOrder`; `static isHostedError = true` |
+| Retryable | No (re-build and re-sign) |
+
+Re-call `build_order`, re-sign, re-submit. Common cause: slow hardware-wallet confirmations.
+
+## `InvalidSignature`
+
+**The hosted trading API rejected the EIP-712 signature or typed-data shape.**
+
+| | |
+| - | - |
+| Status code | `400` / `401` |
+| Detail contains | `Invalid signature` |
+| Parents (Python) | `AuthenticationError`, `HostedTradingError` |
+| TS extends | `AuthenticationError`; `static isHostedError = true` |
+| Retryable | No |
+
+Most often: signing the wrong domain (chain ID, verifying contract). See [Signing](/guides/signing).
+
+## `NoLiquidity`
+
+**Empty book on the side you're crossing.**
+
+| | |
+| - | - |
+| Status code | `400` |
+| Detail contains | `book has no resting asks` or `book has no resting bids` |
+| Parents (Python) | `InvalidOrder`, `HostedTradingError` |
+| TS extends | `InvalidOrder`; `static isHostedError = true` |
+| Retryable | No (post a limit instead, or wait) |
+
+## `MissingWalletAddress`
+
+**Local validation — `client.escrow.*` was called without a `wallet_address`.**
+
+| | |
+| - | - |
+| Status code | n/a (local) |
+| Parents (Python) | `ValidationError` |
+| TS extends | `ValidationError` |
+| Hosted member? | **No** — this is a local pre-flight check, not a hosted-API response |
+
+Pass `wallet_address` to the exchange constructor.
+
+## Catching by intent
+
+| Intent | Catch (Python) | Catch (TypeScript) |
+| ------ | -------------- | ------------------ |
+| Any hosted error | `except HostedTradingError` | `if (isHostedError(e))` |
+| Any auth problem | `except AuthenticationError` | `e instanceof AuthenticationError` |
+| Any insufficient-funds | `except InsufficientFunds` | `e instanceof InsufficientFunds` |
+| Any invalid order | `except InvalidOrder` | `e instanceof InvalidOrder` |
+| Anything PMXT | `except PmxtError` | `e instanceof PmxtError` |
+
+## See also
+
+- [Handling hosted errors](/guides/hosted-errors) — recovery cookbook with code for the five most-common errors.
+- [Hosted trading concept](/concepts/hosted-trading) — where these errors come from.
+- Python source: [`sdks/python/pmxt/_hosted_errors.py`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/python/pmxt/_hosted_errors.py)
+- TypeScript source: [`sdks/typescript/pmxt/hosted-errors.ts`](https://github.com/pmxt-dev/pmxt/blob/main/sdks/typescript/pmxt/hosted-errors.ts)

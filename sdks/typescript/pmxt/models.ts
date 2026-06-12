@@ -223,6 +223,15 @@ export interface UserTrade {
 
     /** Market ID */
     marketId?: string;
+
+    /** On-chain transaction hash (populated in hosted mode when the trade was settled on-chain). */
+    txHash?: string;
+
+    /** Chain identifier (e.g. 'polygon'). Populated in hosted mode. */
+    chain?: string;
+
+    /** On-chain block number where this trade was included. Populated in hosted mode. */
+    blockNumber?: number;
 }
 
 /**
@@ -318,6 +327,15 @@ export interface Order {
 
     /** Fee rate in basis points applied to this order (e.g. 100 = 1%). */
     feeRateBps?: number;
+
+    /** On-chain transaction hash (populated in hosted mode when the order was settled on-chain). */
+    txHash?: string;
+
+    /** Chain identifier (e.g. 'polygon'). Populated in hosted mode. */
+    chain?: string;
+
+    /** On-chain block number where this order was included. Populated in hosted mode. */
+    blockNumber?: number;
 }
 
 /**
@@ -330,23 +348,32 @@ export interface Position {
     /** Outcome ID */
     outcomeId: string;
 
-    /** Outcome label */
-    outcomeLabel: string;
+    /** Outcome label (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
+    outcomeLabel?: string;
 
     /** Position size (positive for long, negative for short) */
     size: number;
 
-    /** Average entry price */
-    entryPrice: number;
+    /** Average entry price (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
+    entryPrice?: number;
 
-    /** Current market price */
-    currentPrice: number;
+    /** Current market price (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
+    currentPrice?: number;
 
-    /** Unrealized profit/loss */
-    unrealizedPnL: number;
+    /** Unrealized profit/loss (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
+    unrealizedPnL?: number;
 
     /** Realized profit/loss */
     realizedPnL?: number;
+
+    /** On-chain transaction hash for the latest position update. Populated in hosted mode. */
+    txHash?: string;
+
+    /** Chain identifier (e.g. 'polygon'). Populated in hosted mode. */
+    chain?: string;
+
+    /** On-chain block number for the latest position update. Populated in hosted mode. */
+    blockNumber?: number;
 }
 
 /**
@@ -364,6 +391,15 @@ export interface Balance {
 
     /** Locked in open orders */
     locked: number;
+
+    /** On-chain transaction hash for the latest balance update. Populated in hosted mode. */
+    txHash?: string;
+
+    /** Chain identifier (e.g. 'polygon'). Populated in hosted mode. */
+    chain?: string;
+
+    /** On-chain block number for the latest balance update. Populated in hosted mode. */
+    blockNumber?: number;
 }
 
 // Parameter types

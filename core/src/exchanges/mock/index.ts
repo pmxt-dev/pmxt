@@ -463,7 +463,11 @@ export class MockExchange extends PredictionMarketExchange {
         const outcome = market?.outcomes.find(o => o.outcomeId === params.outcomeId);
 
         if (existing) {
-            const epx = existing.entryPrice * existing.size;
+            // entryPrice became nullable in v2.49 for hosted-mode positions,
+            // but the mock exchange always populates it on first fill — fall
+            // back to the new fill price if a prior fill somehow left it unset.
+            const prevEntry = existing.entryPrice ?? price;
+            const epx = prevEntry * existing.size;
             const npx = price * sizeDelta;
             const newEntry = (epx + npx) / newSize;
             const ep = round(newEntry, 4);

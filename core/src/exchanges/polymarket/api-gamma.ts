@@ -1,6 +1,6 @@
 /**
- * Auto-generated from /home/zihao/pmxt/core/specs/polymarket/PolymarketGammaAPI.yaml
- * Generated at: 2026-05-10T23:00:51.408Z
+ * Auto-generated from /Users/samueltinnerholm/Documents/GitHub/pmxt/core/specs/polymarket/PolymarketGammaAPI.yaml
+ * Generated at: 2026-06-11T07:04:42.748Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const polymarketGammaSpec = {

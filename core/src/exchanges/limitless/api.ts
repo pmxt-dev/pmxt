@@ -1,6 +1,6 @@
 /**
- * Auto-generated from /Users/ndmeiri/Developer/pmxt/core/specs/limitless/Limitless.yaml
- * Generated at: 2026-04-21T22:01:26.562Z
+ * Auto-generated from /Users/samueltinnerholm/Documents/GitHub/pmxt/core/specs/limitless/Limitless.yaml
+ * Generated at: 2026-06-11T07:04:42.757Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const limitlessApiSpec = {

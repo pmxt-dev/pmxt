@@ -1,6 +1,6 @@
 /**
- * Auto-generated from /opt/data/repos/pmxt/.worktrees/hermes-42dac47d/core/specs/probable/probable.yaml
- * Generated at: 2026-06-05T12:40:10.177Z
+ * Auto-generated from /Users/samueltinnerholm/Documents/GitHub/pmxt/core/specs/probable/probable.yaml
+ * Generated at: 2026-06-11T07:04:42.760Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const probableApiSpec = {

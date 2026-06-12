@@ -9,3 +9,4 @@ pmxt/client.js
 pmxt/models.js
 pmxt/server-manager.js
 demo-market-list.js
+.env

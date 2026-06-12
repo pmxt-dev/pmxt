@@ -263,19 +263,8 @@ export class GeminiTitanExchange extends PredictionMarketExchange {
         this.requireAuth();
 
         try {
-            await this.fetcher.cancelRawOrder(parseInt(orderId, 10));
-            return {
-                id: orderId,
-                marketId: '',
-                outcomeId: '',
-                side: 'buy',
-                type: 'limit',
-                amount: 0,
-                status: 'canceled',
-                filled: 0,
-                remaining: 0,
-                timestamp: Date.now(),
-            };
+            const rawOrder = await this.fetcher.cancelRawOrder(parseInt(orderId, 10));
+            return this.normalizer.normalizeOrder(rawOrder);
         } catch (error: any) {
             throw geminiErrorMapper.mapError(error);
         }

@@ -224,6 +224,8 @@ export class Router extends Exchange {
         marketId?: string;
         slug?: string;
         url?: string;
+        query?: string;
+        category?: string;
         relation?: MatchRelation;
         minConfidence?: number;
         limit?: number;
@@ -234,6 +236,8 @@ export class Router extends Exchange {
         marketId?: string;
         slug?: string;
         url?: string;
+        query?: string;
+        category?: string;
         relation?: MatchRelation;
         minConfidence?: number;
         limit?: number;
@@ -246,6 +250,8 @@ export class Router extends Exchange {
         if (marketId) query.marketId = marketId;
         if (params.slug ?? params.market?.slug) query.slug = params.slug ?? params.market?.slug;
         if (params.url) query.url = params.url;
+        if (params.query) query.query = params.query;
+        if (params.category) query.category = params.category;
         if (params.relation) query.relation = params.relation;
         if (params.minConfidence !== undefined) query.minConfidence = params.minConfidence;
         if (params.limit !== undefined) query.limit = params.limit;
@@ -274,6 +280,8 @@ export class Router extends Exchange {
         marketId?: string;
         slug?: string;
         url?: string;
+        query?: string;
+        category?: string;
         relation?: MatchRelation;
         minConfidence?: number;
         limit?: number;
@@ -284,6 +292,8 @@ export class Router extends Exchange {
         marketId?: string;
         slug?: string;
         url?: string;
+        query?: string;
+        category?: string;
         relation?: MatchRelation;
         minConfidence?: number;
         limit?: number;
@@ -303,6 +313,8 @@ export class Router extends Exchange {
         event?: UnifiedEvent;
         eventId?: string;
         slug?: string;
+        query?: string;
+        category?: string;
         relation?: MatchRelation;
         minConfidence?: number;
         limit?: number;
@@ -312,6 +324,8 @@ export class Router extends Exchange {
         event?: UnifiedEvent;
         eventId?: string;
         slug?: string;
+        query?: string;
+        category?: string;
         relation?: MatchRelation;
         minConfidence?: number;
         limit?: number;
@@ -323,6 +337,8 @@ export class Router extends Exchange {
         const eventId = params.eventId ?? (!params.event?.slug ? params.event?.id : undefined);
         if (eventId) query.eventId = eventId;
         if (params.slug ?? params.event?.slug) query.slug = params.slug ?? params.event?.slug;
+        if (params.query) query.query = params.query;
+        if (params.category) query.category = params.category;
         if (params.relation) query.relation = params.relation;
         if (params.minConfidence !== undefined) query.minConfidence = params.minConfidence;
         if (params.limit !== undefined) query.limit = params.limit;

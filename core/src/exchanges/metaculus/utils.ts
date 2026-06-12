@@ -6,7 +6,7 @@ import { buildSourceMetadata } from "../../utils/metadata";
 // — excluded from sourceMetadata so we capture only what the unified shape drops.
 const METACULUS_PROMOTED_MARKET_KEYS = [
     // identity / slug
-    'id', 'slug', 'url_title',
+    'id', 'slug', 'short_title', 'url_title',
     // title
     'title',
     // description lives inside question / group_of_questions — those are excluded below
@@ -24,7 +24,7 @@ const METACULUS_PROMOTED_MARKET_KEYS = [
 
 // Raw Metaculus Post fields already promoted to first-class UnifiedEvent columns.
 export const METACULUS_PROMOTED_EVENT_KEYS = [
-    'id', 'slug', 'url_title',
+    'id', 'slug', 'short_title', 'url_title',
     'title',
     'question', 'group_of_questions',
     'projects',
@@ -282,7 +282,7 @@ export function mapMarketToUnified(post: any, eventId?: string, groupPostId?: nu
             question.description ??
             question.resolution_criteria ??
             "",
-        slug: post.slug ?? post.url_title ?? undefined,
+        slug: post.slug ?? post.short_title ?? post.url_title ?? undefined,
         outcomes,
         resolutionDate,
         volume24h: 0,           // Metaculus has no monetary volume
@@ -334,6 +334,7 @@ function mapGroupPostToMarkets(post: any, eventId?: string): UnifiedMarket[] {
             question: subQuestion,
             // Inherit metadata from the parent post
             slug: post.slug,
+            short_title: post.short_title,
             url_title: post.url_title,
             projects: post.projects,
             nr_forecasters: subQuestion.nr_forecasters ?? post.nr_forecasters,

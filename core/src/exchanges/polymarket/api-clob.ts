@@ -512,7 +512,7 @@ export const polymarketClobSpec = {
                         "$ref": "#/components/parameters/L2Headers"
                     },
                     {
-                        "name": "orderId",
+                        "name": "order_id",
                         "in": "query",
                         "required": true,
                         "schema": {

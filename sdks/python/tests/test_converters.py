@@ -608,6 +608,20 @@ class TestConvertOrderBook:
         book = _convert_order_book(raw)
         assert book.timestamp == 1700000000000
 
+    def test_order_book_extended_fields_mapped(self):
+        raw = {
+            "bids": [{"price": 0.68, "size": 150.0, "orderCount": 3}],
+            "asks": [],
+            "isNegRisk": True,
+            "lastTradePrice": 0.69,
+            "sourceMetadata": {"venue": "polymarket"},
+        }
+        book = _convert_order_book(raw)
+        assert book.bids[0].order_count == 3
+        assert book.is_neg_risk is True
+        assert book.last_trade_price == 0.69
+        assert book.source_metadata == {"venue": "polymarket"}
+
     def test_timestamp_none_when_absent(self):
         raw = {"bids": [], "asks": []}
         book = _convert_order_book(raw)

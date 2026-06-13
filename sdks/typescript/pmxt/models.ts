@@ -1048,6 +1048,9 @@ export interface FetchMatchedMarketClustersParams extends MatchedClusterFilterPa
     url?: string;
 }
 
+// Alias for SDK consistency with Python
+export type MatchedMarketClusterParams = FetchMatchedMarketClustersParams;
+
 /** Parameters for fetching matched event clusters. */
 export interface FetchMatchedEventClustersParams extends MatchedClusterFilterParams {
     /** Pass a UnifiedEvent directly instead of eventId/slug/url. */

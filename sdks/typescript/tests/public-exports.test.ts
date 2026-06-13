@@ -16,4 +16,9 @@ describe('public exports', () => {
     const client = new pmxt.FeedClient('chainlink');
     expect(client).toBeInstanceOf(DirectFeedClient);
   });
+
+  it('exports flat environment variable constants alongside ENV', () => {
+    expect(pmxt.ENV_BASE_URL).toBe(pmxt.ENV.BASE_URL);
+    expect(pmxt.ENV_API_KEY).toBe(pmxt.ENV.API_KEY);
+  });
 });

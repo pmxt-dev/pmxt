@@ -33,6 +33,12 @@ export const ENV = {
     API_KEY: "PMXT_API_KEY",
 } as const;
 
+/** Environment variable name for overriding the pmxt base URL. */
+export const ENV_BASE_URL = ENV.BASE_URL;
+
+/** Environment variable name for supplying a hosted pmxt API key. */
+export const ENV_API_KEY = ENV.API_KEY;
+
 /**
  * Resolve the effective base URL for an SDK client, following the
  * documented precedence rules:

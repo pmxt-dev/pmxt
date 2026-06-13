@@ -30,7 +30,44 @@ def test_websocket_return_types_are_public_exports():
     assert expected <= public_exports
 
 
-def test_legacy_polymarket_us_alias_stays_public():
+def test_fetch_order_book_params_shape_matches_typescript_sdk():
+    models_path = Path(__file__).resolve().parents[1] / "pmxt" / "models.py"
+    tree = ast.parse(models_path.read_text(encoding="utf-8"))
+    params_class = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "FetchOrderBookParams"
+    )
+    annotated_fields = {
+        node.target.id
+        for node in params_class.body
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
+    }
+    total_keyword = next(kw for kw in params_class.keywords if kw.arg == "total")
+
+    assert annotated_fields == {"side", "outcome", "since", "until"}
+    assert isinstance(total_keyword.value, ast.Constant)
+    assert total_keyword.value.value is False
+
+
+def test_fetch_order_book_uses_typed_params_annotation():
+    client_path = Path(__file__).resolve().parents[1] / "pmxt" / "client.py"
+    tree = ast.parse(client_path.read_text(encoding="utf-8"))
+    fetch_order_book = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "fetch_order_book"
+    )
+    params_arg = next(arg for arg in fetch_order_book.args.args if arg.arg == "params")
+
+    assert isinstance(params_arg.annotation, ast.Subscript)
+    assert isinstance(params_arg.annotation.value, ast.Name)
+    assert params_arg.annotation.value.id == "Optional"
+    assert isinstance(params_arg.annotation.slice, ast.Name)
+    assert params_arg.annotation.slice.id == "FetchOrderBookParams"
+
+
+def test_legacy_polymarket_us_alias_is_not_public():
     init_path = Path(__file__).resolve().parents[1] / "pmxt" / "__init__.py"
     exchanges_path = Path(__file__).resolve().parents[1] / "pmxt" / "_exchanges.py"
 
@@ -64,9 +101,9 @@ def test_legacy_polymarket_us_alias_stays_public():
         and isinstance(node.value, ast.Name)
     }
 
-    assert "Polymarket_us" in exchange_imports
-    assert "Polymarket_us" in public_exports
-    assert aliases["Polymarket_us"] == "PolymarketUS"
+    assert "Polymarket_us" not in exchange_imports
+    assert "Polymarket_us" not in public_exports
+    assert "Polymarket_us" not in aliases
 
 
 def test_feed_client_is_top_level_public_export():

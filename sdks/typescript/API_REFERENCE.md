@@ -1493,6 +1493,7 @@ yes: any; // Convenience accessor for the YES outcome on a binary market.
 no: any; // Convenience accessor for the NO outcome on a binary market.
 up: any; // Convenience accessor for the UP outcome on a binary market.
 down: any; // Convenience accessor for the DOWN outcome on a binary market.
+question: string; // Read-only alias for title. Matches the Python SDK's market.question property.
 }
 ```
 

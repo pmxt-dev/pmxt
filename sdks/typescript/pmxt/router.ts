@@ -21,6 +21,15 @@ import {
     UnifiedEvent,
 } from "./models.js";
 
+function withQuestionAlias<T extends UnifiedMarket>(market: T): T {
+    Object.defineProperty(market, 'question', {
+        get() { return this.title; },
+        enumerable: false,
+        configurable: true,
+    });
+    return market;
+}
+
 function convertMarket(raw: any): UnifiedMarket {
     const outcomes = (raw.outcomes || []).map((o: any) => ({
         outcomeId: o.outcomeId,
@@ -44,7 +53,7 @@ function convertMarket(raw: any): UnifiedMarket {
         metadata: o.metadata,
     }) : undefined;
 
-    return {
+    return withQuestionAlias({
         marketId: raw.marketId,
         title: raw.title,
         slug: raw.slug,
@@ -68,7 +77,7 @@ function convertMarket(raw: any): UnifiedMarket {
         no: convertOutcome(raw.no),
         up: convertOutcome(raw.up),
         down: convertOutcome(raw.down),
-    };
+    });
 }
 
 function convertEvent(raw: any): UnifiedEvent {
@@ -91,7 +100,7 @@ function convertEvent(raw: any): UnifiedEvent {
 function parseMatchResult(raw: any): MatchResult {
     const marketData = raw.market || {};
     const market = convertMarket(marketData);
-    return {
+    const result: MatchResult = {
         ...market,
         market,
         relation: raw.relation || 'identity',
@@ -101,6 +110,7 @@ function parseMatchResult(raw: any): MatchResult {
         bestAsk: raw.bestAsk ?? marketData.bestAsk,
         sourceMarket: raw.sourceMarket ? convertMarket(raw.sourceMarket) : undefined,
     };
+    return withQuestionAlias(result);
 }
 
 function normalizeQueryValue(value: unknown): unknown {

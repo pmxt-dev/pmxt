@@ -1444,6 +1444,25 @@ positions.forEach(pos => {
 
 ## Data Models
 
+### `ExchangeOptions`
+
+Constructor-level options for venue clients (Polymarket, Kalshi, Opinion, etc.).
+Hosted mode is the default when pmxtApiKey is set; otherwise the SDK runs against
+a local sidecar with venue credentials.
+
+```typescript
+interface ExchangeOptions {
+pmxtApiKey: string; // PMXT customer API key. When set, the SDK routes to api.pmxt.dev (catalog) and trade.pmxt.dev (trading). Get one at pmxt.dev/dashboard.
+walletAddress: string; // EVM wallet address for hosted reads/writes. Required for endpoints that operate on a wallet (balances, positions, trades, open orders).
+signer: object; // Optional pre-built signer for hosted writes. If absent and privateKey is set, the SDK auto-wraps privateKey into a signer.
+privateKey: string; // Private key. In hosted mode, used to derive an EIP-712 signer for writes (wraps into EthAccountSigner/EthersSigner). In self-hosted mode, used as the venue credential directly.
+baseUrl: string; // Explicit base URL override. When unset, the SDK uses api.pmxt.dev when pmxtApiKey is set, or the local sidecar otherwise.
+apiKey: string; // Venue-side API key (e.g. Polymarket CLOB key). Only relevant for self-hosted mode.
+autoStartServer: boolean; // Auto-start the local sidecar when running self-hosted. Defaults to true when no pmxtApiKey is set, false when hosted.
+}
+```
+
+---
 ### `UnifiedMarket`
 
 
@@ -1527,11 +1546,11 @@ id: string; // Stable venue-native series identifier (e.g. "KXATPMATCH" on Kalsh
 ticker: string; // Venue-native ticker, when distinct from `id`.
 slug: string; // Venue-native slug.
 title: string; // Human-readable series title (e.g. "ATP Match Winner", "WTA").
-description: any; // Long-form series description.
-recurrence: any; // Recurrence cadence the venue reports ('daily', 'weekly', 'annual', ...).
+description: string; // Long-form series description.
+recurrence: string; // Recurrence cadence the venue reports ('daily', 'weekly', 'annual', ...).
 events: UnifiedEvent[]; // Child events. Populated when fetched by id; the list form usually omits this to keep payloads small.
-url: any; // Canonical venue URL for the series.
-image: any; // Venue-hosted image.
+url: string; // Canonical venue URL for the series.
+image: string; // Venue-hosted image.
 sourceExchange: string; // The exchange this series originates from. Populated by the Router.
 sourceMetadata: object; // Raw venue-specific fields not promoted to first-class columns.
 }
@@ -1613,6 +1632,9 @@ amount: number; // Size of the trade in contracts/shares.
 side: string; // Trade side from the taker's perspective.
 outcomeId: string; // The outcome this trade is for (if known).
 orderId: string; // The order that produced this trade, if known.
+txHash: string; // Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
+chain: string; // Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
+blockNumber: number; // Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
 }
 ```
 
@@ -1637,24 +1659,31 @@ remaining: number; // Amount remaining
 timestamp: number; // Unix timestamp in milliseconds when the order was created.
 fee: number; // Fee paid for this order, if known.
 feeRateBps: number; // Fee rate in basis points applied to this order (e.g. 100 = 1%).
+txHash: string; // Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
+chain: string; // Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
+blockNumber: number; // Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
 }
 ```
 
 ---
 ### `Position`
 
-
+A current position in a market. In hosted mode, `outcomeLabel`, `entryPrice`, `currentPrice` and `unrealizedPnL` may be null when the server cannot derive them (e.g. `with_mtm=false` or no fill history). Venue-direct callers continue to populate every field.
 
 ```typescript
 interface Position {
 marketId: string; // The market this position is held in.
 outcomeId: string; // The outcome this position is held in.
-outcomeLabel: string; // Human-readable label for the outcome held.
+outcomeLabel: string; // Human-readable label for the outcome held. Optional in hosted mode.
 size: number; // Positive for long, negative for short
-entryPrice: number; // Average entry price for the position (probability between 0.0 and 1.0).
-currentPrice: number; // Current mark price for the position (probability between 0.0 and 1.0).
-unrealizedPnL: number; // Unrealized profit or loss at the current price (USD).
+entryPrice: number; // Average entry price for the position (probability between 0.0 and 1.0). Optional in hosted mode when no fill history is available.
+currentPrice: number; // Current mark price for the position (probability between 0.0 and 1.0). Optional in hosted mode when mark-to-market data is unavailable.
+currentValue: number; // Current market value of the position (size * currentPrice). Null when currentPrice is unavailable.
+unrealizedPnL: number; // Unrealized profit or loss at the current price (USD). Optional in hosted mode when mark-to-market data is unavailable.
 realizedPnL: number; // Realized profit or loss booked so far (USD).
+txHash: string; // Populated in hosted mode after on-chain settlement (from the last fill); null for local-mode and for non-on-chain venues.
+chain: string; // Populated in hosted mode after on-chain settlement (from the last fill); null for local-mode and for non-on-chain venues.
+blockNumber: number; // Populated in hosted mode after on-chain settlement (from the last fill); null for local-mode and for non-on-chain venues.
 }
 ```
 
@@ -1669,6 +1698,7 @@ currency: string; // e.g., 'USDC'
 total: number; // Total balance including funds locked in open orders.
 available: number; // Balance available to trade (excludes locked funds).
 locked: number; // In open orders
+venue: string; // Hosted-mode: which venue this balance belongs to in a multi-venue response. Null when the balance is venue-agnostic.
 }
 ```
 
@@ -1723,6 +1753,7 @@ params: any; // The original params used to build this order.
 signedOrder: object; // For CLOB exchanges (Polymarket): the EIP-712 signed order ready to POST to the exchange's order endpoint.
 tx: object; // For on-chain AMM exchanges: the EVM transaction payload. Reserved for future exchanges; no current exchange populates this.
 raw: any; // The raw, exchange-native payload. Always present.
+expiry: number; // Unix epoch (ms) when this built order expires server-side. Submitting after expiry returns BUILT_ORDER_EXPIRED.
 }
 ```
 
@@ -1774,9 +1805,9 @@ market: UnifiedMarket; //
 sourceMarket: any; // The source market this was matched against. Present in browse mode (no marketId), absent in lookup mode.
 relation: string; // 
 confidence: number; // 
-reasoning: any; // 
-bestBid: any; // 
-bestAsk: any; // 
+reasoning: string; // 
+bestBid: number; // 
+bestAsk: number; // 
 }
 ```
 
@@ -1802,9 +1833,9 @@ interface PriceComparison {
 market: UnifiedMarket; // 
 relation: string; // 
 confidence: number; // 
-reasoning: any; // 
-bestBid: any; // 
-bestAsk: any; // 
+reasoning: string; // 
+bestBid: number; // 
+bestAsk: number; // 
 venue: string; // 
 }
 ```
@@ -1844,7 +1875,7 @@ priceA: number; //
 priceB: number; // 
 relation: string; // The set-theoretic relation between the two markets (e.g. identity, subset).
 confidence: number; // Match confidence score (0.0 to 1.0).
-reasoning: any; // Why the two markets were matched.
+reasoning: string; // Why the two markets were matched.
 }
 ```
 

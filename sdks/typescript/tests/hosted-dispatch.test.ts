@@ -351,6 +351,45 @@ describe("hosted write dispatch", () => {
     expect("market_id" in body).toBe(false);
   });
 
+  it("escrow.withdrawTx request sends wallet and token fields", async () => {
+    const spy = installFetchSpy(() => jsonResponse({ tx: { to: "0x" + "1".repeat(40) } }));
+    const api = makePolymarket();
+    await api.escrow!.withdrawTx("request", 10);
+    const reqs = captured(spy);
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0].url).toContain("/v0/escrow/withdraw");
+    expect(reqs[0].init?.method).toBe("POST");
+    const body = JSON.parse((reqs[0].init?.body as string) ?? "{}");
+    expect(body).toEqual({
+      action: "request",
+      token: "usdc",
+      amount: 10,
+      user_address: WALLET_ADDRESS,
+    });
+  });
+
+  it("escrow.withdrawTx claim omits amount while still identifying wallet and token", async () => {
+    const spy = installFetchSpy(() => jsonResponse({ tx: { to: "0x" + "1".repeat(40) } }));
+    const api = makePolymarket();
+    await api.escrow!.withdrawTx("claim");
+    const reqs = captured(spy);
+    const body = JSON.parse((reqs[0].init?.body as string) ?? "{}");
+    expect(body).toEqual({
+      action: "claim",
+      token: "usdc",
+      user_address: WALLET_ADDRESS,
+    });
+  });
+
+  it("escrow.withdrawTx without wallet raises MissingWalletAddress before request", async () => {
+    const spy = installFetchSpy(() => jsonResponse({}));
+    const api = makePolymarket({ withWallet: false });
+    await expect(api.escrow!.withdrawTx("request", 10)).rejects.toBeInstanceOf(
+      MissingWalletAddress,
+    );
+    expect(captured(spy)).toHaveLength(0);
+  });
+
   it("cancelOrder → POST cancel/build then POST cancel", async () => {
     let call = 0;
     const spy = installFetchSpy(() => {

@@ -2104,6 +2104,15 @@ export abstract class Exchange {
             if (params.fee !== undefined) {
                 paramsDict.fee = params.fee;
             }
+            if (params.tickSize !== undefined) {
+                paramsDict.tickSize = params.tickSize;
+            }
+            if (params.negRisk !== undefined) {
+                paramsDict.negRisk = params.negRisk;
+            }
+            if (params.onBehalfOf !== undefined) {
+                paramsDict.onBehalfOf = params.onBehalfOf;
+            }
 
             const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/buildOrder`, {
                 method: 'POST',
@@ -2405,6 +2414,15 @@ export abstract class Exchange {
             }
             if (params.fee !== undefined) {
                 paramsDict.fee = params.fee;
+            }
+            if (params.tickSize !== undefined) {
+                paramsDict.tickSize = params.tickSize;
+            }
+            if (params.negRisk !== undefined) {
+                paramsDict.negRisk = params.negRisk;
+            }
+            if (params.onBehalfOf !== undefined) {
+                paramsDict.onBehalfOf = params.onBehalfOf;
             }
 
             const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/createOrder`, {

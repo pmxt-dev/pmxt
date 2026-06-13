@@ -825,11 +825,17 @@ class Exchange(ABC):
             return "opinion_buy"
         if self.exchange_name == "opinion" and side == "sell":
             return "opinion_sell_polygon"
-        raise NotSupported("Hosted trading is only supported for Polymarket and Opinion.")
+        if self.exchange_name == "limitless" and side == "buy":
+            return "limitless_buy"
+        if self.exchange_name == "limitless" and side == "sell":
+            return "limitless_sell_polygon"
+        raise NotSupported(f"Hosted trading not supported for {self.exchange_name}.")
 
     def _hosted_order_pull_validation_route(self, side: str) -> Optional[str]:
         if self.exchange_name == "opinion" and side == "sell":
             return "opinion_sell_bsc_pull"
+        if self.exchange_name == "limitless" and side == "sell":
+            return "limitless_sell_base_pull"
         return None
 
     def _hosted_cancel_validation_routes(self) -> Tuple[str, Optional[str]]:

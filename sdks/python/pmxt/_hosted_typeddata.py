@@ -27,7 +27,7 @@ except ImportError:  # pragma: no cover - kept so this module imports before pha
         return int(scaled)
 
 try:
-    from .constants import PREFUNDED_ESCROW_ADDRESSES, VENUE_ESCROW_ADDRESSES
+    from .constants import PREFUNDED_ESCROW_ADDRESSES, VENUE_ESCROW_ADDRESSES, LIMITLESS_VENUE_ESCROW_ADDRESSES
 except ImportError:  # pragma: no cover - constants are introduced by a parallel phase.
     PREFUNDED_ESCROW_ADDRESSES: tuple[str, ...] = ()
     VENUE_ESCROW_ADDRESSES: tuple[str, ...] = ()
@@ -142,6 +142,12 @@ _VENUE_DOMAIN = DomainSchema(
     chain_id=56,
     verifying_contracts=VENUE_ESCROW_ADDRESSES,
 )
+_LIMITLESS_VENUE_DOMAIN = DomainSchema(
+    name="VenueEscrow",
+    version="1",
+    chain_id=8453,
+    verifying_contracts=LIMITLESS_VENUE_ESCROW_ADDRESSES,
+)
 
 SCHEMAS: Mapping[str, TypedDataSchema] = {
     "polymarket_buy": TypedDataSchema(
@@ -171,6 +177,24 @@ SCHEMAS: Mapping[str, TypedDataSchema] = {
     "opinion_sell_bsc_pull": TypedDataSchema(
         primary_type="CrossChainSellPullParams",
         domain=_VENUE_DOMAIN,
+        fields=CROSS_CHAIN_SELL_PULL_PARAMS_FIELDS,
+        message_keys=frozenset(name for name, _ in CROSS_CHAIN_SELL_PULL_PARAMS_FIELDS),
+    ),
+    "limitless_buy": TypedDataSchema(
+        primary_type="CrossChainOrderParams",
+        domain=_PREFUNDED_DOMAIN,
+        fields=CROSS_CHAIN_ORDER_PARAMS_FIELDS,
+        message_keys=frozenset(name for name, _ in CROSS_CHAIN_ORDER_PARAMS_FIELDS),
+    ),
+    "limitless_sell_polygon": TypedDataSchema(
+        primary_type="CrossChainSellPayParams",
+        domain=_PREFUNDED_DOMAIN,
+        fields=CROSS_CHAIN_SELL_PAY_PARAMS_FIELDS,
+        message_keys=frozenset(name for name, _ in CROSS_CHAIN_SELL_PAY_PARAMS_FIELDS),
+    ),
+    "limitless_sell_base_pull": TypedDataSchema(
+        primary_type="CrossChainSellPullParams",
+        domain=_LIMITLESS_VENUE_DOMAIN,
         fields=CROSS_CHAIN_SELL_PULL_PARAMS_FIELDS,
         message_keys=frozenset(name for name, _ in CROSS_CHAIN_SELL_PULL_PARAMS_FIELDS),
     ),
@@ -248,7 +272,7 @@ def validate_economics(
     elif route == "polymarket_sell":
         _validate_polymarket_sell_economics(message, build_request)
         _validate_worst_price(message, route, build_request, build_response)
-    elif route in {"opinion_buy", "opinion_sell_polygon", "opinion_sell_bsc_pull"}:
+    elif route in {"opinion_buy", "opinion_sell_polygon", "opinion_sell_bsc_pull", "limitless_buy", "limitless_sell_polygon", "limitless_sell_base_pull"}:
         _validate_opinion_market_id(message, build_response)
 
 

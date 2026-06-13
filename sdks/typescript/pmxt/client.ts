@@ -1229,9 +1229,16 @@ export abstract class Exchange {
         if (venue === "polymarket") {
             return sideLower === "sell" ? "polymarket_sell" : "polymarket_buy";
         }
-        // opinion
+        if (venue === "opinion") {
+            if (sideLower === "buy") return "opinion_buy";
+            return isPull ? "opinion_sell_bsc_pull" : "opinion_sell_polygon";
+        }
+        if (venue === "limitless") {
+            if (sideLower === "buy") return "limitless_buy";
+            return isPull ? "limitless_sell_base_pull" : "limitless_sell_polygon";
+        }
+        // default: treat as opinion-shape (back-compat)
         if (sideLower === "buy") return "opinion_buy";
-        // sell — polygon, or BSC pull leg for cross-chain
         return isPull ? "opinion_sell_bsc_pull" : "opinion_sell_polygon";
     }
 

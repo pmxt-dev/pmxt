@@ -24,6 +24,7 @@ export const HOSTED_TRADING_BASE_URL = "https://trade.pmxt.dev";
 export const HOSTED_TRADING_VENUES: ReadonlySet<string> = new Set([
     "polymarket",
     "opinion",
+    "limitless",
 ]);
 
 export interface HostedRoute {

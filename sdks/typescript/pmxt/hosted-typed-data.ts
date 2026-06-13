@@ -123,6 +123,12 @@ const VENUE_DOMAIN: DomainSchema = {
     chainId: 56,
     allowlistKey: "venue",
 };
+const LIMITLESS_VENUE_DOMAIN = {
+    name: "VenueEscrow",
+    version: "1",
+    chainId: 8453,
+    allowlistKey: "venue",
+};
 
 export type HostedRoute =
     | "polymarket_buy"
@@ -140,6 +146,27 @@ const SCHEMAS: Readonly<Record<HostedRoute, TypedDataSchema>> = {
         domain: PREFUNDED_DOMAIN,
         fields: ORDER_PARAMS_FIELDS,
         messageKeys: messageKeysFromFields(ORDER_PARAMS_FIELDS),
+        walletField: "user",
+    },
+    limitless_buy: {
+        primaryType: "CrossChainOrderParams",
+        domain: PREFUNDED_DOMAIN,
+        fields: CROSS_CHAIN_ORDER_PARAMS_FIELDS,
+        messageKeys: messageKeysFromFields(CROSS_CHAIN_ORDER_PARAMS_FIELDS),
+        walletField: "user",
+    },
+    limitless_sell_polygon: {
+        primaryType: "CrossChainSellPayParams",
+        domain: PREFUNDED_DOMAIN,
+        fields: CROSS_CHAIN_SELL_PAY_PARAMS_FIELDS,
+        messageKeys: messageKeysFromFields(CROSS_CHAIN_SELL_PAY_PARAMS_FIELDS),
+        walletField: "user",
+    },
+    limitless_sell_base_pull: {
+        primaryType: "CrossChainSellPullParams",
+        domain: LIMITLESS_VENUE_DOMAIN,
+        fields: CROSS_CHAIN_SELL_PULL_PARAMS_FIELDS,
+        messageKeys: messageKeysFromFields(CROSS_CHAIN_SELL_PULL_PARAMS_FIELDS),
         walletField: "user",
     },
     polymarket_sell: {

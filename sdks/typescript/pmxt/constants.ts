@@ -80,3 +80,10 @@ export const PREFUNDED_ESCROW_ADDRESSES: ReadonlySet<string> = new Set([
  * as venue-owned escrows. Currently empty; populated as venues onboard.
  */
 export const VENUE_ESCROW_ADDRESSES: ReadonlySet<string> = new Set<string>();
+
+/**
+ * Limitless VenueEscrow contract addresses on Base (chain 8453).
+ */
+export const LIMITLESS_VENUE_ESCROW_ADDRESSES: ReadonlySet<string> = new Set([
+    "0x34c42d01aad6ded00f1a6830d90b0e9204db7855",
+]);

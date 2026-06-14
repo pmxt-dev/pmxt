@@ -133,6 +133,9 @@ const LIMITLESS_VENUE_DOMAIN = {
 export type HostedRoute =
     | "polymarket_buy"
     | "polymarket_sell"
+    | "limitless_buy"
+    | "limitless_sell_polygon"
+    | "limitless_sell_base_pull"
     | "opinion_buy"
     | "opinion_sell_polygon"
     | "opinion_sell_bsc_pull"
@@ -725,7 +728,9 @@ function allowedAddresses(
     const raw =
         key === "prefunded"
             ? (constants as any).PREFUNDED_ESCROW_ADDRESSES
-            : (constants as any).VENUE_ESCROW_ADDRESSES;
+            : chainId === 8453
+              ? (constants as any).LIMITLESS_VENUE_ESCROW_ADDRESSES
+              : (constants as any).VENUE_ESCROW_ADDRESSES;
     const list: unknown[] = [];
     if (raw == null) {
         // empty

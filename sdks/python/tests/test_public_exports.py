@@ -67,7 +67,7 @@ def test_fetch_order_book_uses_typed_params_annotation():
     assert params_arg.annotation.slice.id == "FetchOrderBookParams"
 
 
-def test_legacy_polymarket_us_alias_is_not_public():
+def test_legacy_polymarket_us_alias_stays_public():
     init_path = Path(__file__).resolve().parents[1] / "pmxt" / "__init__.py"
     exchanges_path = Path(__file__).resolve().parents[1] / "pmxt" / "_exchanges.py"
 
@@ -101,9 +101,9 @@ def test_legacy_polymarket_us_alias_is_not_public():
         and isinstance(node.value, ast.Name)
     }
 
-    assert "Polymarket_us" not in exchange_imports
-    assert "Polymarket_us" not in public_exports
-    assert "Polymarket_us" not in aliases
+    assert "Polymarket_us" in exchange_imports
+    assert "Polymarket_us" in public_exports
+    assert aliases["Polymarket_us"] == "PolymarketUS"
 
 
 def test_feed_client_is_top_level_public_export():

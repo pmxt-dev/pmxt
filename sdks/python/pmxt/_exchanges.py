@@ -560,5 +560,6 @@ class Router(Exchange):
             pmxt_api_key=pmxt_api_key,
         )
 
-# Backwards-compatible alias for exchange classes generated before underscore handling.
+# Backwards-compatible aliases for exchange classes generated before underscore handling.
+Polymarket_us = PolymarketUS
 Suibets = SuiBets

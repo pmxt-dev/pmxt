@@ -20,7 +20,7 @@ from typing import Any, Dict, List
 
 from .client import Exchange
 from .constants import ENV, ENV_BASE_URL, ENV_API_KEY
-from ._exchanges import Polymarket, Limitless, Kalshi, KalshiDemo, Probable, Baozi, Myriad, Opinion, Metaculus, Smarkets, PolymarketUS, Polymarket_us, Hyperliquid, GeminiTitan, SuiBets, Suibets, Mock, Router
+from ._exchanges import Polymarket, Limitless, Kalshi, KalshiDemo, Probable, Baozi, Myriad, Opinion, Metaculus, Smarkets, PolymarketUS, Polymarket_us, Hyperliquid, GeminiTitan, SuiBets, Suibets, Mock
 from .router import Router
 from .feed_client import FeedClient
 from .server_manager import ServerManager
@@ -185,7 +185,6 @@ __all__ = [
     "SuiBets",
     "Suibets",
     "Mock",
-    "Router",
     "Exchange",
     "FeedClient",
     "ExchangeOptions",

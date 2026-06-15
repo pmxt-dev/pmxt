@@ -225,13 +225,13 @@ export interface UserTrade {
     marketId?: string;
 
     /** On-chain transaction hash (populated in hosted mode when the trade was settled on-chain). */
-    txHash?: string;
+    txHash?: string | null;
 
     /** Chain identifier (e.g. 'polygon'). Populated in hosted mode. */
-    chain?: string;
+    chain?: string | null;
 
     /** On-chain block number where this trade was included. Populated in hosted mode. */
-    blockNumber?: number;
+    blockNumber?: number | null;
 }
 
 /**
@@ -329,13 +329,13 @@ export interface Order {
     feeRateBps?: number;
 
     /** On-chain transaction hash (populated in hosted mode when the order was settled on-chain). */
-    txHash?: string;
+    txHash?: string | null;
 
     /** Chain identifier (e.g. 'polygon'). Populated in hosted mode. */
-    chain?: string;
+    chain?: string | null;
 
     /** On-chain block number where this order was included. Populated in hosted mode. */
-    blockNumber?: number;
+    blockNumber?: number | null;
 }
 
 /**
@@ -367,13 +367,13 @@ export interface Position {
     realizedPnL?: number;
 
     /** On-chain transaction hash for the latest position update. Populated in hosted mode. */
-    txHash?: string;
+    txHash?: string | null;
 
     /** Chain identifier (e.g. 'polygon'). Populated in hosted mode. */
-    chain?: string;
+    chain?: string | null;
 
     /** On-chain block number for the latest position update. Populated in hosted mode. */
-    blockNumber?: number;
+    blockNumber?: number | null;
 }
 
 /**
@@ -393,13 +393,13 @@ export interface Balance {
     locked: number;
 
     /** On-chain transaction hash for the latest balance update. Populated in hosted mode. */
-    txHash?: string;
+    txHash?: string | null;
 
     /** Chain identifier (e.g. 'polygon'). Populated in hosted mode. */
-    chain?: string;
+    chain?: string | null;
 
     /** On-chain block number for the latest balance update. Populated in hosted mode. */
-    blockNumber?: number;
+    blockNumber?: number | null;
 }
 
 // Parameter types

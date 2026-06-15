@@ -26,7 +26,7 @@
     "README.md"
   ],
   "scripts": {
-    "clean": "rimraf dist",
+    "clean": "rm -rf dist",
     "generate": "npm run generate:sdk:typescript --workspace=pmxt-core && node scripts/fix-generated.js && node scripts/generate-client-methods.js",
     "generate:client": "node scripts/generate-client-methods.js",
     "prebuild": "npm run clean",
@@ -44,7 +44,6 @@
   ],
   "dependencies": {
     "pmxt-core": "2.17.1",
-    "rimraf": "^6.1.3",
     "ws": "^8.18.0"
   },
   "peerDependencies": {

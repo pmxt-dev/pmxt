@@ -144,8 +144,8 @@ export class MyriadFetcher implements IExchangeFetcher<MyriadRawMarket, MyriadRa
                 const markets: MyriadRawMarket[] = data.data || data.markets || [];
                 allMarkets.push(...markets);
 
-                const pagination = data.pagination;
-                if (!pagination?.hasNext || markets.length === 0) break;
+               const pagination = data.pagination ?? data.meta;
+               if (!pagination?.hasNext || markets.length === 0) break;
 
                 page++;
             }

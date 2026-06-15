@@ -12,11 +12,11 @@ import {
 const PROGRAM_ERRORS: Record<number, { type: string; message: string }> = {
     6000: { type: 'bad_request', message: 'Unauthorized' },
     6001: { type: 'bad_request', message: 'Market not found' },
+    6013: { type: 'bad_request', message: 'Betting is closed' },      // Changed from 6018
+    6014: { type: 'bad_request', message: 'Betting is frozen' },      // Changed from 6040
     6015: { type: 'bad_request', message: 'Market is not open for betting' },
-    6018: { type: 'bad_request', message: 'Betting is closed' },
-    6020: { type: 'invalid_order', message: 'Bet amount too small' },
-    6040: { type: 'bad_request', message: 'Betting is frozen' },
-    6041: { type: 'invalid_order', message: 'Bet amount too large' },
+    6023: { type: 'invalid_order', message: 'Bet amount too small' }, // Changed from 6020
+    6024: { type: 'invalid_order', message: 'Bet amount too large' }, // Changed from 6041
 };
 
 /**

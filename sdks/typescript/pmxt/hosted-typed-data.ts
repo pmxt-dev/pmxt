@@ -123,7 +123,7 @@ const VENUE_DOMAIN: DomainSchema = {
     chainId: 56,
     allowlistKey: "venue",
 };
-const LIMITLESS_VENUE_DOMAIN = {
+const LIMITLESS_VENUE_DOMAIN: DomainSchema = {
     name: "VenueEscrow",
     version: "1",
     chainId: 8453,

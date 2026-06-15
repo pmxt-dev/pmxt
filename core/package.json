@@ -22,7 +22,7 @@
     "test": "test"
   },
   "scripts": {
-    "clean": "rimraf dist",
+    "clean": "node scripts/clean.js",
     "prebuild": "npm run clean",
     "build": "tsc && node scripts/copy-assets.js",
     "bundle:server": "npm run build && esbuild dist/server/index.js --bundle --platform=node --target=node18 --outfile=dist/server/bundled.js --define:__PMXT_VERSION__=\\\"$npm_package_version\\\" --external:fsevents --external:@opinion-labs/opinion-clob-sdk",
@@ -76,7 +76,6 @@
     "identity-obj-proxy": "^3.0.0",
     "jest": "^30.2.0",
     "js-yaml": "^3.14.2",
-    "rimraf": "^5.0.5",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
     "tsx": "^4.21.0",

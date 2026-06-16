@@ -173,9 +173,15 @@ function generateClass(exchange) {
     constructorParams.push('base_url: Optional[str] = None');
     constructorParams.push('auto_start_server: Optional[bool] = None');
     constructorParams.push('pmxt_api_key: Optional[str] = None');
+    constructorParams.push('wallet_address: Optional[str] = None');  
+    constructorParams.push('signer: Optional[object] = None');       
+    constructorParams.push('websocket: Optional[dict] = None'); 
     superArgs.push('base_url=base_url');
     superArgs.push('auto_start_server=auto_start_server');
     superArgs.push('pmxt_api_key=pmxt_api_key');
+    superArgs.push('wallet_address=wallet_address'); 
+    superArgs.push('signer=signer');                 
+    superArgs.push('websocket=websocket');  
 
     const docLines = [];
     if (creds.apiKey)        docLines.push('            api_key: API key for authentication (optional)');
@@ -192,6 +198,9 @@ function generateClass(exchange) {
     docLines.push('            base_url: Base URL of the PMXT sidecar server');
     docLines.push('            auto_start_server: Automatically start server if not running (default: True)');
     docLines.push('            pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)');
+    docLines.push('            wallet_address: Wallet address for hosted operations (optional)');
+    docLines.push('            signer: Custom signer for hosted operations (optional)');
+    docLines.push('            websocket: WebSocket configuration dict (optional)');
 
     const indent4 = s => `    ${s}`;
     const indent8 = s => `        ${s}`;

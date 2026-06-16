@@ -2388,13 +2388,13 @@ class Exchange(ABC):
 
             host = self._resolve_sidecar_host()
             if self.is_hosted:
-                client = SidecarWsClient(host, api_key=self.pmxt_api_key)
+                client = SidecarWsClient(host, api_key=self.pmxt_api_key,config=self.websocket,)
             else:
                 server_info = self._server_manager.get_server_info()
                 access_token = (
                     server_info.get("accessToken") if server_info else None
                 )
-                client = SidecarWsClient(host, access_token=access_token)
+                client = SidecarWsClient(host, access_token=access_token,config=self.websocket,)
             try:
                 # Trigger connection to validate the endpoint exists
                 with client._lock:

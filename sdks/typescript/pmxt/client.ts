@@ -290,6 +290,13 @@ export interface ExchangeOptions {
      * built from it lazily.
      */
     signer?: Signer;
+
+    websocket?: {
+        wsUrl?: string;
+        reconnectInterval?: number;
+        pingInterval?: number;
+        maxReconnectAttempts?: number;
+    };
 }
 
 /**
@@ -332,6 +339,7 @@ export abstract class Exchange {
     protected serverManager: ServerManager;
     protected initPromise: Promise<void>;
     protected isHosted: boolean;
+    protected _websocketConfig?: any;
 
     /** Wallet address used for hosted endpoints that operate on a wallet. */
     public walletAddress?: string;
@@ -367,6 +375,7 @@ export abstract class Exchange {
         this.signatureType = options.signatureType;
         this.walletAddress = options.walletAddress;
         this.signer = options.signer;
+        this._websocketConfig = options.websocket;
 
         // Resolve base URL + hosted API key via the shared precedence
         // rules. See constants.ts for the full resolution table.
@@ -590,7 +599,7 @@ export abstract class Exchange {
             : this.serverManager.getAccessToken();
         const authParamName = this.isHosted ? "apiKey" : "token";
 
-        const client = new SidecarWsClient(host, accessToken || undefined, authParamName);
+        const client = new SidecarWsClient(host, accessToken || undefined, authParamName ,this._websocketConfig );
         try {
             // Trigger connection to validate the endpoint exists.
             // subscribe() calls ensureConnected internally, but we want

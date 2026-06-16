@@ -53,10 +53,16 @@ export class SidecarWsClient {
 
     private connectPromise: Promise<void> | null = null;
 
-    constructor(host: string, accessToken?: string, authParamName: string = "token") {
+    constructor(host: string, accessToken?: string, authParamName: string = "token", private config?: { 
+            wsUrl?: string;
+            reconnectInterval?: number;
+            pingInterval?: number;
+            maxReconnectAttempts?: number;
+        }) {
         this.host = host;
         this.accessToken = accessToken;
         this.authParamName = authParamName;
+        this.config = config;
     }
 
     // ------------------------------------------------------------------

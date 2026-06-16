@@ -232,6 +232,15 @@ export interface UserTrade {
 
     /** On-chain block number where this trade was included. Populated in hosted mode. */
     blockNumber?: number;
+
+    /** Trading fee, when available. */
+    fee?: number;
+
+    /** Venue that produced this trade, when available. */
+    venue?: string;
+
+    /** Raw venue-specific payload, when available. */
+    raw?: unknown;
 }
 
 /**
@@ -336,6 +345,9 @@ export interface Order {
 
     /** On-chain block number where this order was included. Populated in hosted mode. */
     blockNumber?: number;
+
+    /** Raw venue-specific payload, when available. */
+    raw?: unknown;
 }
 
 /**
@@ -374,6 +386,15 @@ export interface Position {
 
     /** On-chain block number for the latest position update. Populated in hosted mode. */
     blockNumber?: number;
+
+    /** Venue that produced this position, when available. */
+    venue?: string;
+
+    /** Current mark-to-market value, when available. */
+    currentValue?: number;
+
+    /** Raw venue-specific payload, when available. */
+    raw?: unknown;
 }
 
 /**
@@ -400,6 +421,9 @@ export interface Balance {
 
     /** On-chain block number for the latest balance update. Populated in hosted mode. */
     blockNumber?: number;
+
+    /** Venue or hosted account source, when available. */
+    venue?: string;
 }
 
 // Parameter types

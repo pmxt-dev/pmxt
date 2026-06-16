@@ -12,6 +12,7 @@ import sys
 import time
 import urllib.error
 import uuid
+import warnings
 from abc import ABC
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -210,8 +211,12 @@ def _convert_market(raw: Dict[str, Any]) -> UnifiedMarket:
         if isinstance(res_date_raw, str):
             try:
                 res_date = datetime.fromisoformat(res_date_raw.replace("Z", "+00:00"))
-            except ValueError:
-                pass
+            except ValueError as exc:
+                warnings.warn(
+                    f"Ignoring malformed resolutionDate {res_date_raw!r}: {exc}",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
         elif isinstance(res_date_raw, datetime):
             res_date = res_date_raw
 
@@ -509,8 +514,12 @@ class Exchange(ABC):
                 if attempt == 0 and not self.pmxt_api_key:
                     try:
                         self._server_manager.ensure_server_running()
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        warnings.warn(
+                            f"Failed to restart PMXT sidecar after connection error: {exc}",
+                            RuntimeWarning,
+                            stacklevel=2,
+                        )
                 time.sleep(delays[attempt])
             except ApiException:
                 raise  # HTTP errors are not retryable here

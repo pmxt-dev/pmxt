@@ -129,6 +129,22 @@ def _make_polymarket(
     return Polymarket(**kwargs)
 
 
+def test_rate_limit_property_defaults_and_updates() -> None:
+    default_api = Polymarket(pmxt_api_key=PMXT_API_KEY, auto_start_server=False)
+    assert default_api.rate_limit == 1000.0
+
+    api = Polymarket(
+        pmxt_api_key=PMXT_API_KEY,
+        auto_start_server=False,
+        rate_limit=25,
+    )
+    assert api.rate_limit == 25.0
+    api.rate_limit = 0
+    assert api.rate_limit == 0.0
+    with pytest.raises(ValueError):
+        api.rate_limit = -1
+
+
 # --------------------------------------------------------------------------- #
 # Read-method dispatch tests
 # --------------------------------------------------------------------------- #

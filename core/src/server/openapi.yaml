@@ -2863,6 +2863,7 @@ components:
           - hyperliquid
           - suibets
           - rain
+          - hunch
           - mock
           - router
       required: true

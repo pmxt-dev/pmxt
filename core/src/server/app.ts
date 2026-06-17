@@ -254,6 +254,7 @@ const defaultExchanges: Record<string, any> = {
   opinion: null,
   metaculus: null,
   smarkets: null,
+  hunch: null,
   mock: null,
 };
 

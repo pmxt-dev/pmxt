@@ -648,6 +648,8 @@ class ExchangeOptions(TypedDict, total=False):
     api_token: str
     proxy_address: str
     signature_type: Union[str, int]
+    wallet_address: str
+    signer: Any
 
 
 class PolymarketOptions(ExchangeOptions, total=False):

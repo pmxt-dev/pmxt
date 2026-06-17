@@ -73,6 +73,21 @@ export function orderFromV0(payload: Record<string, unknown>): Order {
     const fee = floatOrUndefined(payload["fee"]);
     if (fee !== undefined) order.fee = fee;
 
+    const filledShares = floatOrUndefined(payload["filled_shares"] ?? payload["filledShares"]);
+    if (filledShares !== undefined) order.filledShares = filledShares;
+
+    const feeRateBps = floatOrUndefined(payload["fee_rate_bps"] ?? payload["feeRateBps"]);
+    if (feeRateBps !== undefined) order.feeRateBps = feeRateBps;
+
+    const txHash = strOrUndefined(payload["tx_hash"] ?? payload["txHash"]);
+    if (txHash !== undefined) order.txHash = txHash;
+
+    const chain = strOrUndefined(payload["chain"]);
+    if (chain !== undefined) order.chain = chain;
+
+    const blockNumber = floatOrUndefined(payload["block_number"] ?? payload["blockNumber"]);
+    if (blockNumber !== undefined) order.blockNumber = blockNumber;
+
     return order;
 }
 

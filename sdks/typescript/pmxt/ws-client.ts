@@ -52,8 +52,14 @@ export class SidecarWsClient {
     private activeSubs: Map<string, string> = new Map();
 
     private connectPromise: Promise<void> | null = null;
+    private config?: {
+        wsUrl?: string;
+        reconnectInterval?: number;
+        pingInterval?: number;
+        maxReconnectAttempts?: number;
+    };
 
-    constructor(host: string, accessToken?: string, authParamName: string = "token", private config?: { 
+    constructor(host: string, accessToken?: string, authParamName: string = "token", config?: { 
             wsUrl?: string;
             reconnectInterval?: number;
             pingInterval?: number;
@@ -92,10 +98,14 @@ export class SidecarWsClient {
                 hostPart = hostPart.slice("http://".length);
             }
 
-            let url = `${scheme}://${hostPart}/ws`;
+            let url = this.config?.wsUrl || `${scheme}://${hostPart}/ws`;
             if (this.accessToken) {
                 url = `${url}?${this.authParamName}=${this.accessToken}`;
             }
+
+            const reconnectInterval = this.config?.reconnectInterval || 5000;
+            const pingInterval = this.config?.pingInterval || 30000;
+            const maxReconnectAttempts = this.config?.maxReconnectAttempts || 10;
 
             // Use the ws package in Node.js, native WebSocket in browsers
             const WsConstructor = this.getWebSocketConstructor();

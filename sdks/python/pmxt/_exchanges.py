@@ -321,7 +321,6 @@ class Myriad(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
-        wallet_address: Optional[str] = None,
         signer: Optional[object] = None,
         websocket: Optional[dict] = None,
     ) -> None:
@@ -345,7 +344,6 @@ class Myriad(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
-            wallet_address=wallet_address,
             signer=signer,
             websocket=websocket,
         )

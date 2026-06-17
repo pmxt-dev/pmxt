@@ -84,6 +84,7 @@ class SidecarWsClient:
         # Track active subscriptions by (method, symbol_key) -> request_id
         # to avoid duplicate subscribe messages for the same ticker
         self._active_subs: Dict[str, str] = {}
+        self.config = config or {}
 
     # ------------------------------------------------------------------
     # Connection lifecycle

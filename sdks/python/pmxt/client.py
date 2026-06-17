@@ -334,6 +334,7 @@ class Exchange(ABC):
         pmxt_api_key: Optional[str] = None,
         wallet_address: Optional[str] = None,
         signer: Optional[Any] = None,
+        websocket: Optional[dict] = None,
     ) -> None:
         """
         Initialize an exchange client.
@@ -376,6 +377,7 @@ class Exchange(ABC):
         self.markets: Dict[str, "UnifiedMarket"] = {}
         self.markets_by_slug: Dict[str, "UnifiedMarket"] = {}
         self._loaded_markets: bool = False
+        self.websocket = websocket
         # Sticky flag: flipped to True the first time the sidecar rejects a
         # GET read with 404/405 (i.e. an older pmxt-core that only supports
         # POST). Once set, read methods skip the GET probe for the lifetime

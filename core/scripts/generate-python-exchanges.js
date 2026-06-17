@@ -137,51 +137,80 @@ function generateClass(exchange) {
     const extraAttrs = [];
     const credOverrideLines = [];
 
+    // Track which params have been added to avoid duplicates
+    const addedParams = new Set();
+
     if (creds.apiKey) {
         constructorParams.push('api_key: Optional[str] = None');
         superArgs.push('api_key=api_key');
+        addedParams.add('api_key');
     }
     if (creds.apiToken) {
         constructorParams.push('api_token: Optional[str] = None');
         superArgs.push('api_token=api_token');
+        addedParams.add('api_token');
     }
     if (creds.apiSecret) {
         constructorParams.push('api_secret: Optional[str] = None');
         extraAttrs.push('self.api_secret = api_secret');
         credOverrideLines.push('        if self.api_secret:', '            creds["apiSecret"] = self.api_secret');
+        addedParams.add('api_secret');
     }
     if (creds.passphrase) {
         constructorParams.push('passphrase: Optional[str] = None');
         extraAttrs.push('self.passphrase = passphrase');
         credOverrideLines.push('        if self.passphrase:', '            creds["passphrase"] = self.passphrase');
+        addedParams.add('passphrase');
     }
     if (creds.privateKey) {
         const pyParam = aliases['private_key'] || 'private_key';
         const defaultVal = defaults['private_key'] || 'None';
         constructorParams.push(`${pyParam}: Optional[str] = ${defaultVal}`);
         superArgs.push(`private_key=${pyParam}`);
+        addedParams.add(pyParam);
     }
     if (creds.funderAddress) {
         constructorParams.push('proxy_address: Optional[str] = None');
         superArgs.push('proxy_address=proxy_address');
+        addedParams.add('proxy_address');
     }
     if (creds.signatureType) {
         const defaultVal = defaults['signature_type'] || 'None';
         constructorParams.push(`signature_type: Optional[str] = ${defaultVal}`);
         superArgs.push('signature_type=signature_type');
+        addedParams.add('signature_type');
     }
+    
     constructorParams.push('base_url: Optional[str] = None');
     constructorParams.push('auto_start_server: Optional[bool] = None');
     constructorParams.push('pmxt_api_key: Optional[str] = None');
-    constructorParams.push('wallet_address: Optional[str] = None');  
-    constructorParams.push('signer: Optional[object] = None');       
-    constructorParams.push('websocket: Optional[dict] = None'); 
     superArgs.push('base_url=base_url');
     superArgs.push('auto_start_server=auto_start_server');
     superArgs.push('pmxt_api_key=pmxt_api_key');
-    superArgs.push('wallet_address=wallet_address'); 
-    superArgs.push('signer=signer');                 
-    superArgs.push('websocket=websocket');  
+    addedParams.add('base_url');
+    addedParams.add('auto_start_server');
+    addedParams.add('pmxt_api_key');
+
+    // 👇 ONLY ADD wallet_address IF NOT ALREADY ADDED VIA ALIAS (e.g., Myriad)
+    if (!addedParams.has('wallet_address')) {
+        constructorParams.push('wallet_address: Optional[str] = None');
+        superArgs.push('wallet_address=wallet_address');
+        addedParams.add('wallet_address');
+    }
+
+    // 👇 ONLY ADD signer IF NOT ALREADY ADDED
+    if (!addedParams.has('signer')) {
+        constructorParams.push('signer: Optional[object] = None');
+        superArgs.push('signer=signer');
+        addedParams.add('signer');
+    }
+
+    // 👇 ONLY ADD websocket IF NOT ALREADY ADDED
+    if (!addedParams.has('websocket')) {
+        constructorParams.push('websocket: Optional[dict] = None');
+        superArgs.push('websocket=websocket');
+        addedParams.add('websocket');
+    }
 
     const docLines = [];
     if (creds.apiKey)        docLines.push('            api_key: API key for authentication (optional)');
@@ -198,9 +227,17 @@ function generateClass(exchange) {
     docLines.push('            base_url: Base URL of the PMXT sidecar server');
     docLines.push('            auto_start_server: Automatically start server if not running (default: True)');
     docLines.push('            pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)');
-    docLines.push('            wallet_address: Wallet address for hosted operations (optional)');
-    docLines.push('            signer: Custom signer for hosted operations (optional)');
-    docLines.push('            websocket: WebSocket configuration dict (optional)');
+    
+    // 👇 ONLY ADD DOCS IF THE PARAM EXISTS
+    if (addedParams.has('wallet_address')) {
+        docLines.push('            wallet_address: Wallet address for hosted operations (optional)');
+    }
+    if (addedParams.has('signer')) {
+        docLines.push('            signer: Custom signer for hosted operations (optional)');
+    }
+    if (addedParams.has('websocket')) {
+        docLines.push('            websocket: WebSocket configuration dict (optional)');
+    }
 
     const indent4 = s => `    ${s}`;
     const indent8 = s => `        ${s}`;

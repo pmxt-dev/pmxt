@@ -423,7 +423,10 @@ export function validateEconomics(
     } else if (
         route === "opinion_buy" ||
         route === "opinion_sell_polygon" ||
-        route === "opinion_sell_bsc_pull"
+        route === "opinion_sell_bsc_pull" ||
+        route === "limitless_buy" ||
+        route === "limitless_sell_polygon" ||
+        route === "limitless_sell_base_pull"
     ) {
         validateOpinionMarketId(message, buildResponse);
     }

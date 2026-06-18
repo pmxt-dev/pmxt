@@ -241,6 +241,8 @@ export class Router extends Exchange {
         minConfidence?: number;
         limit?: number;
         includePrices?: boolean;
+        minDifference?: number;
+        sort?: 'confidence' | 'volume' | 'priceDifference';
     }): Promise<MatchResult[]>;
     async fetchMarketMatches(marketOrParams: UnifiedMarket | {
         market?: UnifiedMarket;
@@ -253,6 +255,8 @@ export class Router extends Exchange {
         minConfidence?: number;
         limit?: number;
         includePrices?: boolean;
+        minDifference?: number;
+        sort?: 'confidence' | 'volume' | 'priceDifference';
     } = {}): Promise<MatchResult[]> {
         const params = 'title' in marketOrParams ? { market: marketOrParams as UnifiedMarket } : marketOrParams;
         await this.initPromise;
@@ -267,6 +271,8 @@ export class Router extends Exchange {
         if (params.minConfidence !== undefined) query.minConfidence = params.minConfidence;
         if (params.limit !== undefined) query.limit = params.limit;
         if (params.includePrices) query.includePrices = true;
+        if (params.minDifference !== undefined) query.minDifference = params.minDifference;
+        if (params.sort) query.sort = params.sort;
 
         try {
             const json = await this.sidecarReadRequest('fetchMarketMatches', query, [query]);

@@ -66,7 +66,7 @@ class SidecarWsClient:
     may invoke subscribe/receive from any thread.
     """
 
-    def __init__(self, host: str, access_token: Optional[str] = None, api_key: Optional[str] = None) -> None:
+    def __init__(self, host: str, access_token: Optional[str] = None, api_key: Optional[str] = None,config: Optional[dict] = None,) -> None:
         self._host = host
         self._access_token = access_token
         self._api_key = api_key

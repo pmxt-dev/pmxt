@@ -87,10 +87,7 @@ class Limitless(Exchange):
         pmxt_api_key: Optional[str] = None,
         wallet_address: Optional[str] = None,
         signer: Optional[object] = None,
-<<<<<<< HEAD
-=======
         websocket: Optional[dict] = None,
->>>>>>> 4b8f210 (fix(sdk): restore wallet_address/signer and wire websocket config)
     ) -> None:
         """
         Initialize Limitless client.
@@ -103,14 +100,9 @@ class Limitless(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
-<<<<<<< HEAD
-            wallet_address: Ethereum address for hosted reads/writes (optional)
-            signer: Optional callable for signing typed_data (optional)
-=======
             wallet_address: Wallet address for hosted operations (optional)
             signer: Custom signer for hosted operations (optional)
             websocket: WebSocket configuration dict (optional)
->>>>>>> 4b8f210 (fix(sdk): restore wallet_address/signer and wire websocket config)
         """
         super().__init__(
             exchange_name="limitless",
@@ -121,10 +113,7 @@ class Limitless(Exchange):
             pmxt_api_key=pmxt_api_key,
             wallet_address=wallet_address,
             signer=signer,
-<<<<<<< HEAD
-=======
             websocket=websocket,
->>>>>>> 4b8f210 (fix(sdk): restore wallet_address/signer and wire websocket config)
         )
 
         self.api_secret = api_secret

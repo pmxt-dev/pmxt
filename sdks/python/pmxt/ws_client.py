@@ -84,7 +84,7 @@ class SidecarWsClient:
         # Track active subscriptions by (method, symbol_key) -> request_id
         # to avoid duplicate subscribe messages for the same ticker
         self._active_subs: Dict[str, str] = {}
-        self.config = config or {}
+        self._config = config or {}
 
     # ------------------------------------------------------------------
     # Connection lifecycle
@@ -103,20 +103,42 @@ class SidecarWsClient:
                 "Install it with: pip install websocket-client"
             )
 
-        scheme = "ws"
-        # Strip http(s):// prefix from host to build ws URL
-        host_part = self._host
-        if host_part.startswith("https://"):
-            host_part = host_part[len("https://"):]
-            scheme = "wss"
-        elif host_part.startswith("http://"):
-            host_part = host_part[len("http://"):]
+        # ✅ CHECK FOR CUSTOM WS URL FROM CONFIG
+        custom_ws_url = self._config.get("wsUrl") if self._config else None
+        
+        if custom_ws_url:
+            # Use custom WebSocket URL
+            url = custom_ws_url
+            # Append auth parameters if not already in URL
+            if self._api_key:
+                if "?" in url:
+                    url = f"{url}&apiKey={self._api_key}"
+                else:
+                    url = f"{url}?apiKey={self._api_key}"
+            elif self._access_token:
+                if "?" in url:
+                    url = f"{url}&token={self._access_token}"
+                else:
+                    url = f"{url}?token={self._access_token}"
+        else:
+            # Build default URL from host
+            scheme = "ws"
+            host_part = self._host
+            if host_part.startswith("https://"):
+                host_part = host_part[len("https://"):]
+                scheme = "wss"
+            elif host_part.startswith("http://"):
+                host_part = host_part[len("http://"):]
 
-        url = f"{scheme}://{host_part}/ws"
-        if self._api_key:
-            url = f"{url}?apiKey={self._api_key}"
-        elif self._access_token:
-            url = f"{url}?token={self._access_token}"
+            url = f"{scheme}://{host_part}/ws"
+            if self._api_key:
+                url = f"{url}?apiKey={self._api_key}"
+            elif self._access_token:
+                url = f"{url}?token={self._access_token}"
+
+        # ✅ Get reconnect settings from config
+        reconnect_interval = self._config.get("reconnectInterval", 5000) if self._config else 5000
+        max_reconnect_attempts = self._config.get("maxReconnectAttempts", 10) if self._config else 10
 
         last_error: Optional[Exception] = None
         ws = None
@@ -133,7 +155,7 @@ class SidecarWsClient:
                 except Exception:
                     pass
                 if attempt < CONNECT_ATTEMPTS - 1:
-                    time.sleep(0.25 * (attempt + 1))
+                    time.sleep(reconnect_interval / 1000.0)  # ✅ Use reconnect_interval
 
         if last_error is not None:
             raise last_error

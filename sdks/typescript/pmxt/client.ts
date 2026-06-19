@@ -1750,7 +1750,7 @@ export abstract class Exchange {
             }
 
             const args = [resolvedOutcomeId, paramsDict];
-            const query = { id: resolvedOutcomeId, ...paramsDict };
+            const query = { outcomeId: resolvedOutcomeId, ...paramsDict };
             const json = await this.sidecarReadRequest('fetchOHLCV', query, args);
             const data = this.handleResponse(json);
             return data.map(convertCandle);
@@ -1791,7 +1791,7 @@ export abstract class Exchange {
             }
 
             const args = [resolvedOutcomeId, paramsDict];
-            const query = { id: resolvedOutcomeId, ...paramsDict };
+            const query = { outcomeId: resolvedOutcomeId, ...paramsDict };
             const json = await this.sidecarReadRequest('fetchTrades', query, args);
             const data = this.handleResponse(json);
             return data.map(convertTrade);

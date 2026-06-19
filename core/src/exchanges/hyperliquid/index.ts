@@ -145,7 +145,7 @@ export class HyperliquidExchange extends PredictionMarketExchange {
         return this.normalizer.normalizeOrderBook(raw, outcomeId);
     }
 
-    async fetchOHLCV(outcomeId: string, params: OHLCVParams = {}): Promise<PriceCandle[]> {
+    async fetchOHLCV(outcomeId: string, params: OHLCVParams = { resolution: '1h' }): Promise<PriceCandle[]> {
         const raw = await this.fetcher.fetchRawOHLCV(outcomeId, params);
         return this.normalizer.normalizeOHLCV(raw, params);
     }

@@ -2235,7 +2235,7 @@ class Exchange(ABC):
                     params_dict[key] = value
 
             args = [outcome_id, params_dict]
-            query = {"id": outcome_id, **params_dict}
+            query = {"outcomeId": outcome_id, **params_dict}
             data = self._handle_response(
                 self._sidecar_read_request("fetchOHLCV", query, args)
             )
@@ -2295,7 +2295,7 @@ class Exchange(ABC):
                     params_dict[key] = value
 
             args = [outcome_id, params_dict]
-            query = {"id": outcome_id, **params_dict}
+            query = {"outcomeId": outcome_id, **params_dict}
             data = self._handle_response(
                 self._sidecar_read_request("fetchTrades", query, args)
             )

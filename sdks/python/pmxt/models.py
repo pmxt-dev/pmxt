@@ -841,50 +841,39 @@ ClusterSortOption = Literal["volume", "confidence"]
 VenueFilter = Union[str, List[str]]
 
 
-class MatchedMarketClusterParams(TypedDict, total=False):
+class MatchedClusterFilterParams(TypedDict, total=False):
+    """Shared filters for matched market/event cluster discovery."""
+    query: str
+    category: str
+    relations: Union[str, List[MatchRelation]]
+    relation: MatchRelation
+    min_confidence: float
+    venues: VenueFilter
+    exclude_venues: VenueFilter
+    min_venues: int
+    with_orderbook: bool
+    updated_since: Union[str, datetime]
+    include_raw_matches: bool
+    sort: ClusterSortOption
+    limit: int
+    offset: int
+    edge_limit: int
+
+
+class MatchedMarketClusterParams(MatchedClusterFilterParams, total=False):
     """Parameters for fetching matched market clusters."""
     market: UnifiedMarket
     market_id: str
     slug: str
     url: str
-    query: str
-    category: str
-    relations: Union[str, List[MatchRelation]]
-    relation: MatchRelation
-    min_confidence: float
-    venues: VenueFilter
-    exclude_venues: VenueFilter
-    min_venues: int
-    with_orderbook: bool
-    updated_since: Union[str, datetime]
-    include_raw_matches: bool
-    sort: ClusterSortOption
-    limit: int
-    offset: int
-    edge_limit: int
 
 
-class MatchedEventClusterParams(TypedDict, total=False):
+class MatchedEventClusterParams(MatchedClusterFilterParams, total=False):
     """Parameters for fetching matched event clusters."""
     event: UnifiedEvent
     event_id: str
     slug: str
     url: str
-    query: str
-    category: str
-    relations: Union[str, List[MatchRelation]]
-    relation: MatchRelation
-    min_confidence: float
-    venues: VenueFilter
-    exclude_venues: VenueFilter
-    min_venues: int
-    with_orderbook: bool
-    updated_since: Union[str, datetime]
-    include_raw_matches: bool
-    sort: ClusterSortOption
-    limit: int
-    offset: int
-    edge_limit: int
 
 
 @dataclass

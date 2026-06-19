@@ -243,19 +243,26 @@ function normalizeDispatchArgs(methodName: string, args: unknown[], exchange?: s
 }
 
 // Singleton instances for local usage (when no credentials provided)
-const defaultExchanges: Record<string, any> = {
-  polymarket: null,
-  limitless: null,
-  kalshi: null,
-  "kalshi-demo": null,
-  probable: null,
-  baozi: null,
-  myriad: null,
-  opinion: null,
-  metaculus: null,
-  smarkets: null,
-  mock: null,
-};
+export const DEFAULT_EXCHANGE_NAMES = [
+  "polymarket",
+  "limitless",
+  "kalshi",
+  "kalshi-demo",
+  "probable",
+  "baozi",
+  "myriad",
+  "opinion",
+  "metaculus",
+  "smarkets",
+  "rain",
+  "gemini-titan",
+  "hyperliquid",
+  "mock",
+] as const;
+
+const defaultExchanges: Record<string, any> = Object.fromEntries(
+  DEFAULT_EXCHANGE_NAMES.map((exchangeName) => [exchangeName, null]),
+);
 
 function getDefaultExchange(exchangeName: string): any {
   if (!defaultExchanges[exchangeName]) {

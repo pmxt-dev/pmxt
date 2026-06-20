@@ -100,7 +100,9 @@ export class SidecarWsClient {
 
             let url = this.config?.wsUrl || `${scheme}://${hostPart}/ws`;
             if (this.accessToken) {
-                url = `${url}?${this.authParamName}=${this.accessToken}`;
+            // Check if the URL already contains a query string
+            const separator = url.includes('?') ? '&' : '?';
+            url = `${url}${separator}${this.authParamName}=${this.accessToken}`;
             }
 
             const reconnectInterval = this.config?.reconnectInterval || 5000;

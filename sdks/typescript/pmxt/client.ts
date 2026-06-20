@@ -3178,6 +3178,16 @@ export interface PolymarketOptions {
      * External signer used for hosted writes.
      */
     signer?: Signer;
+    websocket?: {
+        /** Custom WebSocket endpoint URL (e.g., "wss://custom.example.com/ws") */
+        wsUrl?: string;
+        /** Reconnection delay in milliseconds (default: 5000) */
+        reconnectInterval?: number;
+        /** Heartbeat ping interval in milliseconds (default: 30000) */
+        pingInterval?: number;
+        /** Maximum number of reconnection attempts (default: 10) */
+        maxReconnectAttempts?: number;
+    };
 }
 
 export class Polymarket extends Exchange {

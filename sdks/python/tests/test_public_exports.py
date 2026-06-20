@@ -136,6 +136,38 @@ def test_feed_client_is_top_level_public_export():
     assert "FeedClient" in public_exports
 
 
+def test_feed_client_supporting_types_are_top_level_public_exports():
+    init_path = Path(__file__).resolve().parents[1] / "pmxt" / "__init__.py"
+    tree = ast.parse(init_path.read_text(encoding="utf-8"))
+
+    imported_modules = {
+        alias.asname or alias.name: node.module
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+    }
+    public_exports = set()
+
+    for node in tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == "__all__"
+            and isinstance(node.value, ast.List)
+        ):
+            public_exports.update(
+                item.value
+                for item in node.value.elts
+                if isinstance(item, ast.Constant) and isinstance(item.value, str)
+            )
+
+    expected = {"Ticker", "Tickers", "OHLCV", "Market", "FeedMarket", "OracleRound"}
+    assert expected <= imported_modules.keys()
+    assert all(imported_modules[name] == "feed_client" for name in expected)
+    assert expected <= public_exports
+
+
 def test_environment_constants_are_top_level_public_exports():
     init_path = Path(__file__).resolve().parents[1] / "pmxt" / "__init__.py"
     tree = ast.parse(init_path.read_text(encoding="utf-8"))

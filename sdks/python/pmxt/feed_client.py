@@ -44,6 +44,7 @@ class Ticker:
     mark_price: Optional[float] = None
 
 
+Tickers = Dict[str, Ticker]
 OHLCV = Tuple[float, float, float, float, float, float]
 
 
@@ -56,6 +57,9 @@ class Market:
     active: bool
     type: str
     info: Any = field(default_factory=dict)
+
+
+FeedMarket = Market
 
 
 @dataclass(frozen=True)

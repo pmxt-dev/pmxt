@@ -22,7 +22,7 @@ from .client import Exchange
 from .constants import ENV, ENV_BASE_URL, ENV_API_KEY
 from ._exchanges import Polymarket, Limitless, Kalshi, KalshiDemo, Probable, Baozi, Myriad, Opinion, Metaculus, Smarkets, PolymarketUS, Polymarket_us, Hyperliquid, GeminiTitan, SuiBets, Suibets, Rain, Mock, Router
 from .router import Router
-from .feed_client import FeedClient
+from .feed_client import FeedClient, FeedMarket, Market, OHLCV, OracleRound, Ticker, Tickers
 from .server_manager import ServerManager
 from .errors import (
     PmxtError,
@@ -189,6 +189,12 @@ __all__ = [
     "Router",
     "Exchange",
     "FeedClient",
+    "Ticker",
+    "Tickers",
+    "OHLCV",
+    "Market",
+    "FeedMarket",
+    "OracleRound",
     "ExchangeOptions",
     "PolymarketOptions",
     "RouterOptions",

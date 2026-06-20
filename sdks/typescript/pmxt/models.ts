@@ -983,7 +983,10 @@ export interface EventMatchResult extends Readonly<UnifiedEvent> {
     marketMatches: MatchResult[];
 }
 
-export type MatchedClusterSort = 'volume' | 'confidence';
+/** Canonical cluster sort literal shared with the Python SDK. */
+export type ClusterSortOption = 'volume' | 'confidence';
+
+export type MatchedClusterSort = ClusterSortOption;
 
 /** Shared filters for matched market/event cluster discovery. */
 export interface MatchedClusterFilterParams {

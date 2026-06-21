@@ -963,6 +963,36 @@ export abstract class Exchange {
         }
     }
 
+    async fetchEventsPaginated(params?: any): Promise<PaginatedEventsResult> {
+        await this.initPromise;
+        try {
+            const args: any[] = [];
+            if (params !== undefined) args.push(params);
+            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/fetchEventsPaginated`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ args, credentials: this.getCredentials() }),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                if (body.error && typeof body.error === "object") {
+                    throw fromServerError(body.error);
+                }
+                throw new PmxtError(body.error?.message || response.statusText);
+            }
+            const json = await response.json();
+            const data = this.handleResponse(json);
+            return {
+                data: (data.data || []).map(convertEvent),
+                total: data.total,
+                nextCursor: data.nextCursor,
+            };
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to fetchEventsPaginated: ${error}`);
+        }
+    }
+
     async fetchEvents(params?: EventFetchParams): Promise<UnifiedEvent[]> {
         await this.initPromise;
         try {

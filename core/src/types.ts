@@ -209,6 +209,10 @@ export interface Trade {
 export interface UserTrade extends Trade {
     /** The order that produced this trade, if known. */
     orderId?: string;
+    /** The market this trade belongs to, when the venue exposes it (e.g. derivable from the fill's coin/asset). */
+    marketId?: string;
+    /** Trading fee paid by the user for this fill, when the venue exposes it. */
+    fee?: number;
     /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */
     txHash?: string | null;
     /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */

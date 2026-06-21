@@ -367,6 +367,7 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
     }
 
     normalizeUserTrade(raw: HyperliquidRawFill, _index: number): UserTrade {
+        const fee = parseFloat(raw.fee);
         return {
             id: String(raw.tid),
             timestamp: raw.time,
@@ -374,6 +375,43 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
             amount: parseFloat(raw.sz),
             side: raw.side === 'B' ? 'buy' : raw.side === 'A' ? 'sell' : 'unknown',
             orderId: String(raw.oid),
+            marketId: this.coinToMarketId(raw.coin),
+            outcomeId: this.coinToOutcomeId(raw.coin),
+            fee: Number.isFinite(fee) ? fee : undefined,
+        };
+    }
+
+    // ponytail: HL has no closed-orders endpoint; we reconstruct from the fills of one oid.
+    // amount = filled (we cannot recover the unfilled-then-cancelled portion); price = VWAP across fills.
+    synthesizeClosedOrder(fills: HyperliquidRawFill[]): Order {
+        const first = fills[0];
+        let totalSz = 0;
+        let totalNotional = 0;
+        let totalFee = 0;
+        let earliest = first.time;
+        for (const f of fills) {
+            const sz = parseFloat(f.sz);
+            const px = parseFloat(f.px);
+            const fee = parseFloat(f.fee);
+            totalSz += sz;
+            totalNotional += sz * px;
+            if (Number.isFinite(fee)) totalFee += fee;
+            if (f.time < earliest) earliest = f.time;
+        }
+        const vwap = totalSz > 0 ? totalNotional / totalSz : parseFloat(first.px);
+        return {
+            id: String(first.oid),
+            marketId: this.coinToMarketId(first.coin),
+            outcomeId: this.coinToOutcomeId(first.coin),
+            side: first.side === 'B' ? 'buy' : 'sell',
+            type: 'limit',
+            price: vwap,
+            amount: totalSz,
+            status: 'filled',
+            filled: totalSz,
+            remaining: 0,
+            timestamp: earliest,
+            fee: totalFee,
         };
     }
 

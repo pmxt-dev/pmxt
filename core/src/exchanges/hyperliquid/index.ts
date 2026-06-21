@@ -199,6 +199,35 @@ export class HyperliquidExchange extends PredictionMarketExchange {
             .map((f, i) => this.normalizer.normalizeUserTrade(f, i));
     }
 
+    // ponytail: HL exposes no "closed orders" endpoint, only userFills + openOrders.
+    // Synthesize closed orders as: oids seen in fills that are not currently open.
+    // Caveat — this surfaces *filled* orders, not *cancelled-with-no-fills* (HL drops those from public history).
+    async fetchClosedOrders(): Promise<Order[]> {
+        const wallet = this.requireWallet();
+        const [rawFills, rawOpen] = await Promise.all([
+            this.fetcher.fetchRawUserFills(wallet),
+            this.fetcher.fetchRawOpenOrders(wallet),
+        ]);
+        const openOids = new Set(rawOpen.map(o => o.oid));
+        const byOid = new Map<number, typeof rawFills>();
+        for (const f of rawFills) {
+            if (!f.coin.startsWith('#')) continue;
+            if (openOids.has(f.oid)) continue;
+            const list = byOid.get(f.oid) ?? [];
+            list.push(f);
+            byOid.set(f.oid, list);
+        }
+        return [...byOid.values()].map(fills => this.normalizer.synthesizeClosedOrder(fills));
+    }
+
+    async fetchAllOrders(): Promise<Order[]> {
+        const [open, closed] = await Promise.all([
+            this.fetchOpenOrders(),
+            this.fetchClosedOrders(),
+        ]);
+        return [...open, ...closed];
+    }
+
     // -------------------------------------------------------------------------
     // Trading (EIP-712 signing required)
     // -------------------------------------------------------------------------

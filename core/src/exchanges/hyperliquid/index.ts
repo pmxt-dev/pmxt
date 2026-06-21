@@ -146,6 +146,15 @@ export class HyperliquidExchange extends PredictionMarketExchange {
         return this.normalizer.normalizeOrderBook(raw, outcomeId);
     }
 
+    // ponytail: Hyperliquid has no native batch order-book endpoint; loop client-side.
+    // Add a concurrency cap if rate limits start biting in practice.
+    async fetchOrderBooks(outcomeIds: string[]): Promise<Record<string, OrderBook>> {
+        const entries = await Promise.all(
+            outcomeIds.map(async id => [id, await this.fetchOrderBook(id)] as const),
+        );
+        return Object.fromEntries(entries);
+    }
+
     async fetchOHLCV(outcomeId: string, params: OHLCVParams = { resolution: '1h' }): Promise<PriceCandle[]> {
         const raw = await this.fetcher.fetchRawOHLCV(outcomeId, params);
         return this.normalizer.normalizeOHLCV(raw, params);

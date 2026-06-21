@@ -233,7 +233,7 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
             slug: `hl-${outcomeId}`,
             outcomes,
             resolutionDate: expiryDate ?? new Date(0),
-            volume24h: 0,
+            volume24h: raw.volume24h ?? 0,
             liquidity: 0,
             url: buildMarketUrl(outcomeId),
             category,
@@ -290,6 +290,7 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
         raw: HyperliquidRawQuestion,
         outcomeMeta: HyperliquidRawOutcomeMeta,
         mids: HyperliquidRawMid,
+        volumeMap?: Map<number, number>,
     ): UnifiedEvent | null {
         const event = this.normalizeEvent(raw);
         if (!event) return null;
@@ -308,6 +309,7 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
                 outcome,
                 question: raw,
                 midPrice,
+                volume24h: volumeMap?.get(outcomeId),
             });
             if (market) {
                 markets.push(market);

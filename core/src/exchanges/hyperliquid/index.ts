@@ -126,14 +126,15 @@ export class HyperliquidExchange extends PredictionMarketExchange {
             return [];
         }
 
-        const [rawQuestions, meta, mids] = await Promise.all([
+        const [rawQuestions, meta, mids, volumeMap] = await Promise.all([
             this.fetcher.fetchRawEvents(params),
             this.fetcher.fetchOutcomeMeta(),
             this.fetcher.fetchAllMids(),
+            this.fetcher.fetchOutcomeVolumeMap(),
         ]);
 
         return rawQuestions
-            .map(q => this.normalizer.normalizeEventWithMarkets(q, meta, mids))
+            .map(q => this.normalizer.normalizeEventWithMarkets(q, meta, mids, volumeMap))
             .filter((e): e is UnifiedEvent => e !== null);
     }
 

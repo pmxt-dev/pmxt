@@ -1,7 +1,7 @@
 import { MarketFilterParams, EventFetchParams, OHLCVParams, TradesParams } from '../../BaseExchange';
 import { IExchangeFetcher, FetcherContext } from '../interfaces';
 import { hyperliquidErrorMapper } from './errors';
-import { toCoinNotation, toMidKey, fromMarketId } from './utils';
+import { toCoinNotation, toMidKey, fromMarketId, fromCoinEncoding } from './utils';
 
 // ----------------------------------------------------------------------------
 // Raw venue-native types (Hyperliquid HIP-4 Outcome Markets)
@@ -142,11 +142,21 @@ export interface HyperliquidRawUserState {
     withdrawable: string;
 }
 
+// Per-coin context from spotMetaAndAssetCtxs (only the fields we use)
+export interface HyperliquidRawSpotAssetCtx {
+    coin: string;            // "#NNNN" for outcome legs
+    dayNtlVlm: string;       // 24h notional volume in USDC
+    prevDayPx?: string;
+    markPx?: string;
+    midPx?: string;
+}
+
 // Composite type: outcome + its question context
 export interface HyperliquidRawOutcomeWithQuestion {
     outcome: HyperliquidRawOutcome;
     question: HyperliquidRawQuestion | undefined;
     midPrice: string | undefined; // from allMids
+    volume24h?: number;           // summed Yes+No dayNtlVlm from spotMetaAndAssetCtxs
 }
 
 // ----------------------------------------------------------------------------
@@ -176,9 +186,10 @@ export class HyperliquidFetcher implements IExchangeFetcher<HyperliquidRawOutcom
     // -- Markets (outcomes) ----------------------------------------------------
 
     async fetchRawMarkets(params?: MarketFilterParams): Promise<HyperliquidRawOutcomeWithQuestion[]> {
-        const [meta, mids] = await Promise.all([
+        const [meta, mids, volumeMap] = await Promise.all([
             this.fetchOutcomeMeta(),
             this.fetchAllMids(),
+            this.fetchOutcomeVolumeMap(),
         ]);
 
         const questionMap = new Map<number, HyperliquidRawQuestion>();
@@ -192,6 +203,7 @@ export class HyperliquidFetcher implements IExchangeFetcher<HyperliquidRawOutcom
             outcome,
             question: questionMap.get(outcome.outcome),
             midPrice: this.getMidForOutcome(mids, outcome.outcome),
+            volume24h: volumeMap.get(outcome.outcome),
         }));
 
         // Filter settled outcomes out by default (active only)
@@ -311,6 +323,32 @@ export class HyperliquidFetcher implements IExchangeFetcher<HyperliquidRawOutcom
 
     async fetchAllMids(): Promise<HyperliquidRawMid> {
         return this.postInfo<HyperliquidRawMid>({ type: 'allMids' });
+    }
+
+    /**
+     * Build a map of outcomeId -> 24h notional volume (Yes leg + No leg)
+     * by reading spotMetaAndAssetCtxs, where outcome legs appear as
+     * coin "#<encoding>" with `dayNtlVlm` in USDC.
+     */
+    async fetchOutcomeVolumeMap(): Promise<Map<number, number>> {
+        const map = new Map<number, number>();
+        try {
+            const resp = await this.postInfo<[unknown, HyperliquidRawSpotAssetCtx[]]>({ type: 'spotMetaAndAssetCtxs' });
+            const ctxs = Array.isArray(resp) ? resp[1] : undefined;
+            if (!Array.isArray(ctxs)) return map;
+            for (const ctx of ctxs) {
+                if (!ctx?.coin || !ctx.coin.startsWith('#')) continue;
+                const vol = parseFloat(ctx.dayNtlVlm);
+                if (!Number.isFinite(vol)) continue;
+                const encoding = parseInt(ctx.coin.slice(1), 10);
+                if (!Number.isFinite(encoding)) continue;
+                const { outcomeId } = fromCoinEncoding(encoding);
+                map.set(outcomeId, (map.get(outcomeId) ?? 0) + vol);
+            }
+        } catch {
+            // ponytail: best-effort volume enrichment; if spotMetaAndAssetCtxs is unreachable, return empty map and callers fall back to 0
+        }
+        return map;
     }
 
     private getMidForOutcome(mids: HyperliquidRawMid, outcomeId: number): string | undefined {

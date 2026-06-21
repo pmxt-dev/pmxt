@@ -114,15 +114,19 @@ class ValidationError(PmxtError):
 class NetworkError(PmxtError):
     """503 Service Unavailable - Network connectivity issues."""
 
-    def __init__(self, message: str, exchange: str | None = None):
-        super().__init__(message, code="NETWORK_ERROR", retryable=True, exchange=exchange)
+    def __init__(self, message: str, exchange: str | None = None, **kwargs: Any) -> None:
+        kwargs.setdefault("code", "NETWORK_ERROR")
+        kwargs.setdefault("retryable", True)
+        super().__init__(message, exchange=exchange, **kwargs)
 
 
 class ExchangeNotAvailable(PmxtError):
     """503 Service Unavailable - Exchange is down or unreachable."""
 
-    def __init__(self, message: str, exchange: str | None = None):
-        super().__init__(message, code="EXCHANGE_NOT_AVAILABLE", retryable=True, exchange=exchange)
+    def __init__(self, message: str, exchange: str | None = None, **kwargs: Any) -> None:
+        kwargs.setdefault("code", "EXCHANGE_NOT_AVAILABLE")
+        kwargs.setdefault("retryable", True)
+        super().__init__(message, exchange=exchange, **kwargs)
 
 
 # Mapping from server error codes to error classes

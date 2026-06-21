@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 from .errors import PmxtError
 
 MAX_QUEUED_MESSAGES_PER_SUBSCRIPTION = 100_000
-CONNECT_ATTEMPTS = 3
+CONNECT_ATTEMPTS = 3 # Left for fallback defaults
 _NO_DATA = object()
 
 
@@ -136,13 +136,15 @@ class SidecarWsClient:
             elif self._access_token:
                 url = f"{url}?token={self._access_token}"
 
-        # ✅ Get reconnect settings from config
+        # ✅ Get reconnect settings from config (defaulting to 3 attempts to match legacy behavior)
         reconnect_interval = self._config.get("reconnectInterval", 5000) if self._config else 5000
-        max_reconnect_attempts = self._config.get("maxReconnectAttempts", 10) if self._config else 10
+        max_reconnect_attempts = self._config.get("maxReconnectAttempts", CONNECT_ATTEMPTS) if self._config else CONNECT_ATTEMPTS
 
         last_error: Optional[Exception] = None
         ws = None
-        for attempt in range(CONNECT_ATTEMPTS):
+        
+        # ✅ FIXED: Use max_reconnect_attempts instead of CONNECT_ATTEMPTS
+        for attempt in range(max_reconnect_attempts):
             ws = websocket.WebSocket()
             try:
                 _connect_websocket(ws, url, timeout=10)
@@ -154,8 +156,9 @@ class SidecarWsClient:
                     ws.close()
                 except Exception:
                     pass
-                if attempt < CONNECT_ATTEMPTS - 1:
-                    time.sleep(reconnect_interval / 1000.0)  # ✅ Use reconnect_interval
+                # ✅ FIXED: Honor the config variable for the attempt boundary too
+                if attempt < max_reconnect_attempts - 1:
+                    time.sleep(reconnect_interval / 1000.0)
 
         if last_error is not None:
             raise last_error

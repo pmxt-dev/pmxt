@@ -4,9 +4,12 @@ import { suibetsErrorMapper } from './errors';
 
 export interface SuibetsRawOffer {
     id: string;
-    matchId: string;
-    matchName: string;
-    sport: string;
+    matchId?: string;
+    eventId?: string;
+    matchName?: string;
+    eventName?: string;
+    sport?: string;
+    sportName?: string;
     homeTeam: string;
     awayTeam: string;
     creatorWallet: string;
@@ -30,7 +33,8 @@ export interface SuibetsRawEvent {
     name: string;
     homeTeam: string;
     awayTeam: string;
-    sport: string;
+    sport?: string;
+    sportName?: string;
     leagueName?: string;
     matchDate: string;
     status: string;
@@ -165,12 +169,13 @@ export class SuibetsFetcher implements IExchangeFetcher<SuibetsRawOffer, Suibets
             (data as { offers?: SuibetsRawOffer[] }).offers ??
             (Array.isArray(data) ? (data as SuibetsRawOffer[]) : []);
 
-        // Group offers by matchId using a Map; each entry is built immutably.
+        // Group offers by matchId/eventId using a Map; each entry is built immutably.
         const byMatch = new Map<string, SuibetsRawOffer[]>();
         for (const offer of offers) {
-            if (!offer.matchId) continue;
-            const existing = byMatch.get(offer.matchId) ?? [];
-            byMatch.set(offer.matchId, [...existing, offer]);
+            const eventId = offer.matchId ?? offer.eventId;
+            if (!eventId) continue;
+            const existing = byMatch.get(eventId) ?? [];
+            byMatch.set(eventId, [...existing, offer]);
         }
 
         const q = params.query?.toLowerCase();
@@ -181,19 +186,20 @@ export class SuibetsFetcher implements IExchangeFetcher<SuibetsRawOffer, Suibets
 
             if (q) {
                 const matches =
-                    first.matchName?.toLowerCase().includes(q) ||
+                    (first.matchName ?? first.eventName)?.toLowerCase().includes(q) ||
                     first.homeTeam?.toLowerCase().includes(q) ||
                     first.awayTeam?.toLowerCase().includes(q) ||
-                    first.sport?.toLowerCase().includes(q);
+                    (first.sport ?? first.sportName)?.toLowerCase().includes(q);
                 if (!matches) continue;
             }
 
             events.push({
                 id: matchId,
-                name: first.matchName || `${first.homeTeam} vs ${first.awayTeam}`,
+                name: first.matchName || first.eventName || `${first.homeTeam} vs ${first.awayTeam}`,
                 homeTeam: first.homeTeam,
                 awayTeam: first.awayTeam,
-                sport: first.sport,
+                sport: first.sport ?? first.sportName,
+                sportName: first.sportName,
                 leagueName: first.leagueName,
                 matchDate: first.matchDate,
                 status: 'active',

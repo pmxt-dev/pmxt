@@ -226,6 +226,22 @@ export class HyperliquidFetcher implements IExchangeFetcher<HyperliquidRawOutcom
             );
         }
 
+        // Direct lookup by marketId (canonical or outcome-token form)
+        if ((params as any)?.marketId) {
+            try {
+                const targetOutcomeId = fromMarketId(String((params as any).marketId));
+                results = results.filter(r => r.outcome.outcome === targetOutcomeId);
+            } catch {
+                results = [];
+            }
+        }
+
+        // Filter by parent eventId (HL question number)
+        if ((params as any)?.eventId !== undefined && (params as any).eventId !== null) {
+            const targetEventId = String((params as any).eventId);
+            results = results.filter(r => r.question && String(r.question.question) === targetEventId);
+        }
+
         // Limit
         const limit = params?.limit || 250000;
         const offset = params?.offset || 0;
@@ -238,6 +254,12 @@ export class HyperliquidFetcher implements IExchangeFetcher<HyperliquidRawOutcom
         const meta = await this.fetchOutcomeMeta();
 
         let results = [...meta.questions];
+
+        // Direct lookup by eventId (HL question number)
+        if (params?.eventId !== undefined && params.eventId !== null) {
+            const targetEventId = String(params.eventId);
+            results = results.filter(q => String(q.question) === targetEventId);
+        }
 
         // Filter by query
         if (params?.query) {
@@ -278,18 +300,22 @@ export class HyperliquidFetcher implements IExchangeFetcher<HyperliquidRawOutcom
         const startTime = params.start ? params.start.getTime() : now - 24 * 60 * 60 * 1000;
         const endTime = params.end ? params.end.getTime() : now;
 
-        return this.postInfo<HyperliquidRawCandle[]>({
+        const raw = await this.postInfo<HyperliquidRawCandle[]>({
             type: 'candleSnapshot',
             req: { coin, interval: params.resolution || '1h', startTime, endTime },
         });
+        // ponytail: HL returns the full window; honor caller's limit by trimming to the most recent N
+        return params.limit && raw.length > params.limit ? raw.slice(-params.limit) : raw;
     }
 
     // -- Trades ----------------------------------------------------------------
 
-    async fetchRawTrades(marketId: string, _params: TradesParams): Promise<HyperliquidRawTrade[]> {
+    async fetchRawTrades(marketId: string, params: TradesParams): Promise<HyperliquidRawTrade[]> {
         const outcomeId = fromMarketId(marketId);
         const coin = toCoinNotation(outcomeId, 'yes');
-        return this.postInfo<HyperliquidRawTrade[]>({ type: 'recentTrades', coin });
+        const raw = await this.postInfo<HyperliquidRawTrade[]>({ type: 'recentTrades', coin });
+        // ponytail: HL recentTrades returns a fixed page; honor caller's limit (most recent N)
+        return params?.limit && raw.length > params.limit ? raw.slice(0, params.limit) : raw;
     }
 
     // -- User data -------------------------------------------------------------

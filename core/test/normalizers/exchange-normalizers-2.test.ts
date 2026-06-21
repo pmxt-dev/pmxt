@@ -723,6 +723,22 @@ describe('ProbableNormalizer', () => {
             expect(result.liquidity).toBe(18000);
         });
 
+        it('coerces string volume and liquidity fields from the live API to numbers', () => {
+            const result = normalizer.normalizeMarket({
+                ...rawMarket,
+                volume24hr: '4200.5',
+                volume: '95000.25',
+                liquidity: '18000.75',
+            })!;
+
+            expect(result.volume24h).toBe(4200.5);
+            expect(typeof result.volume24h).toBe('number');
+            expect(result.volume).toBe(95000.25);
+            expect(typeof result.volume).toBe('number');
+            expect(result.liquidity).toBe(18000.75);
+            expect(typeof result.liquidity).toBe('number');
+        });
+
         it('builds two outcomes from tokens array', () => {
             const result = normalizer.normalizeMarket(rawMarket)!;
             expect(result.outcomes).toHaveLength(2);

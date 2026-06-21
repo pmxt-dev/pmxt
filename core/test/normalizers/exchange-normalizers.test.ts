@@ -152,6 +152,22 @@ describe('PolymarketNormalizer', () => {
             expect(market.liquidity).toBe(85000);
         });
 
+        it('coerces string volume and liquidity fields from Gamma to numbers', () => {
+            const result = normalizer.normalizeMarket({
+                ...rawEvent,
+                markets: [{
+                    ...rawEvent.markets![0],
+                    volume: '1200000.25',
+                    liquidity: '85000.5',
+                }],
+            } as any)!;
+
+            expect(result.volume).toBe(1200000.25);
+            expect(typeof result.volume).toBe('number');
+            expect(result.liquidity).toBe(85000.5);
+            expect(typeof result.liquidity).toBe('number');
+        });
+
         it('maps openInterest as a number', () => {
             expect(typeof market.openInterest).toBe('number');
             expect(market.openInterest).toBe(30000);
@@ -905,6 +921,19 @@ describe('LimitlessNormalizer', () => {
         it('maps volume from volume field as a number', () => {
             expect(typeof market.volume).toBe('number');
             expect(market.volume).toBe(1500000);
+        });
+
+        it('coerces string volume fields from the live API to numbers', () => {
+            const result = normalizer.normalizeMarket({
+                ...rawMarket,
+                volumeFormatted: '75000.5',
+                volume: '1500000.25',
+            });
+
+            expect(result!.volume24h).toBe(75000.5);
+            expect(typeof result!.volume24h).toBe('number');
+            expect(result!.volume).toBe(1500000.25);
+            expect(typeof result!.volume).toBe('number');
         });
 
         it('maps liquidity as a number (0 for flat market list)', () => {

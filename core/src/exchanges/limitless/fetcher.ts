@@ -22,8 +22,8 @@ export interface LimitlessRawMarket {
     };
     expirationDate?: string;
     expirationTimestamp?: number | string;
-    volumeFormatted?: number;
-    volume?: number;
+    volumeFormatted?: number | string;
+    volume?: number | string;
     logo?: string | null;
     categories?: string[];
     tags?: string[];

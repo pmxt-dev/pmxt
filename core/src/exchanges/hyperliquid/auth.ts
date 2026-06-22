@@ -60,6 +60,20 @@ function convertLargeInts(obj: unknown): unknown {
     return obj;
 }
 
+// ponytail: msgpackr encodes positive BigInts as int64 (0xd3); HL's server uses
+// Python's msgpack which encodes the same value as uint64 (0xcf). Post-process the
+// packed bytes to flip d3 → cf for non-negative payloads. HL actions never carry
+// negative integers (oids, nonces, asset ids are all >= 0), so this is safe.
+function fixInt64ToUint64(bytes: Uint8Array): Uint8Array {
+    const out = Buffer.from(bytes);
+    for (let i = 0; i < out.length - 8; i++) {
+        if (out[i] === 0xd3 && (out[i + 1] & 0x80) === 0) {
+            out[i] = 0xcf;
+        }
+    }
+    return out;
+}
+
 // ----------------------------------------------------------------------------
 // Action hash -- constructs the connectionId for the phantom agent
 // ----------------------------------------------------------------------------
@@ -69,8 +83,8 @@ function computeActionHash(
     vaultAddress: string | null,
     nonce: number,
 ): string {
-    // 1. msgpack-encode the action (large ints as int64)
-    const actionBytes = packr.pack(convertLargeInts(action));
+    // 1. msgpack-encode the action; coerce positive int64 to uint64 to match HL's server (Python msgpack)
+    const actionBytes = fixInt64ToUint64(packr.pack(convertLargeInts(action)));
 
     // 2. nonce as 8 bytes big-endian
     const nonceBytes = Buffer.alloc(8);

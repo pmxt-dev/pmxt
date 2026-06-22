@@ -171,8 +171,11 @@ export class HyperliquidExchange extends PredictionMarketExchange {
 
     async fetchBalance(): Promise<Balance[]> {
         const wallet = this.requireWallet();
-        const raw = await this.fetcher.fetchRawUserState(wallet);
-        return this.normalizer.normalizeBalance(raw);
+        const [perp, spot] = await Promise.all([
+            this.fetcher.fetchRawUserState(wallet),
+            this.fetcher.fetchRawSpotState(wallet),
+        ]);
+        return this.normalizer.normalizeBalance(perp, spot);
     }
 
     async fetchPositions(): Promise<Position[]> {

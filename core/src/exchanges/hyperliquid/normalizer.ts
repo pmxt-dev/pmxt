@@ -26,6 +26,7 @@ import {
     HyperliquidRawOpenOrder,
     HyperliquidRawPosition,
     HyperliquidRawUserState,
+    HyperliquidRawSpotState,
     HyperliquidRawOutcomeMeta,
     HyperliquidRawMid,
 } from './fetcher';
@@ -459,17 +460,36 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
         };
     }
 
-    normalizeBalance(raw: HyperliquidRawUserState): Balance[] {
-        const summary = raw.crossMarginSummary;
-        const total = parseFloat(summary.accountValue);
-        const locked = parseFloat(summary.totalMarginUsed);
+    normalizeBalance(raw: HyperliquidRawUserState, spot?: HyperliquidRawSpotState): Balance[] {
+        const result: Balance[] = [];
 
-        return [{
-            currency: 'USDH',
-            total,
-            available: total - locked,
-            locked,
-        }];
+        // Spot balances: outcome markets quote against these (USDC, USDH, etc.).
+        for (const b of spot?.balances ?? []) {
+            const total = parseFloat(b.total);
+            const hold = parseFloat(b.hold);
+            if (!Number.isFinite(total) || total === 0) continue;
+            result.push({
+                currency: b.coin,
+                total,
+                available: total - (Number.isFinite(hold) ? hold : 0),
+                locked: Number.isFinite(hold) ? hold : 0,
+            });
+        }
+
+        // Perp cross-margin account, labelled as such so consumers don't conflate it with spot.
+        const summary = raw.crossMarginSummary;
+        const perpTotal = parseFloat(summary.accountValue);
+        const perpLocked = parseFloat(summary.totalMarginUsed);
+        if (Number.isFinite(perpTotal) && perpTotal > 0) {
+            result.push({
+                currency: 'USDC_PERP',
+                total: perpTotal,
+                available: perpTotal - perpLocked,
+                locked: perpLocked,
+            });
+        }
+
+        return result;
     }
 
     // -- Private helpers -------------------------------------------------------

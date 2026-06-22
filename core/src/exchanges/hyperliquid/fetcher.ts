@@ -142,6 +142,19 @@ export interface HyperliquidRawUserState {
     withdrawable: string;
 }
 
+// Spot balance entry — coin/token + total/hold/entryNtl in token units (already human-readable).
+export interface HyperliquidRawSpotBalance {
+    coin: string;
+    token: number;
+    total: string;
+    hold: string;
+    entryNtl: string;
+}
+
+export interface HyperliquidRawSpotState {
+    balances: HyperliquidRawSpotBalance[];
+}
+
 // Per-coin context from spotMetaAndAssetCtxs (only the fields we use)
 export interface HyperliquidRawSpotAssetCtx {
     coin: string;            // "#NNNN" for outcome legs
@@ -330,6 +343,13 @@ export class HyperliquidFetcher implements IExchangeFetcher<HyperliquidRawOutcom
     async fetchRawOpenOrders(walletAddress: string): Promise<HyperliquidRawOpenOrder[]> {
         return this.postInfo<HyperliquidRawOpenOrder[]>({
             type: 'openOrders',
+            user: walletAddress,
+        });
+    }
+
+    async fetchRawSpotState(walletAddress: string): Promise<HyperliquidRawSpotState> {
+        return this.postInfo<HyperliquidRawSpotState>({
+            type: 'spotClearinghouseState',
             user: walletAddress,
         });
     }

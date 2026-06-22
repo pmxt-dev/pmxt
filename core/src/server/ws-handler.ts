@@ -103,6 +103,7 @@ const WATCH_METHODS = new Set([
   "watchOrderBook",
   "watchOrderBooks",
   "watchTrades",
+  "watchAddress",
 ]);
 
 /** Data-feed methods that produce streaming data. */
@@ -113,6 +114,7 @@ const FEED_WATCH_METHODS = new Set([
 /** Methods for unsubscribing. */
 const UNWATCH_METHODS: Record<string, string> = {
   unwatchOrderBook: "watchOrderBook",
+  unwatchAddress: "watchAddress",
 };
 
 function send(ws: WebSocket, msg: ServerEvent): void {

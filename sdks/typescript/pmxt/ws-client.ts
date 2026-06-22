@@ -42,6 +42,10 @@ export class SidecarWsClient {
     private authParamName: string;
     private closed = false;
 
+    // Tracking variables for connection resilience
+    private reconnectAttempts: number = 0;
+    private pingIntervalId?: any;
+
     /** requestId -> queued data payloads for single-event watch methods */
     private dataQueues: Map<string, any[]> = new Map();
     /** requestId[:symbol] -> latest data payload for batch snapshots */
@@ -100,14 +104,15 @@ export class SidecarWsClient {
 
             let url = this.config?.wsUrl || `${scheme}://${hostPart}/ws`;
             if (this.accessToken) {
-            // Check if the URL already contains a query string
-            const separator = url.includes('?') ? '&' : '?';
-            url = `${url}${separator}${this.authParamName}=${this.accessToken}`;
+                // Check if the URL already contains a query string
+                const separator = url.includes('?') ? '&' : '?';
+                url = `${url}${separator}${this.authParamName}=${this.accessToken}`;
             }
 
-            const reconnectInterval = this.config?.reconnectInterval || 5000;
-            const pingInterval = this.config?.pingInterval || 30000;
-            const maxReconnectAttempts = this.config?.maxReconnectAttempts || 10;
+            // Extract connection tuning parameters (with fallback defaults)
+            const reconnectInterval = this.config?.reconnectInterval ?? 5000;
+            const pingInterval = this.config?.pingInterval ?? 30000;
+            const maxReconnectAttempts = this.config?.maxReconnectAttempts ?? 10;
 
             // Use the ws package in Node.js, native WebSocket in browsers
             const WsConstructor = this.getWebSocketConstructor();
@@ -121,6 +126,21 @@ export class SidecarWsClient {
 
             ws.onopen = () => {
                 this.ws = ws;
+                this.reconnectAttempts = 0; // Reset attempts upon successful connection
+                
+                // Initialize heartbeat if configured
+                if (pingInterval > 0) {
+                    this.pingIntervalId = setInterval(() => {
+                        if (this.ws && this.ws.readyState === 1 /* WebSocket.OPEN */) {
+                            // Try native ping (Node 'ws' library), fallback to sending a ping frame
+                            if (typeof (this.ws as any).ping === 'function') {
+                                (this.ws as any).ping();
+                            } else {
+                                this.ws.send(JSON.stringify({ action: 'ping' }));
+                            }
+                        }
+                    }, pingInterval);
+                }
                 resolve();
             };
 
@@ -138,14 +158,41 @@ export class SidecarWsClient {
                             sub.resolve = null;
                         }
                     }
-                    this.closed = true;
+                    // IMPORTANT: Do NOT set this.closed = true here. 
+                    // Let ws.onclose handle the reconnect logic below.
                     this.ws = null;
                 }
             };
 
             ws.onclose = () => {
-                this.closed = true;
+                // Stop the heartbeat to prevent memory leaks
+                if (this.pingIntervalId) {
+                    clearInterval(this.pingIntervalId);
+                    this.pingIntervalId = undefined;
+                }
                 this.ws = null;
+
+                // Only attempt reconnect if we haven't maxed out AND we didn't close it intentionally
+                if (!this.closed && this.reconnectAttempts < maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    setTimeout(() => {
+                        // Abort if the user called .close() while we were waiting
+                        if (this.closed) return;
+                        
+                        // Prevent overlapping connectPromises
+                        if (!this.connectPromise) {
+                            this.connectPromise = this.connect();
+                            this.connectPromise.catch(err => {
+                                logger.debug('[SidecarWsClient] Reconnect attempt failed', { error: String(err) });
+                            }).finally(() => {
+                                this.connectPromise = null;
+                            });
+                        }
+                    }, reconnectInterval);
+                } else if (!this.closed) {
+                    // Max attempts reached, mark as terminal
+                    this.closed = true;
+                }
             };
 
             ws.onmessage = (event: any) => {
@@ -358,6 +405,10 @@ export class SidecarWsClient {
 
     close(): void {
         this.closed = true;
+        if (this.pingIntervalId) {
+            clearInterval(this.pingIntervalId);
+            this.pingIntervalId = undefined;
+        }
         if (this.ws) {
             try {
                 this.ws.close();

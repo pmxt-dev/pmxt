@@ -6,6 +6,7 @@ OpenAPI client, matching the JavaScript API exactly.
 """
 
 import json
+import logging
 import os
 import re
 import sys
@@ -25,6 +26,9 @@ if _GENERATED_PATH not in sys.path:
 from pmxt_internal import ApiClient, Configuration
 from pmxt_internal.api.default_api import DefaultApi
 from pmxt_internal.exceptions import ApiException
+
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     UnifiedMarket,
@@ -461,8 +465,8 @@ class Exchange(ABC):
                         return error_detail.get("message", str(e))
                     elif isinstance(error_detail, str):
                         return error_detail
-            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-                pass
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+                logger.debug("Unable to parse PMXT API error response body", exc_info=exc)
         return str(e)
 
     def _parse_api_exception(self, e: Exception) -> PmxtError:

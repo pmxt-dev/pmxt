@@ -15,6 +15,7 @@ This ensures zero-configuration usage across all SDKs.
 
 import os
 import json
+import logging
 import time
 import subprocess
 import shutil
@@ -23,6 +24,9 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 import urllib.request
 import urllib.error
+
+
+logger = logging.getLogger(__name__)
 
 
 class ServerManager:
@@ -153,8 +157,8 @@ class ServerManager:
                     # This allows 1.0.0 and 1.0.0-b4 to coexist in dev
                     if expected_base != server_base:
                         return True
-            except (OSError, json.JSONDecodeError, AttributeError, KeyError, TypeError, ValueError):
-                pass
+            except (OSError, json.JSONDecodeError, AttributeError, KeyError, TypeError, ValueError) as exc:
+                logger.debug("Unable to compare sidecar server version", exc_info=exc)
 
         return False
 
@@ -289,13 +293,13 @@ class ServerManager:
                     pid = int(line.strip())
                     try:
                         os.kill(pid, _signal.SIGTERM)
-                    except (OSError, ProcessLookupError):
-                        pass
+                    except (OSError, ProcessLookupError) as exc:
+                        logger.debug("Unable to terminate orphaned PMXT sidecar pid %s", pid, exc_info=exc)
 
                 if result.stdout.strip():
                     time.sleep(0.5)
-        except (OSError, subprocess.TimeoutExpired, ValueError):
-            pass
+        except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+            logger.debug("Unable to scan or terminate orphaned PMXT sidecars", exc_info=exc)
 
     def _kill_old_server(self) -> None:
         """Kill the currently running server (Internal)."""
@@ -312,8 +316,8 @@ class ServerManager:
                     import signal
                     os.kill(pid, signal.SIGTERM)
                 time.sleep(0.5)
-            except (OSError, subprocess.TimeoutExpired):
-                pass
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                logger.debug("Unable to terminate PMXT sidecar pid %s", pid, exc_info=exc)
 
             # Verify the process is actually dead; escalate to SIGKILL if not
             if os.name != 'nt':

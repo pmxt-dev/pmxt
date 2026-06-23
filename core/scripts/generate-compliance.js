@@ -23,7 +23,7 @@ const METHOD_CATEGORIES = [
 ];
 
 // Exchange display order (skip kalshi-demo since it inherits Kalshi fully)
-const EXCHANGE_ORDER = ['polymarket', 'kalshi', 'limitless', 'probable', 'baozi', 'myriad', 'opinion', 'metaculus'];
+const EXCHANGE_ORDER = ['polymarket', 'kalshi', 'limitless', 'probable', 'baozi', 'myriad', 'opinion', 'metaculus', 'hunch'];
 
 function toDisplayName(slug) {
     return slug.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
@@ -41,6 +41,7 @@ function analyzeExchange(exchangeDir) {
     const wsContent = fs.existsSync(wsPath) ? fs.readFileSync(wsPath, 'utf8') : '';
 
     const allMethods = METHOD_CATEGORIES.flatMap(c => c.methods);
+    const capabilityOverrides = parseCapabilityOverrides(indexContent);
 
     for (const method of allMethods) {
         // Check index.ts for override
@@ -82,11 +83,42 @@ function analyzeExchange(exchangeDir) {
         }
     }
 
+    for (const [method, value] of Object.entries(capabilityOverrides)) {
+        if (!allMethods.includes(method)) continue;
+        if (value === false) {
+            results[method] = 'no';
+        } else if (value === 'emulated') {
+            results[method] = 'emulated';
+        } else if (value === true) {
+            results[method] = 'yes';
+        }
+    }
+
     // Special case: watchOrderBook/watchTrades may be delegated to websocket module
     // If index.ts has the method and calls websocket, it's supported
     // The index.ts override check above already catches this
 
     return results;
+}
+
+function parseCapabilityOverrides(content) {
+    const match = /capabilityOverrides\s*=\s*\{([\s\S]*?)\n\s*\}/.exec(content);
+    if (!match) return {};
+
+    const overrides = {};
+    const entryRegex = /(\w+)\s*:\s*(false|true|'emulated'|"emulated")/g;
+    let entry;
+    while ((entry = entryRegex.exec(match[1])) !== null) {
+        const [, method, rawValue] = entry;
+        if (rawValue === 'false') {
+            overrides[method] = false;
+        } else if (rawValue === 'true') {
+            overrides[method] = true;
+        } else {
+            overrides[method] = 'emulated';
+        }
+    }
+    return overrides;
 }
 
 function extractMethodBlock(content, methodName) {
@@ -121,10 +153,26 @@ function isNotSupported(block) {
 function statusSymbol(status) {
     switch (status) {
         case 'yes': return 'Y';
+        case 'emulated': return 'E';
         case 'no': return '-';
         default: return '?';
     }
 }
+
+const HUNCH_NOTES = `
+## Hunch Notes
+
+Hunch is a parimutuel prediction market on Base USDC. Markets are pool-based
+rather than CLOB- or AMM-backed; prices are implied odds. Settlement uses
+x402 / EIP-3009 transferWithAuthorization, where the bettor wallet signs a USDC
+authorization and the relayer sponsors gas.
+
+Hunch \`fetchOrderBook\`, \`watchOrderBook\`, and \`watchTrades\` are emulated
+from the research/order state. \`createOrder\` accepts only \`side: 'buy'\` and
+\`type: 'market'\`; \`outcomeId\` uses \`"{marketId}:{side}"\`. Hunch positions
+are pool entries, so \`cancelOrder\`, \`fetchOrder\`, \`fetchClosedOrders\`, and
+\`fetchAllOrders\` are not supported.
+`;
 
 // ---------------------------------------------------------------------------
 // Main
@@ -170,7 +218,10 @@ ${rows.join('\n')}
 
 ## Legend
 - **Y** - Supported
+- **E** - Emulated or partially supported
 - **-** - Not supported
+
+${HUNCH_NOTES}
 
 ## Compliance Policy
 - **Failure over Warning**: Tests must fail if no relevant data (markets, events, candles) is found. This ensures that we catch API breakages or unexpected empty responses.
@@ -189,6 +240,9 @@ MYRIAD_API_KEY=...
 MYRIAD_WALLET_ADDRESS=0x...
 # Metaculus (required for API access — unauthenticated requests return 403)
 METACULUS_API_TOKEN=...
+# Hunch (reads are keyless; privateKey signs the x402 USDC payment on Base)
+HUNCH_PRIVATE_KEY=0x...
+HUNCH_WALLET_ADDRESS=0x...   # optional; derived from HUNCH_PRIVATE_KEY when absent
 \`\`\`
 `;
 
@@ -196,7 +250,7 @@ fs.writeFileSync(OUTPUT_PATH, output);
 console.log(`Generated COMPLIANCE.md with ${EXCHANGE_ORDER.length} exchanges`);
 for (const slug of EXCHANGE_ORDER) {
     const r = exchangeResults[slug];
-    const supported = Object.values(r).filter(v => v === 'yes').length;
+    const supported = Object.values(r).filter(v => v === 'yes' || v === 'emulated').length;
     const total = Object.values(r).length;
     console.log(`  ${toDisplayName(slug)}: ${supported}/${total} methods supported`);
 }

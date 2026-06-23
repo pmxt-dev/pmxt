@@ -3406,6 +3406,37 @@ export class Rain extends Exchange {
 }
 
 /**
+ * Hunch exchange client.
+ *
+ * Hunch is a Base USDC parimutuel prediction market. Public reads are
+ * unauthenticated; trading requires an EVM privateKey and optional walletAddress.
+ *
+ * @example
+ * ```typescript
+ * const hunch = new Hunch();
+ * const markets = await hunch.fetchMarkets({ limit: 20 });
+ * ```
+ */
+export class Hunch extends Exchange {
+    constructor(options: ExchangeOptions = {}) {
+        super("hunch", options);
+    }
+
+    /**
+     * Includes walletAddress in hosted credentials for Hunch private reads
+     * and x402/EIP-3009 payment flows.
+     */
+    protected override getCredentials(): ExchangeCredentials | undefined {
+        const base = super.getCredentials();
+        if (!this.walletAddress) return base;
+        return {
+            ...(base ?? {}),
+            walletAddress: this.walletAddress,
+        } as ExchangeCredentials & { walletAddress: string };
+    }
+}
+
+/**
  * Mock exchange client.
  *
  * Offline deterministic exchange for testing and development.

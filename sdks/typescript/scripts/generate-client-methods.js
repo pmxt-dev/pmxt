@@ -43,6 +43,20 @@ const SKIP_GENERATE = new Set([
     'filterEvents',              // pure local computation, no sidecar
 ]);
 
+// Methods in the generated region that intentionally carry hand-maintained
+// hosted-mode or compatibility behavior. Preserve the committed block when
+// regenerating so the drift check stays idempotent without deleting that logic.
+const PRESERVE_EXISTING_METHODS = new Set([
+    'fetchEventsPaginated',
+    'cancelOrder',
+    'fetchOrder',
+    'fetchOpenOrders',
+    'fetchMyTrades',
+    'fetchPositions',
+    'fetchBalance',
+    'fetchMatchedMarkets',
+]);
+
 // ---------------------------------------------------------------------------
 // TypeScript type name -> SDK type info
 //
@@ -64,6 +78,7 @@ const TYPE_MAP = {
     PriceCandle: { converter: 'convertCandle' },
     // Pagination wrapper — gets its own response handler
     PaginatedMarketsResult: { converter: null, pattern: 'paginatedMarkets' },
+    PaginatedEventsResult: { converter: null, pattern: 'paginatedEvents' },
 };
 
 // SDK types that can appear in generated signatures without extra imports
@@ -77,6 +92,7 @@ const SDK_PARAM_TYPES = new Set([
     'MyTradesParams', 'OrderHistoryParams', 'CreateOrderParams',
     'MarketFilterCriteria', 'EventFilterCriteria',
     'SubscriptionOption',
+    'FetchMatchedMarketClustersParams',
 ]);
 
 // Parameter names that represent outcome IDs and should accept MarketOutcome.
@@ -188,6 +204,10 @@ function inferReturnConfig(returnTypeNode, methodName, sf) {
 
     if (resolved.pattern === 'paginatedMarkets') {
         return { returnTs: 'PaginatedMarketsResult', pattern: 'paginatedMarkets', converter: null };
+    }
+
+    if (resolved.pattern === 'paginatedEvents') {
+        return { returnTs: 'PaginatedEventsResult', pattern: 'paginatedEvents', converter: null };
     }
 
     if (resolved.pattern === 'void') {
@@ -374,6 +394,15 @@ function buildReturnLines(config) {
                 `${i}    nextCursor: data.nextCursor,`,
                 `${i}};`,
             ].join('\n');
+        case 'paginatedEvents':
+            return [
+                `${i}const data = this.handleResponse(json);`,
+                `${i}return {`,
+                `${i}    data: (data.data || []).map(convertEvent),`,
+                `${i}    total: data.total,`,
+                `${i}    nextCursor: data.nextCursor,`,
+                `${i}};`,
+            ].join('\n');
         case 'void':
             return `${i}this.handleResponse(json);`;
         default:
@@ -381,7 +410,35 @@ function buildReturnLines(config) {
     }
 }
 
-function generateMethod(name, params, config, sf) {
+function findExistingMethodBlock(client, methodName) {
+    const methodRegex = new RegExp(`\\n    async\\s+${methodName}\\s*\\(`);
+    const match = methodRegex.exec(client);
+    if (!match) return null;
+
+    let i = match.index + 1;
+    let depth = 0;
+    let foundOpen = false;
+    while (i < client.length) {
+        if (client[i] === '{') {
+            depth++;
+            foundOpen = true;
+        } else if (client[i] === '}') {
+            depth--;
+            if (foundOpen && depth === 0) {
+                return client.slice(match.index + 1, i + 1);
+            }
+        }
+        i++;
+    }
+    return null;
+}
+
+function generateMethod(name, params, config, sf, client) {
+    if (PRESERVE_EXISTING_METHODS.has(name)) {
+        const existing = findExistingMethodBlock(client, name);
+        if (existing) return existing;
+    }
+
     if (name === 'fetchOrderBook') {
         return [
             `    async fetchOrderBook(outcomeId: string | MarketOutcome, limit?: number, params?: FetchOrderBookParams): Promise<OrderBook | OrderBook[]> {`,
@@ -470,13 +527,13 @@ function main() {
 
     const methods = extractMethods(sf);
 
+    let client = fs.readFileSync(CLIENT_PATH, 'utf-8');
+
     const generated = methods.map(m => {
         const name = m.name.text;
         const config = inferReturnConfig(m.type, name, sf);
-        return generateMethod(name, m.parameters, config, sf);
+        return generateMethod(name, m.parameters, config, sf, client);
     }).join('\n\n');
-
-    let client = fs.readFileSync(CLIENT_PATH, 'utf-8');
 
     const beginIdx = client.indexOf(MARKER_BEGIN);
     const endIdx = client.indexOf(MARKER_END);

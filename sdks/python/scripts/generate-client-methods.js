@@ -45,6 +45,24 @@ const SKIP_GENERATE = new Set([
     'filterEvents',              // pure local computation, no sidecar
 ]);
 
+// Methods in the generated region that intentionally carry hand-maintained
+// hosted-mode or compatibility behavior. Preserve the committed block when
+// regenerating so the drift check stays idempotent without deleting that logic.
+const PRESERVE_EXISTING_METHODS = new Set([
+    'fetchEventsPaginated',
+    'fetchMarket',
+    'fetchOrderBook',
+    'cancelOrder',
+    'fetchOrder',
+    'fetchOpenOrders',
+    'fetchMyTrades',
+    'fetchClosedOrders',
+    'fetchAllOrders',
+    'fetchPositions',
+    'fetchBalance',
+    'unwatchOrderBook',
+]);
+
 // ---------------------------------------------------------------------------
 // TypeScript type name -> Python type info
 //
@@ -70,6 +88,7 @@ const TYPE_MAP = {
     PriceCandle: { pyType: 'PriceCandle', converter: '_convert_candle' },
     // Pagination wrapper: detected by name, not structure — gets its own response handler
     PaginatedMarketsResult: { pyType: 'PaginatedMarketsResult', converter: null, pattern: 'paginated' },
+    PaginatedEventsResult: { pyType: 'PaginatedEventsResult', converter: null, pattern: 'paginatedEvents' },
 };
 
 // Parameter names that represent outcome IDs and should accept MarketOutcome.
@@ -189,6 +208,10 @@ function inferReturnConfig(returnTypeNode, methodName, sf) {
 
     if (resolved.pattern === 'paginated') {
         return { returnPy: resolved.pyType, pattern: 'paginated', converter: null };
+    }
+
+    if (resolved.pattern === 'paginatedEvents') {
+        return { returnPy: resolved.pyType, pattern: 'paginatedEvents', converter: null };
     }
 
     if (resolved.pattern === 'void') {
@@ -382,6 +405,15 @@ function buildPyReturnLines(config) {
                 `${i}    next_cursor=data.get("nextCursor"),`,
                 `${i})`,
             ].join('\n');
+        case 'paginatedEvents':
+            return [
+                `${i}data = self._handle_response(json.loads(response.data))`,
+                `${i}return PaginatedEventsResult(`,
+                `${i}    data=[_convert_event(e) for e in data.get("data", [])],`,
+                `${i}    total=data.get("total"),`,
+                `${i}    next_cursor=data.get("nextCursor"),`,
+                `${i})`,
+            ].join('\n');
         case 'void':
             return `${i}self._handle_response(json.loads(response.data))`;
         default:
@@ -389,7 +421,27 @@ function buildPyReturnLines(config) {
     }
 }
 
-function generatePyMethod(name, params, config, sf) {
+function findExistingMethodBlock(client, methodName) {
+    const snakeName = camelToSnake(methodName);
+    const methodRegex = new RegExp(`\\n    def\\s+${snakeName}\\s*\\(`);
+    const match = methodRegex.exec(client);
+    if (!match) return null;
+
+    const start = match.index + 1;
+    const nextMethodIdx = client.indexOf('\n    def ', start + 1);
+    const markerIdx = client.indexOf(`\n${MARKER_END}`, start + 1);
+    const endCandidates = [nextMethodIdx, markerIdx].filter(i => i !== -1);
+    if (endCandidates.length === 0) return null;
+    const end = Math.min(...endCandidates);
+    return client.slice(start, end).trimEnd();
+}
+
+function generatePyMethod(name, params, config, sf, client) {
+    if (PRESERVE_EXISTING_METHODS.has(name)) {
+        const existing = findExistingMethodBlock(client, name);
+        if (existing) return existing;
+    }
+
     if (name === 'fetchOrderBook') {
         return [
             `    def fetch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, limit: Optional[float] = None, params: Optional[dict] = None, **kwargs) -> Union[OrderBook, List[OrderBook]]:`,
@@ -485,13 +537,13 @@ function main() {
 
     const methods = extractMethods(sf);
 
+    let client = fs.readFileSync(CLIENT_PATH, 'utf-8');
+
     const generated = methods.map(m => {
         const name = m.name.text;
         const config = inferReturnConfig(m.type, name, sf);
-        return generatePyMethod(name, m.parameters, config, sf);
+        return generatePyMethod(name, m.parameters, config, sf, client);
     }).join('\n\n');
-
-    let client = fs.readFileSync(CLIENT_PATH, 'utf-8');
 
     const beginIdx = client.indexOf(MARKER_BEGIN);
     const endIdx = client.indexOf(MARKER_END);

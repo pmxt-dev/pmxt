@@ -1632,6 +1632,8 @@ amount: float # Size of the trade in contracts/shares.
 side: str # Trade side from the taker's perspective.
 outcome_id: str # The outcome this trade is for (if known).
 order_id: str # The order that produced this trade, if known.
+market_id: str # The market this trade belongs to, when the venue exposes it (e.g. derivable from the fill's coin/asset).
+fee: float # Trading fee paid by the user for this fill, when the venue exposes it.
 tx_hash: str # Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
 chain: str # Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
 block_number: float # Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues.
@@ -1998,6 +2000,8 @@ outcome_id: str # Reverse lookup -- find market containing this outcome
 event_id: str # Find markets belonging to an event
 page: float # For pagination (used by Limitless)
 similarity_threshold: float # For semantic search (used by Limitless)
+source_exchange: str # Filter by source venue (e.g. 'polymarket', 'kalshi', 'myriad'). `exchange` is an alias.
+exchange: str # Alias for `sourceExchange`.
 ```
 
 ---
@@ -2021,6 +2025,8 @@ series: str # Filter events by their parent series. Accepts the venue-native ser
 filter: Any # Optional client-side filter applied after fetching
 category: str # Filter by category. Each event belongs to a venue-assigned category such as "Sports", "Politics", "Crypto", "Bitcoin", "Soccer", "Economic Policy" (Polymarket) or "Sports", "Mentions" (Kalshi).
 tags: List[string] # Filter by tags. Returns events matching ANY of the provided tags. Tags are more specific than categories -- for example a "Politics" event might carry tags ["Politics", "Geopolitics", "Middle East", "Iran"]. Common tags include "Crypto", "Elections", "Fed Rates", "FIFA World Cup", "Trump".
+source_exchange: str # Filter by source venue (e.g. 'polymarket', 'kalshi', 'myriad'). `exchange` is an alias.
+exchange: str # Alias for `sourceExchange`.
 ```
 
 ---

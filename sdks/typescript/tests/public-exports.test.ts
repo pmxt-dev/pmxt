@@ -16,4 +16,9 @@ describe('public exports', () => {
     const client = new pmxt.FeedClient('chainlink');
     expect(client).toBeInstanceOf(DirectFeedClient);
   });
+
+  it('exports Polymarket_us as the PolymarketUS alias', () => {
+    expect(pmxt.Polymarket_us).toBe(pmxt.PolymarketUS);
+    expect(pmxt.default.Polymarket_us).toBe(pmxt.PolymarketUS);
+  });
 });

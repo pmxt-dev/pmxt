@@ -3294,6 +3294,9 @@ export class PolymarketUS extends Exchange {
     }
 }
 
+// Backwards-compatible snake_case alias matching the Python SDK export.
+export const Polymarket_us = PolymarketUS;
+
 /**
  * Gemini Titan exchange client.
  *

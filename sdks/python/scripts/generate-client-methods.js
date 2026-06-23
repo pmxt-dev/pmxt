@@ -45,6 +45,22 @@ const SKIP_GENERATE = new Set([
     'filterEvents',              // pure local computation, no sidecar
 ]);
 
+// Hosted-mode trading/read methods carry hand-maintained dispatch in client.py.
+// Keep these sections inside the generated region stable when regenerating the
+// sidecar pass-through surface from BaseExchange.ts. Without this preservation,
+// a focused SDK/doc PR that runs this generator drops hosted-mode guards/helpers
+// unrelated to the PR and fails generated-sync checks with broad drift.
+const PRESERVE_GENERATED_METHODS = [
+    'cancel_order',
+    'fetch_order',
+    'fetch_open_orders',
+    'fetch_my_trades',
+    'fetch_closed_orders',
+    'fetch_all_orders',
+    'fetch_positions',
+    'fetch_balance',
+];
+
 // ---------------------------------------------------------------------------
 // TypeScript type name -> Python type info
 //
@@ -475,6 +491,54 @@ function generatePyMethod(name, params, config, sf) {
     ].join('\n');
 }
 
+function extractGeneratedRegion(client) {
+    const beginIdx = client.indexOf(MARKER_BEGIN);
+    const endIdx = client.indexOf(MARKER_END);
+    if (beginIdx === -1 || endIdx === -1 || endIdx <= beginIdx) return '';
+    return client.slice(beginIdx + MARKER_BEGIN.length, endIdx);
+}
+
+function methodPrefix(methodName) {
+    return `    def ${methodName}(`;
+}
+
+function findMethodSegment(region, methodName) {
+    const start = region.indexOf(methodPrefix(methodName));
+    if (start === -1) return null;
+
+    const nextDef = region.indexOf('\n    def ', start + methodPrefix(methodName).length);
+    const end = nextDef === -1 ? region.length : nextDef + 1;
+    return region.slice(start, end).replace(/\n+$/u, '');
+}
+
+function replaceMethodSegment(region, methodName, replacement) {
+    const start = region.indexOf(methodPrefix(methodName));
+    if (start === -1) {
+        throw new Error(`Generated ${methodName} not found while preserving hosted overrides`);
+    }
+
+    const nextDef = region.indexOf('\n    def ', start + methodPrefix(methodName).length);
+    const end = nextDef === -1 ? region.length : nextDef + 1;
+    return `${region.slice(0, start)}${replacement}\n\n${region.slice(end).replace(/^\n+/u, '')}`;
+}
+
+function preserveHostedMethodOverrides(existingClient, generated) {
+    const existingRegion = extractGeneratedRegion(existingClient);
+    let nextGenerated = generated;
+
+    for (const methodName of PRESERVE_GENERATED_METHODS) {
+        const existingSegment = findMethodSegment(existingRegion, methodName);
+        if (!existingSegment) continue;
+
+        // Only preserve methods that actually contain hosted-mode dispatch. This
+        // avoids freezing unrelated generated methods if the source file changes.
+        if (!existingSegment.includes('self.is_hosted')) continue;
+        nextGenerated = replaceMethodSegment(nextGenerated, methodName, existingSegment);
+    }
+
+    return nextGenerated;
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -485,13 +549,14 @@ function main() {
 
     const methods = extractMethods(sf);
 
-    const generated = methods.map(m => {
+    let generated = methods.map(m => {
         const name = m.name.text;
         const config = inferReturnConfig(m.type, name, sf);
         return generatePyMethod(name, m.parameters, config, sf);
     }).join('\n\n');
 
     let client = fs.readFileSync(CLIENT_PATH, 'utf-8');
+    generated = preserveHostedMethodOverrides(client, generated);
 
     const beginIdx = client.indexOf(MARKER_BEGIN);
     const endIdx = client.indexOf(MARKER_END);

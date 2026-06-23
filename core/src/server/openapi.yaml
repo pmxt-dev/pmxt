@@ -90,6 +90,7 @@ paths:
               - polymarket_us
               - suibets
               - rain
+              - hunch
               - router
           required: true
           description: The prediction market exchange to target.
@@ -308,6 +309,7 @@ paths:
               - polymarket_us
               - suibets
               - rain
+              - hunch
               - router
           required: true
           description: The prediction market exchange to target.
@@ -751,6 +753,7 @@ paths:
               - myriad
               - opinion
               - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -821,6 +824,7 @@ paths:
               - polymarket_us
               - suibets
               - rain
+              - hunch
               - router
           required: true
           description: The prediction market exchange to target.
@@ -956,6 +960,7 @@ paths:
               - myriad
               - smarkets
               - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -1020,6 +1025,7 @@ paths:
               - smarkets
               - polymarket_us
               - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
       requestBody:
@@ -1509,6 +1515,7 @@ paths:
               - polymarket_us
               - suibets
               - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -1551,6 +1558,7 @@ paths:
               - smarkets
               - polymarket_us
               - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -2911,6 +2919,7 @@ components:
           - hyperliquid
           - suibets
           - rain
+          - hunch
           - mock
           - router
       required: true

@@ -151,7 +151,7 @@ describe('HunchNormalizer', () => {
             expect(market().volume).toBe(1_240);
         });
 
-        it('volume24h is 0 (Hunch reports no 24h split)', () => {
+        it('volume24h is 0 when this fixture carries no volume24hUsd', () => {
             expect(market().volume24h).toBe(0);
         });
 
@@ -405,6 +405,51 @@ describe('HunchNormalizer', () => {
         it('defaults to 0 when balance is null (unfunded / unknown wallet)', () => {
             const readiness = { usdcBalanceUsd: null } as HunchRawReadiness;
             expect(normalizer.normalizeBalance(readiness)[0].total).toBe(0);
+        });
+    });
+
+    // -------------------------------------------------------------------------
+    // pmxt surfacing: live odds + 24h volume + category/tags off the LIST item
+    // -------------------------------------------------------------------------
+    describe('normalizeMarket — list odds + 24h volume (pmxt surfacing)', () => {
+        it('prices binary YES/NO from raw.odds on the bare list path (no explicit odds arg)', () => {
+            const raw = { ...binaryMarket, odds: { yesPriceCents: 64, noPriceCents: 36 } } as HunchRawMarket;
+            const m = normalizer.normalizeMarket(raw)!;
+            expect(m.outcomes[0].price).toBeCloseTo(0.64, 5);
+            expect(m.outcomes[1].price).toBeCloseTo(0.36, 5);
+        });
+
+        it('lets an explicit odds arg (detail/quote) win over raw.odds', () => {
+            const raw = { ...binaryMarket, odds: { yesPriceCents: 64, noPriceCents: 36 } } as HunchRawMarket;
+            const m = normalizer.normalizeMarket(raw, { yesPriceCents: 90, noPriceCents: 10 })!;
+            expect(m.outcomes[0].price).toBeCloseTo(0.9, 5);
+        });
+
+        it('passes through volume24h from raw.volume24hUsd', () => {
+            const raw = { ...binaryMarket, volume24hUsd: 320 } as HunchRawMarket;
+            expect(normalizer.normalizeMarket(raw)!.volume24h).toBe(320);
+        });
+
+        it('volume24h is 0 when the list item carries no 24h figure', () => {
+            expect(normalizer.normalizeMarket(binaryMarket)!.volume24h).toBe(0);
+        });
+    });
+
+    describe('category + tags alignment (pmxt taxonomy)', () => {
+        it('maps a Hunch crypto subtype to the top-level "Crypto" category', () => {
+            expect(normalizer.normalizeMarket(binaryMarket)!.category).toBe('Crypto');
+        });
+
+        it('maps an event market to "Culture"', () => {
+            const raw = { ...binaryMarket, category: 'event' } as HunchRawMarket;
+            expect(normalizer.normalizeMarket(raw)!.category).toBe('Culture');
+        });
+
+        it('tags carry the top category, a human subtype label, and the token', () => {
+            const tags = normalizer.normalizeMarket(binaryMarket)!.tags ?? [];
+            expect(tags).toContain('Crypto');
+            expect(tags).toContain('Market Cap');
+            expect(tags).toContain('HUNCH');
         });
     });
 });

@@ -47,6 +47,10 @@ export interface HunchRawMarket {
     /** Present in the schema; absent on the bare list endpoint — optional. */
     volumeUsd?: number;
     totalBets?: number;
+    /** Trailing-24h pool inflow (USD); absent on older API builds — optional. */
+    volume24hUsd?: number;
+    /** Live binary YES/NO odds on the list item; null/absent for N-way markets. */
+    odds?: HunchRawBinaryOdds | null;
     targetMarketCapUsd: number | null;
     outcomes: HunchRawOutcome[] | null;
     headline?: string | null;

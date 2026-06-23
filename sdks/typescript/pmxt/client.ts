@@ -1900,12 +1900,25 @@ export abstract class Exchange {
      * ```
      */
     async watchOrderBooks(
-        outcomeIds: (string | MarketOutcome)[],
+        outcomeIds?: (string | MarketOutcome)[] | { ids?: (string | MarketOutcome)[] },
         limit?: number,
         params: Record<string, any> = {},
     ): Promise<Record<string, OrderBook>> {
         await this.initPromise;
-        const resolvedIds = outcomeIds.map(resolveOutcomeId);
+        let effectiveOutcomeIds = outcomeIds;
+        if (Array.isArray((outcomeIds as { ids?: unknown })?.ids)) {
+            console.warn("Parameter 'ids' is deprecated, use 'outcomeIds' instead.");
+            effectiveOutcomeIds = (outcomeIds as { ids: (string | MarketOutcome)[] }).ids;
+        } else if (effectiveOutcomeIds === undefined && Array.isArray(params.ids)) {
+            console.warn("Parameter 'ids' is deprecated, use 'outcomeIds' instead.");
+            effectiveOutcomeIds = params.ids as (string | MarketOutcome)[];
+            const { ids: _deprecatedIds, ...restParams } = params;
+            params = restParams;
+        }
+        if (!Array.isArray(effectiveOutcomeIds)) {
+            throw new TypeError("Missing required argument: 'outcomeIds'");
+        }
+        const resolvedIds = effectiveOutcomeIds.map(resolveOutcomeId);
         const args: any[] = [resolvedIds];
         if (limit !== undefined) {
             args.push(limit);

@@ -63,14 +63,20 @@ export class Escrow {
         const route = HOSTED_METHOD_ROUTES.get("escrowWithdrawTx")!;
         const normalizedAmount =
             amount === undefined
-                ? null
+                ? undefined
                 : typeof amount === "bigint"
                   ? amount.toString()
                   : amount;
+        const address = resolveWalletAddress(this.client);
         return _tradingRequest(this.client, {
             method: route.method,
             path: route.path,
-            body: { action, amount: normalizedAmount },
+            body: {
+                action,
+                token: "usdc",
+                ...(normalizedAmount === undefined ? {} : { amount: normalizedAmount }),
+                user_address: address,
+            },
         });
     }
 

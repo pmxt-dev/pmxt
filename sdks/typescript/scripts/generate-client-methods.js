@@ -25,6 +25,29 @@ const CLIENT_PATH = path.join(__dirname, '../pmxt/client.ts');
 const MARKER_BEGIN = '    // BEGIN GENERATED METHODS';
 const MARKER_END = '    // END GENERATED METHODS';
 
+// Methods with bespoke SDK/hosted behavior that still live inside the generated
+// region. Preserve the checked-in method bodies while generator support catches up
+// so codegen checks do not erase hand-maintained hosted routing shims.
+const PRESERVE_EXISTING_METHODS = new Set([
+    'fetchEventsPaginated',
+    'cancelOrder',
+    'fetchOrder',
+    'fetchOrderBook',
+    'fetchOpenOrders',
+    'fetchMyTrades',
+    'fetchClosedOrders',
+    'fetchAllOrders',
+    'fetchPositions',
+    'fetchBalance',
+    'fetchMatchedMarkets',
+]);
+
+function extractExistingTsMethod(generatedRegion, methodName) {
+    const re = new RegExp(`^    async ${methodName}\\([^\\n]*\\)[^{]*\\{[\\s\\S]*?(?=^    async |^    // END GENERATED METHODS)`, 'm');
+    const match = generatedRegion.match(re);
+    return match ? match[0].replace(/\n+$/, '') : null;
+}
+
 // Methods kept hand-maintained in client.ts (special logic, streaming, local-only)
 const SKIP_GENERATE = new Set([
     'callApi',
@@ -64,12 +87,13 @@ const TYPE_MAP = {
     PriceCandle: { converter: 'convertCandle' },
     // Pagination wrapper — gets its own response handler
     PaginatedMarketsResult: { converter: null, pattern: 'paginatedMarkets' },
+    PaginatedEventsResult: { converter: null, pattern: 'paginatedEvents' },
 };
 
 // SDK types that can appear in generated signatures without extra imports
 const SDK_PARAM_TYPES = new Set([
     'UnifiedMarket', 'UnifiedEvent', 'UnifiedSeries', 'OrderBook', 'Order', 'Trade',
-    'UserTrade', 'Position', 'Balance', 'PriceCandle', 'PaginatedMarketsResult',
+    'UserTrade', 'Position', 'Balance', 'PriceCandle', 'PaginatedMarketsResult', 'PaginatedEventsResult',
     'BuiltOrder',
     // Parameter types
     'MarketFilterParams', 'MarketFetchParams', 'EventFetchParams', 'SeriesFetchParams',
@@ -186,8 +210,8 @@ function resolveReturnType(node, sf) {
 function inferReturnConfig(returnTypeNode, methodName, sf) {
     const resolved = resolveReturnType(returnTypeNode, sf);
 
-    if (resolved.pattern === 'paginatedMarkets') {
-        return { returnTs: 'PaginatedMarketsResult', pattern: 'paginatedMarkets', converter: null };
+    if (resolved.pattern === 'paginatedMarkets' || resolved.pattern === 'paginatedEvents') {
+        return { returnTs: resolved.returnTs, pattern: resolved.pattern, converter: null };
     }
 
     if (resolved.pattern === 'void') {
@@ -374,6 +398,15 @@ function buildReturnLines(config) {
                 `${i}    nextCursor: data.nextCursor,`,
                 `${i}};`,
             ].join('\n');
+        case 'paginatedEvents':
+            return [
+                `${i}const data = this.handleResponse(json);`,
+                `${i}return {`,
+                `${i}    data: (data.data || []).map(convertEvent),`,
+                `${i}    total: data.total,`,
+                `${i}    nextCursor: data.nextCursor,`,
+                `${i}};`,
+            ].join('\n');
         case 'void':
             return `${i}this.handleResponse(json);`;
         default:
@@ -470,12 +503,6 @@ function main() {
 
     const methods = extractMethods(sf);
 
-    const generated = methods.map(m => {
-        const name = m.name.text;
-        const config = inferReturnConfig(m.type, name, sf);
-        return generateMethod(name, m.parameters, config, sf);
-    }).join('\n\n');
-
     let client = fs.readFileSync(CLIENT_PATH, 'utf-8');
 
     const beginIdx = client.indexOf(MARKER_BEGIN);
@@ -486,7 +513,18 @@ function main() {
     }
 
     const before = client.slice(0, beginIdx + MARKER_BEGIN.length);
+    const existingRegion = client.slice(beginIdx + MARKER_BEGIN.length, endIdx);
     const after = client.slice(endIdx);
+
+    const generated = methods.map(m => {
+        const name = m.name.text;
+        if (PRESERVE_EXISTING_METHODS.has(name)) {
+            const existing = extractExistingTsMethod(existingRegion, name);
+            if (existing) return existing;
+        }
+        const config = inferReturnConfig(m.type, name, sf);
+        return generateMethod(name, m.parameters, config, sf);
+    }).join('\n\n');
 
     client = `${before}\n\n${generated}\n\n${after}`;
 

@@ -4694,7 +4694,7 @@ Batch variant of {@link fetchOrderBook}. Fetches order books for multiple outcom
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_order_books()
@@ -4702,10 +4702,10 @@ result = exchange.fetch_order_books()
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchOrderBooks();
@@ -4732,7 +4732,7 @@ Fetch raw trade history for a specific outcome.
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Router(
+exchange = pmxt.Kalshi(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_trades(
@@ -4745,10 +4745,10 @@ result = exchange.fetch_trades(
 
 **TypeScript:**
 ```typescript
-import { Router } from "pmxtjs";
+import { Kalshi } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Router({
+const exchange = new Kalshi({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchTrades({

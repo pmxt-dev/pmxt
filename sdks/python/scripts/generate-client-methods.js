@@ -25,6 +25,31 @@ const CLIENT_PATH = path.join(__dirname, '../pmxt/client.py');
 const MARKER_BEGIN = '    # BEGIN GENERATED METHODS';
 const MARKER_END = '    # END GENERATED METHODS';
 
+// Methods with bespoke SDK/hosted behavior that still live inside the generated
+// region. Preserve the checked-in method bodies while generator support catches up
+// so codegen checks do not erase hand-maintained hosted routing shims.
+const PRESERVE_EXISTING_METHODS = new Set([
+    'fetchEventsPaginated',
+    'fetchMarket',
+    'cancelOrder',
+    'fetchOrder',
+    'fetchOrderBook',
+    'fetchOpenOrders',
+    'fetchMyTrades',
+    'fetchClosedOrders',
+    'fetchAllOrders',
+    'fetchPositions',
+    'fetchBalance',
+    'unwatchOrderBook',
+    'fetchMatchedMarkets',
+]);
+
+function extractExistingPyMethod(generatedRegion, snakeName) {
+    const re = new RegExp(`^    def ${snakeName}\\([^\\n]*\\)[^\\n]*:[\\s\\S]*?(?=^    def |^    # END GENERATED METHODS)`, 'm');
+    const match = generatedRegion.match(re);
+    return match ? match[0].replace(/\n+$/, '') : null;
+}
+
 // Methods kept hand-maintained in client.py (special logic, streaming, local-only)
 const SKIP_GENERATE = new Set([
     'callApi',
@@ -43,24 +68,6 @@ const SKIP_GENERATE = new Set([
     'getExecutionPriceDetailed', // complex args format
     'filterMarkets',             // pure local computation, no sidecar
     'filterEvents',              // pure local computation, no sidecar
-]);
-
-// Methods in the generated region that intentionally carry hand-maintained
-// hosted-mode or compatibility behavior. Preserve the committed block when
-// regenerating so the drift check stays idempotent without deleting that logic.
-const PRESERVE_EXISTING_METHODS = new Set([
-    'fetchEventsPaginated',
-    'fetchMarket',
-    'fetchOrderBook',
-    'cancelOrder',
-    'fetchOrder',
-    'fetchOpenOrders',
-    'fetchMyTrades',
-    'fetchClosedOrders',
-    'fetchAllOrders',
-    'fetchPositions',
-    'fetchBalance',
-    'unwatchOrderBook',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -87,7 +94,7 @@ const TYPE_MAP = {
     OrderBook: { pyType: 'OrderBook', converter: '_convert_order_book' },
     PriceCandle: { pyType: 'PriceCandle', converter: '_convert_candle' },
     // Pagination wrapper: detected by name, not structure — gets its own response handler
-    PaginatedMarketsResult: { pyType: 'PaginatedMarketsResult', converter: null, pattern: 'paginated' },
+    PaginatedMarketsResult: { pyType: 'PaginatedMarketsResult', converter: null, pattern: 'paginatedMarkets' },
     PaginatedEventsResult: { pyType: 'PaginatedEventsResult', converter: null, pattern: 'paginatedEvents' },
 };
 
@@ -206,12 +213,8 @@ function resolveReturnType(node, sf) {
 function inferReturnConfig(returnTypeNode, methodName, sf) {
     const resolved = resolveReturnType(returnTypeNode, sf);
 
-    if (resolved.pattern === 'paginated') {
-        return { returnPy: resolved.pyType, pattern: 'paginated', converter: null };
-    }
-
-    if (resolved.pattern === 'paginatedEvents') {
-        return { returnPy: resolved.pyType, pattern: 'paginatedEvents', converter: null };
+    if (resolved.pattern === 'paginatedMarkets' || resolved.pattern === 'paginatedEvents') {
+        return { returnPy: resolved.pyType, pattern: resolved.pattern, converter: null };
     }
 
     if (resolved.pattern === 'void') {
@@ -396,7 +399,7 @@ function buildPyReturnLines(config) {
                 `${i}data = self._handle_response(json.loads(response.data))\n` +
                 `${i}return {key: ${converter}(value) for key, value in (data or {}).items()}`
             );
-        case 'paginated':
+        case 'paginatedMarkets':
             return [
                 `${i}data = self._handle_response(json.loads(response.data))`,
                 `${i}return PaginatedMarketsResult(`,
@@ -421,27 +424,7 @@ function buildPyReturnLines(config) {
     }
 }
 
-function findExistingMethodBlock(client, methodName) {
-    const snakeName = camelToSnake(methodName);
-    const methodRegex = new RegExp(`\\n    def\\s+${snakeName}\\s*\\(`);
-    const match = methodRegex.exec(client);
-    if (!match) return null;
-
-    const start = match.index + 1;
-    const nextMethodIdx = client.indexOf('\n    def ', start + 1);
-    const markerIdx = client.indexOf(`\n${MARKER_END}`, start + 1);
-    const endCandidates = [nextMethodIdx, markerIdx].filter(i => i !== -1);
-    if (endCandidates.length === 0) return null;
-    const end = Math.min(...endCandidates);
-    return client.slice(start, end).trimEnd();
-}
-
-function generatePyMethod(name, params, config, sf, client) {
-    if (PRESERVE_EXISTING_METHODS.has(name)) {
-        const existing = findExistingMethodBlock(client, name);
-        if (existing) return existing;
-    }
-
+function generatePyMethod(name, params, config, sf) {
     if (name === 'fetchOrderBook') {
         return [
             `    def fetch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, limit: Optional[float] = None, params: Optional[dict] = None, **kwargs) -> Union[OrderBook, List[OrderBook]]:`,
@@ -539,12 +522,6 @@ function main() {
 
     let client = fs.readFileSync(CLIENT_PATH, 'utf-8');
 
-    const generated = methods.map(m => {
-        const name = m.name.text;
-        const config = inferReturnConfig(m.type, name, sf);
-        return generatePyMethod(name, m.parameters, config, sf, client);
-    }).join('\n\n');
-
     const beginIdx = client.indexOf(MARKER_BEGIN);
     const endIdx = client.indexOf(MARKER_END);
 
@@ -556,7 +533,19 @@ function main() {
     }
 
     const before = client.slice(0, beginIdx + MARKER_BEGIN.length);
+    const existingRegion = client.slice(beginIdx + MARKER_BEGIN.length, endIdx);
     const after = client.slice(endIdx);
+
+    const generated = methods.map(m => {
+        const name = m.name.text;
+        const snakeName = camelToSnake(name);
+        if (PRESERVE_EXISTING_METHODS.has(name)) {
+            const existing = extractExistingPyMethod(existingRegion, snakeName);
+            if (existing) return existing;
+        }
+        const config = inferReturnConfig(m.type, name, sf);
+        return generatePyMethod(name, m.parameters, config, sf);
+    }).join('\n\n');
 
     client = `${before}\n\n${generated}\n\n${after}`;
 

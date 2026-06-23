@@ -52,7 +52,7 @@ import {
 import { ServerManager } from "./server-manager.js";
 import { buildArgsWithOptionalOptions } from "./args.js";
 import { PmxtError, fromServerError, InvalidOrder, NotSupported } from "./errors.js";
-import { LOCAL_URL, resolvePmxtBaseUrl } from "./constants.js";
+import { ENV, LOCAL_URL, resolvePmxtBaseUrl } from "./constants.js";
 import { SidecarWsClient } from "./ws-client.js";
 import { logger } from "./logger.js";
 
@@ -351,6 +351,7 @@ export abstract class Exchange {
     private _wsClient: SidecarWsClient | null = null;
     /** Sticky flag: true if the sidecar /ws endpoint is unavailable. */
     private _wsUnsupported: boolean = false;
+    private readonly _useSidecarLockBaseUrl: boolean;
 
     constructor(exchangeName: string, options: ExchangeOptions = {}) {
         this.exchangeName = exchangeName.toLowerCase();
@@ -370,6 +371,11 @@ export abstract class Exchange {
         const baseUrl = resolved.baseUrl;
         this.pmxtApiKey = resolved.pmxtApiKey;
         this.isHosted = resolved.isHosted;
+        const hasBaseUrlOverride = Boolean(
+            options.baseUrl ||
+            (typeof process !== "undefined" && process.env[ENV.BASE_URL]),
+        );
+        this._useSidecarLockBaseUrl = !this.isHosted && !hasBaseUrlOverride;
 
         // Hosted trading bridge: if the caller passed a privateKey but no
         // explicit signer, lazily wrap it in an EthersSigner so that
@@ -417,16 +423,18 @@ export abstract class Exchange {
             try {
                 await this.serverManager.ensureServerRunning();
 
-                // Get the actual port the server is running on
-                // (may differ from default if default port was busy)
-                const actualPort = this.serverManager.getRunningPort();
-                const newBaseUrl = `http://localhost:${actualPort}`;
+                if (this._useSidecarLockBaseUrl) {
+                    // Get the actual port the server is running on
+                    // (may differ from default if default port was busy)
+                    const actualPort = this.serverManager.getRunningPort();
+                    const newBaseUrl = `http://localhost:${actualPort}`;
 
-                // Update API client with actual base URL
-                this.config = new Configuration({
-                    basePath: newBaseUrl,
-                });
-                this.api = new DefaultApi(this.config);
+                    // Update API client with actual base URL
+                    this.config = new Configuration({
+                        basePath: newBaseUrl,
+                    });
+                    this.api = new DefaultApi(this.config);
+                }
             } catch (error) {
                 const msg =
                     `Failed to start PMXT server: ${error instanceof Error ? error.message : error}\n\n` +
@@ -511,12 +519,12 @@ export abstract class Exchange {
     /**
      * Resolve the current sidecar base URL.
      *
-     * For hosted mode the configured basePath is returned as-is.
-     * For local mode the port is re-read from the lock file on every
-     * call so we pick up sidecar restarts that land on a different port.
+     * Hosted mode and explicit baseUrl clients keep the configured basePath.
+     * Default local clients re-read the lock-file port on every call so they
+     * pick up sidecar restarts that land on a different port.
      */
     private resolveBaseUrl(): string {
-        if (this.isHosted) return this.config.basePath;
+        if (this.isHosted || !this._useSidecarLockBaseUrl) return this.config.basePath;
         const port = this.serverManager.getRunningPort();
         return `http://localhost:${port}`;
     }
@@ -1225,7 +1233,10 @@ export abstract class Exchange {
             const route = HOSTED_METHOD_ROUTES.get("fetchOrder")!;
             const path = formatRoutePath(route, { order_id: orderId });
             const data = await _tradingRequest(this, { method: route.method, path });
-            return orderFromV0(data as Record<string, unknown>);
+            const payload = data && typeof data === "object" && "order" in data
+                ? (data as { order: unknown }).order
+                : data;
+            return orderFromV0(payload as Record<string, unknown>);
         }
         try {
             const args: any[] = [];
@@ -1325,6 +1336,9 @@ export abstract class Exchange {
 
     async fetchClosedOrders(params?: OrderHistoryParams): Promise<Order[]> {
         await this.initPromise;
+        if (this.isHosted) {
+            throw new NotSupported("fetchClosedOrders is not available in hosted trading mode.");
+        }
         try {
             const args: any[] = [];
             if (params !== undefined) args.push(params);
@@ -1351,6 +1365,9 @@ export abstract class Exchange {
 
     async fetchAllOrders(params?: OrderHistoryParams): Promise<Order[]> {
         await this.initPromise;
+        if (this.isHosted) {
+            throw new NotSupported("fetchAllOrders is not available in hosted trading mode.");
+        }
         try {
             const args: any[] = [];
             if (params !== undefined) args.push(params);
@@ -1382,7 +1399,9 @@ export abstract class Exchange {
             const route = HOSTED_METHOD_ROUTES.get("fetchPositions")!;
             const path = formatRoutePath(route, { address: resolvedAddress });
             const data = await _tradingRequest(this, { method: route.method, path });
-            const list = Array.isArray(data) ? data : [];
+            const list: unknown[] = Array.isArray(data)
+                ? data
+                : (data && Array.isArray((data as any).positions) ? (data as any).positions : []);
             return list.map((p) => positionFromV0(p as Record<string, unknown>));
         }
         try {
@@ -1416,7 +1435,9 @@ export abstract class Exchange {
             const route = HOSTED_METHOD_ROUTES.get("fetchBalance")!;
             const path = formatRoutePath(route, { address: resolvedAddress });
             const data = await _tradingRequest(this, { method: route.method, path });
-            const list = Array.isArray(data) ? data : [];
+            const list: unknown[] = Array.isArray(data)
+                ? data
+                : (data && Array.isArray((data as any).balances) ? (data as any).balances : []);
             return list.map((b) => balanceFromV0(b as Record<string, unknown>));
         }
         try {
@@ -3048,6 +3069,16 @@ export interface PolymarketOptions {
 
     /** Optional signature type */
     signatureType?: 'eoa' | 'poly-proxy' | 'gnosis-safe' | number;
+
+    /**
+     * EVM wallet address used for hosted reads/writes.
+     */
+    walletAddress?: string;
+
+    /**
+     * External signer used for hosted writes.
+     */
+    signer?: Signer;
 }
 
 export class Polymarket extends Exchange {
@@ -3404,6 +3435,7 @@ export class Rain extends Exchange {
         super("rain", options);
     }
 }
+
 
 /**
  * Hunch exchange client.

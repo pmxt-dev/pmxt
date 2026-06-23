@@ -56,7 +56,8 @@ export class ProbableExchange extends PredictionMarketExchange {
             this.auth = new ProbableAuth(credentials);
         }
 
-        const probableBaseUrl = credentials?.baseUrl || DEFAULT_BASE_URL;
+        const probableBaseUrl =
+            credentials?.baseUrl || process.env.PROBABLE_BASE_URL || DEFAULT_BASE_URL;
         const descriptor = parseOpenApiSpec(probableApiSpec, probableBaseUrl);
         this.defineImplicitApi(descriptor);
 

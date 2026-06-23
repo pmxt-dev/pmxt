@@ -233,6 +233,20 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
             }
 
             const status = (params?.status as string | undefined) || 'active';
+            const hasBoundedDefaultRead =
+                status === 'active' &&
+                (params.limit !== undefined || params.cursor !== undefined) &&
+                !params.query &&
+                params.offset === undefined &&
+                params.sort === undefined &&
+                params.searchIn === undefined &&
+                params.category === undefined &&
+                params.tags === undefined &&
+                params.filter === undefined;
+            if (hasBoundedDefaultRead) {
+                const page = await this.fetchRawEventPage(params);
+                return page.events;
+            }
 
             if (status === 'all') {
                 const openEvents = await this.fetchAllWithStatus('open');

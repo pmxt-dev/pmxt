@@ -64,9 +64,14 @@ export function createExchange(
     case "kalshi-demo":
       return new KalshiDemoExchange({
         credentials: {
-          apiKey: credentials?.apiKey || process.env.KALSHI_API_KEY,
+          apiKey:
+            credentials?.apiKey ||
+            process.env.KALSHI_DEMO_API_KEY ||
+            process.env.KALSHI_API_KEY,
           privateKey:
-            credentials?.privateKey || process.env.KALSHI_PRIVATE_KEY,
+            credentials?.privateKey ||
+            process.env.KALSHI_DEMO_PRIVATE_KEY ||
+            process.env.KALSHI_PRIVATE_KEY,
         },
       });
     case "probable":
@@ -97,7 +102,10 @@ export function createExchange(
         apiKey: credentials?.apiKey || process.env.OPINION_API_KEY,
         privateKey:
           credentials?.privateKey || process.env.OPINION_PRIVATE_KEY,
-        funderAddress: credentials?.funderAddress,
+        funderAddress:
+          credentials?.funderAddress ||
+          process.env.OPINION_FUNDER_ADDRESS ||
+          process.env.OPINION_PROXY_ADDRESS,
       });
     case "metaculus":
       return new MetaculusExchange({

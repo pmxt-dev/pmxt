@@ -2521,6 +2521,12 @@ const EXCHANGE_OVERRIDES = {
     polymarket: {
         defaults: { signature_type: 'gnosis-safe' },
     },
+    polymarket_us: {
+        className: 'PolymarketUS',
+    },
+    suibets: {
+        className: 'SuiBets',
+    },
     myriad: {
         paramAliases: { private_key: 'wallet_address' },
         paramDocs: {
@@ -2617,6 +2623,7 @@ function buildSdkConstructors(exchanges) {
         const aliases = ov.paramAliases || {};
         const defaults = ov.defaults || {};
         const paramDocs = ov.paramDocs || {};
+        const className = ov.className || toClassName(name);
 
         // Every exchange gets the hosted API key param first
         const params = [
@@ -2651,7 +2658,7 @@ function buildSdkConstructors(exchanges) {
         }
 
         result[name] = {
-            className: toClassName(name),
+            className,
             params,
         };
     }

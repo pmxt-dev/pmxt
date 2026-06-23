@@ -38,7 +38,8 @@ export class MyriadExchange extends PredictionMarketExchange {
             this.auth = new MyriadAuth(credentials);
         }
 
-        const myriadBaseUrl = credentials?.baseUrl || DEFAULT_BASE_URL;
+        const myriadBaseUrl =
+            credentials?.baseUrl || process.env.MYRIAD_BASE_URL || DEFAULT_BASE_URL;
         const descriptor = parseOpenApiSpec(myriadApiSpec, myriadBaseUrl);
         this.defineImplicitApi(descriptor);
 

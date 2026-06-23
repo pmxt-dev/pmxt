@@ -5,6 +5,8 @@ import { hunchErrorMapper } from './errors';
 
 const AGENT_PREFIX = '/api/agent/v1';
 const DEFAULT_LIMIT = 200;
+/** Safety backstop for cursor draining: 50 pages * 200 = 10k markets. */
+const MAX_LIST_PAGES = 50;
 
 // ---------------------------------------------------------------------------
 // Raw venue-native shapes (what the Hunch agent API returns). Mirror the Zod
@@ -47,6 +49,10 @@ export interface HunchRawMarket {
     /** Present in the schema; absent on the bare list endpoint — optional. */
     volumeUsd?: number;
     totalBets?: number;
+    /** Trailing-24h pool inflow (USD); absent on older API builds — optional. */
+    volume24hUsd?: number;
+    /** Live binary YES/NO odds on the list item; null/absent for N-way markets. */
+    odds?: HunchRawBinaryOdds | null;
     targetMarketCapUsd: number | null;
     outcomes: HunchRawOutcome[] | null;
     headline?: string | null;
@@ -204,6 +210,7 @@ export class HunchFetcher
                 return one ? [one] : [];
             }
 
+            const explicitLimit = typeof params?.limit === 'number';
             const query: Record<string, unknown> = {
                 limit: params?.limit ?? DEFAULT_LIMIT,
             };
@@ -211,12 +218,22 @@ export class HunchFetcher
             if (status) query.status = status;
             if (params?.query) query.token = params.query;
 
-            const res = await this.ctx.http.get(`${this.baseUrl}${AGENT_PREFIX}/markets`, {
-                params: query,
-                headers: this.ctx.getHeaders(),
-            });
-            const markets: HunchRawMarket[] = res.data?.markets ?? [];
-            return markets;
+            // A catalog crawl (no explicit limit) follows `nextCursor` to drain
+            // the whole list; an explicit limit fetches just that one page.
+            // MAX_LIST_PAGES is a safety backstop against a runaway cursor loop.
+            const all: HunchRawMarket[] = [];
+            let cursor: string | undefined;
+            let pages = 0;
+            do {
+                const res = await this.ctx.http.get(`${this.baseUrl}${AGENT_PREFIX}/markets`, {
+                    params: cursor ? { ...query, cursor } : query,
+                    headers: this.ctx.getHeaders(),
+                });
+                all.push(...((res.data?.markets ?? []) as HunchRawMarket[]));
+                cursor = typeof res.data?.nextCursor === 'string' ? res.data.nextCursor : undefined;
+                pages += 1;
+            } while (!explicitLimit && cursor && pages < MAX_LIST_PAGES);
+            return all;
         } catch (error: unknown) {
             throw hunchErrorMapper.mapError(error);
         }

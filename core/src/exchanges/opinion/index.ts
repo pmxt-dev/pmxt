@@ -90,7 +90,8 @@ export class OpinionExchange extends PredictionMarketExchange {
             this.auth = new OpinionAuth(credentials);
         }
 
-        const opinionBaseUrl = credentials?.baseUrl || DEFAULT_OPINION_API_URL;
+        const opinionBaseUrl =
+            credentials?.baseUrl || process.env.OPINION_BASE_URL || DEFAULT_OPINION_API_URL;
         const descriptor = parseOpenApiSpec(opinionApiSpec, opinionBaseUrl);
         this.defineImplicitApi(descriptor);
 

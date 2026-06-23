@@ -43,17 +43,25 @@ const VENUE_LABELS = {
     opinion: 'Opinion',
     metaculus: 'Metaculus',
     smarkets: 'Smarkets',
-    router: 'Router',
+    'gemini-titan': 'Gemini Titan',
+    hyperliquid: 'Hyperliquid',
+    suibets: 'SuiBets',
+    rain: 'Rain',
+    hunch: 'Hunch',
 };
+
+const INTERNAL_EXCHANGE_TARGETS = new Set(['mock', 'router']);
 
 function extractVenues(spec) {
     const enumValues =
         spec?.components?.parameters?.ExchangeParam?.schema?.enum;
     if (!Array.isArray(enumValues)) return [];
-    return enumValues.map((wire) => ({
-        wire,
-        label: VENUE_LABELS[wire] || wire,
-    }));
+    return enumValues
+        .filter((wire) => !INTERNAL_EXCHANGE_TARGETS.has(wire))
+        .map((wire) => ({
+            wire,
+            label: VENUE_LABELS[wire] || wire,
+        }));
 }
 
 // Extract all HOSTED-AUTOGEN:*:START ... HOSTED-AUTOGEN:*:END blocks from
@@ -99,7 +107,7 @@ description: "Every venue PMXT currently speaks."
   pmxt-core version at last sync: ${coreVersion}
 */}
 
-PMXT Hosted currently supports the following venues. The **wire key** is
+PMXT currently supports the following venue targets. The **wire key** is
 the value you pass in the URL — e.g. \`POST /api/polymarket/fetchMarkets\`
 or \`new pmxt.Polymarket({})\` from the SDKs.
 

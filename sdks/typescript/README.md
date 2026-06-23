@@ -143,7 +143,9 @@ When self-hosting, supply venue credentials directly — no `pmxtApiKey`. The SD
 
 **Polymarket:**
 ```typescript
-const poly = new pmxt.Polymarket({
+import { Polymarket } from "pmxtjs";
+
+const poly = new Polymarket({
     privateKey: process.env.POLYMARKET_PRIVATE_KEY,
     proxyAddress: process.env.POLYMARKET_PROXY_ADDRESS, // Optional
     // signatureType: 'gnosis-safe' (default)
@@ -152,7 +154,9 @@ const poly = new pmxt.Polymarket({
 
 **Kalshi:**
 ```typescript
-const kalshi = new pmxt.Kalshi({
+import { Kalshi } from "pmxtjs";
+
+const kalshi = new Kalshi({
     apiKey: process.env.KALSHI_API_KEY,
     privateKey: process.env.KALSHI_PRIVATE_KEY
 });
@@ -160,7 +164,9 @@ const kalshi = new pmxt.Kalshi({
 
 **Limitless:**
 ```typescript
-const limitless = new pmxt.Limitless({
+import { Limitless } from "pmxtjs";
+
+const limitless = new Limitless({
     privateKey: process.env.LIMITLESS_PRIVATE_KEY
 });
 ```

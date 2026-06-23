@@ -548,7 +548,6 @@ class Hunch(Exchange):
     def __init__(
         self,
         private_key: Optional[str] = None,
-        wallet_address: Optional[str] = None,
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
@@ -557,8 +556,7 @@ class Hunch(Exchange):
         Initialize Hunch client.
 
         Args:
-            private_key: Private key for x402 payment signing (optional)
-            wallet_address: EVM wallet address for balance/positions (optional)
+            private_key: Private key for authentication (optional)
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
@@ -566,17 +564,10 @@ class Hunch(Exchange):
         super().__init__(
             exchange_name="hunch",
             private_key=private_key,
-            wallet_address=wallet_address,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
         )
-
-    def _get_credentials_dict(self) -> Optional[Dict[str, Any]]:
-        creds = super()._get_credentials_dict() or {}
-        if self.wallet_address:
-            creds["walletAddress"] = self.wallet_address
-        return creds if creds else None
 
 
 class Mock(Exchange):

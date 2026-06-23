@@ -180,6 +180,19 @@ function normalizeDateFields(
   return normalized;
 }
 
+function normalizeArrayFields(
+  params: Record<string, unknown>,
+  fields: string[],
+): Record<string, unknown> {
+  return fields.reduce((normalized, field) => {
+    const value = normalized[field];
+    if (typeof value === "string") {
+      return { ...normalized, [field]: [value] };
+    }
+    return normalized;
+  }, { ...params });
+}
+
 function isMissing(value: unknown): boolean {
   return value === undefined || value === null || value === "";
 }
@@ -231,8 +244,12 @@ function validateCreateOrderParams(params: unknown, exchange?: string): Record<s
 function normalizeDispatchArgs(methodName: string, args: unknown[], exchange?: string): unknown[] {
   const normalized = [...args];
 
-  if (methodName === "fetchOHLCV" && isRecord(normalized[1])) {
+  if ((methodName === "fetchOHLCV" || methodName === "fetchTrades") && isRecord(normalized[1])) {
     normalized[1] = normalizeDateFields(normalized[1], ["start", "end"], exchange);
+  }
+
+  if ((methodName === "fetchMarkets" || methodName === "fetchEvents") && isRecord(normalized[0])) {
+    normalized[0] = normalizeArrayFields(normalized[0], ["tags"]);
   }
 
   if (methodName === "createOrder") {
@@ -290,6 +307,15 @@ export interface CreateAppOptions {
    * Defaults to false.
    */
   skipBaseMiddleware?: boolean;
+
+  /**
+   * Exchange instances scoped to this app.
+   *
+   * By default, unauthenticated local usage reuses process-wide singleton
+   * exchanges. Embedders and tests can provide explicit instances here when
+   * they need isolated state or non-default mock exchange options.
+   */
+  localExchanges?: Partial<Record<string, PredictionMarketExchange>>;
 }
 
 /**
@@ -331,8 +357,16 @@ export interface CreateAppOptions {
  * ```
  */
 export function createApp(options: CreateAppOptions = {}): Express {
-  const { accessToken, skipBaseMiddleware = false } = options;
+  const {
+    accessToken,
+    skipBaseMiddleware = false,
+    localExchanges = {},
+  } = options;
   const app: Express = express();
+
+  const getAppExchange = (exchangeName: string): any => (
+    localExchanges[exchangeName] ?? getDefaultExchange(exchangeName)
+  );
 
   if (!skipBaseMiddleware) {
     app.use(cors());
@@ -383,17 +417,22 @@ export function createApp(options: CreateAppOptions = {}): Express {
 
       let exchange: any;
       if (exchangeName === "router") {
-        // Router uses the caller's Bearer token for its internal /v0/
-        // calls — not a server-side env var.  Each request may carry a
-        // different key, so Router is never cached as a singleton.
-        const bearer =
-          req.headers.authorization?.replace(/^Bearer\s+/i, "") || "";
-        exchange = new Router({
-          apiKey: bearer,
-          localExchanges: {
-            mock: getDefaultExchange("mock") as PredictionMarketExchange,
-          },
-        });
+        const localRouter = localExchanges[exchangeName];
+        if (localRouter) {
+          exchange = localRouter;
+        } else {
+          // Router uses the caller's Bearer token for its internal /v0/
+          // calls — not a server-side env var.  Each request may carry a
+          // different key, so Router is never cached as a singleton.
+          const bearer =
+            req.headers.authorization?.replace(/^Bearer\s+/i, "") || "";
+          exchange = new Router({
+            apiKey: bearer,
+            localExchanges: {
+              mock: getAppExchange("mock") as PredictionMarketExchange,
+            },
+          });
+        }
       } else if (
         credentials &&
         (credentials.privateKey ||
@@ -402,7 +441,7 @@ export function createApp(options: CreateAppOptions = {}): Express {
       ) {
         exchange = createExchange(exchangeName, credentials);
       } else {
-        exchange = getDefaultExchange(exchangeName);
+        exchange = getAppExchange(exchangeName);
       }
 
       if (req.headers["x-pmxt-verbose"] === "true") {
@@ -419,11 +458,8 @@ export function createApp(options: CreateAppOptions = {}): Express {
         return;
       }
 
-      if (
-        exchange.has &&
-        methodName in exchange.has &&
-        exchange.has[methodName as keyof typeof exchange.has] === false
-      ) {
+      const capability = exchange.has?.[methodName as keyof typeof exchange.has];
+      if (capability === false && methodName !== "fetchSeries") {
         res.status(501).json({
           success: false,
           error:

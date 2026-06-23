@@ -478,22 +478,22 @@
           {
             "lang": "python",
             "label": "Polymarket",
-            "source": "# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",\n)\nbalance = client.fetch_balance()\nprint(balance.amount, balance.currency)\n"
+            "source": "# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",\n)\nbalances = client.fetch_balance()\nbalance = balances[0]\nprint(balance.available, balance.currency)\n"
           },
           {
             "lang": "javascript",
             "label": "Polymarket",
-            "source": "// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",\n});\n\nconst balance = await client.fetchBalance();\nconsole.log(balance.amount, balance.currency);\n"
+            "source": "// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",\n});\n\nconst balances = await client.fetchBalance();\nconsole.log(balances[0].available, balances[0].currency);\n"
           },
           {
             "lang": "python",
             "label": "Opinion",
-            "source": "# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",\n)\nbalance = client.fetch_balance()\nprint(balance.amount, balance.currency)\n"
+            "source": "# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",\n)\nbalances = client.fetch_balance()\nbalance = balances[0]\nprint(balance.available, balance.currency)\n"
           },
           {
             "lang": "javascript",
             "label": "Opinion",
-            "source": "// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",\n});\n\nconst balance = await client.fetchBalance();\nconsole.log(balance.amount, balance.currency);\n"
+            "source": "// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",\n});\n\nconst balances = await client.fetchBalance();\nconsole.log(balances[0].available, balances[0].currency);\n"
           }
         ],
         "x-mint": {

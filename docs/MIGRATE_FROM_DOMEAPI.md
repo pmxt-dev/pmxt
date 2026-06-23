@@ -360,6 +360,8 @@ DomeAPI has an "Order Router" that requires linking your wallet. pmxt trades dir
 ### Setup (Polymarket)
 
 ```typescript
+import pmxt from 'pmxtjs';
+
 const exchange = new pmxt.Polymarket({
   privateKey: process.env.POLYMARKET_PRIVATE_KEY,
   funderAddress: process.env.POLYMARKET_PROXY_ADDRESS, // optional
@@ -367,6 +369,8 @@ const exchange = new pmxt.Polymarket({
 ```
 ```python
 import os
+import pmxt
+
 exchange = pmxt.Polymarket(
     private_key=os.getenv('POLYMARKET_PRIVATE_KEY'),
     proxy_address=os.getenv('POLYMARKET_PROXY_ADDRESS'),  # optional
@@ -475,6 +479,8 @@ Some DomeAPI features have no direct pmxt equivalent:
 pmxt gives you the same API across all supported exchanges:
 
 ```typescript
+import pmxt from 'pmxtjs';
+
 const poly = new pmxt.Polymarket();
 const kalshi = new pmxt.Kalshi();
 const limitless = new pmxt.Limitless();

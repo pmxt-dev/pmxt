@@ -492,6 +492,8 @@ poly = pmxt.Polymarket()   # -> https://api.pmxt.dev
 Or pass it directly:
 
 ```python
+import pmxt
+
 poly = pmxt.Polymarket(pmxt_api_key="pmxt_live_...")
 ```
 
@@ -508,6 +510,8 @@ const poly = new pmxt.Polymarket({});  // -> https://api.pmxt.dev
 Or pass it directly:
 
 ```typescript
+import pmxt from "pmxtjs";
+
 const poly = new pmxt.Polymarket({ pmxtApiKey: "pmxt_live_..." });
 ```
 
@@ -965,7 +969,7 @@ the same source on every `pmxt-core` release.
 
 Source: https://pmxt.dev/docs/concepts/venues
 
-PMXT Hosted currently supports the following venues. The **wire key** is
+PMXT currently supports the following venue targets. The **wire key** is
 the value you pass in the URL — e.g. `POST /api/polymarket/fetchMarkets`
 or `new pmxt.Polymarket({})` from the SDKs.
 
@@ -982,13 +986,11 @@ or `new pmxt.Polymarket({})` from the SDKs.
 | Metaculus | `metaculus` | `POST /api/metaculus/:method` |
 | Smarkets | `smarkets` | `POST /api/smarkets/:method` |
 | Polymarket US | `polymarket_us` | `POST /api/polymarket_us/:method` |
-| gemini-titan | `gemini-titan` | `POST /api/gemini-titan/:method` |
-| hyperliquid | `hyperliquid` | `POST /api/hyperliquid/:method` |
-| suibets | `suibets` | `POST /api/suibets/:method` |
-| rain | `rain` | `POST /api/rain/:method` |
-| hunch | `hunch` | `POST /api/hunch/:method` |
-| mock | `mock` | `POST /api/mock/:method` |
-| Router | `router` | `POST /api/router/:method` |
+| Gemini Titan | `gemini-titan` | `POST /api/gemini-titan/:method` |
+| Hyperliquid | `hyperliquid` | `POST /api/hyperliquid/:method` |
+| SuiBets | `suibets` | `POST /api/suibets/:method` |
+| Rain | `rain` | `POST /api/rain/:method` |
+| Hunch | `hunch` | `POST /api/hunch/:method` |
 
 
 > **Note:**
@@ -3848,8 +3850,454 @@ curl "https://api.pmxt.dev/api/polymarket/fetchMarket?slug=will-gavin-newsom-win
 
 ## Trading
 
+### Create Order
+
+`POST /v0/trade/create-order`
+
+Place a buy or sell order on Polymarket or Opinion. Returns the resulting order with id, fill status, average price, fees, and the on-chain tx hash once it settles.
+
+Most callers pass an outcome straight from `client.fetch_markets()`:
+
+```python
+market = client.fetch_markets({"query": "trump 2028"})[0]
+order = client.create_order(outcome=market.yes, side="buy", amount=10, order_type="limit", price=0.55)
+```
+
+Need to show the order to a user before they sign it (custom approval UX)? Use `buildOrderHosted` + `submitOrderHosted` instead — together they do the same thing.
+
+**Python:**
+```python
+# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.
+# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).
+# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+    wallet_address="0xYourWallet",    # EVM address — its Polygon USDC funds the escrow
+    private_key="0x...",    # any EVM key controlling that address
+)
+market = client.fetch_markets({"query": "trump 2028"})[0]
+yes = next(o for o in market.outcomes if o.label.lower() == "yes")
+order = client.create_order(
+    outcome=yes,
+    side="buy",
+    type="limit",
+    amount=10,
+    price=0.55,
+)
+print(order.id, order.status)
+
+```
+
+**TypeScript:**
+```typescript
+// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.
+// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).
+// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+  walletAddress: "0xYourWallet",  // EVM address — its Polygon USDC funds the escrow
+  privateKey: "0x...",  // any EVM key controlling that address
+});
+
+const markets = await client.fetchMarkets({ query: "trump 2028" });
+const market = markets[0];
+const yes = market.outcomes.find((o) => o.label.toLowerCase() === "yes")!;
+const order = await client.createOrder({
+  outcome: yes,
+  side: "buy",
+  type: "limit",
+  amount: 10,
+  price: 0.55,
+});
+console.log(order.id, order.status);
+
+```
+
+
+### Build Order
+
+`POST /v0/trade/build-order`
+
+Build an order *without* placing it. Returns the order's typed-data payload (for the wallet to sign) plus a `built_order_id` to pass to `submitOrderHosted` once it's signed.
+
+Use this when you want a human to approve each trade before it submits — for example, surfacing the order details in a wallet popup. For everything else, use `createOrderHosted`, which builds + signs + submits in one call.
+
+**Python:**
+```python
+# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.
+# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).
+# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+    wallet_address="0xYourWallet",    # EVM address — its Polygon USDC funds the escrow
+    private_key="0x...",    # any EVM key controlling that address
+)
+market = client.fetch_markets({"query": "trump 2028"})[0]
+yes = next(o for o in market.outcomes if o.label.lower() == "yes")
+order = client.build_order(
+    outcome=yes,
+    side="buy",
+    type="limit",
+    amount=10,
+    price=0.55,
+)
+print(order.id, order.status)
+
+```
+
+**TypeScript:**
+```typescript
+// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.
+// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).
+// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+  walletAddress: "0xYourWallet",  // EVM address — its Polygon USDC funds the escrow
+  privateKey: "0x...",  // any EVM key controlling that address
+});
+
+const markets = await client.fetchMarkets({ query: "trump 2028" });
+const market = markets[0];
+const yes = market.outcomes.find((o) => o.label.toLowerCase() === "yes")!;
+const order = await client.buildOrder({
+  outcome: yes,
+  side: "buy",
+  type: "limit",
+  amount: 10,
+  price: 0.55,
+});
+console.log(order.id, order.status);
+
+```
+
+
+### Submit Order
+
+`POST /v0/trade/submit-order`
+
+Submit a signed order returned by `buildOrderHosted` and get back the resulting order — id, fill status, average price, and the on-chain tx hash once it settles.
+
+`built_order_id` must come from a recent `buildOrderHosted` call and be submitted before its expiry. For one-shot order placement, use `createOrderHosted` instead.
+
+**Python:**
+```python
+# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.
+# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).
+# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+    wallet_address="0xYourWallet",    # EVM address — its Polygon USDC funds the escrow
+    private_key="0x...",    # any EVM key controlling that address
+)
+market = client.fetch_markets({"query": "trump 2028"})[0]
+built = client.build_order(
+    outcome=market.yes,
+    side="buy",
+    type="limit",
+    amount=10,
+    price=0.55,
+)
+order = client.submit_order(built)
+print(order.id, order.status)
+
+```
+
+**TypeScript:**
+```typescript
+// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.
+// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).
+// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+  walletAddress: "0xYourWallet",  // EVM address — its Polygon USDC funds the escrow
+  privateKey: "0x...",  // any EVM key controlling that address
+});
+
+const [market] = await client.fetchMarkets({ query: "trump 2028" });
+const built = await client.buildOrder({
+  outcome: market.yes,
+  side: "buy",
+  type: "limit",
+  amount: 10,
+  price: 0.55,
+});
+const order = await client.submitOrder(built);
+console.log(order.id, order.status);
+
+```
+
+
+### Cancel Order
+
+`POST /v0/orders/cancel/build`
+
+Start a cancel on an existing open order. Returns the cancel payload for the wallet to sign — you then submit the signature to `POST /v0/orders/cancel`.
+
+The SDK's `cancelOrder()` chains both steps. Call this endpoint directly only if you need to show the cancel to a user before signing.
+
+**Python:**
+```python
+# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.
+# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+    wallet_address="0xYourWallet",    # EVM address — its Polygon USDC funds the escrow
+    private_key="0x...",    # any EVM key controlling that address
+)
+cancelled = client.cancel_order("order_abc123")
+print(cancelled.id, cancelled.status)
+
+```
+
+**TypeScript:**
+```typescript
+// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.
+// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+  walletAddress: "0xYourWallet",  // EVM address — its Polygon USDC funds the escrow
+  privateKey: "0x...",  // any EVM key controlling that address
+});
+
+const cancelled = await client.cancelOrder("order_abc123");
+console.log(cancelled.id, cancelled.status);
+
+```
+
+
 
 ## Orders & Positions
+
+### Fetch Order
+
+`GET /v0/orders/{order_id}`
+
+Look up a single order by id. Returns the order's current status, filled / remaining size, average fill price, and — once settled — the on-chain tx hash.
+
+`order_id` is what `createOrderHosted` (or `fetchOpenOrdersHosted`) returns.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `order_id` | string | Yes | Unified order id. |
+
+**Python:**
+```python
+# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+    wallet_address="0xYourWallet",
+)
+order = client.fetch_order("order_abc123")
+print(order.id, order.status, order.filled, order.remaining)
+
+```
+
+**TypeScript:**
+```typescript
+// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+  walletAddress: "0xYourWallet",
+});
+
+const order = await client.fetchOrder("order_abc123");
+console.log(order.id, order.status, order.filled, order.remaining);
+
+```
+
+
+### Fetch Open Orders
+
+`GET /v0/orders/open`
+
+List the wallet's resting orders that haven't filled or been cancelled yet. Each entry has the market, outcome, side, size, price, and time-in-force.
+
+Filter by `venue` to scope to Polymarket or Opinion only.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `address` | string | Yes | EVM wallet address. |
+| `venue` | string | No | Restrict to a single hosted venue. |
+
+**Python:**
+```python
+# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+    wallet_address="0xYourWallet",
+)
+for order in client.fetch_open_orders():
+    print(order.id, order.side, order.price, order.remaining)
+
+```
+
+**TypeScript:**
+```typescript
+// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+  walletAddress: "0xYourWallet",
+});
+
+for (const order of await client.fetchOpenOrders()) {
+  console.log(order.id, order.side, order.price, order.remaining);
+}
+
+```
+
+
+### Fetch My Trades
+
+`GET /v0/user/{address}/trades`
+
+List the wallet's historical fills on Polymarket and Opinion. Each trade carries the executed price (net of venue fees), size, and on-chain settlement tx hash.
+
+Closed orders are modelled as trades in hosted mode — use this endpoint instead of `fetchClosedOrders` / `fetchAllOrders` (which raise `NotSupported`).
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `address` | string | Yes | EVM wallet address. |
+
+**Python:**
+```python
+# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+    wallet_address="0xYourWallet",
+)
+for trade in client.fetch_my_trades():
+    print(trade.id, trade.side, trade.amount, trade.price, trade.tx_hash)
+
+```
+
+**TypeScript:**
+```typescript
+// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+  walletAddress: "0xYourWallet",
+});
+
+for (const trade of await client.fetchMyTrades()) {
+  console.log(trade.id, trade.side, trade.amount, trade.price, trade.txHash);
+}
+
+```
+
+
+### Fetch Positions
+
+`GET /v0/user/{address}/positions`
+
+List the open positions held by `address` across Polymarket and Opinion. Each position carries the market, outcome, share count, and average entry price.
+
+Mark-to-market fields (`current_price`, `current_value`, `unrealized_pnl`) are reserved for a future release and currently return `null`.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `address` | string | Yes | EVM wallet address. |
+
+**Python:**
+```python
+# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+    wallet_address="0xYourWallet",
+)
+for position in client.fetch_positions():
+    print(position.market_id, position.shares, position.current_value)
+
+```
+
+**TypeScript:**
+```typescript
+// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+  walletAddress: "0xYourWallet",
+});
+
+for (const position of await client.fetchPositions()) {
+  console.log(position.marketId, position.shares, position.currentValue);
+}
+
+```
+
+
+### Fetch Balance
+
+`GET /v0/user/{address}/balances`
+
+Check the USDC available for trading. Returns the wallet's balance inside the PMXT escrow on Polygon — *not* the wallet's on-chain USDC balance.
+
+Top up by depositing at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet).
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `address` | string | Yes | EVM wallet address (lowercase or checksum). |
+
+**Python:**
+```python
+# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).
+import pmxt
+
+client = pmxt.Polymarket(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+    wallet_address="0xYourWallet",
+)
+balances = client.fetch_balance()
+balance = balances[0]
+print(balance.available, balance.currency)
+
+```
+
+**TypeScript:**
+```typescript
+// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).
+import { Polymarket } from "pmxtjs";
+
+const client = new Polymarket({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+  walletAddress: "0xYourWallet",
+});
+
+const balances = await client.fetchBalance();
+console.log(balances[0].available, balances[0].currency);
+
+```
+
 
 
 ## Cross Exchange
@@ -4246,7 +4694,7 @@ Batch variant of {@link fetchOrderBook}. Fetches order books for multiple outcom
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
+exchange = pmxt.Router(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_order_books()
@@ -4254,10 +4702,10 @@ result = exchange.fetch_order_books()
 
 **TypeScript:**
 ```typescript
-import { Kalshi } from "pmxtjs";
+import { Router } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
+const exchange = new Router({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchOrderBooks();
@@ -4284,7 +4732,7 @@ Fetch raw trade history for a specific outcome.
 import pmxt
 
 # API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
+exchange = pmxt.Router(
     pmxt_api_key="YOUR_PMXT_API_KEY",
 )
 result = exchange.fetch_trades(
@@ -4297,10 +4745,10 @@ result = exchange.fetch_trades(
 
 **TypeScript:**
 ```typescript
-import { Kalshi } from "pmxtjs";
+import { Router } from "pmxtjs";
 
 // API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
+const exchange = new Router({
   pmxtApiKey: "YOUR_PMXT_API_KEY",
 });
 const result = await exchange.fetchTrades({

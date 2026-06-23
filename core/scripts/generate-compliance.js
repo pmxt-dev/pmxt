@@ -22,11 +22,60 @@ const METHOD_CATEGORIES = [
     { category: 'Real-time', methods: ['watchOrderBook', 'watchTrades'] },
 ];
 
-// Exchange display order (skip kalshi-demo since it inherits Kalshi fully)
-const EXCHANGE_ORDER = ['polymarket', 'kalshi', 'limitless', 'probable', 'baozi', 'myriad', 'opinion', 'metaculus', 'hunch'];
+// Preferred public-production display order. New exchange directories not listed
+// here are appended alphabetically so the matrix cannot silently omit them.
+const PREFERRED_EXCHANGE_ORDER = [
+    'polymarket',
+    'polymarket_us',
+    'kalshi',
+    'limitless',
+    'probable',
+    'baozi',
+    'myriad',
+    'opinion',
+    'metaculus',
+    'smarkets',
+    'hyperliquid',
+    'gemini-titan',
+    'suibets',
+    'rain',
+    'hunch',
+];
+
+// kalshi-demo is a demo wrapper around Kalshi, and mock is for local tests.
+const SKIPPED_EXCHANGE_SLUGS = new Set(['kalshi-demo', 'mock']);
+
+const DISPLAY_NAMES = {
+    polymarket_us: 'PolymarketUS',
+    'gemini-titan': 'GeminiTitan',
+    suibets: 'SuiBets',
+};
+
+function listProductionExchangeSlugs() {
+    const discovered = fs
+        .readdirSync(EXCHANGES_DIR, { withFileTypes: true })
+        .filter(entry => entry.isDirectory())
+        .map(entry => entry.name)
+        .filter(slug => fs.existsSync(path.join(EXCHANGES_DIR, slug, 'index.ts')))
+        .filter(slug => !SKIPPED_EXCHANGE_SLUGS.has(slug));
+
+    const discoveredSet = new Set(discovered);
+    const preferred = PREFERRED_EXCHANGE_ORDER.filter(slug => discoveredSet.has(slug));
+    const preferredSet = new Set(preferred);
+    const appended = discovered
+        .filter(slug => !preferredSet.has(slug))
+        .sort((a, b) => a.localeCompare(b));
+
+    return [...preferred, ...appended];
+}
+
+const EXCHANGE_ORDER = listProductionExchangeSlugs();
 
 function toDisplayName(slug) {
-    return slug.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+    return DISPLAY_NAMES[slug] ?? slug
+        .split(/[-_]/)
+        .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+        .join('');
 }
 
 // Check if the exchange directory has a file that overrides the given method.
@@ -41,7 +90,6 @@ function analyzeExchange(exchangeDir) {
     const wsContent = fs.existsSync(wsPath) ? fs.readFileSync(wsPath, 'utf8') : '';
 
     const allMethods = METHOD_CATEGORIES.flatMap(c => c.methods);
-    const capabilityOverrides = parseCapabilityOverrides(indexContent);
 
     for (const method of allMethods) {
         // Check index.ts for override
@@ -83,42 +131,11 @@ function analyzeExchange(exchangeDir) {
         }
     }
 
-    for (const [method, value] of Object.entries(capabilityOverrides)) {
-        if (!allMethods.includes(method)) continue;
-        if (value === false) {
-            results[method] = 'no';
-        } else if (value === 'emulated') {
-            results[method] = 'emulated';
-        } else if (value === true) {
-            results[method] = 'yes';
-        }
-    }
-
     // Special case: watchOrderBook/watchTrades may be delegated to websocket module
     // If index.ts has the method and calls websocket, it's supported
     // The index.ts override check above already catches this
 
     return results;
-}
-
-function parseCapabilityOverrides(content) {
-    const match = /capabilityOverrides\s*=\s*\{([\s\S]*?)\n\s*\}/.exec(content);
-    if (!match) return {};
-
-    const overrides = {};
-    const entryRegex = /(\w+)\s*:\s*(false|true|'emulated'|"emulated")/g;
-    let entry;
-    while ((entry = entryRegex.exec(match[1])) !== null) {
-        const [, method, rawValue] = entry;
-        if (rawValue === 'false') {
-            overrides[method] = false;
-        } else if (rawValue === 'true') {
-            overrides[method] = true;
-        } else {
-            overrides[method] = 'emulated';
-        }
-    }
-    return overrides;
 }
 
 function extractMethodBlock(content, methodName) {
@@ -153,26 +170,10 @@ function isNotSupported(block) {
 function statusSymbol(status) {
     switch (status) {
         case 'yes': return 'Y';
-        case 'emulated': return 'E';
         case 'no': return '-';
         default: return '?';
     }
 }
-
-const HUNCH_NOTES = `
-## Hunch Notes
-
-Hunch is a parimutuel prediction market on Base USDC. Markets are pool-based
-rather than CLOB- or AMM-backed; prices are implied odds. Settlement uses
-x402 / EIP-3009 transferWithAuthorization, where the bettor wallet signs a USDC
-authorization and the relayer sponsors gas.
-
-Hunch \`fetchOrderBook\`, \`watchOrderBook\`, and \`watchTrades\` are emulated
-from the research/order state. \`createOrder\` accepts only \`side: 'buy'\` and
-\`type: 'market'\`; \`outcomeId\` uses \`"{marketId}:{side}"\`. Hunch positions
-are pool entries, so \`cancelOrder\`, \`fetchOrder\`, \`fetchClosedOrders\`, and
-\`fetchAllOrders\` are not supported.
-`;
 
 // ---------------------------------------------------------------------------
 // Main
@@ -218,31 +219,85 @@ ${rows.join('\n')}
 
 ## Legend
 - **Y** - Supported
-- **E** - Emulated or partially supported
 - **-** - Not supported
-
-${HUNCH_NOTES}
 
 ## Compliance Policy
 - **Failure over Warning**: Tests must fail if no relevant data (markets, events, candles) is found. This ensures that we catch API breakages or unexpected empty responses.
 
 ## Tests with authentication
-requires a dotenv in the root dir with
+Authenticated tests require a dotenv in the root dir with the venue credentials
+needed for the methods under test. Use only test accounts or intentionally
+funded wallets.
+
 \`\`\`
+# Polymarket
 POLYMARKET_PRIVATE_KEY=0x...
+POLYMARKET_API_KEY=...
+POLYMARKET_API_SECRET=...
+POLYMARKET_PASSPHRASE=...
+POLYMARKET_FUNDER_ADDRESS=0x...
+
+# Polymarket US
+POLYMARKET_US_KEY_ID=...
+POLYMARKET_US_SECRET_KEY=...
+
 # Kalshi
 KALSHI_API_KEY=...
 KALSHI_PRIVATE_KEY=... (RSA Private Key)
+
 # Limitless
 LIMITLESS_PRIVATE_KEY=0x...
+LIMITLESS_API_KEY=...
+LIMITLESS_API_SECRET=...
+LIMITLESS_PASSPHRASE=...
+
+# Probable
+PROBABLE_API_KEY=...
+PROBABLE_API_SECRET=...
+PROBABLE_PASSPHRASE=...
+PROBABLE_PRIVATE_KEY=0x...
+
+# Baozi
+BAOZI_PRIVATE_KEY=...
+
 # Myriad
 MYRIAD_API_KEY=...
 MYRIAD_WALLET_ADDRESS=0x...
+
+# Opinion
+OPINION_API_KEY=...
+OPINION_PRIVATE_KEY=0x...
+OPINION_FUNDER_ADDRESS=0x...
+
 # Metaculus (required for API access — unauthenticated requests return 403)
 METACULUS_API_TOKEN=...
-# Hunch (reads are keyless; privateKey signs the x402 USDC payment on Base)
+
+# Smarkets
+SMARKETS_EMAIL=...
+SMARKETS_PASSWORD=...
+
+# Hyperliquid
+HYPERLIQUID_WALLET_ADDRESS=0x...
+HYPERLIQUID_PRIVATE_KEY=0x...
+
+# Gemini Titan
+GEMINI_API_KEY=...
+GEMINI_API_SECRET=...
+
+# SuiBets
+SUIBETS_WALLET_ADDRESS=0x...
+
+# Rain
+RAIN_PRIVATE_KEY=0x...
+RAIN_WALLET_ADDRESS=0x...
+RAIN_SUBGRAPH_URL=...
+RAIN_SUBGRAPH_API_KEY=...
+RAIN_WS_RPC_URL=...
+
+# Hunch
 HUNCH_PRIVATE_KEY=0x...
-HUNCH_WALLET_ADDRESS=0x...   # optional; derived from HUNCH_PRIVATE_KEY when absent
+HUNCH_WALLET_ADDRESS=0x...
+HUNCH_BASE_URL=...
 \`\`\`
 `;
 
@@ -250,7 +305,7 @@ fs.writeFileSync(OUTPUT_PATH, output);
 console.log(`Generated COMPLIANCE.md with ${EXCHANGE_ORDER.length} exchanges`);
 for (const slug of EXCHANGE_ORDER) {
     const r = exchangeResults[slug];
-    const supported = Object.values(r).filter(v => v === 'yes' || v === 'emulated').length;
+    const supported = Object.values(r).filter(v => v === 'yes').length;
     const total = Object.values(r).length;
     console.log(`  ${toDisplayName(slug)}: ${supported}/${total} methods supported`);
 }

@@ -4771,7 +4771,7 @@ x-sdk-constructors:
         type: string
         description: Private key for authentication
   polymarket_us:
-    className: PolymarketUs
+    className: PolymarketUS
     params:
       - name: pmxt_api_key
         tsName: pmxtApiKey
@@ -4816,7 +4816,7 @@ x-sdk-constructors:
         type: string
         description: API secret for authentication
   suibets:
-    className: Suibets
+    className: SuiBets
     params:
       - name: pmxt_api_key
         tsName: pmxtApiKey

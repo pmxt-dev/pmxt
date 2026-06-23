@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.51.2] - 2026-06-23
+
+### Fixed
+
+- **Hunch list ingestion now surfaces live binary prices instead of zero-priced markets.** The Hunch list/catalog item now carries `raw.odds`; the normalizer uses those YES/NO cents on the bare list path while still letting explicit detail/quote odds win. This unblocks Hunch markets from price-gated cross-venue features such as compare, arbitrage, hedge, and matched-prices.
+- **Hunch `volume24h` now passes through `raw.volume24hUsd`.** The previous hard-zero made the recency/ranking signal unusable for Hunch even when the venue provided a trailing-24h figure.
+- **Hunch category and tags now map into PMXT taxonomy.** Native Hunch categories roll up to top-level PMXT categories (`Crypto` by default, `event` → `Culture`) and add granular tags such as `Market Cap`, `Price`, and the token symbol so `?category=` filters and market matching work with higher confidence.
+- **Hunch catalog crawls now follow `nextCursor`.** `fetchRawMarkets()` drains the full paginated catalogue when no explicit limit is supplied, with a 50-page safety backstop; explicit limit calls still fetch a single page.
+- **Consumer SDK/generated surfaces were synced for Hunch.** Added Hunch to the Python and TypeScript SDK exports and made the client-method generators preserve existing hosted-mode overrides while codegen catches up, so the generated-sync checks stay green without regressing hosted routing.
+
+## [2.51.1] - 2026-06-23
+
+Followup to the Hunch venue ship in 2.51.0: the adapter was wired into the runtime (factory, registry, exports) but `hunch` was missing from the `ExchangeParam` enum in `core/scripts/generate-openapi.js`. That enum is the source of truth for `docs/concepts/venues.mdx` (auto-generated), the OpenAPI path enum, and `COMPLIANCE.md`, so Hunch was invisible on pmxt.dev/docs/concepts/venues and absent from the compliance matrix.
+
+### Fixed
+
+- **`core/scripts/generate-openapi.js` — added `hunch` to the `ExchangeParam` enum.** Regenerated `core/src/server/openapi.yaml`, `docs/api-reference/openapi.json`, and `docs/concepts/venues.mdx` (now 18 venues).
+- **`core/scripts/generate-compliance.js` — added `hunch` to `EXCHANGE_ORDER`.** Regenerated `core/COMPLIANCE.md` (Hunch: 15/20 methods supported).
+- **`README.md` — added Hunch to the supported-exchanges row.**
+
 ## [2.51.0] - 2026-06-22
 
 New venue: **Hunch** (parimutuel prediction market on Base, x402 settlement). And a full assertion-based audit of the Hyperliquid SDK surface (both Python + TS) caught ten silent bugs that prior "did the call throw?" smoke tests had hidden — several since the venue was added. Read paths now have behavioral assertions on shape AND values; trading paths are verified end-to-end against a live mainnet wallet. Final HL state: every no-creds method behaviorally green in both SDKs (43/43 assertions), credentialed reads cross-checked vs HL raw API (open orders: 7/7 exact match; user trades: 2000/2000 match; synthesized closed orders: 104/104 match), and the full createOrder → openOrders → cancelOrder → openOrders-empty lifecycle proven live.

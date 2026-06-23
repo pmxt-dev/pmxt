@@ -104,6 +104,62 @@ export function parseHunchSide(outcomeId: string): { marketId: string; side: str
     };
 }
 
+// ---------------------------------------------------------------------------
+// Category + tags — map Hunch's fine-grained native taxonomy onto pmxt's
+// top-level categories (Crypto / Culture / …) + granular tags, so Hunch
+// markets answer `?category=` filters and match with higher confidence.
+// ---------------------------------------------------------------------------
+
+/** Hunch native categories that are NOT crypto (manual-resolution markets). */
+const HUNCH_TOP_CATEGORY: Record<string, string> = {
+    event: 'Culture',
+};
+
+/**
+ * Map a Hunch native category to a pmxt top-level category. Hunch is
+ * crypto-native, so every token/price/on-chain subtype rolls up to "Crypto";
+ * only the manual "event" markets (fights/debates) map elsewhere.
+ */
+export function mapHunchCategory(rawCategory: string | undefined): string {
+    return HUNCH_TOP_CATEGORY[rawCategory ?? ''] ?? 'Crypto';
+}
+
+/** Human-readable granular label per Hunch native category (for tags). */
+const HUNCH_SUBTYPE_LABEL: Record<string, string> = {
+    market_cap: 'Market Cap',
+    token_mcap_range: 'Market Cap',
+    token_mcap_flip: 'Market Cap',
+    token_mcap_close: 'Market Cap',
+    token_basket_mcap: 'Market Cap',
+    price_direction: 'Price',
+    token_price_range: 'Price',
+    token_return: 'Returns',
+    token_rank_milestone: 'Ranking',
+    chain_volume: 'On-chain Volume',
+    chain_throughput: 'Throughput',
+    chain_stablecoins: 'Stablecoins',
+    launchpad_volume: 'Launchpad',
+    dune_metric: 'On-chain',
+    volume_eta: 'Volume',
+    event: 'Event',
+};
+
+function titleCaseSlug(s: string): string {
+    return s
+        .split(/[_\s-]+/)
+        .filter(Boolean)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+}
+
+/** Tags = top category + a human subtype label + the token (deduped, non-empty). */
+export function hunchMarketTags(raw: HunchRawMarket): string[] {
+    const top = mapHunchCategory(raw.category);
+    const label =
+        HUNCH_SUBTYPE_LABEL[raw.category] ?? (raw.category ? titleCaseSlug(raw.category) : '');
+    return [...new Set([top, label, raw.tokenSymbol].filter((t): t is string => Boolean(t)))];
+}
+
 /**
  * Shared market normalizer used by both the live fetch path and the (rare)
  * direct-mapping helper. Pulls a Hunch market ref into a {@link UnifiedMarket}.
@@ -125,6 +181,9 @@ export function mapHunchMarketToUnified(
     if (!raw || !raw.id) return null;
 
     const marketId = raw.id;
+    // Explicit odds (detail/quote read) win; else fall back to the live odds the
+    // list item now carries — so a bare list-crawl prices binary markets too.
+    const effectiveOdds = odds ?? raw.odds ?? null;
     let outcomes: MarketOutcome[];
 
     if (Array.isArray(raw.outcomes) && raw.outcomes.length > 0) {
@@ -154,10 +213,10 @@ export function mapHunchMarketToUnified(
         });
     } else {
         // Binary YES/NO market.
-        const yesPrice = odds && typeof odds.yesPriceCents === 'number' ? odds.yesPriceCents / 100 : 0;
+        const yesPrice = effectiveOdds && typeof effectiveOdds.yesPriceCents === 'number' ? effectiveOdds.yesPriceCents / 100 : 0;
         const noPrice =
-            odds && typeof odds.noPriceCents === 'number'
-                ? odds.noPriceCents / 100
+            effectiveOdds && typeof effectiveOdds.noPriceCents === 'number'
+                ? effectiveOdds.noPriceCents / 100
                 : yesPrice > 0
                   ? 1 - yesPrice
                   : 0;
@@ -174,13 +233,13 @@ export function mapHunchMarketToUnified(
         slug: raw.slug,
         outcomes,
         resolutionDate: raw.deadlineAt ? new Date(raw.deadlineAt) : undefined,
-        // Hunch is parimutuel and reports no 24h volume split — surface 0.
-        volume24h: 0,
+        // Trailing-24h pool inflow off the list item (0 when absent / no trades).
+        volume24h: typeof raw.volume24hUsd === 'number' ? raw.volume24hUsd : 0,
         volume: typeof raw.volumeUsd === 'number' ? raw.volumeUsd : undefined,
         liquidity: Number(raw.virtualLiquidityUsd || 0),
         url: raw.links?.app || `${DEFAULT_BASE_URL}/markets/${raw.slug || marketId}`,
-        category: raw.category,
-        tags: raw.tokenSymbol ? [raw.tokenSymbol] : [],
+        category: mapHunchCategory(raw.category),
+        tags: hunchMarketTags(raw),
         status: mapHunchStatus(raw.status),
         sourceMetadata: buildSourceMetadata(
             raw as unknown as Record<string, unknown>,

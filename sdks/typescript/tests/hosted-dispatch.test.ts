@@ -351,6 +351,32 @@ describe("hosted write dispatch", () => {
     expect("market_id" in body).toBe(false);
   });
 
+  it("buildOrder rejects limit orders without a positive price before dispatch", async () => {
+    const spy = installFetchSpy(() => jsonResponse(buildResponsePayload("buy")));
+    const api = makePolymarket({ withSigner: true });
+
+    await expect(
+      api.buildOrder({
+        outcomeId: "22222222-2222-4222-8222-222222222222",
+        side: "buy",
+        type: "limit",
+        amount: 5,
+        denom: "shares",
+      } as any),
+    ).rejects.toThrow("limit orders require a positive price");
+    await expect(
+      api.buildOrder({
+        outcomeId: "22222222-2222-4222-8222-222222222222",
+        side: "buy",
+        type: "limit",
+        amount: 5,
+        denom: "shares",
+        price: 0,
+      } as any),
+    ).rejects.toThrow("limit orders require a positive price");
+    expect(captured(spy)).toHaveLength(0);
+  });
+
   it("cancelOrder → POST cancel/build then POST cancel", async () => {
     let call = 0;
     const spy = installFetchSpy(() => {

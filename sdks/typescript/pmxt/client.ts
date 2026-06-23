@@ -2514,6 +2514,9 @@ export abstract class Exchange {
         if (!(Number(params.amount) > 0)) {
             throw new InvalidOrder("amount must be positive");
         }
+        if (orderType !== "market" && !(Number(params.price) > 0)) {
+            throw new InvalidOrder("limit orders require a positive price");
+        }
 
         // to6dec throws InvalidOrder for sub-micro precision.
         const amount6dec = to6dec(params.amount as number).toString();

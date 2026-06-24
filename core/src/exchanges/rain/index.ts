@@ -138,7 +138,10 @@ export class RainExchange extends PredictionMarketExchange {
         const marketId = parts[1];
         const choiceIndex = Number(parts[2]);
         const interval = RainNormalizer.mapInterval(params.resolution);
-        const raw = await this.fetcher.fetchRawOHLCV(marketId, choiceIndex, interval, params.limit);
+        const market = await this.fetcher.fetchRawMarket(marketId);
+        const contractAddress = market?.details?.contractAddress;
+        if (!contractAddress) return [];
+        const raw = await this.fetcher.fetchRawOHLCV(contractAddress, choiceIndex, interval, params.limit);
         return this.normalizer.normalizeOHLCV(raw, params.limit);
     }
 

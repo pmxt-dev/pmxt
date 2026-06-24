@@ -3162,6 +3162,75 @@ export class Limitless extends Exchange {
     constructor(options: ExchangeOptions = {}) {
         super("limitless", options);
     }
+
+    /**
+     * Watch real-time AMM price updates via WebSocket.
+     *
+     * @param marketAddress - Limitless market contract address
+     * @param callback - Optional callback invoked with the returned update
+     * @returns Next price update
+     */
+    async watchPrices(
+        marketAddress: string,
+        callback?: (data: Record<string, any>) => void,
+    ): Promise<Record<string, any>> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("watchPrices", [marketAddress]);
+            const data = this.handleResponse(json);
+            callback?.(data);
+            return data;
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to watch prices: ${error}`);
+        }
+    }
+
+    /**
+     * Watch real-time Limitless user position updates.
+     *
+     * Requires API key authentication.
+     *
+     * @param callback - Optional callback invoked with the returned positions
+     * @returns Next position update payload
+     */
+    async watchUserPositions(
+        callback?: (data: Position[]) => void,
+    ): Promise<Position[]> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("watchUserPositions", []);
+            const data = this.handleResponse(json).map(convertPosition);
+            callback?.(data);
+            return data;
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to watch user positions: ${error}`);
+        }
+    }
+
+    /**
+     * Watch real-time Limitless user transaction updates.
+     *
+     * Requires API key authentication.
+     *
+     * @param callback - Optional callback invoked with the returned update
+     * @returns Next transaction update
+     */
+    async watchUserTransactions(
+        callback?: (data: Record<string, any>) => void,
+    ): Promise<Record<string, any>> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("watchUserTransactions", []);
+            const data = this.handleResponse(json);
+            callback?.(data);
+            return data;
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to watch user transactions: ${error}`);
+        }
+    }
 }
 
 /**

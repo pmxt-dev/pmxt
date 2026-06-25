@@ -3397,38 +3397,31 @@ class Exchange(ABC):
         Returns:
             Detailed execution result
         """
-        try:
-            # Convert order_book to dict for API call
-            bids = [{"price": b.price, "size": b.size} for b in order_book.bids]
-            asks = [{"price": a.price, "size": a.size} for a in order_book.asks]
-            ob_dict = {"bids": bids, "asks": asks, "timestamp": order_book.timestamp}
+        if amount <= 0:
+            raise ValueError("Amount must be greater than 0")
 
-            body = {
-                "args": [ob_dict, side, amount]
-            }
+        levels = [level for level in (order_book.asks if side == "buy" else order_book.bids) if level.size > 0]
+        levels.sort(key=lambda level: level.price, reverse=(side == "sell"))
 
-            creds = self._get_credentials_dict()
-            if creds:
-                body["credentials"] = creds
+        if not levels:
+            return ExecutionPriceResult(price=0, filled_amount=0, fully_filled=False)
 
-            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/getExecutionPriceDetailed"
+        remaining_amount = amount
+        total_cost = 0.0
+        filled_amount = 0.0
+        epsilon = 0.00000001
 
-            headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            headers.update(self._get_auth_headers())
+        for level in levels:
+            if remaining_amount <= epsilon:
+                break
 
-            response = self._fetch_with_retry(
-                lambda: self._api_client.call_api(
-                    method="POST",
-                    url=url,
-                    body=body,
-                    header_params=headers
-                )
-            )
+            fill_size = min(remaining_amount, level.size)
+            total_cost += fill_size * level.price
+            filled_amount += fill_size
+            remaining_amount -= fill_size
 
-            response.read()
-            data_json = json.loads(response.data)
-
-            data = self._handle_response(data_json)
-            return _convert_execution_result(data)
-        except Exception as e:
-            raise self._parse_api_exception(e) from None
+        return ExecutionPriceResult(
+            price=total_cost / filled_amount if filled_amount > epsilon else 0,
+            filled_amount=filled_amount,
+            fully_filled=remaining_amount <= epsilon,
+        )

@@ -2710,54 +2710,49 @@ export abstract class Exchange {
     }
 
     /**
-     * Calculate detailed execution price information.
-     * Uses the sidecar server for calculation to ensure consistency.
+     * Calculate detailed execution price information by walking the order book locally.
      *
      * @param orderBook - The current order book
      * @param side - 'buy' or 'sell'
      * @param amount - The amount to execute
      * @returns Detailed execution result
      */
-    async getExecutionPriceDetailed(
+    getExecutionPriceDetailed(
         orderBook: OrderBook,
         side: 'buy' | 'sell',
         amount: number
-    ): Promise<ExecutionPriceResult> {
-        await this.initPromise;
-        try {
-            const body: any = {
-                args: [orderBook, side, amount]
-            };
-            const credentials = this.getCredentials();
-            if (credentials) {
-                body.credentials = credentials;
-            }
-
-            const url = `${this.resolveBaseUrl()}/api/${this.exchangeName}/getExecutionPriceDetailed`;
-
-            const response = await this.fetchWithRetry(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.config.headers
-                },
-                body: JSON.stringify(body)
-            });
-
-            if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                if (body.error && typeof body.error === "object") {
-                    throw fromServerError(body.error);
-                }
-                throw new PmxtError(body.error?.message || response.statusText);
-            }
-
-            const json = await response.json();
-            return this.handleResponse(json);
-        } catch (error) {
-            if (error instanceof PmxtError) throw error;
-            throw new PmxtError(`Failed to get execution price: ${error}`);
+    ): ExecutionPriceResult {
+        if (amount <= 0) {
+            throw new Error('Amount must be greater than 0');
         }
+
+        const levels = (side === 'buy' ? orderBook.asks : orderBook.bids)
+            .filter((level) => level.size > 0)
+            .sort((a, b) => side === 'buy' ? a.price - b.price : b.price - a.price);
+
+        if (levels.length === 0) {
+            return { price: 0, filledAmount: 0, fullyFilled: false };
+        }
+
+        let remainingAmount = amount;
+        let totalCost = 0;
+        let filledAmount = 0;
+        const epsilon = 0.00000001;
+
+        for (const level of levels) {
+            if (remainingAmount <= epsilon) break;
+
+            const fillSize = Math.min(remainingAmount, level.size);
+            totalCost += fillSize * level.price;
+            filledAmount += fillSize;
+            remainingAmount -= fillSize;
+        }
+
+        return {
+            price: filledAmount > epsilon ? totalCost / filledAmount : 0,
+            filledAmount,
+            fullyFilled: remainingAmount <= epsilon,
+        };
     }
 
     // ----------------------------------------------------------------------------

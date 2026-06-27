@@ -26,6 +26,9 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
     // Index mapping instrumentSymbol -> eventTicker, built during fetchRawEvents
     private symbolToEventTicker: Map<string, string> = new Map();
 
+    // Track terms acceptance status to avoid repeated checks
+    private termsAccepted: boolean = false;
+
     constructor(ctx: FetcherContext, baseUrl: string, auth?: GeminiAuth) {
         this.ctx = ctx;
         this.baseUrl = baseUrl;
@@ -37,6 +40,8 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
     async fetchRawMarkets(params?: MarketFilterParams): Promise<GeminiRawEvent[]> {
         return this.fetchRawEvents(params ?? {});
     }
+
+    
 
     async fetchRawEvents(params: EventFetchParams): Promise<GeminiRawEvent[]> {
         const allEvents: GeminiRawEvent[] = [];
@@ -132,9 +137,82 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
         return this.symbolToEventTicker.get(instrumentSymbol);
     }
 
+    // -- Terms Acceptance Flow -----------------------------------------------
+
+    /**
+     * Get current terms version and content
+     */
+    async getTerms(): Promise<{ version: string; content: string }> {
+        return this.postAuthenticated<{ version: string; content: string }>(
+            '/v1/prediction-markets/terms',
+            {},
+        );
+    }
+
+    /**
+     * Check if API key has accepted the latest terms
+     */
+    async getTermsStatus(): Promise<{
+        hasAcceptedLatest: boolean;
+        acceptedVersion?: string;
+        latestVersion?: string;
+    }> {
+        return this.postAuthenticated<{
+            hasAcceptedLatest: boolean;
+            acceptedVersion?: string;
+            latestVersion?: string;
+        }>('/v1/prediction-markets/terms/status', {});
+    }
+
+    /**
+     * Accept the latest terms version
+     */
+    async acceptTerms(): Promise<{ accepted: boolean; version: string }> {
+        const result = await this.postAuthenticated<{ accepted: boolean; version: string }>(
+            '/v1/prediction-markets/terms/accept',
+            {},
+        );
+        this.termsAccepted = true;
+        return result;
+    }
+
+    /**
+     * Ensure terms are accepted before placing orders.
+     * This is called automatically before order submission.
+     */
+    async ensureTermsAccepted(): Promise<void> {
+        // Skip if already accepted in this session
+        if (this.termsAccepted) {
+            return;
+        }
+
+        try {
+            const status = await this.getTermsStatus();
+            if (!status.hasAcceptedLatest) {
+                // Terms not accepted - accept them
+                await this.acceptTerms();
+                // Log acceptance
+                console.log('✅ Gemini Prediction Markets terms accepted successfully.');
+            } else {
+                this.termsAccepted = true;
+            }
+        } catch (error: any) {
+            // If terms check fails with a specific error, re-throw
+            if (error.message?.includes('TERMS') || error.message?.includes('terms')) {
+                throw geminiErrorMapper.mapError(error);
+            }
+            // Otherwise log warning but don't block order submission
+            // The order will fail with a clear error if terms are required
+            console.warn('⚠️ Failed to check Gemini terms status:', error.message);
+        }
+    }
+
     // -- Authenticated endpoints -----------------------------------------------
 
     async submitRawOrder(payload: Record<string, unknown>): Promise<GeminiRawOrder> {
+        // ✅ Ensure terms are accepted before placing order
+        await this.ensureTermsAccepted();
+
         return this.postAuthenticated<GeminiRawOrder>(
             '/v1/prediction-markets/order',
             payload,
@@ -245,4 +323,6 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
             throw geminiErrorMapper.mapError(error);
         }
     }
+
+    
 }

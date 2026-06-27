@@ -450,6 +450,12 @@ export interface MarketFilterParams {
     /** Find markets belonging to an event */
     eventId?: string;
 
+    /** Filter by source venue (e.g. 'polymarket', 'kalshi', 'myriad'). */
+    sourceExchange?: string;
+
+    /** Alias for `sourceExchange`. */
+    exchange?: string;
+
     /** Pagination page (used by Limitless) */
     page?: number;
 
@@ -496,6 +502,12 @@ export interface EventFetchParams {
 
     /** Lookup by event slug */
     slug?: string;
+
+    /** Filter by source venue (e.g. 'polymarket', 'kalshi', 'myriad'). */
+    sourceExchange?: string;
+
+    /** Alias for `sourceExchange`. */
+    exchange?: string;
 
     /** Filter events by their parent series. Accepts the venue-native series id / ticker / slug. */
     series?: string;

@@ -746,6 +746,8 @@ class MarketFetchParams(TypedDict, total=False):
     market_id: str
     outcome_id: str
     event_id: str
+    source_exchange: str
+    exchange: str
     category: str
     tags: List[str]
     filter: MarketFilterCriteria
@@ -764,6 +766,8 @@ class EventFetchParams(TypedDict, total=False):
     search_in: Literal["title", "description", "both"]
     event_id: str
     slug: str
+    source_exchange: str
+    exchange: str
     series: str
     category: str
     tags: List[str]

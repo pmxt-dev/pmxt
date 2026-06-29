@@ -551,6 +551,7 @@ class Hunch(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
     ) -> None:
         """
         Initialize Hunch client.
@@ -560,6 +561,7 @@ class Hunch(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            wallet_address: EVM wallet address used for hosted reads/writes
         """
         super().__init__(
             exchange_name="hunch",
@@ -567,6 +569,7 @@ class Hunch(Exchange):
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            wallet_address=wallet_address,
         )
 
 

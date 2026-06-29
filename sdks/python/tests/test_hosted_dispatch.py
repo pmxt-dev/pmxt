@@ -22,7 +22,7 @@ import pytest
 
 from pmxt._hosted_routing import HOSTED_TRADING_BASE_URL
 from pmxt._hosted_errors import MissingWalletAddress, NotSupported
-from pmxt._exchanges import Limitless, Polymarket
+from pmxt._exchanges import Hunch, Limitless, Polymarket
 from pmxt.errors import InvalidSignature
 import pmxt.client as client_module
 from pmxt.models import BuiltOrder
@@ -144,6 +144,17 @@ def _make_limitless(
     if with_signer:
         kwargs["signer"] = _MockSigner()
     return Limitless(**kwargs)
+
+
+def test_hunch_constructor_accepts_wallet_address_for_hosted_mode():
+    api = Hunch(
+        pmxt_api_key=PMXT_API_KEY,
+        wallet_address=WALLET_ADDRESS,
+        auto_start_server=False,
+    )
+
+    assert api.exchange_name == "hunch"
+    assert api.wallet_address == WALLET_ADDRESS
 
 
 # --------------------------------------------------------------------------- #

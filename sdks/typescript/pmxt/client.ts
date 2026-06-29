@@ -232,6 +232,9 @@ export interface ExchangeOptions {
     /** Venue-specific API key (e.g. Polymarket CLOB key). Optional. */
     apiKey?: string;
 
+    /** Venue-specific API secret for HMAC/CLOB-authenticated exchanges. Optional. */
+    apiSecret?: string;
+
     /** Venue-specific private key. Optional. */
     privateKey?: string;
 
@@ -320,6 +323,7 @@ export abstract class Exchange {
     public exchangeName: string;
     public pmxtApiKey?: string;
     protected apiKey?: string;
+    protected apiSecret?: string;
     protected privateKey?: string;
     protected proxyAddress?: string;
     protected signatureType?: number;
@@ -357,6 +361,7 @@ export abstract class Exchange {
     constructor(exchangeName: string, options: ExchangeOptions = {}) {
         this.exchangeName = exchangeName.toLowerCase();
         this.apiKey = options.apiKey;
+        this.apiSecret = options.apiSecret;
         this.privateKey = options.privateKey;
         this.proxyAddress = options.proxyAddress;
         this.signatureType = options.signatureType;
@@ -462,11 +467,12 @@ export abstract class Exchange {
     }
 
     protected getCredentials(): ExchangeCredentials | undefined {
-        if (!this.apiKey && !this.privateKey) {
+        if (!this.apiKey && !this.apiSecret && !this.privateKey) {
             return undefined;
         }
         return {
             apiKey: this.apiKey,
+            apiSecret: this.apiSecret,
             privateKey: this.privateKey,
             funderAddress: this.proxyAddress,
             signatureType: this.signatureType,

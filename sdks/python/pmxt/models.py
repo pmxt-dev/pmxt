@@ -310,6 +310,9 @@ class OrderLevel:
     size: float
     """Number of contracts"""
 
+    order_count: Optional[int] = None
+    """Number of orders aggregated at this price level, when reported by the venue."""
+
 
 @dataclass
 class OrderBook:
@@ -326,6 +329,15 @@ class OrderBook:
 
     datetime: Optional[str] = None
     """ISO 8601 datetime string (CCXT-compatible)"""
+
+    is_neg_risk: Optional[bool] = None
+    """Whether the underlying market uses negative-risk collateral/netting semantics."""
+
+    last_trade_price: Optional[float] = None
+    """Last traded price for the outcome, when reported alongside the book."""
+
+    source_metadata: Optional[Dict[str, Any]] = None
+    """Raw venue-specific fields not promoted to first-class columns."""
 
 
 @dataclass

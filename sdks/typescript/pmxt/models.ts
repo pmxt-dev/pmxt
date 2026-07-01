@@ -349,19 +349,19 @@ export interface Position {
     outcomeId: string;
 
     /** Outcome label (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
-    outcomeLabel?: string | null;  // ✅ Added | null
+    outcomeLabel?: string | null; 
 
     /** Position size (positive for long, negative for short) */
     size: number;
 
     /** Average entry price (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
-    entryPrice?: number | null;    // ✅ Added | null
+    entryPrice?: number | null;  
 
     /** Current market price (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
-    currentPrice?: number | null;  // ✅ Added | null
+    currentPrice?: number | null; 
 
     /** Unrealized profit/loss (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
-    unrealizedPnL?: number | null; // ✅ Added | null
+    unrealizedPnL?: number | null; 
 
     /** Realized profit/loss */
     realizedPnL?: number;

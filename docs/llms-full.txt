@@ -4531,8 +4531,8 @@ candles.forEach((c) => console.log(`${c.open}  ${c.high}  ${c.low}  ${c.close}  
 ```
 
 ```bash curl
-# First get the outcome ID from a market, then pass it as the id parameter
-curl "https://api.pmxt.dev/api/polymarket/fetchOHLCV?id=YOUR_OUTCOME_ID&resolution=1h&limit=100" \
+# First get the outcome ID from a market, then pass it as the outcomeId parameter
+curl "https://api.pmxt.dev/api/polymarket/fetchOHLCV?outcomeId=YOUR_OUTCOME_ID&resolution=1h&limit=100" \
   -H "Authorization: Bearer $PMXT_API_KEY"
 ```
 </CodeGroup>

@@ -147,6 +147,14 @@
             "openapi": "api-reference/openapi.json"
           },
           {
+            "group": "Cross Exchange",
+            "openapi": "api-reference/openapi-hosted.json",
+            "pages": [
+              "GET /v0/matched-event-clusters",
+              "GET /v0/matched-market-clusters"
+            ]
+          },
+          {
             "group": "Trading",
             "openapi": "api-reference/openapi-hosted-trading.json",
             "pages": [
@@ -165,14 +173,6 @@
               "GET /v0/user/{address}/trades",
               "GET /v0/user/{address}/positions",
               "GET /v0/user/{address}/balances"
-            ]
-          },
-          {
-            "group": "Cross Exchange",
-            "openapi": "api-reference/openapi-hosted.json",
-            "pages": [
-              "GET /v0/matched-event-clusters",
-              "GET /v0/matched-market-clusters"
             ]
           },
           {
@@ -224,6 +224,7 @@
             "group": "Enterprise",
             "openapi": "api-reference/openapi-hosted.json",
             "pages": [
+              "sql",
               "POST /v0/sql"
             ]
           }

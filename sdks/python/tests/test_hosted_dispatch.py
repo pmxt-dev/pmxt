@@ -22,7 +22,7 @@ import pytest
 
 from pmxt._hosted_routing import HOSTED_TRADING_BASE_URL
 from pmxt._hosted_errors import MissingWalletAddress, NotSupported
-from pmxt._exchanges import Hunch, Limitless, Polymarket
+from pmxt._exchanges import Hunch, Limitless, Myriad, Polymarket
 from pmxt.errors import InvalidSignature
 import pmxt.client as client_module
 from pmxt.models import BuiltOrder
@@ -110,6 +110,17 @@ def _install_signing_bypass(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(client_module, "validate_typed_data", _noop_validate)
     monkeypatch.setattr(client_module, "validate_economics", _noop_validate)
     monkeypatch.setattr(client_module, "verify_signature", _noop_verify)
+
+
+def test_myriad_wallet_address_populates_wallet_slot_not_private_key() -> None:
+    client = Myriad(
+        wallet_address=WALLET_ADDRESS,
+        pmxt_api_key=PMXT_API_KEY,
+        auto_start_server=False,
+    )
+
+    assert client.wallet_address == WALLET_ADDRESS
+    assert client.private_key is None
 
 
 def _make_polymarket(

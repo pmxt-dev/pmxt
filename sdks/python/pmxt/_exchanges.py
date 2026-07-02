@@ -284,7 +284,7 @@ class Myriad(Exchange):
         super().__init__(
             exchange_name="myriad",
             api_key=api_key,
-            private_key=wallet_address,
+            wallet_address=wallet_address,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,

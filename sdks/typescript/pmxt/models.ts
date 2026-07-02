@@ -149,6 +149,9 @@ export interface OrderLevel {
 
     /** Number of contracts */
     size: number;
+
+    /** Number of venue orders aggregated at this price level, when provided. */
+    orderCount?: number;
 }
 
 /**
@@ -166,6 +169,15 @@ export interface OrderBook {
 
     /** ISO 8601 datetime string of the snapshot (CCXT-compatible) */
     datetime?: string;
+
+    /** Whether the venue marks this snapshot as a negative-risk market. */
+    isNegRisk?: boolean;
+
+    /** Last traded price included with the book snapshot, when provided. */
+    lastTradePrice?: number;
+
+    /** Raw venue-specific fields preserved from the order book snapshot. */
+    sourceMetadata?: Record<string, unknown>;
 }
 
 /**

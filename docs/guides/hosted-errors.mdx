@@ -45,7 +45,7 @@ try {
   await client.createOrder({ ... });
 } catch (e) {
   if (e instanceof InsufficientEscrowBalance) {
-    console.log(`Need to deposit. ${(e as any).detail}`);
+    console.log(`Need to deposit. ${e.detail}`);
     const tx = await client.escrow.depositTx(20);
     // sign and broadcast, retry
   } else if (isHostedError(e)) {
@@ -170,9 +170,9 @@ def submit_with_retry(client, **kwargs):
 
 ```typescript TypeScript
 import { BuiltOrderExpired } from "pmxtjs";
-import type { CreateOrderParams, Order } from "pmxtjs";
+import type { CreateOrderInput, Order } from "pmxtjs";
 
-async function submitWithRetry(client, params: CreateOrderParams): Promise<Order> {
+async function submitWithRetry(client, params: CreateOrderInput): Promise<Order> {
   // In hosted mode, createOrder handles build -> sign -> submit atomically.
   // On BuiltOrderExpired the internal submit raced the 30s TTL; just call again.
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -196,7 +196,7 @@ async function submitWithRetry(client, params: CreateOrderParams): Promise<Order
 
 **Parent classes:** `InvalidOrder`, `HostedTradingError`.
 
-**Recovery:** wait for liquidity, pick a different outcome, or post a resting limit order via `client.create_order(order_type="limit", price=..., amount=...)` (limit SELL is live; limit BUY is being patched for an SDK denom mismatch).
+**Recovery:** wait for liquidity, pick a different outcome, or post a resting limit order via `client.create_order(order_type="limit", price=..., amount=...)`. Limit BUY and SELL are supported, and both use `denom="shares"` in hosted SDK requests.
 
 <CodeGroup>
 ```python Python
@@ -205,7 +205,7 @@ from pmxt._hosted_errors import NoLiquidity
 try:
     client.create_order(order_type="market", ...)
 except NoLiquidity:
-    # Wait, retry against a different outcome, or post limits via self-hosted.
+    # Wait, retry against a different outcome, or post a hosted limit order.
     pass
 ```
 
@@ -216,7 +216,7 @@ try {
   await client.createOrder({ type: "market", ... });
 } catch (e) {
   if (e instanceof NoLiquidity) {
-    // Wait, retry against a different outcome, or post limits via self-hosted.
+    // Wait, retry against a different outcome, or post a hosted limit order.
   } else {
     throw e;
   }

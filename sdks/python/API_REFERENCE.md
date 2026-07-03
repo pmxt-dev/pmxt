@@ -1,6 +1,6 @@
 # PMXT Python SDK - API Reference
 
-A unified Python interface for interacting with multiple prediction market exchanges (Polymarket, Kalshi, Limitless) identically.
+A unified Python SDK for supported prediction markets, with local sidecar access to PMXT exchange implementations and hosted services where configured.
 
 ## Installation
 
@@ -105,13 +105,13 @@ for line in pmxt.server.logs(100):
 
 ### `has`
 
-HTTP verb for the endpoint (e.g. GET, POST). */
+Capability map indicating which methods this exchange supports.
 
 
 **Signature:**
 
 ```python
-def has() -> ExchangeHas:
+has: ExchangeHas
 ```
 
 **Parameters:**
@@ -123,32 +123,7 @@ def has() -> ExchangeHas:
 **Example:**
 
 ```python
-exchange.has()
-```
-
-
----
-### `implicit_api`
-
-Override in subclasses to force specific capability values.
-
-
-**Signature:**
-
-```python
-def implicit_api() -> List[ImplicitApiMethodInfo]:
-```
-
-**Parameters:**
-
-- None
-
-**Returns:** List[ImplicitApiMethodInfo] - Result
-
-**Example:**
-
-```python
-exchange.implicit_api()
+exchange.has
 ```
 
 
@@ -161,7 +136,7 @@ Load and cache all markets from the exchange into `this.markets` and `this.marke
 **Signature:**
 
 ```python
-def load_markets(reload: bool) -> Dictstr, [UnifiedMarket]:
+def load_markets(reload: bool) -> Dict[str, UnifiedMarket]:
 ```
 
 **Parameters:**
@@ -221,12 +196,12 @@ Fetch markets with cursor-based pagination backed by a stable in-memory snapshot
 **Signature:**
 
 ```python
-def fetch_markets_paginated(params: Optional[{ limit?: number; cursor?: string; filter?: MarketFilterCriteria }] = None) -> PaginatedMarketsResult:
+def fetch_markets_paginated(params: Optional[dict] = None) -> PaginatedMarketsResult:
 ```
 
 **Parameters:**
 
-- `params` ({ limit?: number; cursor?: string; filter?: MarketFilterCriteria }) - **Optional**: params
+- `params` (dict) - **Optional**: params
   - `params.limit` - Page size (default: return all markets)
   - `params.cursor` - Opaque cursor returned by a previous call
 
@@ -248,12 +223,12 @@ Paginated variant of {@link fetchEvents}.
 **Signature:**
 
 ```python
-def fetch_events_paginated(params: Optional[{ limit?: number; cursor?: string; filter?: EventFilterCriteria }] = None) -> PaginatedEventsResult:
+def fetch_events_paginated(params: Optional[dict] = None) -> PaginatedEventsResult:
 ```
 
 **Parameters:**
 
-- `params` ({ limit?: number; cursor?: string; filter?: EventFilterCriteria }) - **Optional**: params
+- `params` (dict) - **Optional**: params
   - `params.limit` - Page size (default: return all events)
   - `params.cursor` - Opaque cursor returned by a previous call
 
@@ -394,7 +369,7 @@ def fetch_ohlcv(outcome_id: str, params: OHLCVParams) -> List[PriceCandle]:
 **Example:**
 
 ```python
-exchange.fetch_ohlcv(outcome_id="abc123", params="...")
+exchange.fetch_ohlcv(outcome_id="abc123", resolution="1h", limit=100)
 ```
 
 **Notes:**
@@ -425,7 +400,7 @@ def fetch_order_book(outcome_id: str, limit: Optional[float] = None, params: Opt
 **Example:**
 
 ```python
-exchange.fetch_order_book(outcome_id="abc123", limit=10, params="...")
+exchange.fetch_order_book(outcome_id="abc123", limit=10, params={})
 ```
 
 
@@ -438,19 +413,19 @@ Batch variant of {@link fetchOrderBook}. Fetches order books for
 **Signature:**
 
 ```python
-def fetch_order_books(outcome_ids: List[string]) -> Dictstr, [OrderBook]:
+def fetch_order_books(outcome_ids: List[str]) -> Dict[str, OrderBook]:
 ```
 
 **Parameters:**
 
-- `outcome_ids` (List[string]): List of Outcome IDs (outcomeId). Each id must be in the
+- `outcome_ids` (List[str]): List of Outcome IDs (outcomeId). Each id must be in the
 
 **Returns:** Dict[str, [OrderBook](#orderbook)] - A map keyed by the input id (preserving the caller's exact
 
 **Example:**
 
 ```python
-exchange.fetch_order_books(outcome_ids="12345")
+exchange.fetch_order_books(outcome_ids=["12345"])
 ```
 
 
@@ -463,20 +438,20 @@ Fetch raw trade history for a specific outcome.
 **Signature:**
 
 ```python
-def fetch_trades(outcome_id: str, params: TradesParams | HistoryFilterParams) -> List[Trade]:
+def fetch_trades(outcome_id: str, params: Union[TradesParams, HistoryFilterParams]) -> List[Trade]:
 ```
 
 **Parameters:**
 
 - `outcome_id` (str): The Outcome ID (outcomeId)
-- `params` (TradesParams | HistoryFilterParams): Trade filter parameters
+- `params` (Union[[TradesParams](#tradesparams), [HistoryFilterParams](#historyfilterparams)]): Trade filter parameters
 
 **Returns:** List[[Trade](#trade)] - Array of recent trades
 
 **Example:**
 
 ```python
-exchange.fetch_trades(outcome_id="abc123", params="...")
+exchange.fetch_trades(outcome_id="abc123", limit=50)
 ```
 
 **Notes:**
@@ -503,7 +478,14 @@ def create_order(params: CreateOrderParams) -> Order:
 **Example:**
 
 ```python
-exchange.create_order()
+exchange.create_order(
+    market_id="12345",
+    outcome_id="abc123",
+    side="buy",
+    type="limit",
+    amount=50,
+    price=0.65,
+)
 ```
 
 
@@ -528,7 +510,14 @@ def build_order(params: CreateOrderParams) -> BuiltOrder:
 **Example:**
 
 ```python
-exchange.build_order()
+exchange.build_order(
+    market_id="12345",
+    outcome_id="abc123",
+    side="buy",
+    type="limit",
+    amount=50,
+    price=0.65,
+)
 ```
 
 
@@ -553,7 +542,15 @@ def submit_order(built: BuiltOrder) -> Order:
 **Example:**
 
 ```python
-exchange.submit_order(built="...")
+built = exchange.build_order(
+    market_id="12345",
+    outcome_id="abc123",
+    side="buy",
+    type="limit",
+    amount=50,
+    price=0.65,
+)
+exchange.submit_order(built)
 ```
 
 
@@ -633,6 +630,97 @@ exchange.fetch_open_orders(market_id="12345")
 
 
 ---
+### `fetch_my_trades`
+
+Fetch authenticated user trade history.
+
+
+**Signature:**
+
+```python
+def fetch_my_trades(params: Optional[MyTradesParams] = None) -> List[UserTrade]:
+```
+
+**Parameters:**
+
+- `params` ([MyTradesParams](#mytradesparams)) - **Optional**: Optional trade history filters
+  - `params.outcome_id` - Filter by outcome token ID
+  - `params.market_id` - Filter by market ID or ticker
+  - `params.since` - Start timestamp or ISO date
+  - `params.until` - End timestamp or ISO date
+  - `params.limit` - Maximum number of trades
+  - `params.cursor` - Pagination cursor
+
+**Returns:** List[[UserTrade](#usertrade)] - Array of user trades
+
+**Example:**
+
+```python
+exchange.fetch_my_trades(limit=10)
+```
+
+
+---
+### `fetch_closed_orders`
+
+Fetch authenticated closed orders.
+
+
+**Signature:**
+
+```python
+def fetch_closed_orders(params: Optional[OrderHistoryParams] = None) -> List[Order]:
+```
+
+**Parameters:**
+
+- `params` ([OrderHistoryParams](#orderhistoryparams)) - **Optional**: Optional order history filters
+  - `params.market_id` - Filter by market ID or ticker
+  - `params.since` - Start timestamp or ISO date
+  - `params.until` - End timestamp or ISO date
+  - `params.limit` - Maximum number of orders
+  - `params.cursor` - Pagination cursor
+
+**Returns:** List[[Order](#order)] - Array of closed orders
+
+**Example:**
+
+```python
+exchange.fetch_closed_orders(market_id="12345", limit=10)
+```
+
+
+---
+### `fetch_all_orders`
+
+Fetch authenticated order history across open and closed orders.
+
+
+**Signature:**
+
+```python
+def fetch_all_orders(params: Optional[OrderHistoryParams] = None) -> List[Order]:
+```
+
+**Parameters:**
+
+- `params` ([OrderHistoryParams](#orderhistoryparams)) - **Optional**: Optional order history filters
+  - `params.market_id` - Filter by market ID or ticker
+  - `params.since` - Start timestamp or ISO date
+  - `params.until` - End timestamp or ISO date
+  - `params.limit` - Maximum number of orders
+  - `params.cursor` - Pagination cursor
+
+**Returns:** List[[Order](#order)] - Array of orders
+
+**Example:**
+
+```python
+exchange.fetch_all_orders(market_id="12345", limit=10)
+```
+
+
+---
 ### `fetch_positions`
 
 Fetch current user positions across all markets.
@@ -691,13 +779,13 @@ Calculate the volume-weighted average execution price for a given order size.
 **Signature:**
 
 ```python
-def get_execution_price(order_book: OrderBook, side: 'buy' | 'sell', amount: float) -> float:
+def get_execution_price(order_book: OrderBook, side: Literal["buy", "sell"], amount: float) -> float:
 ```
 
 **Parameters:**
 
 - `order_book` ([OrderBook](#orderbook)): The current order book
-- `side` ('buy' | 'sell'): 'buy' or 'sell'
+- `side` (Literal["buy", "sell"]): 'buy' or 'sell'
 - `amount` (float): Number of contracts to simulate
 
 **Returns:** float - Average execution price, or 0 if insufficient liquidity
@@ -705,7 +793,8 @@ def get_execution_price(order_book: OrderBook, side: 'buy' | 'sell', amount: flo
 **Example:**
 
 ```python
-exchange.get_execution_price(order_book="...", side="buy", amount=50)
+order_book = exchange.fetch_order_book(outcome_id="abc123")
+exchange.get_execution_price(order_book=order_book, side="buy", amount=50)
 ```
 
 
@@ -718,13 +807,13 @@ Calculate detailed execution price information including partial fill data.
 **Signature:**
 
 ```python
-def get_execution_price_detailed(order_book: OrderBook, side: 'buy' | 'sell', amount: float) -> ExecutionPriceResult:
+def get_execution_price_detailed(order_book: OrderBook, side: Literal["buy", "sell"], amount: float) -> ExecutionPriceResult:
 ```
 
 **Parameters:**
 
 - `order_book` ([OrderBook](#orderbook)): The current order book
-- `side` ('buy' | 'sell'): 'buy' or 'sell'
+- `side` (Literal["buy", "sell"]): 'buy' or 'sell'
 - `amount` (float): Number of contracts to simulate
 
 **Returns:** [ExecutionPriceResult](#executionpriceresult) - Detailed execution result with price, filled amount, and fill status
@@ -732,7 +821,8 @@ def get_execution_price_detailed(order_book: OrderBook, side: 'buy' | 'sell', am
 **Example:**
 
 ```python
-exchange.get_execution_price_detailed(order_book="...", side="buy", amount=50)
+order_book = exchange.fetch_order_book(outcome_id="abc123")
+exchange.get_execution_price_detailed(order_book=order_book, side="buy", amount=50)
 ```
 
 
@@ -745,20 +835,21 @@ Filter a list of markets by criteria.
 **Signature:**
 
 ```python
-def filter_markets(markets: List[UnifiedMarket], criteria: string | MarketFilterCriteria | MarketFilterFunction) -> List[UnifiedMarket]:
+def filter_markets(markets: List[UnifiedMarket], criteria: Union[str, MarketFilterCriteria, MarketFilterFunction]) -> List[UnifiedMarket]:
 ```
 
 **Parameters:**
 
 - `markets` (List[[UnifiedMarket](#unifiedmarket)]): Array of markets to filter
-- `criteria` (string | MarketFilterCriteria | MarketFilterFunction): Filter criteria: string (text search), object (structured), or function (predicate)
+- `criteria` (Union[str, [MarketFilterCriteria](#marketfiltercriteria), MarketFilterFunction]): Filter criteria: string (text search), object (structured), or function (predicate)
 
 **Returns:** List[[UnifiedMarket](#unifiedmarket)] - Filtered array of markets
 
 **Example:**
 
 ```python
-exchange.filter_markets(markets="...", criteria="...")
+markets = exchange.fetch_markets(query="Trump")
+exchange.filter_markets(markets=markets, criteria="Trump")
 ```
 
 
@@ -771,20 +862,21 @@ Filter a list of events by criteria.
 **Signature:**
 
 ```python
-def filter_events(events: List[UnifiedEvent], criteria: string | EventFilterCriteria | EventFilterFunction) -> List[UnifiedEvent]:
+def filter_events(events: List[UnifiedEvent], criteria: Union[str, EventFilterCriteria, EventFilterFunction]) -> List[UnifiedEvent]:
 ```
 
 **Parameters:**
 
 - `events` (List[[UnifiedEvent](#unifiedevent)]): Array of events to filter
-- `criteria` (string | EventFilterCriteria | EventFilterFunction): Filter criteria: string (text search), object (structured), or function (predicate)
+- `criteria` (Union[str, [EventFilterCriteria](#eventfiltercriteria), EventFilterFunction]): Filter criteria: string (text search), object (structured), or function (predicate)
 
 **Returns:** List[[UnifiedEvent](#unifiedevent)] - Filtered array of events
 
 **Example:**
 
 ```python
-exchange.filter_events(events="...", criteria="...")
+events = exchange.fetch_events(query="Trump")
+exchange.filter_events(events=events, criteria="Trump")
 ```
 
 
@@ -811,7 +903,7 @@ def watch_order_book(outcome_id: str, limit: Optional[float] = None, params: Dic
 **Example:**
 
 ```python
-exchange.watch_order_book(outcome_id="abc123", params="...", limit=10)
+exchange.watch_order_book(outcome_id="abc123", limit=10, params={})
 ```
 
 
@@ -824,12 +916,12 @@ Watch multiple order books simultaneously via WebSocket.
 **Signature:**
 
 ```python
-def watch_order_books(outcome_ids: List[string], limit: Optional[float] = None, params: Dict[str, Any]) -> Dictstr, [OrderBook]:
+def watch_order_books(outcome_ids: List[str], limit: Optional[float] = None, params: Dict[str, Any]) -> Dict[str, OrderBook]:
 ```
 
 **Parameters:**
 
-- `outcome_ids` (List[string]): Array of Outcome IDs to watch
+- `outcome_ids` (List[str]): Array of Outcome IDs to watch
 - `limit` (float) - **Optional**: Optional limit for orderbook depth
 - `params` (Dict[str, Any]): Optional exchange-specific parameters
 
@@ -838,7 +930,7 @@ def watch_order_books(outcome_ids: List[string], limit: Optional[float] = None, 
 **Example:**
 
 ```python
-exchange.watch_order_books(outcome_ids="12345", params="...", limit=10)
+exchange.watch_order_books(outcome_ids=["12345"], limit=10, params={})
 ```
 
 
@@ -851,14 +943,14 @@ Unsubscribe from a previously watched order book stream.
 **Signature:**
 
 ```python
-def unwatch_order_book(outcome_id: str) -> void:
+def unwatch_order_book(outcome_id: str) -> None:
 ```
 
 **Parameters:**
 
 - `outcome_id` (str): The Outcome ID to stop watching
 
-**Returns:** void - Result
+**Returns:** None - Result
 
 **Example:**
 
@@ -891,7 +983,7 @@ def watch_trades(outcome_id: str, address: Optional[str] = None, since: Optional
 **Example:**
 
 ```python
-exchange.watch_trades(outcome_id="abc123", address="0xabc...", since="...")
+exchange.watch_trades(outcome_id="abc123", address="0xabc...", since=1710000000000, limit=50)
 ```
 
 
@@ -917,7 +1009,7 @@ def watch_address(address: str, types: Optional[List[SubscriptionOption]] = None
 **Example:**
 
 ```python
-exchange.watch_address(address="0xabc...", types="...")
+exchange.watch_address(address="0xabc...", types=["trades"])
 ```
 
 
@@ -930,14 +1022,14 @@ Stop watching a previously registered wallet address and release its resource up
 **Signature:**
 
 ```python
-def unwatch_address(address: str) -> void:
+def unwatch_address(address: str) -> None:
 ```
 
 **Parameters:**
 
 - `address` (str): Public wallet address to stop watching
 
-**Returns:** void - Result
+**Returns:** None - Result
 
 **Example:**
 
@@ -955,14 +1047,14 @@ Close all WebSocket connections and clean up resources.
 **Signature:**
 
 ```python
-def close() -> void:
+def close() -> None:
 ```
 
 **Parameters:**
 
 - None
 
-**Returns:** void - Result
+**Returns:** None - Result
 
 **Example:**
 
@@ -1207,20 +1299,22 @@ Watch AMM price updates for a market address (Limitless only).
 **Signature:**
 
 ```python
-def watch_prices(market_address: str, callback: (data: any)) -> void:
+def watch_prices(market_address: str, callback: Callable[[Any], None]) -> None:
 ```
 
 **Parameters:**
 
 - `market_address` (str): Market contract address
-- `callback` ((data: any)): Callback for price updates
+- `callback` (Callable[[Any], None]): Callback for price updates
 
-**Returns:** void - Result
+**Returns:** None - Result
 
 **Example:**
 
 ```python
-exchange.watch_prices(market_address="...", callback="...")
+def handle_price_update(data):
+    pass
+exchange.watch_prices(market_address="0xabc...", callback=handle_price_update)
 ```
 
 
@@ -1235,19 +1329,21 @@ Watch user positions in real-time (Limitless only).
 **Signature:**
 
 ```python
-def watch_user_positions(callback: (data: any)) -> void:
+def watch_user_positions(callback: Callable[[Any], None]) -> None:
 ```
 
 **Parameters:**
 
-- `callback` ((data: any)): Callback for position updates
+- `callback` (Callable[[Any], None]): Callback for position updates
 
-**Returns:** void - Result
+**Returns:** None - Result
 
 **Example:**
 
 ```python
-exchange.watch_user_positions(callback="...")
+def handle_position_update(data):
+    pass
+exchange.watch_user_positions(callback=handle_position_update)
 ```
 
 
@@ -1262,19 +1358,21 @@ Watch user transactions in real-time (Limitless only).
 **Signature:**
 
 ```python
-def watch_user_transactions(callback: (data: any)) -> void:
+def watch_user_transactions(callback: Callable[[Any], None]) -> None:
 ```
 
 **Parameters:**
 
-- `callback` ((data: any)): Callback for transaction updates
+- `callback` (Callable[[Any], None]): Callback for transaction updates
 
-**Returns:** void - Result
+**Returns:** None - Result
 
 **Example:**
 
 ```python
-exchange.watch_user_transactions(callback="...")
+def handle_transaction_update(data):
+    pass
+exchange.watch_user_transactions(callback=handle_transaction_update)
 ```
 
 
@@ -1289,14 +1387,14 @@ Initialize L2 API credentials for implicit API signing.
 **Signature:**
 
 ```python
-def init_auth() -> void:
+def init_auth() -> None:
 ```
 
 **Parameters:**
 
 - None
 
-**Returns:** void - Result
+**Returns:** None - Result
 
 **Example:**
 
@@ -1316,14 +1414,14 @@ Pre-warm the SDK's internal caches for a market outcome.
 **Signature:**
 
 ```python
-def pre_warm_market(outcome_id: str) -> void:
+def pre_warm_market(outcome_id: str) -> None:
 ```
 
 **Parameters:**
 
 - `outcome_id` (str): The CLOB Token ID for the outcome (use `outcome.outcomeId`)
 
-**Returns:** void - Result
+**Returns:** None - Result
 
 **Example:**
 
@@ -1333,7 +1431,7 @@ exchange.pre_warm_market(outcome_id="abc123")
 
 
 ---
-### `get_event_byid`
+### `get_event_by_id`
 
 Fetch a single event by its numeric ID (Probable only).
 
@@ -1343,24 +1441,24 @@ Fetch a single event by its numeric ID (Probable only).
 **Signature:**
 
 ```python
-def get_event_byid(id: str) -> UnifiedEvent | null:
+def get_event_by_id(id: str) -> Optional[UnifiedEvent]:
 ```
 
 **Parameters:**
 
 - `id` (str): The numeric event ID
 
-**Returns:** UnifiedEvent | null - The UnifiedEvent, or null if not found
+**Returns:** Optional[[UnifiedEvent](#unifiedevent)] - The UnifiedEvent, or null if not found
 
 **Example:**
 
 ```python
-exchange.get_event_byid(id="12345")
+exchange.get_event_by_id(id="12345")
 ```
 
 
 ---
-### `get_event_byslug`
+### `get_event_by_slug`
 
 Fetch a single event by its URL slug (Probable only).
 
@@ -1370,19 +1468,69 @@ Fetch a single event by its URL slug (Probable only).
 **Signature:**
 
 ```python
-def get_event_byslug(slug: str) -> UnifiedEvent | null:
+def get_event_by_slug(slug: str) -> Optional[UnifiedEvent]:
 ```
 
 **Parameters:**
 
 - `slug` (str): The event's URL slug (e.g. `"trump-2024-election"`)
 
-**Returns:** UnifiedEvent | null - The UnifiedEvent, or null if not found
+**Returns:** Optional[[UnifiedEvent](#unifiedevent)] - The UnifiedEvent, or null if not found
 
 **Example:**
 
 ```python
-exchange.get_event_byslug(slug="will-trump-win")
+exchange.get_event_by_slug(slug="will-trump-win")
+```
+
+
+---
+### `watch_all_order_books`
+
+Stream all orderbook updates across venues via the hosted WebSocket API.
+
+
+**Signature:**
+
+```python
+def watch_all_order_books(venues: Optional[List[str]] = None) -> FirehoseEvent:
+```
+
+**Parameters:**
+
+- `venues` (List[str]) - **Optional**: Optional venue filter. Defaults to this exchange's venue
+
+**Returns:** FirehoseEvent - Next event with source, symbol, and orderbook
+
+**Example:**
+
+```python
+exchange.watch_all_order_books(venues=["polymarket", "limitless"])
+```
+
+
+---
+### `firehose`
+
+Stream all orderbook updates across venues.
+
+
+**Signature:**
+
+```python
+def firehose(venues: Optional[List[str]] = None) -> FirehoseEvent:
+```
+
+**Parameters:**
+
+- `venues` (List[str]) - **Optional**: Optional venue filter
+
+**Returns:** FirehoseEvent - Next event with source, symbol, and orderbook
+
+**Example:**
+
+```python
+exchange.firehose(venues=["polymarket", "limitless"])
 ```
 
 
@@ -1483,7 +1631,7 @@ open_interest: float # Total value of outstanding contracts (USD).
 url: str # Canonical URL to view the market on the venue.
 image: str # Optional image URL for the market.
 category: str # Optional category label. Venue-defined — common values include "Sports", "Politics", "Crypto", "Economics", "Science", "Culture". Polymarket uses finer-grained categories like "Bitcoin", "Soccer", "Economic Policy"; Kalshi uses broader ones like "Sports" or "Mentions".
-tags: List[string] # Optional list of tags. More granular than category — e.g. ["Crypto", "Crypto Prices", "Bitcoin"] or ["Politics", "Elections", "Trump"]. Tags vary by venue: Polymarket markets carry several, Kalshi typically one.
+tags: List[str] # Optional list of tags. More granular than category — e.g. ["Crypto", "Crypto Prices", "Bitcoin"] or ["Politics", "Elections", "Trump"]. Tags vary by venue: Polymarket markets carry several, Kalshi typically one.
 tick_size: float # Minimum price increment (e.g., 0.01, 0.001)
 status: str # Venue-native lifecycle status (e.g. 'active', 'closed', 'archived').
 contract_address: str # On-chain contract / condition identifier where applicable (Polymarket conditionId, etc.).
@@ -1529,7 +1677,7 @@ volume: float # Total / Lifetime volume (sum across markets; undefined if no mar
 url: str # Canonical URL to view the event on the venue.
 image: str # Optional image URL for the event.
 category: str # Optional category label. Venue-defined — common values include "Sports", "Politics", "Crypto", "Economics", "Science", "Culture". Polymarket uses finer-grained categories like "Bitcoin", "Soccer", "Economic Policy"; Kalshi uses broader ones like "Sports" or "Mentions".
-tags: List[string] # Optional list of tags. More granular than category — e.g. ["Sports", "FIFA World Cup", "2026 FIFA World Cup"] or ["Politics", "Geopolitics", "Middle East"]. Tags vary by venue: Polymarket markets carry several, Kalshi typically one.
+tags: List[str] # Optional list of tags. More granular than category — e.g. ["Sports", "FIFA World Cup", "2026 FIFA World Cup"] or ["Politics", "Geopolitics", "Middle East"]. Tags vary by venue: Polymarket markets carry several, Kalshi typically one.
 source_metadata: object # Raw venue-specific metadata not captured by first-class fields (e.g. Kalshi series_ticker / series_title, Polymarket series). Passed through verbatim so downstream consumers can recover anything the unified shape omits. Each venue populates what it has.
 source_exchange: str # The exchange/venue this event originates from (e.g. 'polymarket', 'kalshi'). Populated by the Router.
 ```
@@ -1767,14 +1915,14 @@ expiry: float # Unix epoch (ms) when this built order expires server-side. Submi
 @dataclass
 class MarketFilterCriteria:
 text: str # 
-search_in: List[string] # Default: ['title']
+search_in: List[str] # Default: ['title']
 volume24h: object # 
 volume: object # Filter by total (lifetime) volume range
 liquidity: object # Filter by current liquidity range
 open_interest: object # Filter by open interest range
 resolution_date: object # 
 category: str # Filter by category. Common values: "Sports", "Politics", "Crypto", "Bitcoin", "Soccer", "Economic Policy" (Polymarket) or "Sports", "Mentions" (Kalshi).
-tags: List[string] # Match markets that have ANY of these tags. Examples: ["Crypto", "Crypto Prices"], ["Politics", "Elections"], ["Sports", "FIFA World Cup"].
+tags: List[str] # Match markets that have ANY of these tags. Examples: ["Crypto", "Crypto Prices"], ["Politics", "Elections"], ["Sports", "FIFA World Cup"].
 price: object # 
 price_change24h: object # 
 ```
@@ -1788,9 +1936,9 @@ price_change24h: object #
 @dataclass
 class EventFilterCriteria:
 text: str # 
-search_in: List[string] # Default: ['title']
+search_in: List[str] # Default: ['title']
 category: str # Filter by category. Common values: "Sports", "Politics", "Crypto", "Bitcoin", "Soccer", "Economic Policy" (Polymarket) or "Sports", "Mentions" (Kalshi).
-tags: List[string] # Match events that have ANY of these tags. Examples: ["Crypto"], ["Politics", "Geopolitics", "Middle East"], ["Sports", "FIFA World Cup"].
+tags: List[str] # Match events that have ANY of these tags. Examples: ["Crypto"], ["Politics", "Geopolitics", "Middle East"], ["Sports", "FIFA World Cup"].
 market_count: object # 
 total_volume: object # Sum of market volumes
 ```
@@ -2024,7 +2172,7 @@ slug: str # Lookup by event slug
 series: str # Filter events by their parent series. Accepts the venue-native series id / ticker / slug (e.g. Kalshi `"KXATPMATCH"`, Polymarket `"wta"`). Passed through to the vendor where supported, otherwise applied to `sourceMetadata` after fetch.
 filter: Any # Optional client-side filter applied after fetching
 category: str # Filter by category. Each event belongs to a venue-assigned category such as "Sports", "Politics", "Crypto", "Bitcoin", "Soccer", "Economic Policy" (Polymarket) or "Sports", "Mentions" (Kalshi).
-tags: List[string] # Filter by tags. Returns events matching ANY of the provided tags. Tags are more specific than categories -- for example a "Politics" event might carry tags ["Politics", "Geopolitics", "Middle East", "Iran"]. Common tags include "Crypto", "Elections", "Fed Rates", "FIFA World Cup", "Trump".
+tags: List[str] # Filter by tags. Returns events matching ANY of the provided tags. Tags are more specific than categories -- for example a "Politics" event might carry tags ["Politics", "Geopolitics", "Middle East", "Iran"]. Common tags include "Crypto", "Elections", "Fed Rates", "FIFA World Cup", "Trump".
 source_exchange: str # Filter by source venue (e.g. 'polymarket', 'kalshi', 'myriad'). `exchange` is an alias.
 exchange: str # Alias for `sourceExchange`.
 ```
@@ -2098,6 +2246,8 @@ side: str # Order side: buy or sell.
 type: str # Order type: market (execute immediately) or limit (resting at a price).
 amount: float # Size of the order in contracts/shares.
 price: float # Required for limit orders
+denom: str # Hosted mode: amount unit.
+slippage_pct: float # Hosted mode: maximum market-order slippage percentage.
 fee: float # Optional fee rate (e.g., 1000 for 0.1%)
 tick_size: float # Optional override for Limitless/Polymarket
 neg_risk: bool # Optional override to skip neg-risk lookup (Polymarket)
@@ -2187,7 +2337,7 @@ class FetchArbitrageParams:
 min_spread: float # 
 category: str # 
 limit: float # 
-relations: List[string] # Comma-separated relation types to include (default: 'identity').
+relations: List[str] # Comma-separated relation types to include (default: 'identity').
 ```
 
 ---
@@ -2201,7 +2351,7 @@ class FetchMatchedMarketsParams:
 min_difference: float # 
 category: str # 
 limit: float # 
-relations: List[string] # Comma-separated relation types to include (default: 'identity').
+relations: List[str] # Comma-separated relation types to include (default: 'identity').
 ```
 
 ---

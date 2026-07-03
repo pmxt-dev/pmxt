@@ -1,8 +1,8 @@
 /**
  * PMXT - Unified Prediction Market API (TypeScript SDK)
  *
- * A unified interface for interacting with multiple prediction market exchanges
- * (Kalshi, Polymarket) identically.
+ * A unified TypeScript SDK for supported prediction markets.
+ * Provides local sidecar access to PMXT exchange implementations and hosted services where configured.
  *
  * @example
  * ```typescript
@@ -27,9 +27,11 @@ import * as models from "./pmxt/models.js";
 import * as errors from "./pmxt/errors.js";
 
 export { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, Baozi, Opinion, Metaculus, Smarkets, PolymarketUS, Polymarket_us, GeminiTitan, Hyperliquid, SuiBets, Suibets, Rain, Hunch, Mock, PolymarketOptions } from "./pmxt/client.js";
+export type { SuiBetsOptions } from "./pmxt/client.js";
 export { FeedClient } from "./pmxt/feed-client.js";
 export type { Ticker, Tickers, OHLCV, Market as FeedMarket, OracleRound, FeedClientOptions } from "./pmxt/feed-client.js";
 export { Router } from "./pmxt/router.js";
+export type { RouterOptions } from "./pmxt/router.js";
 export { ServerManager } from "./pmxt/server-manager.js";
 export {
     HOSTED_URL,

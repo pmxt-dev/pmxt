@@ -118,6 +118,8 @@ When the SDK makes a request, it picks one of three base URLs based on the opera
 
 ```python
 import os
+import pmxt
+
 os.environ["PMXT_BASE_URL"] = "https://api-staging.pmxt.dev"
 
 # Hosted mode (because pmxt_api_key is set); base_url comes from env
@@ -143,6 +145,8 @@ The result: the **shortest correct config is hosted**. A single env var (`PMXT_A
 ```python
 # Minimum hosted trading config:
 import os
+import pmxt
+
 os.environ["PMXT_API_KEY"] = "pmxt_live_..."
 
 client = pmxt.Polymarket(
@@ -156,6 +160,8 @@ client = pmxt.Polymarket(
 If you have specific reasons to run local — sub-100ms latency, raw venue credentials, regulatory custody — drop the API key. See [Self-hosted](/guides/self-hosted) for the full guide and [Server Management](/sdk/server) for lifecycle controls.
 
 ```python
+import pmxt
+
 # Self-hosted: no PMXT_API_KEY, no pmxt_api_key arg
 client = pmxt.Polymarket(private_key="0x...")
 ```

@@ -1,7 +1,6 @@
 # pmxtjs - API Reference
 
-A unified TypeScript SDK for interacting with multiple prediction market exchanges (Polymarket, Kalshi, Limitless)
-identically.
+A unified TypeScript SDK for supported prediction markets, with local sidecar access to PMXT exchange implementations and hosted services where configured.
 
 ## Installation
 
@@ -108,50 +107,25 @@ for (const line of pmxt.server.logs(100)) {
 
 ### `has`
 
-HTTP verb for the endpoint (e.g. GET, POST). */
+Capability map indicating which methods this exchange supports.
 
 
 **Signature:**
 
 ```typescript
-async has(): Promise<ExchangeHas>
+get has(): ExchangeHas
 ```
 
 **Parameters:**
 
 - None
 
-**Returns:** Promise<ExchangeHas> - Result
+**Returns:** ExchangeHas - Result
 
 **Example:**
 
 ```typescript
-await exchange.has()
-```
-
-
----
-### `implicitApi`
-
-Override in subclasses to force specific capability values.
-
-
-**Signature:**
-
-```typescript
-async implicitApi(): Promise<ImplicitApiMethodInfo[]>
-```
-
-**Parameters:**
-
-- None
-
-**Returns:** Promise<ImplicitApiMethodInfo[]> - Result
-
-**Example:**
-
-```typescript
-await exchange.implicitApi()
+exchange.has
 ```
 
 
@@ -397,7 +371,7 @@ async fetchOHLCV(outcomeId: string, params: OHLCVParams): Promise<PriceCandle[]>
 **Example:**
 
 ```typescript
-await exchange.fetchOHLCV("abc123", "...")
+await exchange.fetchOHLCV("abc123", { resolution: "1h", limit: 100 })
 ```
 
 **Notes:**
@@ -428,7 +402,7 @@ async fetchOrderBook(outcomeId: string, limit?: number, params?: FetchOrderBookP
 **Example:**
 
 ```typescript
-await exchange.fetchOrderBook("abc123", { limit: 10, params: "..." })
+await exchange.fetchOrderBook("abc123", 10, {})
 ```
 
 
@@ -453,7 +427,7 @@ async fetchOrderBooks(outcomeIds: string[]): Promise<Record<string, OrderBook>>
 **Example:**
 
 ```typescript
-await exchange.fetchOrderBooks("12345")
+await exchange.fetchOrderBooks(["12345"])
 ```
 
 
@@ -479,7 +453,7 @@ async fetchTrades(outcomeId: string, params: TradesParams | HistoryFilterParams)
 **Example:**
 
 ```typescript
-await exchange.fetchTrades("abc123", "...")
+await exchange.fetchTrades("abc123", { limit: 50 })
 ```
 
 **Notes:**
@@ -494,19 +468,26 @@ Place a new order on the exchange.
 **Signature:**
 
 ```typescript
-async createOrder(params: CreateOrderParams): Promise<Order>
+async createOrder(params: CreateOrderInput): Promise<Order>
 ```
 
 **Parameters:**
 
-- `params` ([CreateOrderParams](#createorderparams)): Order parameters
+- `params` ([CreateOrderInput](#createorderinput)): Order parameters
 
 **Returns:** Promise<[Order](#order)> - The created order
 
 **Example:**
 
 ```typescript
-await exchange.createOrder()
+await exchange.createOrder({
+  marketId: "12345",
+  outcomeId: "abc123",
+  side: "buy",
+  type: "limit",
+  amount: 50,
+  price: 0.65
+})
 ```
 
 
@@ -519,19 +500,26 @@ Build an order payload without submitting it to the exchange.
 **Signature:**
 
 ```typescript
-async buildOrder(params: CreateOrderParams): Promise<BuiltOrder>
+async buildOrder(params: CreateOrderInput): Promise<BuiltOrder>
 ```
 
 **Parameters:**
 
-- `params` ([CreateOrderParams](#createorderparams)): Order parameters (same as createOrder)
+- `params` ([CreateOrderInput](#createorderinput)): Order parameters (same as createOrder)
 
 **Returns:** Promise<[BuiltOrder](#builtorder)> - A BuiltOrder containing the exchange-native payload
 
 **Example:**
 
 ```typescript
-await exchange.buildOrder()
+await exchange.buildOrder({
+  marketId: "12345",
+  outcomeId: "abc123",
+  side: "buy",
+  type: "limit",
+  amount: 50,
+  price: 0.65
+})
 ```
 
 
@@ -556,7 +544,15 @@ async submitOrder(built: BuiltOrder): Promise<Order>
 **Example:**
 
 ```typescript
-await exchange.submitOrder("...")
+const built = await exchange.buildOrder({
+  marketId: "12345",
+  outcomeId: "abc123",
+  side: "buy",
+  type: "limit",
+  amount: 50,
+  price: 0.65
+});
+await exchange.submitOrder(built)
 ```
 
 
@@ -631,7 +627,98 @@ async fetchOpenOrders(marketId?: string): Promise<Order[]>
 **Example:**
 
 ```typescript
-await exchange.fetchOpenOrders({ marketId: "12345" })
+await exchange.fetchOpenOrders("12345")
+```
+
+
+---
+### `fetchMyTrades`
+
+Fetch authenticated user trade history.
+
+
+**Signature:**
+
+```typescript
+async fetchMyTrades(params?: MyTradesParams): Promise<UserTrade[]>
+```
+
+**Parameters:**
+
+- `params` ([MyTradesParams](#mytradesparams)) - **Optional**: Optional trade history filters
+  - `params.outcomeId` - Filter by outcome token ID
+  - `params.marketId` - Filter by market ID or ticker
+  - `params.since` - Start timestamp or ISO date
+  - `params.until` - End timestamp or ISO date
+  - `params.limit` - Maximum number of trades
+  - `params.cursor` - Pagination cursor
+
+**Returns:** Promise<[UserTrade](#usertrade)[]> - Array of user trades
+
+**Example:**
+
+```typescript
+await exchange.fetchMyTrades({ limit: 10 })
+```
+
+
+---
+### `fetchClosedOrders`
+
+Fetch authenticated closed orders.
+
+
+**Signature:**
+
+```typescript
+async fetchClosedOrders(params?: OrderHistoryParams): Promise<Order[]>
+```
+
+**Parameters:**
+
+- `params` ([OrderHistoryParams](#orderhistoryparams)) - **Optional**: Optional order history filters
+  - `params.marketId` - Filter by market ID or ticker
+  - `params.since` - Start timestamp or ISO date
+  - `params.until` - End timestamp or ISO date
+  - `params.limit` - Maximum number of orders
+  - `params.cursor` - Pagination cursor
+
+**Returns:** Promise<[Order](#order)[]> - Array of closed orders
+
+**Example:**
+
+```typescript
+await exchange.fetchClosedOrders({ marketId: "12345", limit: 10 })
+```
+
+
+---
+### `fetchAllOrders`
+
+Fetch authenticated order history across open and closed orders.
+
+
+**Signature:**
+
+```typescript
+async fetchAllOrders(params?: OrderHistoryParams): Promise<Order[]>
+```
+
+**Parameters:**
+
+- `params` ([OrderHistoryParams](#orderhistoryparams)) - **Optional**: Optional order history filters
+  - `params.marketId` - Filter by market ID or ticker
+  - `params.since` - Start timestamp or ISO date
+  - `params.until` - End timestamp or ISO date
+  - `params.limit` - Maximum number of orders
+  - `params.cursor` - Pagination cursor
+
+**Returns:** Promise<[Order](#order)[]> - Array of orders
+
+**Example:**
+
+```typescript
+await exchange.fetchAllOrders({ marketId: "12345", limit: 10 })
 ```
 
 
@@ -656,7 +743,7 @@ async fetchPositions(address?: string): Promise<Position[]>
 **Example:**
 
 ```typescript
-await exchange.fetchPositions({ address: "0xabc..." })
+await exchange.fetchPositions("0xabc...")
 ```
 
 
@@ -681,7 +768,7 @@ async fetchBalance(address?: string): Promise<Balance[]>
 **Example:**
 
 ```typescript
-await exchange.fetchBalance({ address: "0xabc..." })
+await exchange.fetchBalance("0xabc...")
 ```
 
 
@@ -694,7 +781,7 @@ Calculate the volume-weighted average execution price for a given order size.
 **Signature:**
 
 ```typescript
-async getExecutionPrice(orderBook: OrderBook, side: 'buy' | 'sell', amount: number): Promise<number>
+getExecutionPrice(orderBook: OrderBook, side: 'buy' | 'sell', amount: number): number
 ```
 
 **Parameters:**
@@ -703,12 +790,13 @@ async getExecutionPrice(orderBook: OrderBook, side: 'buy' | 'sell', amount: numb
 - `side` ('buy' | 'sell'): 'buy' or 'sell'
 - `amount` (number): Number of contracts to simulate
 
-**Returns:** Promise<number> - Average execution price, or 0 if insufficient liquidity
+**Returns:** number - Average execution price, or 0 if insufficient liquidity
 
 **Example:**
 
 ```typescript
-await exchange.getExecutionPrice("...", "buy", 50)
+const orderBook = await exchange.fetchOrderBook("abc123")
+exchange.getExecutionPrice(orderBook, "buy", 50)
 ```
 
 
@@ -735,7 +823,8 @@ async getExecutionPriceDetailed(orderBook: OrderBook, side: 'buy' | 'sell', amou
 **Example:**
 
 ```typescript
-await exchange.getExecutionPriceDetailed("...", "buy", 50)
+const orderBook = await exchange.fetchOrderBook("abc123")
+await exchange.getExecutionPriceDetailed(orderBook, "buy", 50)
 ```
 
 
@@ -761,7 +850,8 @@ async filterMarkets(markets: UnifiedMarket[], criteria: string | MarketFilterCri
 **Example:**
 
 ```typescript
-await exchange.filterMarkets("...", "...")
+const markets = await exchange.fetchMarkets({ query: "Trump" })
+await exchange.filterMarkets(markets, "Trump")
 ```
 
 
@@ -787,7 +877,8 @@ async filterEvents(events: UnifiedEvent[], criteria: string | EventFilterCriteri
 **Example:**
 
 ```typescript
-await exchange.filterEvents("...", "...")
+const events = await exchange.fetchEvents({ query: "Trump" })
+await exchange.filterEvents(events, "Trump")
 ```
 
 
@@ -814,7 +905,7 @@ async watchOrderBook(outcomeId: string, limit?: number, params: Record<string, a
 **Example:**
 
 ```typescript
-await exchange.watchOrderBook("abc123", "...", { limit: 10 })
+await exchange.watchOrderBook("abc123", 10, {})
 ```
 
 
@@ -841,7 +932,7 @@ async watchOrderBooks(outcomeIds: string[], limit?: number, params: Record<strin
 **Example:**
 
 ```typescript
-await exchange.watchOrderBooks("12345", "...", { limit: 10 })
+await exchange.watchOrderBooks(["12345"], 10, {})
 ```
 
 
@@ -894,7 +985,7 @@ async watchTrades(outcomeId: string, address?: string, since?: number, limit?: n
 **Example:**
 
 ```typescript
-await exchange.watchTrades("abc123", { address: "0xabc...", since: "..." })
+await exchange.watchTrades("abc123", "0xabc...", 1710000000000, 50)
 ```
 
 
@@ -920,7 +1011,7 @@ async watchAddress(address: string, types?: SubscriptionOption[]): Promise<Subsc
 **Example:**
 
 ```typescript
-await exchange.watchAddress("0xabc...", { types: "..." })
+await exchange.watchAddress("0xabc...", ["trades"])
 ```
 
 
@@ -1210,20 +1301,20 @@ Watch AMM price updates for a market address (Limitless only).
 **Signature:**
 
 ```typescript
-async watchPrices(marketAddress: string, callback: (data: any)): Promise<void>
+async watchPrices(marketAddress: string, callback: (data: any) => void): Promise<void>
 ```
 
 **Parameters:**
 
 - `marketAddress` (string): Market contract address
-- `callback` ((data: any)): Callback for price updates
+- `callback` ((data: any) => void): Callback for price updates
 
 **Returns:** Promise<void> - Result
 
 **Example:**
 
 ```typescript
-await exchange.watchPrices("...", "...")
+await exchange.watchPrices("0xabc...", (data) => { void data })
 ```
 
 
@@ -1238,19 +1329,19 @@ Watch user positions in real-time (Limitless only).
 **Signature:**
 
 ```typescript
-async watchUserPositions(callback: (data: any)): Promise<void>
+async watchUserPositions(callback: (data: any) => void): Promise<void>
 ```
 
 **Parameters:**
 
-- `callback` ((data: any)): Callback for position updates
+- `callback` ((data: any) => void): Callback for position updates
 
 **Returns:** Promise<void> - Result
 
 **Example:**
 
 ```typescript
-await exchange.watchUserPositions("...")
+await exchange.watchUserPositions((data) => { void data })
 ```
 
 
@@ -1265,19 +1356,19 @@ Watch user transactions in real-time (Limitless only).
 **Signature:**
 
 ```typescript
-async watchUserTransactions(callback: (data: any)): Promise<void>
+async watchUserTransactions(callback: (data: any) => void): Promise<void>
 ```
 
 **Parameters:**
 
-- `callback` ((data: any)): Callback for transaction updates
+- `callback` ((data: any) => void): Callback for transaction updates
 
 **Returns:** Promise<void> - Result
 
 **Example:**
 
 ```typescript
-await exchange.watchUserTransactions("...")
+await exchange.watchUserTransactions((data) => { void data })
 ```
 
 
@@ -1390,6 +1481,56 @@ await exchange.getEventBySlug("will-trump-win")
 
 
 ---
+### `watchAllOrderBooks`
+
+Stream all orderbook updates across venues via the hosted WebSocket API.
+
+
+**Signature:**
+
+```typescript
+async watchAllOrderBooks(venues?: string[]): Promise<FirehoseEvent>
+```
+
+**Parameters:**
+
+- `venues` (string[]) - **Optional**: Optional venue filter. Defaults to this exchange's venue
+
+**Returns:** Promise<FirehoseEvent> - Next event with source, symbol, and orderbook
+
+**Example:**
+
+```typescript
+await exchange.watchAllOrderBooks(["polymarket", "limitless"])
+```
+
+
+---
+### `firehose`
+
+Stream all orderbook updates across venues.
+
+
+**Signature:**
+
+```typescript
+async firehose(venues?: string[]): Promise<FirehoseEvent>
+```
+
+**Parameters:**
+
+- `venues` (string[]) - **Optional**: Optional venue filter
+
+**Returns:** Promise<FirehoseEvent> - Next event with source, symbol, and orderbook
+
+**Example:**
+
+```typescript
+await exchange.firehose(["polymarket", "limitless"])
+```
+
+
+---
 
 ## Complete Trading Workflow
 
@@ -1408,14 +1549,16 @@ console.log(`Available: $${balance.available}`);
 const markets = await exchange.fetchMarkets({ query: 'Trump' });
 const market = markets[0];
 const outcome = market.yes;
+if (!outcome) {
+  throw new Error('Market has no YES outcome');
+}
 
 console.log(market.title);
 console.log(`Price: ${(outcome.price * 100).toFixed(1)}%`);
 
 // 3. Place a limit order
 const order = await exchange.createOrder({
-  marketId: market.marketId,
-  outcomeId: outcome.outcomeId,
+  outcome,
   side: 'buy',
   type: 'limit',
   amount: 10,
@@ -2098,6 +2241,8 @@ side: string; // Order side: buy or sell.
 type: string; // Order type: market (execute immediately) or limit (resting at a price).
 amount: number; // Size of the order in contracts/shares.
 price?: number; // Required for limit orders
+denom?: string; // Hosted mode: amount unit.
+slippage_pct?: number; // Hosted mode: maximum market-order slippage percentage.
 fee?: number; // Optional fee rate (e.g., 1000 for 0.1%)
 tickSize?: number; // Optional override for Limitless/Polymarket
 negRisk?: boolean; // Optional override to skip neg-risk lookup (Polymarket)
@@ -2203,6 +2348,23 @@ category?: string; //
 limit?: number; // 
 relations?: string[]; // Comma-separated relation types to include (default: 'identity').
 }
+```
+
+---
+
+### `CreateOrderInput`
+
+`createOrder` and `buildOrder` accept either explicit `marketId` / `outcomeId`
+fields or an outcome object returned by `fetchMarkets`.
+
+```typescript
+type CreateOrderInput =
+  | (CreateOrderParams & { outcome?: never })
+  | (Omit<CreateOrderParams, 'marketId' | 'outcomeId'> & {
+      outcome: MarketOutcome;
+      marketId?: never;
+      outcomeId?: never;
+    });
 ```
 
 ---

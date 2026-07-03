@@ -54,9 +54,9 @@ const deposit = await client.escrow.depositTx(500);
 
 Your Polymarket-proxy balance is untouched — withdraw it via Polymarket's UI, or leave it parked and fund PMXT with fresh capital. Both stacks coexist on the same EOA.
 
-## Catalog UUIDs replace conditionId / tokenId
+## Identifier migration: avoid bare conditionId / tokenId
 
-`trade.pmxt.dev` requires **catalog UUIDs**, not Polymarket-native `conditionId` / `tokenId`. Reverse-resolve a saved universe via the Router or the SQL endpoint — see [Catalog UUID vs venue ID](/concepts/catalog-uuid-vs-venue-id).
+`trade.pmxt.dev` does not accept bare Polymarket `conditionId` / `tokenId` strings. Use catalog UUIDs when you have them, or send an explicit `venue` + `venue_outcome_id` pair; the SDK does this automatically when you pass outcomes returned by `client.fetch_markets`. That venue tuple gives PMXT enough context to resolve the catalog row. Reverse-resolve a saved universe via the Router or the SQL endpoint — see [Catalog UUID vs venue ID](/concepts/catalog-uuid-vs-venue-id).
 
 ## Rollback
 

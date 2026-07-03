@@ -11,8 +11,8 @@ It starts with `pmxt_live_` and works immediately.
 ## 2. Query a venue
 
 Pick a venue and start pulling data. The SDK gives you a unified
-interface — same methods, same response shape, regardless of which venue
-you're talking to.
+interface — same method names and response shapes where the venue
+supports them.
 
 <Tabs>
   <Tab title="Python">
@@ -46,14 +46,15 @@ you're talking to.
   </Tab>
 </Tabs>
 
-Switch venues by swapping the class — `pmxt.Kalshi(...)`, `pmxt.Limitless(...)`,
-etc. The methods and response shapes are identical.
+Switch venues by swapping the class — `pmxt.Kalshi(...)`,
+`pmxt.Limitless(...)`, etc. PMXT keeps the schema consistent, with
+per-venue capabilities called out in [Supported venues](/concepts/venues).
 
-## 3. Search across every venue
+## 3. Search the hosted catalog
 
 The **Router** is PMXT's cross-venue search layer — and the foundation
-for a full smart order router for prediction markets. One query fans out
-across every venue PMXT ingests and returns ranked, unified results.
+for a full smart order router for prediction markets. One query searches
+across the hosted catalog and returns ranked, unified results.
 
 ```bash
 curl "https://api.pmxt.dev/v0/markets?query=election&limit=3" \
@@ -77,10 +78,10 @@ curl "https://api.pmxt.dev/v0/markets?query=election&limit=3" \
 }
 ```
 
-The same `marketId`, `title`, `outcomes` shape whether the row came from
-Polymarket, Kalshi, Limitless, or anywhere else. Filter by venue with
-`&exchange=kalshi`, by category with `&category=Politics`, or just
-search everything.
+The same `marketId`, `title`, and `outcomes` shape applies whether the row
+came from Polymarket, Kalshi, Limitless, or another hosted catalog venue.
+Filter by venue with `&exchange=kalshi`, by category with
+`&category=Politics`, or omit the venue filter to search the hosted catalog.
 
 <Info>
   The Router is also available as an SDK class — `pmxt.Router(...)` in
@@ -97,8 +98,8 @@ search everything.
     beginning of a smart order router for prediction markets.
   </Card>
   <Card title="Full venue API" icon="arrows-left-right-to-line" href="/api-reference/overview">
-    Order books, trades, OHLCV, positions, balances, and trading — all
-    via `POST /api/:exchange/:method`.
+    Order books, trades, OHLCV, positions, balances, and trading,
+    supported where each venue implements them via `POST /api/:exchange/:method`.
   </Card>
   <Card title="Unified schema" icon="layer-group" href="/concepts/unified-schema">
     `Event` / `Market` / `Outcome` — the shape that works everywhere.

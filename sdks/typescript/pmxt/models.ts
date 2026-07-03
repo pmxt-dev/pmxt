@@ -149,6 +149,9 @@ export interface OrderLevel {
 
     /** Number of contracts */
     size: number;
+
+    /** Number of orders aggregated at this price level, when reported by the venue. */
+    orderCount?: number;
 }
 
 /**
@@ -166,6 +169,15 @@ export interface OrderBook {
 
     /** ISO 8601 datetime string of the snapshot (CCXT-compatible) */
     datetime?: string;
+
+    /** Whether the underlying market uses negative-risk collateral/netting semantics. */
+    isNegRisk?: boolean;
+
+    /** Last traded price for the outcome, when reported alongside the book. */
+    lastTradePrice?: number;
+
+    /** Raw venue-specific fields not promoted to first-class columns. */
+    sourceMetadata?: Record<string, unknown>;
 }
 
 /**
@@ -349,19 +361,19 @@ export interface Position {
     outcomeId: string;
 
     /** Outcome label (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
-    outcomeLabel?: string;
+    outcomeLabel?: string | null;
 
     /** Position size (positive for long, negative for short) */
     size: number;
 
     /** Average entry price (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
-    entryPrice?: number;
+    entryPrice?: number | null;
 
     /** Current market price (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
-    currentPrice?: number;
+    currentPrice?: number | null;
 
     /** Unrealized profit/loss (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
-    unrealizedPnL?: number;
+    unrealizedPnL?: number | null;
 
     /** Realized profit/loss */
     realizedPnL?: number;
@@ -450,6 +462,12 @@ export interface MarketFilterParams {
     /** Find markets belonging to an event */
     eventId?: string;
 
+    /** Filter by source venue (e.g. 'polymarket', 'kalshi', 'myriad'). */
+    sourceExchange?: string;
+
+    /** Alias for `sourceExchange`. */
+    exchange?: string;
+
     /** Pagination page (used by Limitless) */
     page?: number;
 
@@ -496,6 +514,12 @@ export interface EventFetchParams {
 
     /** Lookup by event slug */
     slug?: string;
+
+    /** Filter by source venue (e.g. 'polymarket', 'kalshi', 'myriad'). */
+    sourceExchange?: string;
+
+    /** Alias for `sourceExchange`. */
+    exchange?: string;
 
     /** Filter events by their parent series. Accepts the venue-native series id / ticker / slug. */
     series?: string;
@@ -549,6 +573,12 @@ export interface CreateOrderParams {
     /** Limit price (required for limit orders, 0.0-1.0) */
     price?: number;
 
+    /** Hosted mode: unit that amount is denominated in. Market buys use usdc; market sells and limit orders use shares. */
+    denom?: "usdc" | "shares";
+
+    /** Hosted mode: maximum slippage percentage for market orders. */
+    slippage_pct?: number;
+
     /** Optional fee rate (e.g., 1000 for 0.1%) */
     fee?: number;
 
@@ -561,6 +591,20 @@ export interface CreateOrderParams {
     /** Limitless delegated signing: profile ID to trade on behalf of */
     onBehalfOf?: number;
 }
+
+/**
+ * Public order input accepted by createOrder/buildOrder.
+ *
+ * Callers can either pass explicit marketId/outcomeId fields, or pass an
+ * outcome object returned by fetchMarkets and let the SDK infer those ids.
+ */
+export type CreateOrderInput =
+    | (CreateOrderParams & { outcome?: never })
+    | (Omit<CreateOrderParams, 'marketId' | 'outcomeId'> & {
+        outcome: MarketOutcome;
+        marketId?: never;
+        outcomeId?: never;
+    });
 
 /** Alias matching the core MarketFetchParams name. */
 export type MarketFetchParams = MarketFilterParams;

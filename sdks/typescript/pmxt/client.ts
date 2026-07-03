@@ -17,7 +17,7 @@ import {
 import {
     Balance,
     BuiltOrder,
-    CreateOrderParams,
+    CreateOrderInput,
     EventFetchParams,
     EventFilterCriteria,
     EventFilterFunction,
@@ -82,6 +82,7 @@ import {
     validateEconomics,
     verifySignature,
 } from "./hosted-typed-data.js";
+import type { HostedRoute } from "./hosted-typed-data.js";
 import type { Signer, TypedData } from "./signers.js";
 import { signerFromPrivateKey, EthersSigner } from "./signers.js";
 import { Escrow } from "./escrow.js";
@@ -231,6 +232,9 @@ export interface ExchangeOptions {
     /** Venue-specific API key (e.g. Polymarket CLOB key). Optional. */
     apiKey?: string;
 
+    /** Venue-specific API secret for HMAC/CLOB-authenticated exchanges. Optional. */
+    apiSecret?: string;
+
     /** Venue-specific private key. Optional. */
     privateKey?: string;
 
@@ -319,6 +323,7 @@ export abstract class Exchange {
     public exchangeName: string;
     public pmxtApiKey?: string;
     protected apiKey?: string;
+    protected apiSecret?: string;
     protected privateKey?: string;
     protected proxyAddress?: string;
     protected signatureType?: number;
@@ -356,6 +361,7 @@ export abstract class Exchange {
     constructor(exchangeName: string, options: ExchangeOptions = {}) {
         this.exchangeName = exchangeName.toLowerCase();
         this.apiKey = options.apiKey;
+        this.apiSecret = options.apiSecret;
         this.privateKey = options.privateKey;
         this.proxyAddress = options.proxyAddress;
         this.signatureType = options.signatureType;
@@ -461,11 +467,12 @@ export abstract class Exchange {
     }
 
     protected getCredentials(): ExchangeCredentials | undefined {
-        if (!this.apiKey && !this.privateKey) {
+        if (!this.apiKey && !this.apiSecret && !this.privateKey) {
             return undefined;
         }
         return {
             apiKey: this.apiKey,
+            apiSecret: this.apiSecret,
             privateKey: this.privateKey,
             funderAddress: this.proxyAddress,
             signatureType: this.signatureType,
@@ -857,6 +864,58 @@ export abstract class Exchange {
             throw new PmxtError(body.error?.message || response.statusText);
         }
         return response.json();
+    }
+
+    /**
+     * Pre-warm the sidecar's internal caches for a market outcome.
+     *
+     * @param outcomeId - The CLOB token ID for the outcome.
+     */
+    async preWarmMarket(outcomeId: string): Promise<void> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("preWarmMarket", [outcomeId]);
+            this.handleResponse(json);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to preWarmMarket: ${error}`);
+        }
+    }
+
+    /**
+     * Fetch a single Probable event by its numeric ID.
+     *
+     * @param id - The numeric event ID.
+     * @returns The event, or null when the venue has no matching event.
+     */
+    async getEventById(id: string): Promise<UnifiedEvent | null> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("getEventById", [id]);
+            const data = this.handleResponse(json);
+            return data == null ? null : convertEvent(data);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to getEventById: ${error}`);
+        }
+    }
+
+    /**
+     * Fetch a single Probable event by its URL slug.
+     *
+     * @param slug - The event slug.
+     * @returns The event, or null when the venue has no matching event.
+     */
+    async getEventBySlug(slug: string): Promise<UnifiedEvent | null> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("getEventBySlug", [slug]);
+            const data = this.handleResponse(json);
+            return data == null ? null : convertEvent(data);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to getEventBySlug: ${error}`);
+        }
     }
 
     /**
@@ -2011,7 +2070,13 @@ export abstract class Exchange {
         throw this.wsTransportUnavailableError("watchAllOrderBooks");
     }
 
-    /** @deprecated Use {@link watchAllOrderBooks} instead. */
+    /**
+     * Stream all orderbook updates across venues.
+     *
+     * @deprecated Use {@link watchAllOrderBooks} instead.
+     * @param venues - Optional venue filter
+     * @returns Next event with source, symbol, and orderbook
+     */
     async firehose(venues?: string[]): Promise<FirehoseEvent> {
         return this.watchAllOrderBooks(venues);
     }
@@ -2148,15 +2213,18 @@ export abstract class Exchange {
      * const order = await exchange.submitOrder(built);
      *
      * // Using outcome shorthand:
+     * const yes = market.yes;
+     * if (!yes) throw new Error("Market has no YES outcome");
+     *
      * const built2 = await exchange.buildOrder({
-     *   outcome: market.yes,
+     *   outcome: yes,
      *   side: "buy",
      *   type: "market",
      *   amount: 10
      * });
      * ```
      */
-    async buildOrder(params: CreateOrderParams & { outcome?: MarketOutcome }): Promise<BuiltOrder> {
+    async buildOrder(params: CreateOrderInput): Promise<BuiltOrder> {
         if (this.isHostedTradingMode()) {
             return this._hostedBuildOrder(params);
         }
@@ -2310,7 +2378,7 @@ export abstract class Exchange {
      * at submit time.
      */
     private async _hostedBuildOrder(
-        params: CreateOrderParams & { outcome?: MarketOutcome },
+        params: CreateOrderInput,
     ): Promise<BuiltOrder> {
         const body = this._hostedBuildOrderBody(params);
         const route = HOSTED_METHOD_ROUTES.get("buildOrder")!;
@@ -2328,7 +2396,7 @@ export abstract class Exchange {
     /**
      * Hosted-mode createOrder: build → sign → submit single-call wrapper.
      */
-    private async _hostedCreateOrder(params: any): Promise<Order> {
+    private async _hostedCreateOrder(params: CreateOrderInput): Promise<Order> {
         const built = await this._hostedBuildOrder(params);
         return this._hostedSubmitOrder(built);
     }
@@ -2392,7 +2460,7 @@ export abstract class Exchange {
      * `validateTypedData` / `validateEconomics`. Returns the cross-chain
      * pull-leg route name for Opinion sells and Limitless cross-chain orders.
      */
-    private _hostedTypedDataRoute(side: string, isPull: boolean): string {
+    private _hostedTypedDataRoute(side: string, isPull: boolean): HostedRoute {
         const venue = this.exchangeName;
         const sideLower = side.toLowerCase();
         if (venue === "polymarket") {
@@ -2457,10 +2525,12 @@ export abstract class Exchange {
         return orderFromV0(data as Record<string, unknown>);
     }
 
-    private _hostedCancelTypedDataRoute(isPull: boolean): string {
+    private _hostedCancelTypedDataRoute(isPull: boolean): HostedRoute {
         const venue = this.exchangeName;
         if (venue === "polymarket") return "cancel_polymarket";
-        if (venue === "limitless") return isPull ? "cancel_limitless_base_pull" : "cancel_limitless_polygon";
+        if (venue === "limitless") {
+            return isPull ? "cancel_limitless_base_pull" : "cancel_limitless_polygon";
+        }
         return isPull ? "cancel_opinion_bsc_pull" : "cancel_opinion_polygon";
     }
 
@@ -2470,7 +2540,7 @@ export abstract class Exchange {
      * precision rejected via {@link to6dec}).
      */
     private _hostedBuildOrderBody(
-        params: CreateOrderParams & { outcome?: MarketOutcome },
+        params: CreateOrderInput,
     ): Record<string, unknown> {
         let marketId: string | undefined = params.marketId;
         let outcomeId: string | undefined = params.outcomeId;
@@ -2575,7 +2645,7 @@ export abstract class Exchange {
         if (extra["slippage_pct"] !== undefined) {
             body["slippage_pct"] = extra["slippage_pct"];
         }
-        if (this.walletAddress) body["user_address"] = this.walletAddress;
+        body["user_address"] = resolveWalletAddress(this);
         return body;
     }
 
@@ -2592,7 +2662,7 @@ export abstract class Exchange {
      * });
      * ```
      */
-    async createOrder(params: CreateOrderParams & { outcome?: MarketOutcome }): Promise<Order> {
+    async createOrder(params: CreateOrderInput): Promise<Order> {
         // SOR escape path (preserved): legacy hosted SOR flow uses a venue-side
         // SDK to execute the legs, only when a privateKey is present.
         if (this.isHosted && this.exchangeName === 'sor' && this.privateKey) {
@@ -2698,54 +2768,49 @@ export abstract class Exchange {
     }
 
     /**
-     * Calculate detailed execution price information.
-     * Uses the sidecar server for calculation to ensure consistency.
+     * Calculate detailed execution price information by walking the order book locally.
      *
      * @param orderBook - The current order book
      * @param side - 'buy' or 'sell'
      * @param amount - The amount to execute
      * @returns Detailed execution result
      */
-    async getExecutionPriceDetailed(
+    getExecutionPriceDetailed(
         orderBook: OrderBook,
         side: 'buy' | 'sell',
         amount: number
-    ): Promise<ExecutionPriceResult> {
-        await this.initPromise;
-        try {
-            const body: any = {
-                args: [orderBook, side, amount]
-            };
-            const credentials = this.getCredentials();
-            if (credentials) {
-                body.credentials = credentials;
-            }
-
-            const url = `${this.resolveBaseUrl()}/api/${this.exchangeName}/getExecutionPriceDetailed`;
-
-            const response = await this.fetchWithRetry(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.config.headers
-                },
-                body: JSON.stringify(body)
-            });
-
-            if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                if (body.error && typeof body.error === "object") {
-                    throw fromServerError(body.error);
-                }
-                throw new PmxtError(body.error?.message || response.statusText);
-            }
-
-            const json = await response.json();
-            return this.handleResponse(json);
-        } catch (error) {
-            if (error instanceof PmxtError) throw error;
-            throw new PmxtError(`Failed to get execution price: ${error}`);
+    ): ExecutionPriceResult {
+        if (amount <= 0) {
+            throw new Error('Amount must be greater than 0');
         }
+
+        const levels = (side === 'buy' ? orderBook.asks : orderBook.bids)
+            .filter((level) => level.size > 0)
+            .sort((a, b) => side === 'buy' ? a.price - b.price : b.price - a.price);
+
+        if (levels.length === 0) {
+            return { price: 0, filledAmount: 0, fullyFilled: false };
+        }
+
+        let remainingAmount = amount;
+        let totalCost = 0;
+        let filledAmount = 0;
+        const epsilon = 0.00000001;
+
+        for (const level of levels) {
+            if (remainingAmount <= epsilon) break;
+
+            const fillSize = Math.min(remainingAmount, level.size);
+            totalCost += fillSize * level.price;
+            filledAmount += fillSize;
+            remainingAmount -= fillSize;
+        }
+
+        return {
+            price: filledAmount > epsilon ? totalCost / filledAmount : 0,
+            filledAmount,
+            fullyFilled: remainingAmount <= epsilon,
+        };
     }
 
     // ----------------------------------------------------------------------------
@@ -3152,6 +3217,75 @@ export class Kalshi extends Exchange {
 export class Limitless extends Exchange {
     constructor(options: ExchangeOptions = {}) {
         super("limitless", options);
+    }
+
+    /**
+     * Watch real-time AMM price updates via WebSocket.
+     *
+     * @param marketAddress - Limitless market contract address
+     * @param callback - Optional callback invoked with the returned update
+     * @returns Next price update
+     */
+    async watchPrices(
+        marketAddress: string,
+        callback?: (data: Record<string, any>) => void,
+    ): Promise<Record<string, any>> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("watchPrices", [marketAddress]);
+            const data = this.handleResponse(json);
+            callback?.(data);
+            return data;
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to watch prices: ${error}`);
+        }
+    }
+
+    /**
+     * Watch real-time Limitless user position updates.
+     *
+     * Requires API key authentication.
+     *
+     * @param callback - Optional callback invoked with the returned positions
+     * @returns Next position update payload
+     */
+    async watchUserPositions(
+        callback?: (data: Position[]) => void,
+    ): Promise<Position[]> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("watchUserPositions", []);
+            const data = this.handleResponse(json).map(convertPosition);
+            callback?.(data);
+            return data;
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to watch user positions: ${error}`);
+        }
+    }
+
+    /**
+     * Watch real-time Limitless user transaction updates.
+     *
+     * Requires API key authentication.
+     *
+     * @param callback - Optional callback invoked with the returned update
+     * @returns Next transaction update
+     */
+    async watchUserTransactions(
+        callback?: (data: Record<string, any>) => void,
+    ): Promise<Record<string, any>> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("watchUserTransactions", []);
+            const data = this.handleResponse(json);
+            callback?.(data);
+            return data;
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to watch user transactions: ${error}`);
+        }
     }
 }
 

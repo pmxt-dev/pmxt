@@ -7,7 +7,7 @@ PMXT has two execution modes, and they have **different credential surfaces**. M
 
 | Mode | What you give PMXT | What touches PMXT's server | Custody |
 | ---- | ------------------ | -------------------------- | ------- |
-| [**Hosted**](/concepts/hosted-trading) (default) | An EIP-712 signature per order — **never your private key** | Catalog UUIDs, signatures, public wallet address | USDC in the on-chain [`PreFundedEscrow`](/concepts/hosted-trading) you control via the timelock |
+| [**Hosted**](/concepts/hosted-trading) (default) | An EIP-712 signature per order — **never your private key** | Outcome target, signatures, public wallet address | USDC in the on-chain [`PreFundedEscrow`](/concepts/hosted-trading) you control via the timelock |
 | [**Self-hosted**](/guides/self-hosted) | Raw venue credentials — given to a PMXT process **you run** on your machine | Nothing — PMXT's cloud is not in the loop | Your venue account / wallet, directly |
 
 If you're picking one, hosted is the default for almost everyone. Self-hosted is for users who need raw venue credentials (Polymarket L2 API keys, Kalshi RSA, etc.), sub-100ms latency, or regulatory custody constraints.
@@ -22,12 +22,12 @@ Your app  ──HTTPS──>  trade.pmxt.dev  ──submits──>  venue API
    └── signs EIP-712 locally with your private key (key never sent)
 ```
 
-1. The SDK calls `POST /v0/trade/build-order` with catalog UUIDs and parameters. No key, no signature yet.
+1. The SDK calls `POST /v0/trade/build-order` with the outcome target and order parameters. The target is either a catalog UUID or a `venue` + `venue_outcome_id` pair. No key, no signature yet.
 2. The server returns an unsigned EIP-712 typed-data payload bound to the Polygon [`PreFundedEscrow`](/concepts/hosted-trading) domain.
 3. The SDK signs the payload **locally**, in your process, with your private key.
 4. The SDK calls `POST /v0/trade/submit-order` with the signature. The server forwards the signed order to the venue.
 
-What PMXT's server receives on the wire: catalog UUIDs, your public wallet address, and the signature. **Not the private key.**
+What PMXT's server receives on the wire: the outcome target, your public wallet address, and the signature. **Not the private key.**
 
 Funds custody: USDC sits in the on-chain `PreFundedEscrow`. Withdrawals are timelocked and user-only — PMXT's operator key cannot move USDC without your EIP-712 signature. See [Hosted trading](/concepts/hosted-trading) for addresses and the raw exit path.
 

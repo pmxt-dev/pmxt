@@ -216,6 +216,18 @@ SCHEMAS: Mapping[str, TypedDataSchema] = {
         fields=CANCEL_PULL_FIELDS,
         message_keys=frozenset(name for name, _ in CANCEL_PULL_FIELDS),
     ),
+    "cancel_limitless_polygon": TypedDataSchema(
+        primary_type="CancelOrder",
+        domain=_PREFUNDED_DOMAIN,
+        fields=CANCEL_ORDER_FIELDS,
+        message_keys=frozenset(name for name, _ in CANCEL_ORDER_FIELDS),
+    ),
+    "cancel_limitless_base_pull": TypedDataSchema(
+        primary_type="CancelPull",
+        domain=_LIMITLESS_VENUE_DOMAIN,
+        fields=CANCEL_PULL_FIELDS,
+        message_keys=frozenset(name for name, _ in CANCEL_PULL_FIELDS),
+    ),
 }
 
 
@@ -704,4 +716,3 @@ def _typed_data_fail(message: str) -> None:
 
 def _economic_fail(message: str) -> None:
     raise InvalidSignature(f"economic mismatch: {message}")
-

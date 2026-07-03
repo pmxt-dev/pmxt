@@ -12,7 +12,7 @@ Pick self-hosted if **any** of these apply:
 - **Sub-100ms latency** — local submission removes a network hop. Matters for latency-sensitive arb / market-making.
 - **Raw venue credentials** — Polymarket L2 API keys, Kalshi RSA, Smarkets session cookies. Hosted mode doesn't accept these.
 - **Regulatory custody** — you must be the direct counterparty with no intermediary in the custody path.
-- **Venues hosted mode can't write to yet** — hosted writes are Polymarket, Opinion, and Limitless. Self-hosted writes work on every venue PMXT supports (Kalshi, Smarkets, Probable, Myriad, Metaculus, etc.).
+- **Venues hosted mode can't write to yet** — hosted writes are Polymarket, Opinion, and Limitless. Self-hosted can use venue-native credentials where the venue exposes writes (Kalshi, Smarkets, Probable, Myriad, Metaculus, etc.); check [Feature Support & Compliance](https://github.com/pmxt-dev/pmxt/blob/main/core/COMPLIANCE.md) for per-venue support.
 - **OSS contribution** — you're hacking on `pmxt-core` itself.
 
 ## When hosted is still the better choice
@@ -66,6 +66,8 @@ The first call blocks briefly while the local server warms up; subsequent calls 
 For lifecycle control (start, stop, restart, status, logs), use the `server` namespace. See [Server Management](/sdk/server) for the full reference.
 
 ```python
+import pmxt
+
 pmxt.server.start()       # idempotent
 pmxt.server.health()      # bool
 pmxt.server.status()      # structured snapshot
@@ -110,6 +112,8 @@ kalshi = pmxt.Kalshi(
 ### Limitless / Probable / Opinion (self-hosted) — EVM private key
 
 ```python
+import pmxt
+
 limitless = pmxt.Limitless(private_key="0x...")
 probable  = pmxt.Probable(private_key="0x...")
 opinion   = pmxt.Opinion(private_key="0x...")
@@ -118,12 +122,16 @@ opinion   = pmxt.Opinion(private_key="0x...")
 ### Smarkets — email + password
 
 ```python
+import pmxt
+
 smarkets = pmxt.Smarkets(email="you@example.com", password="...")
 ```
 
 ### Baozi — Solana keypair
 
 ```python
+import pmxt
+
 baozi = pmxt.Baozi(private_key="<base58 secret key>")
 ```
 
@@ -148,6 +156,8 @@ See [API Reference / Configuration](/api-reference/configuration) for the full e
 A single pmxt-core process can serve every venue. Construct multiple exchange clients against the same server — they all share the local process.
 
 ```python
+import pmxt
+
 poly = pmxt.Polymarket(private_key="0x...")
 kalshi = pmxt.Kalshi(api_key_id="...", private_key_pem="...")
 # Both clients reuse the same pmxt-core process at http://localhost:3847

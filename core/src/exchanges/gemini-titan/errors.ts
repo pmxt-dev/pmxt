@@ -8,6 +8,15 @@ import {
     RateLimitExceeded,
 } from '../../errors';
 
+// Terms-related error patterns
+const TERMS_ERROR_PATTERNS = [
+    'terms_not_accepted',
+    'terms required',
+    'prediction markets terms',
+    'accept terms',
+    'terms must be accepted',
+];
+
 /**
  * Maps Gemini Titan API errors to PMXT unified error classes.
  *
@@ -18,6 +27,7 @@ import {
  *   - InvalidSignature -> AuthenticationError
  *   - InsufficientFunds -> InsufficientFunds
  *   - InvalidQuantity, InvalidPrice, MarketNotOpen -> InvalidOrder
+ *   - TermsNotAccepted -> AuthenticationError (with auto-accept flow)
  */
 export class GeminiErrorMapper extends ErrorMapper {
     constructor() {
@@ -40,12 +50,30 @@ export class GeminiErrorMapper extends ErrorMapper {
         return super.extractErrorMessage(error);
     }
 
+    /**
+     * Check if an error is related to terms acceptance
+     */
+    private isTermsError(message: string): boolean {
+        const lowerMessage = message.toLowerCase();
+        return TERMS_ERROR_PATTERNS.some(pattern => lowerMessage.includes(pattern));
+    }
+
     protected mapBadRequestError(message: string, data: unknown): BadRequest {
         const reason = typeof data === 'object' && data !== null && 'reason' in data
             ? String((data as Record<string, unknown>).reason)
             : '';
         const lowerReason = reason.toLowerCase();
         const lowerMessage = message.toLowerCase();
+
+        // ✅ Check for terms-related errors first
+        if (this.isTermsError(lowerMessage) || this.isTermsError(lowerReason)) {
+            return new AuthenticationError(
+                `Gemini Prediction Markets terms must be accepted before placing orders. ` +
+                `The adapter will automatically accept terms on your behalf. ` +
+                `Original error: ${message}`,
+                this.exchangeName,
+            );
+        }
 
         if (lowerReason.includes('insufficientfunds') || lowerMessage.includes('insufficient')) {
             return new InsufficientFunds(message, this.exchangeName);
@@ -65,8 +93,7 @@ export class GeminiErrorMapper extends ErrorMapper {
 
         if (
             lowerReason.includes('invalidsignature') ||
-            lowerReason.includes('invalidapikey') ||
-            lowerMessage.includes('terms_not_accepted')
+            lowerReason.includes('invalidapikey')
         ) {
             return new AuthenticationError(message, this.exchangeName);
         }
@@ -83,6 +110,25 @@ export class GeminiErrorMapper extends ErrorMapper {
                 retryAfterSeconds,
                 this.exchangeName,
             );
+        }
+
+        // ✅ Check for terms errors in non-4xx responses
+        if (axios.isAxiosError(error) && error.response?.data) {
+            const data = error.response.data;
+            const message = typeof data === 'object' && data !== null && 'message' in data
+                ? String(data.message)
+                : typeof data === 'string'
+                    ? data
+                    : '';
+            
+            if (this.isTermsError(message)) {
+                return new AuthenticationError(
+                    `Gemini Prediction Markets terms must be accepted before placing orders. ` +
+                    `The adapter will automatically accept terms on your behalf. ` +
+                    `Original error: ${message}`,
+                    this.exchangeName,
+                );
+            }
         }
 
         return super.mapError(error);

@@ -1,7 +1,7 @@
 {
   "name": "pmxtjs",
   "version": "2.18.0",
-  "description": "Unified prediction market data API - The ccxt for prediction markets",
+  "description": "SDK for supported prediction markets with hosted services and local sidecar access",
   "author": "PMXT Contributors",
   "repository": {
     "type": "git",

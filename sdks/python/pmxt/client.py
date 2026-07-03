@@ -843,7 +843,11 @@ class Exchange(ABC):
             return "cancel_polymarket", None
         if self.exchange_name == "opinion":
             return "cancel_opinion_polygon", "cancel_opinion_bsc_pull"
-        raise NotSupported("Hosted trading is only supported for Polymarket and Opinion.")
+        if self.exchange_name == "limitless":
+            return "cancel_limitless_polygon", "cancel_limitless_base_pull"
+        raise NotSupported(
+            "Hosted trading is only supported for Polymarket, Opinion, and Limitless."
+        )
 
     @staticmethod
     def _hosted_typed_data(payload: Dict[str, Any], key: str) -> Dict[str, Any]:
@@ -1189,7 +1193,7 @@ class Exchange(ABC):
 
     # Low-Level API Access
 
-    def _call_method(self, method_name: str, params: Optional[Dict[str, Any]] = None) -> Any:
+    def _call_method(self, method_name: str, params: Any = None) -> Any:
         """Call any exchange method on the server by name."""
         try:
             url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/{method_name}"
@@ -1742,13 +1746,22 @@ class Exchange(ABC):
             raise self._parse_api_exception(e) from None
 
     def unwatch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, **_compat_kwargs) -> None:
-        outcome_id = _compat_id(outcome_id, _compat_kwargs)
-        resolved = _resolve_outcome_id(outcome_id)
-        self._unwatch_required_via_ws(
-            "unwatch_order_book",
-            "unwatchOrderBook",
-            [resolved],
-        )
+        try:
+            outcome_id = _compat_id(outcome_id, _compat_kwargs)
+            body: dict = {"args": [_resolve_outcome_id(outcome_id)]}
+            creds = self._get_credentials_dict()
+            if creds:
+                body["credentials"] = creds
+            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/unwatchOrderBook"
+            headers = {"Content-Type": "application/json", "Accept": "application/json"}
+            headers.update(self._get_auth_headers())
+            response = self._fetch_with_retry(
+                lambda: self._api_client.call_api(method="POST", url=url, body=body, header_params=headers)
+            )
+            response.read()
+            self._handle_response(json.loads(response.data))
+        except ApiException as e:
+            raise self._parse_api_exception(e) from None
 
     def unwatch_address(self, address: str) -> None:
         try:
@@ -2872,6 +2885,45 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
+    def pre_warm_market(self, outcome_id: str) -> None:
+        """
+        Pre-warm the SDK's internal caches for a market outcome.
+
+        Args:
+            outcome_id: The CLOB Token ID for the outcome
+
+        Returns:
+            None
+        """
+        self._call_method("preWarmMarket", outcome_id)
+        return None
+
+    def get_event_by_id(self, id: str) -> Optional[UnifiedEvent]:
+        """
+        Fetch a single Probable event by its numeric ID.
+
+        Args:
+            id: The numeric event ID
+
+        Returns:
+            The event, or None if not found
+        """
+        data = self._call_method("getEventById", id)
+        return _convert_event(data) if data is not None else None
+
+    def get_event_by_slug(self, slug: str) -> Optional[UnifiedEvent]:
+        """
+        Fetch a single Probable event by its URL slug.
+
+        Args:
+            slug: The event slug
+
+        Returns:
+            The event, or None if not found
+        """
+        data = self._call_method("getEventBySlug", slug)
+        return _convert_event(data) if data is not None else None
+
     # Trading Methods (require authentication)
 
     def _discover_hosted_account(self) -> dict:
@@ -3354,38 +3406,31 @@ class Exchange(ABC):
         Returns:
             Detailed execution result
         """
-        try:
-            # Convert order_book to dict for API call
-            bids = [{"price": b.price, "size": b.size} for b in order_book.bids]
-            asks = [{"price": a.price, "size": a.size} for a in order_book.asks]
-            ob_dict = {"bids": bids, "asks": asks, "timestamp": order_book.timestamp}
+        if amount <= 0:
+            raise ValueError("Amount must be greater than 0")
 
-            body = {
-                "args": [ob_dict, side, amount]
-            }
+        levels = [level for level in (order_book.asks if side == "buy" else order_book.bids) if level.size > 0]
+        levels.sort(key=lambda level: level.price, reverse=(side == "sell"))
 
-            creds = self._get_credentials_dict()
-            if creds:
-                body["credentials"] = creds
+        if not levels:
+            return ExecutionPriceResult(price=0, filled_amount=0, fully_filled=False)
 
-            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/getExecutionPriceDetailed"
+        remaining_amount = amount
+        total_cost = 0.0
+        filled_amount = 0.0
+        epsilon = 0.00000001
 
-            headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            headers.update(self._get_auth_headers())
+        for level in levels:
+            if remaining_amount <= epsilon:
+                break
 
-            response = self._fetch_with_retry(
-                lambda: self._api_client.call_api(
-                    method="POST",
-                    url=url,
-                    body=body,
-                    header_params=headers
-                )
-            )
+            fill_size = min(remaining_amount, level.size)
+            total_cost += fill_size * level.price
+            filled_amount += fill_size
+            remaining_amount -= fill_size
 
-            response.read()
-            data_json = json.loads(response.data)
-
-            data = self._handle_response(data_json)
-            return _convert_execution_result(data)
-        except Exception as e:
-            raise self._parse_api_exception(e) from None
+        return ExecutionPriceResult(
+            price=total_cost / filled_amount if filled_amount > epsilon else 0,
+            filled_amount=filled_amount,
+            fully_filled=remaining_amount <= epsilon,
+        )

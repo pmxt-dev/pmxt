@@ -6,7 +6,7 @@ description: "Place your first hosted trade in 60 seconds — API key, escrow de
 From a fresh `pmxt_api_key` to a confirmed position on Polymarket in under a minute. For the full hosted model, see [Hosted trading](/concepts/hosted-trading).
 
 <Info>
-Hosted writes today: **Polymarket**, **Opinion**, and **Limitless**. Other venues are read-only via the hosted catalog; use [self-hosted](/guides/self-hosted) to trade them.
+Hosted writes today: **Polymarket**, **Opinion**, and **Limitless**. Other venues are read-only via the hosted catalog; use [self-hosted](/guides/self-hosted) for venue-native trading where the venue exposes writes. Check [Feature Support & Compliance](https://github.com/pmxt-dev/pmxt/blob/main/core/COMPLIANCE.md) for per-venue support.
 </Info>
 
 ## 1. Get an API key
@@ -168,7 +168,7 @@ The hosted trading API accepts either the venue-native identifier (returned by `
 </Note>
 
 <Note>
-**What PMXT abstracts vs what leaks through from the venue.** PMXT unifies the order shape across venues, but a few Polymarket rules pass through as-is. Polymarket enforces **two independent minimums on marketable BUY orders** — a **5-share minimum** AND a **$1 notional minimum** — and the higher of the two binds. At $0.138/share the 5-share rule alone would only require $0.69, but the $1 rule raises the effective minimum to ~8 shares (~$1.10); a 5-share buy at that price is rejected by the venue with `invalid amount for a marketable BUY order ($0.69), min size: 1` and PMXT surfaces it as `OrderSizeTooSmall`. Market orders are **budget-capped** (a buy spends exactly `amount` USDC, a sell sells exactly `amount` shares — `slippage_pct` is ignored). Hosted **limit** orders are supported via `client.create_order(order_type="limit", price=..., amount=...)` and the same 5-share and $1 marketable-BUY minimums apply; limit BUY is currently being patched for an SDK denom mismatch, limit SELL is live.
+**What PMXT abstracts vs what leaks through from the venue.** PMXT unifies the order shape across venues, but a few Polymarket rules pass through as-is. Polymarket enforces **two independent minimums on marketable BUY orders** — a **5-share minimum** AND a **$1 notional minimum** — and the higher of the two binds. At $0.138/share the 5-share rule alone would only require $0.69, but the $1 rule raises the effective minimum to ~8 shares (~$1.10); a 5-share buy at that price is rejected by the venue with `invalid amount for a marketable BUY order ($0.69), min size: 1` and PMXT surfaces it as `OrderSizeTooSmall`. Market orders are **budget-capped** (a buy spends exactly `amount` USDC, a sell sells exactly `amount` shares — `slippage_pct` is ignored). Hosted **limit** orders are supported via `client.create_order(order_type="limit", price=..., amount=...)` and the same 5-share and $1 marketable-BUY minimums apply; limit BUY and SELL are supported, and both use `denom="shares"` in hosted SDK requests.
 </Note>
 
 ## 6. Verify the fill

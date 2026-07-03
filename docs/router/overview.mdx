@@ -1,11 +1,10 @@
 ---
 title: What is the Router?
-description: "One API key. Every prediction market. Cross-venue search, matching, and price comparison."
+description: "One API key. Hosted catalog search, matching, and price comparison."
 ---
 
 The Router is PMXT's cross-venue intelligence layer. One API key gives
-you a unified view of every prediction market — Polymarket, Kalshi,
-Limitless, and [8 more venues](/concepts/venues) — through a single
+you a unified view of the hosted catalog venues through a single
 interface.
 
 <Tabs>
@@ -15,7 +14,7 @@ interface.
 
     router = pmxt.Router(pmxt_api_key="pmxt_live_...")
 
-    # Search every venue at once
+    # Search catalog venues at once
     markets = router.fetch_markets(query="fed rate cut", limit=5)
 
     # Find the same market on other venues
@@ -31,7 +30,7 @@ interface.
 
     const router = new pmxt.Router({ pmxtApiKey: "pmxt_live_..." });
 
-    // Search every venue at once
+    // Search catalog venues at once
     const markets = await router.fetchMarkets({ query: "fed rate cut", limit: 5 });
 
     // Find the same market on other venues
@@ -50,9 +49,8 @@ required for search, matching, or price analysis.
 
 <CardGroup cols={2}>
   <Card title="Cross-venue search" icon="magnifying-glass" href="/router/search">
-    Search markets and events across every venue in a single query.
-    Results come from a shared catalog — ~10ms, not 11 sequential API
-    calls.
+    Search markets and events across the hosted catalog in a single query.
+    Results come from a shared catalog — ~10ms, not one call per venue.
   </Card>
   <Card title="Market matching" icon="link" href="/router/matching">
     Given a market on any venue, find the cluster of matching markets
@@ -60,8 +58,8 @@ required for search, matching, or price analysis.
     scores.
   </Card>
   <Card title="Price comparison" icon="scale-balanced" href="/router/prices#comparemarketprices">
-    Side-by-side bid/ask for the same market on every venue. See where
-    it's cheapest to buy and where it pays the most to sell.
+    Side-by-side bid/ask for identity matches in the hosted catalog. See
+    where it's cheapest to buy and where it pays the most to sell.
   </Card>
   <Card title="Related markets" icon="shield-halved" href="/router/prices#fetchrelatedmarkets">
     Find markets whose resolution conditions are subsets or supersets of
@@ -72,17 +70,18 @@ required for search, matching, or price analysis.
     prices and order books.
   </Card>
   <Card title="Compose with venues" icon="puzzle-piece" href="/router/prices#composing-with-venue-exchanges">
-    Use the Router for data, venue exchanges for trading. Same SDK,
-    same schema — `marketId` works everywhere.
+    Use the Router for data, venue exchanges for trading. Same SDK and
+    schema; catalog IDs for Router and hosted flows, venue-native IDs for
+    direct self-hosted writes.
   </Card>
 </CardGroup>
 
 ## How it works
 
 The Router is backed by a continuously-updated Postgres catalog that
-ingests markets, events, and outcomes from every venue PMXT supports.
+ingests markets, events, and outcomes from the hosted catalog venues.
 When you search or match, you're querying this catalog — not fanning
-out to 11 different APIs.
+out to venue APIs.
 
 Matching uses embedding-based similarity and LLM-verified relation
 classification to find semantically equivalent markets across venues,
@@ -138,8 +137,9 @@ different framing.
 
 That's it. Everything the Router returns uses the same
 [unified schema](/concepts/unified-schema) as every other PMXT
-exchange, so you can pass a `marketId` from the Router straight into
-a venue exchange when you're ready to trade.
+exchange, but identifiers keep their address space: Router/catalog IDs
+work for Router and hosted flows, while direct self-hosted venue calls
+need IDs returned by that venue client.
 
 <Info>
   **Order routing is coming.** Today the Router is read-only. Smart order

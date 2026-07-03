@@ -14,7 +14,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const CORE_DIR = path.resolve(__dirname, '../core');
+const REPO_DIR = path.resolve(__dirname, '..');
+const CORE_DIR = path.join(REPO_DIR, 'core');
 const OUTPUT_PATH = path.join(CORE_DIR, 'api-doc-config.generated.json');
 
 const SOURCE_FILES = [
@@ -23,6 +24,11 @@ const SOURCE_FILES = [
     { path: path.join(CORE_DIR, 'src/exchanges/limitless/index.ts'), exchangeOnly: 'limitless' },
     { path: path.join(CORE_DIR, 'src/exchanges/polymarket/index.ts'), exchangeOnly: 'polymarket' },
     { path: path.join(CORE_DIR, 'src/exchanges/probable/index.ts'), exchangeOnly: 'probable' },
+    {
+        path: path.join(REPO_DIR, 'sdks/typescript/pmxt/client.ts'),
+        exchangeOnly: null,
+        includeOnly: ['watchAllOrderBooks', 'firehose'],
+    },
 ];
 
 const WORKFLOW_PATH = path.join(CORE_DIR, 'workflow-examples.json');
@@ -229,9 +235,10 @@ function splitParams(str) {
 // Source File Processing
 // ---------------------------------------------------------------------------
 
-function extractMethods(filePath, exchangeOnly) {
+function extractMethods(filePath, exchangeOnly, includeOnly) {
     const source = fs.readFileSync(filePath, 'utf8');
     const methods = {};
+    const includeOnlySet = includeOnly ? new Set(includeOnly) : null;
 
     // Match JSDoc blocks followed by method signatures
     // Regex: /** ... */ followed by optional whitespace/newlines, then a method line
@@ -256,6 +263,7 @@ function extractMethods(filePath, exchangeOnly) {
 
         // Skip constructor and known non-API methods
         if (['constructor', 'name'].includes(sig.name)) continue;
+        if (includeOnlySet && !includeOnlySet.has(sig.name)) continue;
 
         // Merge JSDoc param descriptions with signature param types
         const mergedParams = sig.params.map(sp => {
@@ -312,13 +320,13 @@ function getLineNumber(source, charIndex) {
 function main() {
     const allMethods = {};
 
-    for (const { path: filePath, exchangeOnly } of SOURCE_FILES) {
+    for (const { path: filePath, exchangeOnly, includeOnly } of SOURCE_FILES) {
         if (!fs.existsSync(filePath)) {
             console.warn(`Warning: Source file not found: ${filePath}`);
             continue;
         }
 
-        const methods = extractMethods(filePath, exchangeOnly);
+        const methods = extractMethods(filePath, exchangeOnly, includeOnly);
 
         for (const [name, data] of Object.entries(methods)) {
             // Don't overwrite base class methods with exchange-specific ones

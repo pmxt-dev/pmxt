@@ -71,6 +71,8 @@ The SDK signs both with the same EVM private key automatically — no extra wiri
 For reads (`fetch_balance`, `fetch_positions`, `fetch_my_trades`), no signature is required — the `pmxt_api_key` is enough. You can construct a hosted client with only `pmxt_api_key` and `wallet_address` and read hosted state for that wallet:
 
 ```python
+import pmxt
+
 read_only = pmxt.Polymarket(
     pmxt_api_key="pmxt_live_...",
     wallet_address="0xSomeOtherWallet...",
@@ -91,6 +93,8 @@ The signer protocol is one method: `sign_typed_data(typed_data: dict) -> hex` (P
 
 <CodeGroup>
 ```python Python
+import pmxt
+
 client = pmxt.Polymarket(
     pmxt_api_key="pmxt_live_...",
     wallet_address="0xYourWallet...",
@@ -109,6 +113,8 @@ order = client.create_order(
 ```
 
 ```typescript TypeScript
+import { Polymarket } from "pmxtjs";
+
 const client = new Polymarket({
   pmxtApiKey: "pmxt_live_...",
   walletAddress: "0xYourWallet...",

@@ -65,7 +65,7 @@ An order that rests on the book at a specified price and only executes when a co
 
 ### Group A methods
 
-In PMXT, **Group A** refers to the venue-agnostic trading and read methods that work identically across every hosted venue — `create_order`, `fetch_balance`, `fetch_positions`, `fetch_my_trades`, and friends. The unified surface that makes PMXT a single SDK across venues. See [API Reference](/api-reference/overview).
+In PMXT, **Group A** refers to the shared trading and account method surface for venues that implement those capabilities — `create_order`, `fetch_balance`, `fetch_positions`, `fetch_my_trades`, and friends. Method names and response schemas are unified where supported; hosted write support is venue-specific. See [Hosted Trading](/concepts/hosted-trading#whats-supported-today), [Supported Venues](/concepts/venues#feature-support), and [API Reference](/api-reference/overview).
 
 ## Hosted vs self-hosted
 

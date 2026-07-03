@@ -219,6 +219,20 @@ function buildResponsePayload(side: "buy" | "sell" = "buy"): Record<string, unkn
 }
 
 describe("hosted write dispatch", () => {
+  it("buildOrder raises MissingWalletAddress locally when walletAddress is unset", async () => {
+    const spy = installFetchSpy(() => jsonResponse(buildResponsePayload("buy")));
+    const api = makePolymarket({ withWallet: false, withSigner: true });
+    await expect(api.buildOrder({
+      marketId: "11111111-1111-4111-8111-111111111111",
+      outcomeId: "22222222-2222-4222-8222-222222222222",
+      side: "buy",
+      type: "market",
+      amount: 5,
+      denom: "usdc",
+    } as any)).rejects.toBeInstanceOf(MissingWalletAddress);
+    expect(captured(spy)).toHaveLength(0);
+  });
+
   it("buildOrder → POST /v0/trade/build-order", async () => {
     const spy = installFetchSpy(() => jsonResponse(buildResponsePayload("buy")));
     const api = makePolymarket({ withSigner: true });

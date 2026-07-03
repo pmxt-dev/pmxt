@@ -87,10 +87,49 @@ export interface KalshiRawEventPage {
 
 export interface KalshiRawCandlestick {
     end_period_ts: number;
+    /** @deprecated Old API field — new API uses `volume_fp` (string) */
     volume?: number;
-    price?: { open?: number; high?: number; low?: number; close?: number; previous?: number };
-    yes_ask?: { open?: number; high?: number; low?: number; close?: number };
-    yes_bid?: { open?: number; high?: number; low?: number; close?: number };
+    /** New API field: cumulative volume as a fixed-point string */
+    volume_fp?: string;
+    /**
+     * Kalshi candlestick prices come nested under `price`. The new API returns
+     * dollar-denominated string fields (e.g. `close_dollars: "0.9700"`); older
+     * responses used integer cent fields (e.g. `close: 97`). Both shapes are
+     * supported by the normalizer.
+     */
+    price?: {
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+        previous?: number;
+        open_dollars?: string;
+        high_dollars?: string;
+        low_dollars?: string;
+        close_dollars?: string;
+        mean_dollars?: string;
+        previous_dollars?: string;
+    };
+    yes_ask?: {
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+        open_dollars?: string;
+        high_dollars?: string;
+        low_dollars?: string;
+        close_dollars?: string;
+    };
+    yes_bid?: {
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+        open_dollars?: string;
+        high_dollars?: string;
+        low_dollars?: string;
+        close_dollars?: string;
+    };
 
     [key: string]: unknown;
 }

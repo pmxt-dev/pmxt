@@ -106,6 +106,41 @@ function parseExpiryDate(expiry: string): Date | undefined {
     return new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
 }
 
+const MONTH_INDEX: Record<string, number> = {
+    January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
+    July: 6, August: 7, September: 8, October: 9, November: 10, December: 11,
+};
+
+/**
+ * Fall back to scanning the question's prose description for a resolution
+ * deadline. Hyperliquid puts no structured endTime on the Outcome/Question
+ * objects, but every non-recurring question's description contains at least
+ * one "<Month> <DD>[,] <YYYY>" date (e.g. "by October 14, 2026 at 23:59 UTC").
+ * Returns the LATEST such date — questions often mention an event date and a
+ * later resolution deadline, and we want the deadline. Defaults to 23:59 UTC
+ * when no time is given.
+ */
+function parseDeadlineFromText(text: string): Date | undefined {
+    if (!text) return undefined;
+    const re = /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})(?:\s+at\s+(\d{1,2}):(\d{2})\s*UTC)?/g;
+    let latest: Date | undefined;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+        const [, monthName, day, year, hour, minute] = m;
+        const month = MONTH_INDEX[monthName];
+        if (month === undefined) continue;
+        const d = new Date(Date.UTC(
+            parseInt(year, 10), month, parseInt(day, 10),
+            hour !== undefined ? parseInt(hour, 10) : 23,
+            minute !== undefined ? parseInt(minute, 10) : 59,
+            0,
+        ));
+        if (Number.isNaN(d.getTime())) continue;
+        if (!latest || d > latest) latest = d;
+    }
+    return latest;
+}
+
 /**
  * Build a human-readable title from the parsed description.
  */
@@ -207,10 +242,11 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
             );
         }
 
-        // Resolution date: prefer outcome-level expiry, fall back to question-level
+        // Resolution date: prefer outcome-level expiry, then question-level expiry tag,
+        // then a deadline phrase scraped from the question's prose description.
         const expiryDate = parsed.expiryDate
             ?? questionParsed?.expiryDate
-            ?? undefined;
+            ?? parseDeadlineFromText(raw.question?.description ?? "");
 
         // Build a descriptive title from the parsed description
         const title = buildTitle(outcome.name, parsed, questionParsed);
@@ -233,7 +269,7 @@ export class HyperliquidNormalizer implements IExchangeNormalizer<HyperliquidRaw
             description: outcome.description,
             slug: `hl-${outcomeId}`,
             outcomes,
-            resolutionDate: expiryDate ?? new Date(0),
+            resolutionDate: expiryDate,
             volume24h: raw.volume24h ?? 0,
             liquidity: 0,
             url: buildMarketUrl(outcomeId),

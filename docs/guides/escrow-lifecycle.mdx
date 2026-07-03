@@ -6,7 +6,13 @@ description: "Deposit, trade, withdraw — how USDC moves through PMXT's non-cus
 Hosted trading on PMXT settles through a non-custodial `PreFundedEscrow` smart contract on **Polygon** (chainId 137). USDC sits in the escrow under your wallet's beneficial ownership; PMXT cannot move funds without an EIP-712 signature from your wallet. This page walks through the full lifecycle: approve, deposit, trade, withdraw.
 
 <Info>
-  **You fund Polygon only.** USDC always sits in the Polygon `PreFundedEscrow` — the single funding location for *every* hosted venue (Polymarket, Opinion, and Limitless today; more coming). For venues that don't live on Polygon (e.g. Opinion on BSC), PMXT operates an internal cross-chain leg that holds outcome tokens on the venue's chain; you neither fund nor sign anything on that side. Pass any EVM-compatible private key — the same key handles every venue.
+  **You fund Polygon only.** USDC always sits in the Polygon `PreFundedEscrow`
+  for the currently hosted trading venues (Polymarket, Opinion, and
+  Limitless). For hosted venues that don't settle on Polygon (Opinion on BSC,
+  Limitless on Base), PMXT operates an internal cross-chain leg that holds
+  outcome tokens on the venue's chain; you neither fund nor sign anything on
+  that side. Pass any EVM-compatible private key; the same EVM wallet/key can
+  trade the currently hosted venues.
 </Info>
 
 ## Why escrow at all?

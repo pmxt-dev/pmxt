@@ -26,7 +26,7 @@ once, switch venues with a config change.
 
 | Field             | Type              | Notes                                                     |
 | ----------------- | ----------------- | --------------------------------------------------------- |
-| `marketId`        | `string`          | Stable PMXT id (UUID).                                    |
+| `marketId`        | `string`          | Source-scoped market id; hosted catalog rows use PMXT UUIDs, while venue clients may use venue-native ids. |
 | `eventId`         | `string \| null`  | Parent event, if any.                                     |
 | `title`           | `string`          | Human-readable market question.                           |
 | `slug`            | `string \| null`  | Venue-native slug, when available.                        |
@@ -48,12 +48,16 @@ once, switch venues with a config change.
 
 | Field             | Type               | Notes                                                     |
 | ----------------- | ------------------ | --------------------------------------------------------- |
-| `outcomeId`       | `string`           | Venue-native outcome id (token id, side id, ...).         |
+| `outcomeId`       | `string`           | Source-scoped outcome id; hosted catalog rows use PMXT UUIDs, while venue clients use venue-native trading ids. |
 | `marketId`        | `string`           | Back-reference to the parent market.                      |
 | `label`           | `string`           | Display label (e.g. `Yes`, `No`, `Donald Trump`).         |
 | `price`           | `number`           | Last price, 0–1 for binary venues.                        |
 | `priceChange24h`  | `number`           | Absolute change vs 24h ago.                               |
 | `metadata`        | `object`           | Venue-specific fields (e.g. `clobTokenId`).               |
+
+<Note>
+  Identifier semantics are source-aware: Router and hosted catalog rows use stable PMXT UUIDs for `marketId` and `outcomeId`. Venue clients and local pass-throughs may use venue-native identifiers. Do not assume every `marketId` / `outcomeId` is a UUID or every outcome id is venue-native. See [Catalog UUID vs Venue ID](/concepts/catalog-uuid-vs-venue-id) when crossing between Router results, hosted trading, and venue-direct clients.
+</Note>
 
 ## UnifiedEvent
 

@@ -17,7 +17,11 @@ from pmxt._hosted_typeddata import (
     verify_signature,
 )
 from pmxt.errors import InvalidOrder
-from pmxt.constants import PREFUNDED_ESCROW_ADDRESSES
+from pmxt.constants import (
+    LIMITLESS_VENUE_ESCROW_ADDRESSES,
+    PREFUNDED_ESCROW_ADDRESSES,
+    VENUE_ESCROW_ADDRESSES,
+)
 
 WALLET_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 OTHER_PRIVATE_KEY = "0x59c6995e998f97a5a0044966f0945380e9dae9ce5a4e282d1e0c0889c34cb14d"
@@ -25,9 +29,13 @@ WALLET_ADDRESS = Account.from_key(WALLET_PRIVATE_KEY).address
 OTHER_ADDRESS = Account.from_key(OTHER_PRIVATE_KEY).address
 
 POLYGON_CHAIN_ID = 137
+BSC_CHAIN_ID = 56
+BASE_CHAIN_ID = 8453
 FUTURE_DEADLINE = 4_102_444_800
 PAST_DEADLINE = 1_700_000_000
 PREFUNDED_ESCROW_ADDRESS = next(iter(PREFUNDED_ESCROW_ADDRESSES))
+OPINION_VENUE_ESCROW_ADDRESS = next(iter(VENUE_ESCROW_ADDRESSES))
+LIMITLESS_VENUE_ESCROW_ADDRESS = next(iter(LIMITLESS_VENUE_ESCROW_ADDRESSES))
 VENUE_ESCROW_ADDRESS = "0x0000000000000000000000000000000000000088"
 SETTLEMENT_ORACLE_ADDRESS = "0x0000000000000000000000000000000000000077"
 FOREIGN_CONTRACT_ADDRESS = "0x3333333333333333333333333333333333333333"
@@ -150,6 +158,64 @@ def _opinion_buy_typed_data() -> dict[str, Any]:
             "oracleKey": SETTLEMENT_ORACLE_ADDRESS,
             "deadline": FUTURE_DEADLINE,
             "nonce": 1003,
+        },
+    }
+
+
+def _cancel_order_typed_data(
+    verifying_contract: str = PREFUNDED_ESCROW_ADDRESS,
+    chain_id: int = POLYGON_CHAIN_ID,
+) -> dict[str, Any]:
+    return {
+        "types": {
+            "EIP712Domain": _fields(
+                ("name", "string"),
+                ("version", "string"),
+                ("chainId", "uint256"),
+                ("verifyingContract", "address"),
+            ),
+            "CancelOrder": _fields(
+                ("user", "address"),
+                ("path", "uint8"),
+                ("nonce", "uint256"),
+                ("deadline", "uint256"),
+            ),
+        },
+        "primaryType": "CancelOrder",
+        "domain": _domain("PreFundedEscrow", verifying_contract, chain_id),
+        "message": {
+            "user": WALLET_ADDRESS,
+            "path": 0,
+            "nonce": 2001,
+            "deadline": FUTURE_DEADLINE,
+        },
+    }
+
+
+def _cancel_pull_typed_data(
+    verifying_contract: str,
+    chain_id: int,
+) -> dict[str, Any]:
+    return {
+        "types": {
+            "EIP712Domain": _fields(
+                ("name", "string"),
+                ("version", "string"),
+                ("chainId", "uint256"),
+                ("verifyingContract", "address"),
+            ),
+            "CancelPull": _fields(
+                ("user", "address"),
+                ("nonce", "uint256"),
+                ("deadline", "uint256"),
+            ),
+        },
+        "primaryType": "CancelPull",
+        "domain": _domain("VenueEscrow", verifying_contract, chain_id),
+        "message": {
+            "user": WALLET_ADDRESS,
+            "nonce": 2002,
+            "deadline": FUTURE_DEADLINE,
         },
     }
 
@@ -278,6 +344,35 @@ POSITIVE_FIXTURES: tuple[dict[str, Any], ...] = (
     },
 )
 
+CANCEL_ROUTE_FIXTURES: tuple[dict[str, Any], ...] = (
+    {
+        "route": "cancel_polymarket",
+        "typed_data": _cancel_order_typed_data(),
+    },
+    {
+        "route": "cancel_opinion_polygon",
+        "typed_data": _cancel_order_typed_data(),
+    },
+    {
+        "route": "cancel_opinion_bsc_pull",
+        "typed_data": _cancel_pull_typed_data(
+            OPINION_VENUE_ESCROW_ADDRESS,
+            BSC_CHAIN_ID,
+        ),
+    },
+    {
+        "route": "cancel_limitless_polygon",
+        "typed_data": _cancel_order_typed_data(),
+    },
+    {
+        "route": "cancel_limitless_base_pull",
+        "typed_data": _cancel_pull_typed_data(
+            LIMITLESS_VENUE_ESCROW_ADDRESS,
+            BASE_CHAIN_ID,
+        ),
+    },
+)
+
 
 def _copy(value: Any) -> Any:
     return copy.deepcopy(value)
@@ -372,6 +467,15 @@ def test_validate_typed_data_accepts_prod_route_fixtures(fixture: dict[str, Any]
     validate_typed_data(
         route=fixture["route"],
         typed_data=_copy(fixture["build_response"]["typed_data"]),
+        wallet_address=WALLET_ADDRESS,
+    )
+
+
+@pytest.mark.parametrize("fixture", CANCEL_ROUTE_FIXTURES, ids=lambda fixture: fixture["route"])
+def test_validate_typed_data_accepts_cancel_route_fixtures(fixture: dict[str, Any]) -> None:
+    validate_typed_data(
+        route=fixture["route"],
+        typed_data=_copy(fixture["typed_data"]),
         wallet_address=WALLET_ADDRESS,
     )
 

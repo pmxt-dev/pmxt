@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.51.4] - 2026-06-24
+
+### Fixed
+
+- **Hyperliquid normalizer now extracts `resolutionDate` from question prose when no `expiry:` tag is present.** Hyperliquid's `outcomeMeta` payload exposes no structured end-time on either the Outcome or Question objects. Price-bracket markets get a clean `expiry:YYYYMMDD-HHmm` in the outcome description (parsed); everything else (World Cup teams/matches, Fed funds decisions, CPI prints) puts the deadline only in the question description's legalese, e.g. *"by October 14, 2026 at 23:59 UTC"*. The normalizer now scans the question description for `<Month> <DD>[,] <YYYY> [at HH:MM UTC]` matches and takes the latest — which is always the resolution deadline (questions often mention an event date and a later cutoff). Defaults to 23:59 UTC when no time is given. Verified against all 28 live HL questions: 27 resolve to the correct deadline (World Cup matches → 2026-07-19, World Cup champion → 2026-10-14, Fed funds → 2026-09-16, CPI → 2026-08-12); the one miss is the `Recurring` price-bracket parent, which still falls through to the existing outcome-level `expiry:` tag.
+
+## [2.51.3] - 2026-06-24
+
+### Fixed
+
+- **Hyperliquid normalizer no longer stamps `resolutionDate` with the Unix epoch when expiry is unknown.** `core/src/exchanges/hyperliquid/normalizer.ts` used `expiryDate ?? new Date(0)` for the Outcome Markets path, which caused HL markets without a parseable `expiry:YYYYMMDD-HHmm` metadata tag (e.g., World Cup team markets) to be serialized with `resolutionDate = 1970-01-01T00:00:00Z`. Downstream consumers that gate on "is this market still tradable?" via `resolutionDate <= now()` (hosted-pmxt's ingest sweep is one) would then mass-close otherwise-live markets. The field is already optional in `UnifiedMarket`, so the fallback is now plain `undefined` — consumers decide policy.
+
 ## [2.51.2] - 2026-06-23
 
 ### Fixed

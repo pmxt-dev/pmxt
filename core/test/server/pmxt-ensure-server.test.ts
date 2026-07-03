@@ -8,6 +8,12 @@ type ServerLock = {
     readonly port?: number;
 };
 
+const SHORT_HEALTH_CHECK_TIMEOUT_MS = 2500;
+const SHORT_HEALTH_CHECK_INTERVAL_MS = 25;
+const STALE_LOCK_HEALTH_TIMEOUT_MS = 100;
+const FAKE_SERVER_LOCK_DELAY_MS = 250;
+const LAUNCHER_PROCESS_TIMEOUT_MS = 8000;
+
 function writeExecutable(filePath: string, content: string): void {
     writeFileSync(filePath, content, { mode: 0o755 });
     chmodSync(filePath, 0o755);
@@ -20,9 +26,18 @@ function readLock(lockPath: string): ServerLock {
 function launcherSourceWithShortTimeouts(): string {
     const source = readFileSync(join(__dirname, '../../bin/pmxt-ensure-server'), 'utf8');
     return source
-        .replace('const HEALTH_CHECK_TIMEOUT = 10000;', 'const HEALTH_CHECK_TIMEOUT = 800;')
-        .replace('const HEALTH_CHECK_INTERVAL = 100;', 'const HEALTH_CHECK_INTERVAL = 25;')
-        .replace('await waitForHealth(serverStatus.port, 2000);', 'await waitForHealth(serverStatus.port, 100);');
+        .replace(
+            'const HEALTH_CHECK_TIMEOUT = 10000;',
+            `const HEALTH_CHECK_TIMEOUT = ${SHORT_HEALTH_CHECK_TIMEOUT_MS};`,
+        )
+        .replace(
+            'const HEALTH_CHECK_INTERVAL = 100;',
+            `const HEALTH_CHECK_INTERVAL = ${SHORT_HEALTH_CHECK_INTERVAL_MS};`,
+        )
+        .replace(
+            'await waitForHealth(serverStatus.port, 2000);',
+            `await waitForHealth(serverStatus.port, ${STALE_LOCK_HEALTH_TIMEOUT_MS});`,
+        );
 }
 
 function fakeServerSource(): string {
@@ -51,7 +66,7 @@ server.listen(0, '127.0.0.1', () => {
   const port = typeof address === 'object' && address ? address.port : 0;
   setTimeout(() => {
     fs.writeFileSync(lockPath, JSON.stringify({ pid: process.pid, port, version: 'fake' }));
-  }, 250);
+  }, ${FAKE_SERVER_LOCK_DELAY_MS});
 });
 `;
 }
@@ -81,7 +96,7 @@ describe('pmxt-ensure-server launcher', () => {
                     PATH: `${bin}:${process.env.PATH ?? ''}`,
                 },
                 encoding: 'utf8',
-                timeout: 5000,
+                timeout: LAUNCHER_PROCESS_TIMEOUT_MS,
             });
             const finalLock = existsSync(lockPath) ? readLock(lockPath) : {};
 

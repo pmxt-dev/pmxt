@@ -1,7 +1,7 @@
 {
   "name": "pmxt-core",
   "version": "2.17.1",
-  "description": "pmxt is a unified prediction market data API. The ccxt for prediction markets.",
+  "description": "Local sidecar API for supported prediction markets.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": {

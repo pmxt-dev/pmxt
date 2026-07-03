@@ -613,7 +613,7 @@ fullSections.push(errorCodesSection);
 const llmsTxtLines = [
   "# PMXT",
   "",
-  "> One API for every prediction market. Unified data, cross-venue search, and trading across Polymarket, Kalshi, Limitless, Smarkets, and 8 more venues.",
+  "> One API for supported prediction markets. Unified data and hosted catalog search across Polymarket, Kalshi, Limitless, Smarkets, and 12 more venues. Trading where venues expose writes.",
   "",
   `Docs: ${BASE_URL}`,
   `API Base: https://api.pmxt.dev`,
@@ -650,7 +650,7 @@ console.log(`wrote docs/llms.txt  (${llmsTxtLines.length} lines)`);
 const header = [
   "# PMXT — Full Documentation",
   "",
-  "> One API for every prediction market. Unified data, cross-venue search, and trading across Polymarket, Kalshi, Limitless, Smarkets, and 8 more venues.",
+  "> One API for supported prediction markets. Unified data and hosted catalog search across Polymarket, Kalshi, Limitless, Smarkets, and 12 more venues. Trading where venues expose writes.",
   "",
   `Docs: ${BASE_URL}`,
   `API Base: https://api.pmxt.dev`,

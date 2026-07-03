@@ -2,8 +2,8 @@ openapi: 3.0.0
 info:
   title: PMXT Sidecar API
   description: >-
-    A unified local sidecar API for prediction markets (Polymarket, Kalshi, Limitless). This API acts as a
-    JSON-RPC-style gateway. Each endpoint corresponds to a specific method on the generic exchange implementation.
+    A unified local sidecar API for supported prediction markets. This API acts as a JSON-RPC-style gateway over PMXT
+    exchange implementations, with venue and write support varying by method and capability.
   version: 0.4.4
 servers:
   - url: 'http://localhost:3847'
@@ -88,6 +88,8 @@ paths:
               - metaculus
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - suibets
               - rain
               - hunch
@@ -307,6 +309,8 @@ paths:
               - metaculus
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - suibets
               - rain
               - hunch
@@ -459,6 +463,7 @@ paths:
               - kalshi-demo
               - opinion
               - polymarket_us
+              - gemini-titan
               - router
           required: true
           description: The prediction market exchange to target.
@@ -752,6 +757,7 @@ paths:
               - baozi
               - myriad
               - opinion
+              - hyperliquid
               - rain
               - hunch
           required: true
@@ -822,6 +828,8 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - suibets
               - rain
               - hunch
@@ -903,6 +911,7 @@ paths:
               - polymarket
               - kalshi
               - kalshi-demo
+              - hyperliquid
           required: true
           description: The prediction market exchange to target.
       requestBody:
@@ -959,6 +968,7 @@ paths:
               - baozi
               - myriad
               - smarkets
+              - hyperliquid
               - rain
               - hunch
           required: true
@@ -1024,6 +1034,8 @@ paths:
               - metaculus
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - rain
               - hunch
           required: true
@@ -1074,6 +1086,8 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - rain
           required: true
           description: The prediction market exchange to target.
@@ -1125,6 +1139,8 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - rain
           required: true
           description: The prediction market exchange to target.
@@ -1177,6 +1193,8 @@ paths:
               - metaculus
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - rain
           required: true
           description: The prediction market exchange to target.
@@ -1269,6 +1287,8 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - rain
           required: true
           description: The prediction market exchange to target.
@@ -1311,6 +1331,7 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
               - rain
           required: true
           description: The prediction market exchange to target.
@@ -1366,6 +1387,7 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/UserTrade'
+      description: Fetch authenticated user trade history.
   '/api/{exchange}/fetchClosedOrders':
     get:
       summary: Fetch Closed Orders
@@ -1381,6 +1403,8 @@ paths:
               - limitless
               - opinion
               - smarkets
+              - hyperliquid
+              - gemini-titan
               - rain
           required: true
           description: The prediction market exchange to target.
@@ -1430,6 +1454,7 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/Order'
+      description: Fetch authenticated closed orders.
   '/api/{exchange}/fetchAllOrders':
     get:
       summary: Fetch All Orders
@@ -1445,6 +1470,8 @@ paths:
               - limitless
               - opinion
               - smarkets
+              - hyperliquid
+              - gemini-titan
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -1493,6 +1520,7 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/Order'
+      description: Fetch authenticated order history across open and closed orders.
   '/api/{exchange}/fetchPositions':
     get:
       summary: Fetch Positions
@@ -1513,6 +1541,8 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - suibets
               - rain
               - hunch
@@ -1557,6 +1587,7 @@ paths:
               - myriad
               - smarkets
               - polymarket_us
+              - hyperliquid
               - rain
               - hunch
           required: true
@@ -3922,6 +3953,15 @@ components:
         price:
           type: number
           description: Required for limit orders
+        denom:
+          type: string
+          enum:
+            - usdc
+            - shares
+          description: 'Hosted mode: amount unit.'
+        slippage_pct:
+          type: number
+          description: 'Hosted mode: maximum market-order slippage percentage.'
         fee:
           type: number
           description: 'Optional fee rate (e.g., 1000 for 0.1%)'

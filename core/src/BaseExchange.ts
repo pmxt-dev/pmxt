@@ -1112,14 +1112,48 @@ export abstract class PredictionMarketExchange {
         throw new Error("Method fetchOpenOrders not implemented.");
     }
 
+    /**
+     * Fetch authenticated user trade history.
+     *
+     * @param params - Optional trade history filters
+     * @param params.outcomeId - Filter by outcome token ID
+     * @param params.marketId - Filter by market ID or ticker
+     * @param params.since - Start timestamp or ISO date
+     * @param params.until - End timestamp or ISO date
+     * @param params.limit - Maximum number of trades
+     * @param params.cursor - Pagination cursor
+     * @returns Array of user trades
+     */
     async fetchMyTrades(params?: MyTradesParams): Promise<UserTrade[]> {
         throw new Error("Method fetchMyTrades not implemented.");
     }
 
+    /**
+     * Fetch authenticated closed orders.
+     *
+     * @param params - Optional order history filters
+     * @param params.marketId - Filter by market ID or ticker
+     * @param params.since - Start timestamp or ISO date
+     * @param params.until - End timestamp or ISO date
+     * @param params.limit - Maximum number of orders
+     * @param params.cursor - Pagination cursor
+     * @returns Array of closed orders
+     */
     async fetchClosedOrders(params?: OrderHistoryParams): Promise<Order[]> {
         throw new Error("Method fetchClosedOrders not implemented.");
     }
 
+    /**
+     * Fetch authenticated order history across open and closed orders.
+     *
+     * @param params - Optional order history filters
+     * @param params.marketId - Filter by market ID or ticker
+     * @param params.since - Start timestamp or ISO date
+     * @param params.until - End timestamp or ISO date
+     * @param params.limit - Maximum number of orders
+     * @param params.cursor - Pagination cursor
+     * @returns Array of orders
+     */
     async fetchAllOrders(params?: OrderHistoryParams): Promise<Order[]> {
         throw new Error("Method fetchAllOrders not implemented.");
     }

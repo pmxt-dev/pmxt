@@ -11,7 +11,7 @@ PMXT speaks two market identifier languages:
 **The hosted trading API accepts either.** Whichever you have in hand, you can pass it straight to `create_order` / `build_order` — the SDK picks the right wire field and the backend resolves it. No conversion step required.
 
 ```python
-# Both of these work identically against trade.pmxt.dev:
+# Both of these work against trade.pmxt.dev without a conversion step:
 
 # Via the venue client — outcome carries a venue-native id from fetch_markets.
 client = pmxt.Polymarket(pmxt_api_key=..., wallet_address=..., private_key=...)

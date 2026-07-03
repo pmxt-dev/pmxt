@@ -323,6 +323,8 @@ export interface CreateOrderParams {
     /** Size of the order in contracts/shares. */
     amount: number;
     price?: number; // Required for limit orders
+    denom?: 'usdc' | 'shares'; // Hosted mode: amount unit.
+    slippage_pct?: number; // Hosted mode: maximum market-order slippage percentage.
     fee?: number;   // Optional fee rate (e.g., 1000 for 0.1%)
     tickSize?: number; // Optional override for Limitless/Polymarket
     negRisk?: boolean; // Optional override to skip neg-risk lookup (Polymarket)

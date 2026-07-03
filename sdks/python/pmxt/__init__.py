@@ -1,8 +1,8 @@
 """
 PMXT - Unified Prediction Market API
 
-A unified interface for interacting with multiple prediction market exchanges
-(Kalshi, Polymarket) identically.
+A unified Python SDK for supported prediction markets.
+Provides local sidecar access to PMXT exchange implementations and hosted services where configured.
 
 Example:
     >>> import pmxt
@@ -12,7 +12,7 @@ Example:
     >>> kalshi = pmxt.Kalshi()
     >>>
     >>> # Fetch markets
-    >>> markets = await poly.fetch_markets(query="Trump")
+    >>> markets = poly.fetch_markets(query="Trump")
     >>> print(markets[0].title)
 """
 

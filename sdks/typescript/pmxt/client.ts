@@ -867,6 +867,58 @@ export abstract class Exchange {
     }
 
     /**
+     * Pre-warm the sidecar's internal caches for a market outcome.
+     *
+     * @param outcomeId - The CLOB token ID for the outcome.
+     */
+    async preWarmMarket(outcomeId: string): Promise<void> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("preWarmMarket", [outcomeId]);
+            this.handleResponse(json);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to preWarmMarket: ${error}`);
+        }
+    }
+
+    /**
+     * Fetch a single Probable event by its numeric ID.
+     *
+     * @param id - The numeric event ID.
+     * @returns The event, or null when the venue has no matching event.
+     */
+    async getEventById(id: string): Promise<UnifiedEvent | null> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("getEventById", [id]);
+            const data = this.handleResponse(json);
+            return data == null ? null : convertEvent(data);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to getEventById: ${error}`);
+        }
+    }
+
+    /**
+     * Fetch a single Probable event by its URL slug.
+     *
+     * @param slug - The event slug.
+     * @returns The event, or null when the venue has no matching event.
+     */
+    async getEventBySlug(slug: string): Promise<UnifiedEvent | null> {
+        await this.initPromise;
+        try {
+            const json = await this.sidecarPostRequest("getEventBySlug", [slug]);
+            const data = this.handleResponse(json);
+            return data == null ? null : convertEvent(data);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to getEventBySlug: ${error}`);
+        }
+    }
+
+    /**
      * Read a hosted catalog endpoint directly.
      *
      * Hosted-only Router APIs such as matched clusters are not part of the

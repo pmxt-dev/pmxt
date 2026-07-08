@@ -14,10 +14,13 @@
         "generate": "npm run generate:sdk:all --workspace=pmxt-core",
         "test": "./scripts/verify-all.sh",
         "docs:apply-hosted": "node scripts/apply-hosted-manifest.js",
-        "docs:llms": "node scripts/generate-llms.js"
+        "docs:llms": "node scripts/generate-llms.js",
+        "check:sdk-parity": "tsx scripts/validate-sdk-parity.ts"
     },
     "devDependencies": {
-        "concurrently": "^9.2.1"
+        "@types/node": "^26.1.1",
+        "concurrently": "^9.2.1",
+        "yaml": "^2.9.0"
     },
     "dependencies": {
         "@types/cli-progress": "^3.11.6",

@@ -12,7 +12,8 @@ import {
 } from './utils';
 
 function liquidity(offer: SuibetsRawOffer): number {
-    const remaining = offer.remainingStake ?? offer.creatorStake;
+    // Prioritize live onchainState.makerRemaining data before falling back to legacy fields
+    const remaining = offer.onchainState?.makerRemaining ?? offer.remainingStake ?? offer.creatorStake;
     return mistToSui(remaining);
 }
 

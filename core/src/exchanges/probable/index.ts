@@ -9,6 +9,17 @@ import {
     MyTradesParams,
 } from '../../BaseExchange';
 import {
+    getAuthNonce as getAuthNonceFn,
+    loginWithSignature as loginWithSignatureFn,
+    logout as logoutFn,
+    verifyL1 as verifyL1Fn,
+    verifyL2 as verifyL2Fn,
+} from './auth';
+import {
+    AuthNonceResponse,
+    AuthLoginResponse,
+} from '../../router/types';
+import {
     UnifiedMarket,
     UnifiedEvent,
     OrderBook,
@@ -88,6 +99,40 @@ export class ProbableExchange extends PredictionMarketExchange {
             );
         }
         return this.auth;
+    }
+
+    async getAuthNonce(walletAddress: string): Promise<AuthNonceResponse> {
+        return getAuthNonceFn(walletAddress, this.callApi.bind(this));
+    }
+
+    async loginWithSignature(
+        walletAddress: string,
+        signature: string,
+        nonce: string
+    ): Promise<AuthLoginResponse> {
+        const credentials = await loginWithSignatureFn(
+            walletAddress,
+            signature,
+            nonce,
+            this.callApi.bind(this)
+        );
+        this.storeSession(walletAddress, credentials);
+        return credentials;
+    }
+
+    async logout(walletAddress?: string): Promise<void> {
+        await logoutFn(this.callApi.bind(this));
+        if (walletAddress) {
+            this.removeSession(walletAddress);
+        }
+    }
+
+    async verifyL1(walletAddress: string, signature: string): Promise<boolean> {
+        return verifyL1Fn(walletAddress, signature, this.callApi.bind(this));
+    }
+
+    async verifyL2(walletAddress: string, signature: string): Promise<boolean> {
+        return verifyL2Fn(walletAddress, signature, this.callApi.bind(this));
     }
 
     // --------------------------------------------------------------------------

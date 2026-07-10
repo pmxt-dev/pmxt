@@ -27,6 +27,181 @@ paths:
                   timestamp:
                     type: integer
                     format: int64
+  '/api/{exchange}/getAuthNonce':
+    post:
+      summary: Get Auth Nonce
+      operationId: getAuthNonce
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: GetAuthNonceRequest
+              type: object
+              properties:
+                args:
+                  type: array
+                  maxItems: 1
+                  items:
+                    type: string
+                  minItems: 1
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+              required:
+                - args
+      responses:
+        '200':
+          description: Get Auth Nonce response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+      description: Get a cryptographic nonce for Web3 login.
+  '/api/{exchange}/loginWithSignature':
+    post:
+      summary: Login With Signature
+      operationId: loginWithSignature
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: LoginWithSignatureRequest
+              type: object
+              properties:
+                args:
+                  type: array
+                  minItems: 3
+                  maxItems: 3
+                  items:
+                    oneOf:
+                      - type: string
+                      - type: string
+                      - type: string
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+              required:
+                - args
+      responses:
+        '200':
+          description: Login With Signature response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+      description: Login with a signed nonce to obtain session credentials.
+  '/api/{exchange}/logout':
+    post:
+      summary: Logout
+      operationId: logout
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: LogoutRequest
+              type: object
+              properties:
+                args:
+                  type: array
+                  maxItems: 1
+                  items:
+                    type: string
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+      responses:
+        '200':
+          description: Logout response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+      description: Logout and invalidate the current session.
+  '/api/{exchange}/isSessionActive':
+    post:
+      summary: Is Session Active
+      operationId: isSessionActive
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: IsSessionActiveRequest
+              type: object
+              properties:
+                args:
+                  type: array
+                  maxItems: 1
+                  items:
+                    type: string
+                  minItems: 1
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+              required:
+                - args
+      responses:
+        '200':
+          description: Is Session Active response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: boolean
+      description: Check if a session is active for the given wallet address.
+  '/api/{exchange}/getSession':
+    post:
+      summary: Get Session
+      operationId: getSession
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: GetSessionRequest
+              type: object
+              properties:
+                args:
+                  type: array
+                  maxItems: 1
+                  items:
+                    type: string
+                  minItems: 1
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+              required:
+                - args
+      responses:
+        '200':
+          description: Get Session response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+      description: Get the stored session for a wallet address.
   '/api/{exchange}/loadMarkets':
     post:
       summary: Load Markets

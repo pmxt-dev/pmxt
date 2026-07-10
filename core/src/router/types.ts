@@ -92,6 +92,50 @@ export interface FetchMarketMatchesParams {
     sort?: 'confidence' | 'volume' | 'priceDifference';
 }
 
+// ===== Probable Auth Types =====
+
+/**
+ * Response from /auth/nonce
+ */
+export interface AuthNonceResponse {
+    /** Random nonce to be signed */
+    nonce: string;
+    /** Human-readable message to sign */
+    messageToSign: string;
+    /** Optional expiry timestamp (milliseconds) */
+    expiresAt?: number;
+}
+
+/**
+ * Response from /auth/login
+ */
+export interface AuthLoginResponse {
+    /** API key for authenticated requests */
+    apiKey: string;
+    /** API secret for signing */
+    apiSecret: string;
+    /** Passphrase for trading */
+    passphrase?: string;
+    /** Session expiry timestamp (milliseconds) */
+    expiresAt?: number;
+    /** Whether session is active */
+    active?: boolean;
+}
+
+/**
+ * Session state stored in memory
+ */
+export interface AuthSession {
+    /** Wallet address that authenticated */
+    walletAddress: string;
+    /** Session credentials */
+    credentials: AuthLoginResponse;
+    /** When session was created (milliseconds) */
+    createdAt: number;
+    /** When session was last used (milliseconds) */
+    lastUsedAt: number;
+}
+
 /** @deprecated Use {@link FetchMarketMatchesParams} instead. */
 export type FetchMatchesParams = FetchMarketMatchesParams;
 

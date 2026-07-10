@@ -944,6 +944,108 @@ export abstract class Exchange {
 
     // BEGIN GENERATED METHODS
 
+    async getAuthNonce(walletAddress: string): Promise<AuthNonceResponse> {
+        await this.initPromise;
+        try {
+            const args: any[] = [];
+            args.push(walletAddress);
+            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/getAuthNonce`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ args, credentials: this.getCredentials() }),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                if (body.error && typeof body.error === "object") {
+                    throw fromServerError(body.error);
+                }
+                throw new PmxtError(body.error?.message || response.statusText);
+            }
+            const json = await response.json();
+            return this.handleResponse(json);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to getAuthNonce: ${error}`);
+        }
+    }
+
+    async loginWithSignature(walletAddress: string, signature: string, nonce: string): Promise<AuthLoginResponse> {
+        await this.initPromise;
+        try {
+            const args: any[] = [];
+            args.push(walletAddress);
+            args.push(signature);
+            args.push(nonce);
+            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/loginWithSignature`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ args, credentials: this.getCredentials() }),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                if (body.error && typeof body.error === "object") {
+                    throw fromServerError(body.error);
+                }
+                throw new PmxtError(body.error?.message || response.statusText);
+            }
+            const json = await response.json();
+            return this.handleResponse(json);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to loginWithSignature: ${error}`);
+        }
+    }
+
+    async logout(walletAddress?: string): Promise<void> {
+        await this.initPromise;
+        try {
+            const args: any[] = [];
+            if (walletAddress !== undefined) args.push(walletAddress);
+            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/logout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ args, credentials: this.getCredentials() }),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                if (body.error && typeof body.error === "object") {
+                    throw fromServerError(body.error);
+                }
+                throw new PmxtError(body.error?.message || response.statusText);
+            }
+            const json = await response.json();
+            this.handleResponse(json);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to logout: ${error}`);
+        }
+    }
+
+    async isSessionActive(walletAddress: string): Promise<boolean> {
+        await this.initPromise;
+        try {
+            const args: any[] = [];
+            args.push(walletAddress);
+            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/isSessionActive`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ args, credentials: this.getCredentials() }),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                if (body.error && typeof body.error === "object") {
+                    throw fromServerError(body.error);
+                }
+                throw new PmxtError(body.error?.message || response.statusText);
+            }
+            const json = await response.json();
+            return this.handleResponse(json);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to isSessionActive: ${error}`);
+        }
+    }
+
     async loadMarkets(reload: boolean = false): Promise<Record<string, UnifiedMarket>> {
         await this.initPromise;
         try {

@@ -4,6 +4,7 @@ import { createWalletClient, http } from 'viem';
 import { bsc, bscTestnet } from 'viem/chains';
 import { ExchangeCredentials } from '../../BaseExchange';
 import { PROBABLE_CHAIN_ID, PROBABLE_TESTNET_CHAIN_ID } from './config';
+import { AuthNonceResponse, AuthLoginResponse } from '../../router/types';
 
 /**
  * Manages Probable authentication and CLOB client initialization.
@@ -78,5 +79,107 @@ export class ProbableAuth {
 
     getAddress(): string {
         return this.walletAddress;
+    }
+}
+
+
+/**
+ * Get a nonce from Probable.
+ * Uses the implicit API endpoint 'getNonce' from api.ts.
+ */
+export async function getAuthNonce(
+    walletAddress: string,
+    callApi: Function
+): Promise<AuthNonceResponse> {
+    try {
+        const response = await callApi('getNonce', { address: walletAddress });
+        return {
+            nonce: response.nonce,
+            messageToSign: response.message || response.messageToSign,
+            expiresAt: response.expiresAt,
+        };
+    } catch (error: any) {
+        throw new Error(`Failed to get Probable auth nonce: ${error.message}`);
+    }
+}
+
+/**
+ * Login to Probable with signature.
+ * Uses the implicit API endpoint 'postLogin' from api.ts.
+ */
+export async function loginWithSignature(
+    walletAddress: string,
+    signature: string,
+    nonce: string,
+    callApi: Function
+): Promise<AuthLoginResponse> {
+    try {
+        const response = await callApi('postLogin', {
+            address: walletAddress,
+            signature,
+            nonce,
+        });
+        return {
+            apiKey: response.apiKey,
+            apiSecret: response.apiSecret,
+            passphrase: response.passphrase,
+            expiresAt: response.expiresAt,
+            active: true,
+        };
+    } catch (error: any) {
+        throw new Error(`Failed to login to Probable: ${error.message}`);
+    }
+}
+
+/**
+ * Logout from Probable.
+ * Uses the implicit API endpoint 'postLogout' from api.ts.
+ */
+export async function logout(callApi: Function): Promise<void> {
+    try {
+        await callApi('postLogout', {});
+    } catch (error: any) {
+        // Log but don't throw - logout should be best-effort
+        console.warn(`Failed to logout from Probable: ${error.message}`);
+    }
+}
+
+/**
+ * Verify L1 signature.
+ * Uses the implicit API endpoint 'postVerifyL1' from api.ts.
+ */
+export async function verifyL1(
+    walletAddress: string,
+    signature: string,
+    callApi: Function
+): Promise<boolean> {
+    try {
+        const response = await callApi('postVerifyL1', {
+            address: walletAddress,
+            signature,
+        });
+        return response.verified === true;
+    } catch (error: any) {
+        return false;
+    }
+}
+
+/**
+ * Verify L2 signature.
+ * Uses the implicit API endpoint 'postVerifyL2' from api.ts.
+ */
+export async function verifyL2(
+    walletAddress: string,
+    signature: string,
+    callApi: Function
+): Promise<boolean> {
+    try {
+        const response = await callApi('postVerifyL2', {
+            address: walletAddress,
+            signature,
+        });
+        return response.verified === true;
+    } catch (error: any) {
+        return false;
     }
 }

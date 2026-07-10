@@ -88,6 +88,9 @@ const TYPE_MAP = {
     // Pagination wrapper — gets its own response handler
     PaginatedMarketsResult: { converter: null, pattern: 'paginatedMarkets' },
     PaginatedEventsResult: { converter: null, pattern: 'paginatedEvents' },
+
+    AuthNonceResponse: { converter: null, pattern: 'single' },
+    AuthLoginResponse: { converter: null, pattern: 'single' },
 };
 
 // SDK types that can appear in generated signatures without extra imports
@@ -101,6 +104,9 @@ const SDK_PARAM_TYPES = new Set([
     'MyTradesParams', 'OrderHistoryParams', 'CreateOrderParams',
     'MarketFilterCriteria', 'EventFilterCriteria',
     'SubscriptionOption',
+
+    'AuthNonceResponse',
+    'AuthLoginResponse',
 ]);
 
 // Parameter names that represent outcome IDs and should accept MarketOutcome.

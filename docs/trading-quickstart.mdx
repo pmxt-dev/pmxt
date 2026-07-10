@@ -3,10 +3,10 @@ title: Trading Quickstart
 description: "Place your first hosted trade in 60 seconds — API key, escrow deposit, market order."
 ---
 
-This page walks you from a fresh `pmxt_api_key` to a confirmed position on Polymarket in under a minute. Hosted mode is the default: USDC sits in a non-custodial [`PreFundedEscrow`](/guides/escrow-lifecycle) smart contract that PMXT cannot move without your EIP-712 signature, and your wallet only ever signs typed-data payloads — no private key leaves your machine when you trade.
+From a fresh `pmxt_api_key` to a confirmed position on Polymarket in under a minute. For the full hosted model, see [Hosted trading](/concepts/hosted-trading).
 
 <Info>
-Hosted trading currently supports **Polymarket** (Polygon) and **Opinion** (cross-chain). Other venues are read-only via the hosted catalog. To trade on those, run the [self-hosted server](/guides/self-hosted) with raw venue credentials.
+Hosted writes today: **Polymarket**, **Opinion**, and **Limitless**. Other venues are read-only via the hosted catalog; use [self-hosted](/guides/self-hosted) for venue-native trading where the venue exposes writes. Check [Feature Support & Compliance](https://github.com/pmxt-dev/pmxt/blob/main/core/COMPLIANCE.md) for per-venue support.
 </Info>
 
 ## 1. Get an API key
@@ -62,9 +62,9 @@ echo "Use an SDK for the quickstart."
 ```
 </CodeGroup>
 
-<Warning>
-Use a **dedicated trading wallet**. The private key only stays on your machine for local signing, but treat the wallet as compromised if the host is ever compromised. Read [Security](/security) before funding production wallets.
-</Warning>
+<Note>
+PMXT is non-custodial by construction: the SDK signs locally and your key never leaves your machine. For production, a practical habit is to keep only the float you're actively trading in this wallet. See [Security](/security).
+</Note>
 
 ## 4. Approve and deposit USDC into escrow
 
@@ -89,11 +89,12 @@ If you're scripting deposits (CI, treasury automation, custom wallet integration
 <CodeGroup>
 ```python Python
 # 1. Build an unsigned ERC-20 approval tx for USDC
-approve_tx = client.escrow.approve_tx("usdc")
+approve_tx = client.escrow.approve_tx("usdc")["tx"]
 # Sign and send approve_tx with your wallet library...
+# (escrow builders return {"tx": {...}}; unwrap with ["tx"])
 
 # 2. Build an unsigned deposit tx for 10 USDC
-deposit_tx = client.escrow.deposit_tx(amount=10.0)
+deposit_tx = client.escrow.deposit_tx(amount=10.0)["tx"]
 # Sign and send deposit_tx with your wallet library...
 
 # 3. Confirm the deposit landed
@@ -103,11 +104,12 @@ print(f"Escrow USDC: {balances[0].available}")
 
 ```typescript TypeScript
 // 1. Build an unsigned ERC-20 approval tx for USDC
-const approveTx = await client.escrow.approveTx("usdc");
+const { tx: approveTx } = await client.escrow.approveTx("usdc");
 // Sign and send approveTx with your wallet library...
+// (escrow builders return { tx: {...} }; destructure as shown)
 
 // 2. Build an unsigned deposit tx for 10 USDC
-const depositTx = await client.escrow.depositTx(10);
+const { tx: depositTx } = await client.escrow.depositTx(10);
 // Sign and send depositTx with your wallet library...
 
 // 3. Confirm the deposit landed
@@ -161,17 +163,22 @@ echo "Use an SDK for create_order."
 The hosted trading API accepts either the venue-native identifier (returned by `client.fetch_markets`) or a catalog UUID (returned by [Router](/router/overview)) — whichever you have. The SDK picks the right wire field automatically. See [Catalog UUID vs Venue ID](/concepts/catalog-uuid-vs-venue-id) when cross-venue identity matters.
 </Note>
 
-<Warning>
-**Polymarket has a 5-share minimum per order.** At ~$0.78/share, a 5 USDC buy is ~6.4 shares — fine. But $2 at the same price is only 2.5 shares and will be rejected with `OrderSizeTooSmall`. Size up or switch to a cheaper outcome.
-</Warning>
+<Note>
+**`outcome=` requires a `MarketOutcome` instance**, not a bare dict — passing a raw dict raises `AttributeError`. Use the object you got from `client.fetch_markets()[i].outcomes[j]` (or `router.fetch_markets()[i].outcomes[j]`) as shown above. If you only have string ids, pass them explicitly instead: `client.create_order(market_id="...", outcome_id="...", side="buy", ...)`.
+</Note>
 
 <Note>
-**Market orders are budget-capped, not price-capped.** A market buy spends exactly `amount` USDC and a market sell sells exactly `amount` shares — the on-chain authorization caps the spend, so `slippage_pct` is not needed (and is ignored) for market orders. Hosted **limit** orders are not yet available and currently return `501`; use the self-hosted server for resting limit orders.
+**What PMXT abstracts vs what leaks through from the venue.** PMXT unifies the order shape across venues, but a few Polymarket rules pass through as-is. Polymarket enforces **two independent minimums on marketable BUY orders** — a **5-share minimum** AND a **$1 notional minimum** — and the higher of the two binds. At $0.138/share the 5-share rule alone would only require $0.69, but the $1 rule raises the effective minimum to ~8 shares (~$1.10); a 5-share buy at that price is rejected by the venue with `invalid amount for a marketable BUY order ($0.69), min size: 1` and PMXT surfaces it as `OrderSizeTooSmall`. Market orders are **budget-capped** (a buy spends exactly `amount` USDC, a sell sells exactly `amount` shares — `slippage_pct` is ignored). Hosted **limit** orders are supported via `client.create_order(order_type="limit", price=..., amount=...)` and the same 5-share and $1 marketable-BUY minimums apply; limit BUY and SELL are supported, and both use `denom="shares"` in hosted SDK requests.
 </Note>
 
 ## 6. Verify the fill
 
 Hosted positions appear immediately on `fetch_positions`. The position's `size` is your share count; the remaining USDC sits in `fetch_balance`.
+
+<Note>
+The `id` returned by hosted `create_order` is a **PMXT internal task id**, not a Polymarket (or other venue) order id. Calling Polymarket's own order-lookup with it will return nothing. Use `client.fetch_order(id)` — the hosted SDK knows how to resolve the task and reports the live status (`queued`, `fulfilling`, `fulfilled`, `failed`, `no_fill`). A fresh `create_order` returns `status="queued"` because the venue submit happens asynchronously; poll `fetch_order` (or pass `wait=true`) to get the venue-confirmed outcome.
+</Note>
+
 
 <CodeGroup>
 ```python Python

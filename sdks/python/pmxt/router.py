@@ -478,18 +478,43 @@ class Router(Exchange):
         if not raw:
             return []
 
-        return [
-            PriceComparison(
-                market=_parse_market(r.get("market", {})),
-                relation=r.get("relation", "identity"),
-                confidence=r.get("confidence", 0.0),
-                reasoning=r.get("reasoning"),
-                best_bid=r.get("bestBid"),
-                best_ask=r.get("bestAsk"),
-                venue=r.get("venue", ""),
+        results: List[PriceComparison] = []
+        for r in raw:
+            market_payload = r.get("market", {}) or {}
+            market = _parse_market(market_payload)
+            # The hosted /api/router response carries the live bid/ask on the
+            # nested market (and the venue via market.sourceExchange). The
+            # top-level bestBid/bestAsk/venue fields are legacy and frequently
+            # null on the wire, so prefer the market fields and fall back to
+            # the top-level only when needed.
+            best_bid = r.get("bestBid")
+            if best_bid is None:
+                best_bid = getattr(market, "best_bid", None)
+                if best_bid is None:
+                    best_bid = market_payload.get("bestBid")
+            best_ask = r.get("bestAsk")
+            if best_ask is None:
+                best_ask = getattr(market, "best_ask", None)
+                if best_ask is None:
+                    best_ask = market_payload.get("bestAsk")
+            venue = (
+                r.get("venue")
+                or getattr(market, "source_exchange", "")
+                or market_payload.get("sourceExchange", "")
+                or ""
             )
-            for r in raw
-        ]
+            results.append(
+                PriceComparison(
+                    market=market,
+                    relation=r.get("relation", "identity"),
+                    confidence=r.get("confidence", 0.0),
+                    reasoning=r.get("reasoning"),
+                    best_bid=best_bid,
+                    best_ask=best_ask,
+                    venue=venue,
+                )
+            )
+        return results
 
     # ------------------------------------------------------------------
     # Hedging
@@ -534,18 +559,43 @@ class Router(Exchange):
         if not raw:
             return []
 
-        return [
-            PriceComparison(
-                market=_parse_market(r.get("market", {})),
-                relation=r.get("relation", "identity"),
-                confidence=r.get("confidence", 0.0),
-                reasoning=r.get("reasoning"),
-                best_bid=r.get("bestBid"),
-                best_ask=r.get("bestAsk"),
-                venue=r.get("venue", ""),
+        results: List[PriceComparison] = []
+        for r in raw:
+            market_payload = r.get("market", {}) or {}
+            market = _parse_market(market_payload)
+            # The hosted /api/router response carries the live bid/ask on the
+            # nested market (and the venue via market.sourceExchange). The
+            # top-level bestBid/bestAsk/venue fields are legacy and frequently
+            # null on the wire, so prefer the market fields and fall back to
+            # the top-level only when needed.
+            best_bid = r.get("bestBid")
+            if best_bid is None:
+                best_bid = getattr(market, "best_bid", None)
+                if best_bid is None:
+                    best_bid = market_payload.get("bestBid")
+            best_ask = r.get("bestAsk")
+            if best_ask is None:
+                best_ask = getattr(market, "best_ask", None)
+                if best_ask is None:
+                    best_ask = market_payload.get("bestAsk")
+            venue = (
+                r.get("venue")
+                or getattr(market, "source_exchange", "")
+                or market_payload.get("sourceExchange", "")
+                or ""
             )
-            for r in raw
-        ]
+            results.append(
+                PriceComparison(
+                    market=market,
+                    relation=r.get("relation", "identity"),
+                    confidence=r.get("confidence", 0.0),
+                    reasoning=r.get("reasoning"),
+                    best_bid=best_bid,
+                    best_ask=best_ask,
+                    venue=venue,
+                )
+            )
+        return results
 
     # ------------------------------------------------------------------
     # Arbitrage

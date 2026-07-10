@@ -195,13 +195,20 @@ export class SmarketsFetcher implements IExchangeFetcher<SmarketsRawEventWithMar
             if (params.eventId) {
                 return this.fetchEnrichedEventById(params.eventId);
             }
+            if (params.limit !== undefined && params.limit <= 0) {
+                return [];
+            }
 
             const stateFilter = this.mapEventStatus(params?.status || 'active');
+            const requestedLimit = params.limit === undefined
+                ? undefined
+                : Math.max(1, Math.floor(params.limit));
             const rawEvents = await this.fetchPaginatedEvents({
                 state: stateFilter,
                 type_scope: ['single_event'],
                 with_new_type: true,
-            });
+                ...(requestedLimit === undefined ? {} : { limit: Math.min(requestedLimit, BATCH_SIZE) }),
+            }, requestedLimit);
             return this.enrichEvents(rawEvents);
         } catch (error: any) {
             throw smarketsErrorMapper.mapError(error);
@@ -323,11 +330,8 @@ export class SmarketsFetcher implements IExchangeFetcher<SmarketsRawEventWithMar
         const contracts: SmarketsRawContract[] = contractsData.contracts || [];
         if (contracts.length === 0) return [];
 
-        // Step 2: Fetch volumes for this market
-        const volumeData = await this.ctx.callApi('get_volumes_by_market_ids', {
-            market_ids: [marketId],
-        });
-        const volumes: SmarketsRawVolume[] = volumeData.volumes || [];
+        // Step 2: Fetch optional authenticated volumes for this market.
+        const volumes = await this.fetchVolumesByMarketIds([marketId]);
 
         // Step 3: We need the event_id. The contracts have market_id but not event_id.
         // Use the events/markets endpoint by searching for events that contain this market.
@@ -376,6 +380,7 @@ export class SmarketsFetcher implements IExchangeFetcher<SmarketsRawEventWithMar
     }
 
     private async fetchAllEnrichedEvents(params?: MarketFilterParams): Promise<SmarketsRawEventWithMarkets[]> {
+        if (params?.limit !== undefined && params.limit <= 0) return [];
         const stateFilter = this.mapEventStatus(params?.status || 'active');
         const limit = params?.limit || 1000;
 
@@ -513,6 +518,12 @@ export class SmarketsFetcher implements IExchangeFetcher<SmarketsRawEventWithMar
 
     private async fetchVolumesByMarketIds(marketIds: string[]): Promise<SmarketsRawVolume[]> {
         if (marketIds.length === 0) return [];
+        const headers = this.ctx.getHeaders();
+        const hasAuthHeader = Object.entries(headers).some(([key, value]) =>
+            key.toLowerCase() === 'authorization' && String(value).trim().length > 0
+        );
+        if (!hasAuthHeader) return [];
+
         const batches = this.batchArray(marketIds, MARKET_ID_BATCH_SIZE);
         const results = await Promise.all(
             batches.map(async (batch) => {

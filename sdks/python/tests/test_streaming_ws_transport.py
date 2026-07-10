@@ -1,5 +1,4 @@
 import json
-import threading
 
 import pytest
 
@@ -37,7 +36,6 @@ def _raw_trade() -> dict:
         ("watch_order_book", ("outcome-1",), "watch_order_book() requires WebSocket transport"),
         ("watch_order_books", (["outcome-1"],), "watch_order_books() requires WebSocket transport"),
         ("watch_trades", ("outcome-1",), "watch_trades() requires WebSocket transport"),
-        ("unwatch_order_book", ("outcome-1",), "unwatch_order_book() requires WebSocket transport"),
     ],
 )
 def test_streaming_methods_require_websocket_transport(monkeypatch, method_name, args, message):
@@ -179,46 +177,36 @@ def test_watch_trades_uses_websocket_transport(monkeypatch):
     assert trades[0].id == "trade-1"
 
 
-def test_unwatch_order_book_sends_websocket_unsubscribe(monkeypatch):
+def test_unwatch_order_book_uses_http_sidecar_transport(monkeypatch):
     exchange = _exchange()
+    calls = []
 
-    class FakeSocket:
-        def __init__(self):
-            self.sent = []
+    class FakeResponse:
+        data = json.dumps({"success": True, "data": None}).encode()
 
-        def send(self, raw):
-            self.sent.append(json.loads(raw))
+        def read(self):
+            return self.data
 
-    class FakeWs:
-        connected = True
+    def fake_call_api(**kwargs):
+        calls.append(kwargs)
+        return FakeResponse()
 
-        def __init__(self):
-            self._lock = threading.Lock()
-            self._ws = FakeSocket()
-            self._active_subs = {"watchOrderBook:outcome-1": "req-existing"}
-            self._subscriptions = {"req-existing": object()}
-            self._data_queues = {"req-existing": [_raw_order_book()]}
-            self._data_store = {"req-existing": _raw_order_book()}
-
-        def _ensure_connected(self):
-            return None
-
-    fake_ws = FakeWs()
-    monkeypatch.setattr(exchange, "_get_or_create_ws", lambda: fake_ws)
+    monkeypatch.setattr(exchange._api_client, "call_api", fake_call_api)
     monkeypatch.setattr(
         exchange,
-        "_fetch_with_retry",
-        lambda _fn: pytest.fail("unwatch_order_book attempted HTTP fallback"),
+        "_get_or_create_ws",
+        lambda: pytest.fail("unwatch_order_book attempted WebSocket transport"),
     )
 
     exchange.unwatch_order_book("outcome-1")
 
-    assert fake_ws._ws.sent[0]["action"] == "unsubscribe"
-    assert fake_ws._ws.sent[0]["id"] == "req-existing"
-    assert fake_ws._ws.sent[0]["exchange"] == "mock"
-    assert fake_ws._ws.sent[0]["method"] == "unwatchOrderBook"
-    assert fake_ws._ws.sent[0]["args"] == ["outcome-1"]
-    assert "watchOrderBook:outcome-1" not in fake_ws._active_subs
-    assert "req-existing" not in fake_ws._subscriptions
-    assert "req-existing" not in fake_ws._data_queues
-    assert "req-existing" not in fake_ws._data_store
+    assert calls == [
+        {
+            "method": "POST",
+            "url": "http://127.0.0.1:9/api/mock/unwatchOrderBook",
+            "body": {"args": ["outcome-1"]},
+            "header_params": calls[0]["header_params"],
+        }
+    ]
+    assert calls[0]["header_params"]["Content-Type"] == "application/json"
+    assert calls[0]["header_params"]["Accept"] == "application/json"

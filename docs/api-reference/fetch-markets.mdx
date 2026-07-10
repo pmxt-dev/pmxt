@@ -4,7 +4,7 @@ openapi: GET /api/{exchange}/fetchMarkets
 ---
 
 <Info>
-**Faster with an API key** — With a PMXT API key this endpoint is served from an indexed catalog (~10 ms) instead of proxying to the venue (~500 ms). No code changes required — same request, same response, just faster. [Learn more](/concepts/catalog-vs-live).
+**Faster with an API key** — With a PMXT API key this endpoint is served from an indexed catalog (~10 ms) instead of proxying to the venue (~500 ms). No code changes required — same request, same response, just faster. [Learn more](/concepts/unified-schema).
 </Info>
 
 ## Use cases
@@ -92,9 +92,9 @@ curl "https://api.pmxt.dev/api/polymarket/fetchMarkets?tags=Elections&tags=Trump
 ```
 </CodeGroup>
 
-### Sort by volume
+### Filter by status
 
-Find the highest-volume active markets on Limitless:
+Find active markets on Limitless:
 
 <CodeGroup>
 ```python Python
@@ -102,7 +102,6 @@ import pmxt
 
 api = pmxt.Limitless()
 markets = api.fetch_markets(
-    sort="volume",
     status="active",
     limit=5,
 )
@@ -113,14 +112,13 @@ import { Limitless } from "pmxtjs";
 
 const api = new Limitless();
 const markets = await api.fetchMarkets({
-  sort: "volume",
   status: "active",
   limit: 5,
 });
 ```
 
 ```bash curl
-curl "https://api.pmxt.dev/api/limitless/fetchMarkets?sort=volume&status=active&limit=5" \
+curl "https://api.pmxt.dev/api/limitless/fetchMarkets?status=active&limit=5" \
   -H "Authorization: Bearer $PMXT_API_KEY"
 ```
 </CodeGroup>

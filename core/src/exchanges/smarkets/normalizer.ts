@@ -68,6 +68,14 @@ function buildContractOutcome(
     };
 }
 
+function parseSmarketsResolutionDate(event: SmarketsRawEvent): Date | undefined {
+    // Smarkets list and detail endpoints currently return end_date as null for
+    // many events. start_datetime is an event start, not a market resolution,
+    // so leave the unified resolution date unset instead of using a misleading
+    // fallback that can corrupt cross-venue ordering.
+    return event.end_date ? new Date(event.end_date) : undefined;
+}
+
 // ----------------------------------------------------------------------------
 // Normalizer
 // ----------------------------------------------------------------------------
@@ -117,12 +125,7 @@ export class SmarketsNormalizer implements IExchangeNormalizer<SmarketsRawEventW
             }
         }
 
-        // Derive resolution date from event end_date or start_datetime
-        const resolutionDate = event.end_date
-            ? new Date(event.end_date)
-            : event.start_datetime
-                ? new Date(event.start_datetime)
-                : new Date();
+        const resolutionDate = parseSmarketsResolutionDate(event);
 
         const um = {
             marketId: market.id,

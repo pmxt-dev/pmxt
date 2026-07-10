@@ -716,7 +716,7 @@ describe('HyperliquidNormalizer', () => {
             expect(market.eventId).toBeUndefined();
         });
 
-        test('resolutionDate falls back to epoch when no expiry', () => {
+        test('resolutionDate is undefined when no expiry', () => {
             const noExpiry: HyperliquidRawOutcomeWithQuestion = {
                 outcome: {
                     outcome: 88,
@@ -728,7 +728,7 @@ describe('HyperliquidNormalizer', () => {
                 midPrice: undefined,
             };
             const market = normalizer.normalizeMarket(noExpiry)!;
-            expect(market.resolutionDate.getTime()).toBe(0);
+            expect(market.resolutionDate).toBeUndefined();
         });
     });
 

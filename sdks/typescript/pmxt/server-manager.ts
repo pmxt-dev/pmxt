@@ -103,13 +103,15 @@ export class ServerManager {
      * Check if the server is running.
      */
     async isServerRunning(): Promise<boolean> {
-        // Read lock file to get current port
-        const port = this.getRunningPort();
+        const info = this.getServerInfo();
+        if (!info?.port) {
+            return false;
+        }
 
         try {
             // Use native fetch to check health on the actual running port
             // This avoids issues where this.api is configured with the wrong port
-            const response = await fetch(`http://localhost:${port}/health`, {
+            const response = await fetch(`http://localhost:${info.port}/health`, {
                 signal: AbortSignal.timeout(5_000),
             });
             if (response.ok) {

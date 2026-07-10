@@ -16,7 +16,7 @@ HttpMethod = Literal["GET", "POST", "PUT", "DELETE"]
 
 HOSTED_CATALOG_BASE_URL = "https://api.pmxt.dev"
 HOSTED_TRADING_BASE_URL = "https://trade.pmxt.dev"
-HOSTED_TRADING_VENUES: frozenset[str] = frozenset({"polymarket", "opinion"})
+HOSTED_TRADING_VENUES: frozenset[str] = frozenset({"polymarket", "opinion", "limitless"})
 HTTP_METHODS: frozenset[str] = frozenset({"GET", "POST", "PUT", "DELETE"})
 UNSAFE_HTTP_METHODS: frozenset[str] = frozenset({"POST", "PUT", "DELETE"})
 
@@ -261,7 +261,7 @@ def ensure_hosted_trading_supported(client: Any) -> None:
     if venue not in HOSTED_TRADING_VENUES:
         venue_label = venue or "unknown"
         raise NotSupported(
-            "Hosted trading is only supported for Polymarket and Opinion; "
+            "Hosted trading is only supported for Polymarket, Opinion, and Limitless; "
             f"{venue_label} is not supported with pmxt_api_key."
         )
 

@@ -21,7 +21,7 @@ Outcome prices are in the closed interval [0, 1] and are read as the market's im
 
 ### Catalog UUID vs venue ID
 
-PMXT assigns its own stable UUID to every market and outcome. The underlying venue (Polymarket, Kalshi, etc.) also has its own native ID — a hex condition ID, a ticker, a hash. Hosted trading requires the catalog UUID. Per-venue read endpoints return venue-native IDs. See [Catalog UUID vs Venue ID](/concepts/catalog-uuid-vs-venue-id) for which surfaces use which.
+PMXT assigns its own stable UUID to every market and outcome. The underlying venue (Polymarket, Kalshi, etc.) also has its own native ID — a hex condition ID, a ticker, a hash. The hosted trading API accepts either — pass whatever your code already has; the SDK picks the right wire field. Cross-venue identity (Router results, portfolio analytics) is the place where the catalog UUID matters. See [Catalog UUID vs Venue ID](/concepts/catalog-uuid-vs-venue-id).
 
 ## Crypto / EVM terms (for the non-crypto reader)
 
@@ -39,7 +39,7 @@ A specific EVM-compatible chain (chainId 137). PMXT's `PreFundedEscrow` contract
 
 ### USDC
 
-A US-dollar-pegged stablecoin (1 USDC ≈ $1) issued on many chains. PMXT uses the **Polygon-native** USDC for hosted trading. Bridged versions on other chains are not interchangeable.
+A US-dollar-pegged stablecoin (1 USDC ≈ $1) issued on many chains. PMXT hosted trading settles in **USDC.e on Polygon** (`0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174`) — the bridged token Polymarket's CTF exchange uses. Native Polygon USDC and bridged USDC on other chains are not interchangeable.
 
 ### EIP-712
 
@@ -65,7 +65,7 @@ An order that rests on the book at a specified price and only executes when a co
 
 ### Group A methods
 
-In PMXT, **Group A** refers to the venue-agnostic trading and read methods that work identically across every hosted venue — `create_order`, `fetch_balance`, `fetch_positions`, `fetch_my_trades`, and friends. The unified surface that makes PMXT a single SDK across venues. See [API Reference](/api-reference/overview).
+In PMXT, **Group A** refers to the shared trading and account method surface for venues that implement those capabilities — `create_order`, `fetch_balance`, `fetch_positions`, `fetch_my_trades`, and friends. Method names and response schemas are unified where supported; hosted write support is venue-specific. See [Hosted Trading](/concepts/hosted-trading#whats-supported-today), [Supported Venues](/concepts/venues#feature-support), and [API Reference](/api-reference/overview).
 
 ## Hosted vs self-hosted
 
@@ -75,4 +75,4 @@ PMXT operates the catalog, the escrow contract, and the venue-submit path. You h
 
 ### Self-hosted
 
-You run `pmxt-core` on your own machine, supply raw venue credentials, and the SDK talks directly to the venues. No API key, no escrow, no PMXT in the trade path. See [Hosted vs Self-hosted](/concepts/hosted-vs-self-hosted) for the comparison.
+You run `pmxt-core` on your own machine, supply raw venue credentials, and the SDK talks directly to the venues. No API key, no escrow, no PMXT in the trade path. See [Hosted Trading](/concepts/hosted-trading#when-to-switch-to-self-hosted) for the comparison.

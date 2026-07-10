@@ -3,19 +3,21 @@ title: Self-hosted (Advanced)
 description: "Run pmxt-core on your own machine when hosted mode isn't the right fit."
 ---
 
-Self-hosted PMXT runs the open-source `pmxt-core` server on your machine. The SDK detects the absence of a `pmxt_api_key` and routes every request through `http://localhost:3847` instead of `trade.pmxt.dev`. Venue credentials stay on your machine; you talk to venue APIs directly.
+Self-hosted PMXT runs the open-source `pmxt-core` server on your machine. The SDK detects the absence of a `pmxt_api_key` and routes through `http://localhost:3847` instead of `trade.pmxt.dev`. Venue credentials stay on your machine; you talk to venue APIs directly.
 
-This is the **advanced escape hatch**. Most users should use [hosted mode](/concepts/hosted-trading). Read on if you have specific reasons to run local.
+## When self-hosted is the right call
 
-## When to choose self-hosted
+Pick self-hosted if **any** of these apply:
 
-- **Sub-100ms latency.** Hosted trading adds a network hop. If you're running latency-sensitive arbitrage or market-making, the local server colocates the venue submission step.
-- **Raw venue credentials.** You want to use Polymarket L2 API keys, Kalshi RSA keys, Smarkets session cookies — credentials that hosted mode doesn't accept.
-- **Regulatory custody requirements.** You need to be the direct counterparty to the venue with no third-party intermediary in the custody path.
-- **Venues hosted mode doesn't trade yet.** Hosted writes are Polymarket + Opinion. Self-hosted writes work on every venue PMXT supports (Kalshi, Limitless, Smarkets, Probable, Myriad, Metaculus, etc.).
-- **OSS contribution.** You're developing or debugging `pmxt-core` itself.
+- **Sub-100ms latency** — local submission removes a network hop. Matters for latency-sensitive arb / market-making.
+- **Raw venue credentials** — Polymarket L2 API keys, Kalshi RSA, Smarkets session cookies. Hosted mode doesn't accept these.
+- **Regulatory custody** — you must be the direct counterparty with no intermediary in the custody path.
+- **Venues hosted mode can't write to yet** — hosted writes are Polymarket, Opinion, and Limitless. Self-hosted can use venue-native credentials where the venue exposes writes (Kalshi, Smarkets, Probable, Myriad, Metaculus, etc.); check [Feature Support & Compliance](https://github.com/pmxt-dev/pmxt/blob/main/core/COMPLIANCE.md) for per-venue support.
+- **OSS contribution** — you're hacking on `pmxt-core` itself.
 
-If none of these apply, [hosted](/concepts/hosted-trading) is simpler.
+## When hosted is still the better choice
+
+Everyone else. [Hosted](/concepts/hosted-trading) is simpler to deploy (no local process), gives you on-chain custody you control via the timelock, and PMXT's server never sees a private key. If you're building a consumer app, a research notebook, or any non-latency-critical service against Polymarket, Opinion, or Limitless, stop here and use hosted.
 
 ## 1. Install pmxt-core
 
@@ -64,6 +66,8 @@ The first call blocks briefly while the local server warms up; subsequent calls 
 For lifecycle control (start, stop, restart, status, logs), use the `server` namespace. See [Server Management](/sdk/server) for the full reference.
 
 ```python
+import pmxt
+
 pmxt.server.start()       # idempotent
 pmxt.server.health()      # bool
 pmxt.server.status()      # structured snapshot
@@ -88,7 +92,7 @@ poly = pmxt.Polymarket(private_key="0xYourPrivateKey...")
 order = poly.create_order(
     outcome=market.yes,
     side="buy",
-    type="limit",
+    order_type="limit",
     price=0.42,
     amount=100,
 )
@@ -108,6 +112,8 @@ kalshi = pmxt.Kalshi(
 ### Limitless / Probable / Opinion (self-hosted) — EVM private key
 
 ```python
+import pmxt
+
 limitless = pmxt.Limitless(private_key="0x...")
 probable  = pmxt.Probable(private_key="0x...")
 opinion   = pmxt.Opinion(private_key="0x...")
@@ -116,20 +122,24 @@ opinion   = pmxt.Opinion(private_key="0x...")
 ### Smarkets — email + password
 
 ```python
+import pmxt
+
 smarkets = pmxt.Smarkets(email="you@example.com", password="...")
 ```
 
 ### Baozi — Solana keypair
 
 ```python
+import pmxt
+
 baozi = pmxt.Baozi(private_key="<base58 secret key>")
 ```
 
 See [Supported Venues](/concepts/venues) for the full credential matrix.
 
-<Warning>
-**Use a dedicated trading wallet** for any venue that requires a private key with full fund control (Polymarket, Limitless, Probable, Opinion, Baozi). Self-hosted keeps the key on your machine — but a compromised host still compromises the wallet. Limit balances accordingly.
-</Warning>
+<Note>
+For venues that use a fund-controlling private key (Polymarket, Limitless, Probable, Opinion, Baozi), a practical habit is to keep only the float you're actively trading in this wallet.
+</Note>
 
 ## 5. Environment overrides
 
@@ -146,6 +156,8 @@ See [API Reference / Configuration](/api-reference/configuration) for the full e
 A single pmxt-core process can serve every venue. Construct multiple exchange clients against the same server — they all share the local process.
 
 ```python
+import pmxt
+
 poly = pmxt.Polymarket(private_key="0x...")
 kalshi = pmxt.Kalshi(api_key_id="...", private_key_pem="...")
 # Both clients reuse the same pmxt-core process at http://localhost:3847
@@ -157,12 +169,12 @@ For production self-hosted, the SDK + bundled server is sufficient — there's n
 
 ## What you give up vs hosted
 
-- **Cross-venue search via Router** — still works, but requires the hosted `pmxt_api_key` for the catalog. If you want Router without trading-hosted, construct a separate `Router` client with the API key alongside your local trading clients. See [Hosted vs self-hosted / mixing modes](/concepts/hosted-vs-self-hosted#mixing-modes).
+- **Cross-venue search via Router** — still works, but requires the hosted `pmxt_api_key` for the catalog. If you want Router without trading-hosted, construct a separate `Router` client with the API key alongside your local trading clients. See [Hosted trading](/concepts/hosted-trading).
 - **Hosted error tree** — you'll get the parent classes (`InvalidOrder`, `InsufficientFunds`) but not the hosted leaves. Catching parents keeps your code portable.
 - **PreFundedEscrow custody** — irrelevant in self-hosted; you custody at the venue.
 
 ## Next
 
 - [Server Management](/sdk/server) — start/stop/status/logs.
-- [Hosted vs self-hosted](/concepts/hosted-vs-self-hosted) — full comparison.
+- [Hosted trading](/concepts/hosted-trading) — full comparison.
 - [Supported Venues](/concepts/venues) — what each venue accepts.

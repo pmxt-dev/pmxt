@@ -1,6 +1,7 @@
 # PMXT Python SDK
 
-A unified Python interface for prediction market exchanges (Polymarket, Kalshi, Limitless, Opinion, and more).
+A unified Python SDK for supported prediction markets.
+Hosted services are the default, with local sidecar access for self-hosted venue integrations.
 
 > **Note**: Use with a PMXT API key (hosted, recommended) or run a local PMXT service. Get a key at [pmxt.dev/dashboard](https://pmxt.dev/dashboard).
 
@@ -57,7 +58,7 @@ When you pass `pmxt_api_key`, the SDK talks to the PMXT hosted services:
 1. Catalog requests go to `api.pmxt.dev` (markets, events, order books, OHLCV, trades).
 2. Trading requests go to `trade.pmxt.dev` (orders, positions, balances).
 3. The SDK does **not** spawn a local process.
-4. For Polymarket and Opinion, PMXT's PreFundedEscrow handles custody — you sign orders with your own key, PMXT settles on-chain.
+4. For Polymarket, Opinion, and Limitless, PMXT's PreFundedEscrow handles custody — you sign orders with your own key, PMXT settles on-chain.
 
 ### How it works (self-hosted)
 
@@ -73,6 +74,8 @@ When you omit `pmxt_api_key`, the Python SDK manages the local PMXT service for 
 If you prefer to manage the server yourself:
 
 ```python
+import pmxt
+
 # Disable auto-start
 poly = pmxt.Polymarket(auto_start_server=False)
 

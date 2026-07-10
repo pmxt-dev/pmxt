@@ -225,8 +225,7 @@ class ServerManager:
         Returns:
             True if the server responds with status "ok", False otherwise.
         """
-        port = self.get_running_port()
-        return self._check_health(port, timeout=2)
+        return self.is_server_alive()
 
     def logs(self, n: int = 50) -> List[str]:
         """
@@ -459,13 +458,14 @@ class ServerManager:
 
         Reads the port from the lock file on each iteration so that we
         health-check the actual sidecar, not a stale orphan on the default
-        port.  Falls back to ``self._port`` when the lock file is absent.
+        port.
         """
         start_time = time.time()
 
         while time.time() - start_time < self.HEALTH_CHECK_TIMEOUT:
-            port = self.get_running_port()
-            if self._check_health(port):
+            info = self.get_server_info()
+            port = info.get('port') if info else None
+            if port and self._check_health(port):
                 return
 
             time.sleep(self.HEALTH_CHECK_INTERVAL)

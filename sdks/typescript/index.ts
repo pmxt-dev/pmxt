@@ -1,8 +1,8 @@
 /**
  * PMXT - Unified Prediction Market API (TypeScript SDK)
  *
- * A unified interface for interacting with multiple prediction market exchanges
- * (Kalshi, Polymarket) identically.
+ * A unified TypeScript SDK for supported prediction markets.
+ * Provides local sidecar access to PMXT exchange implementations and hosted services where configured.
  *
  * @example
  * ```typescript
@@ -19,19 +19,29 @@
  */
 
 
-import { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, Baozi, Opinion, Metaculus, Smarkets, PolymarketUS, GeminiTitan, Hyperliquid, SuiBets, Suibets, Mock } from "./pmxt/client.js";
+import { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, Baozi, Opinion, Metaculus, Smarkets, PolymarketUS, GeminiTitan, Hyperliquid, SuiBets, Suibets, Rain, Hunch, Mock } from "./pmxt/client.js";
 import { Router } from "./pmxt/router.js";
 import { ServerManager } from "./pmxt/server-manager.js";
 import { FeedClient } from "./pmxt/feed-client.js";
 import * as models from "./pmxt/models.js";
 import * as errors from "./pmxt/errors.js";
 
-export { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, Baozi, Opinion, Metaculus, Smarkets, PolymarketUS, GeminiTitan, Hyperliquid, SuiBets, Suibets, Mock, PolymarketOptions } from "./pmxt/client.js";
+export { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, Baozi, Opinion, Metaculus, Smarkets, PolymarketUS, GeminiTitan, Hyperliquid, SuiBets, Suibets, Rain, Hunch, Mock, PolymarketOptions } from "./pmxt/client.js";
+export type { ExchangeOptions, SuiBetsOptions } from "./pmxt/client.js";
 export { FeedClient } from "./pmxt/feed-client.js";
 export type { Ticker, Tickers, OHLCV, Market as FeedMarket, OracleRound, FeedClientOptions } from "./pmxt/feed-client.js";
 export { Router } from "./pmxt/router.js";
+export type { RouterOptions } from "./pmxt/router.js";
 export { ServerManager } from "./pmxt/server-manager.js";
-export { HOSTED_URL, LOCAL_URL, ENV, resolvePmxtBaseUrl } from "./pmxt/constants.js";
+export {
+    HOSTED_URL,
+    LOCAL_URL,
+    ENV,
+    resolvePmxtBaseUrl,
+    PREFUNDED_ESCROW_ADDRESSES,
+    VENUE_ESCROW_ADDRESSES,
+    LIMITLESS_VENUE_ESCROW_ADDRESSES,
+} from "./pmxt/constants.js";
 export { MarketList } from "./pmxt/models.js";
 export type { UnifiedSeries } from "./pmxt/models.js";
 export type * from "./pmxt/models.js";
@@ -89,6 +99,8 @@ const pmxt = {
     Hyperliquid,
     SuiBets,
     Suibets,
+    Rain,
+    Hunch,
     Mock,
     Router,
     ServerManager,

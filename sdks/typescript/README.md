@@ -1,6 +1,7 @@
 # pmxtjs
 
-A unified TypeScript/Node.js SDK for prediction markets — The ccxt for prediction markets.
+A unified TypeScript/Node.js SDK for supported prediction markets.
+Hosted services are the default, with local sidecar access for self-hosted venue integrations.
 
 > **Note**: Use with a PMXT API key (hosted, recommended) or run a local PMXT service. Get a key at [pmxt.dev/dashboard](https://pmxt.dev/dashboard).
 
@@ -49,7 +50,7 @@ const balance = await client.fetchBalance();
 
 ### How it works (hosted)
 
-When you pass `pmxtApiKey`, the SDK talks to PMXT's hosted services: catalog requests go to `api.pmxt.dev`, trading requests go to `trade.pmxt.dev`. The SDK does **not** spawn a local process. For Polymarket and Opinion, PMXT's PreFundedEscrow handles custody — you sign orders with your own key, PMXT settles on-chain.
+When you pass `pmxtApiKey`, the SDK talks to PMXT's hosted services: catalog requests go to `api.pmxt.dev`, trading requests go to `trade.pmxt.dev`. The SDK does **not** spawn a local process. For Polymarket, Opinion, and Limitless, PMXT's PreFundedEscrow handles custody — you sign orders with your own key, PMXT settles on-chain.
 
 ### How it works (self-hosted)
 
@@ -120,7 +121,7 @@ const order = await trader.createOrder({
   amount: 5.0,
   denom: "usdc",
   slippage_pct: 30.0,
-} as any);
+});
 console.log(`Order status: ${order.status}`);
 ```
 
@@ -143,7 +144,9 @@ When self-hosting, supply venue credentials directly — no `pmxtApiKey`. The SD
 
 **Polymarket:**
 ```typescript
-const poly = new pmxt.Polymarket({
+import { Polymarket } from "pmxtjs";
+
+const poly = new Polymarket({
     privateKey: process.env.POLYMARKET_PRIVATE_KEY,
     proxyAddress: process.env.POLYMARKET_PROXY_ADDRESS, // Optional
     // signatureType: 'gnosis-safe' (default)
@@ -152,7 +155,9 @@ const poly = new pmxt.Polymarket({
 
 **Kalshi:**
 ```typescript
-const kalshi = new pmxt.Kalshi({
+import { Kalshi } from "pmxtjs";
+
+const kalshi = new Kalshi({
     apiKey: process.env.KALSHI_API_KEY,
     privateKey: process.env.KALSHI_PRIVATE_KEY
 });
@@ -160,7 +165,9 @@ const kalshi = new pmxt.Kalshi({
 
 **Limitless:**
 ```typescript
-const limitless = new pmxt.Limitless({
+import { Limitless } from "pmxtjs";
+
+const limitless = new Limitless({
     privateKey: process.env.LIMITLESS_PRIVATE_KEY
 });
 ```
@@ -170,8 +177,11 @@ const limitless = new pmxt.Limitless({
 - `createOrder(params)` - Place a new order
   ```typescript
   // Using outcome shorthand (recommended)
+  const yes = market.yes;
+  if (!yes) throw new Error("Market has no YES outcome");
+
   await poly.createOrder({
-      outcome: market.yes,
+      outcome: yes,
       side: 'buy',
       type: 'limit',
       amount: 10,

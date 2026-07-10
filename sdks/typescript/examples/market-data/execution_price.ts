@@ -6,7 +6,7 @@ const main = async () => {
     const outcomeId = markets[0].outcomes[0].outcomeId;
 
     const orderBook = await api.fetchOrderBook(outcomeId);
-    const price = await api.getExecutionPrice(orderBook, 'buy', 100);
+    const price = api.getExecutionPrice(orderBook, 'buy', 100);
     console.log(`Average price for 100 shares: ${price}`);
 
     // Get detailed information

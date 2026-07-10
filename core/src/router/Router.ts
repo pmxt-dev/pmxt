@@ -166,6 +166,7 @@ export class Router extends PredictionMarketExchange {
             limit: params?.limit,
             offset: params?.offset,
             closed: params?.status === 'closed' || params?.status === 'inactive',
+            sourceExchange: params?.sourceExchange ?? params?.exchange,
         });
         if (!Array.isArray(response)) {
             throw new Error(
@@ -196,6 +197,7 @@ export class Router extends PredictionMarketExchange {
             category: params?.category,
             limit: params?.limit,
             offset: params?.offset,
+            sourceExchange: params?.sourceExchange ?? params?.exchange,
         });
         if (!Array.isArray(response)) {
             throw new Error(

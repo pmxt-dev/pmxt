@@ -13,6 +13,7 @@ import {
     EventMatchResult,
     FetchMatchedEventClustersParams,
     FetchMatchedMarketClustersParams,
+    MatchedMarketClusterParams,
     MatchedEventCluster,
     MatchedMarketCluster,
     PriceComparison,
@@ -20,6 +21,15 @@ import {
     UnifiedMarket,
     UnifiedEvent,
 } from "./models.js";
+
+function withQuestionAlias<T extends UnifiedMarket>(market: T): T {
+    Object.defineProperty(market, 'question', {
+        get() { return this.title; },
+        enumerable: false,
+        configurable: true,
+    });
+    return market;
+}
 
 function convertMarket(raw: any): UnifiedMarket {
     const outcomes = (raw.outcomes || []).map((o: any) => ({
@@ -44,7 +54,7 @@ function convertMarket(raw: any): UnifiedMarket {
         metadata: o.metadata,
     }) : undefined;
 
-    return {
+    return withQuestionAlias({
         marketId: raw.marketId,
         title: raw.title,
         slug: raw.slug,
@@ -68,7 +78,7 @@ function convertMarket(raw: any): UnifiedMarket {
         no: convertOutcome(raw.no),
         up: convertOutcome(raw.up),
         down: convertOutcome(raw.down),
-    };
+    });
 }
 
 function convertEvent(raw: any): UnifiedEvent {
@@ -91,7 +101,7 @@ function convertEvent(raw: any): UnifiedEvent {
 function parseMatchResult(raw: any): MatchResult {
     const marketData = raw.market || {};
     const market = convertMarket(marketData);
-    return {
+    const result: MatchResult = {
         ...market,
         market,
         relation: raw.relation || 'identity',
@@ -101,6 +111,7 @@ function parseMatchResult(raw: any): MatchResult {
         bestAsk: raw.bestAsk ?? marketData.bestAsk,
         sourceMarket: raw.sourceMarket ? convertMarket(raw.sourceMarket) : undefined,
     };
+    return withQuestionAlias(result);
 }
 
 function normalizeQueryValue(value: unknown): unknown {
@@ -480,15 +491,30 @@ export class Router extends Exchange {
             const json = await response.json();
             const data = this.handleResponse(json);
             if (!data) return [];
-            return (data as any[]).map((r) => ({
-                market: convertMarket(r.market || {}),
-                relation: r.relation || 'identity',
-                confidence: r.confidence || 0,
-                reasoning: r.reasoning,
-                bestBid: r.bestBid,
-                bestAsk: r.bestAsk,
-                venue: r.venue || '',
-            }));
+            return (data as any[]).map((r) => {
+                const marketPayload = r.market || {};
+                const market = convertMarket(marketPayload);
+                // Hosted /api/router response carries the live bid/ask on the
+                // nested market (and the venue via market.sourceExchange). The
+                // top-level bestBid/bestAsk/venue fields are legacy and often
+                // null on the wire, so prefer the market fields and fall back
+                // to the top-level only when needed.
+                const bestBid =
+                    r.bestBid ?? (market as any).bestBid ?? marketPayload.bestBid ?? null;
+                const bestAsk =
+                    r.bestAsk ?? (market as any).bestAsk ?? marketPayload.bestAsk ?? null;
+                const venue =
+                    r.venue || (market as any).sourceExchange || marketPayload.sourceExchange || '';
+                return {
+                    market,
+                    relation: r.relation || 'identity',
+                    confidence: r.confidence || 0,
+                    reasoning: r.reasoning,
+                    bestBid,
+                    bestAsk,
+                    venue,
+                };
+            });
         } catch (error) {
             if (error instanceof Error) throw error;
             throw new Error(`Failed to compareMarketPrices: ${error}`);
@@ -529,15 +555,25 @@ export class Router extends Exchange {
             const json = await this.sidecarReadRequest('fetchHedges', query, [query]);
             const data = this.handleResponse(json);
             if (!data) return [];
-            return (data as any[]).map((r) => ({
-                market: convertMarket(r.market || {}),
-                relation: r.relation || 'identity',
-                confidence: r.confidence || 0,
-                reasoning: r.reasoning,
-                bestBid: r.bestBid,
-                bestAsk: r.bestAsk,
-                venue: r.venue || '',
-            }));
+            return (data as any[]).map((r) => {
+                const marketPayload = r.market || {};
+                const market = convertMarket(marketPayload);
+                const bestBid =
+                    r.bestBid ?? (market as any).bestBid ?? marketPayload.bestBid ?? null;
+                const bestAsk =
+                    r.bestAsk ?? (market as any).bestAsk ?? marketPayload.bestAsk ?? null;
+                const venue =
+                    r.venue || (market as any).sourceExchange || marketPayload.sourceExchange || '';
+                return {
+                    market,
+                    relation: r.relation || 'identity',
+                    confidence: r.confidence || 0,
+                    reasoning: r.reasoning,
+                    bestBid,
+                    bestAsk,
+                    venue,
+                };
+            });
         } catch (error) {
             if (error instanceof Error) throw error;
             throw new Error(`Failed to fetchHedges: ${error}`);

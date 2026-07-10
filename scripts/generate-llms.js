@@ -42,6 +42,24 @@ const openapiHostedPath = path.join(
 const openapiHosted = fs.existsSync(openapiHostedPath)
   ? JSON.parse(fs.readFileSync(openapiHostedPath, "utf8"))
   : null;
+const openapiHostedTradingPath = path.join(
+  DOCS_DIR,
+  "api-reference",
+  "openapi-hosted-trading.json"
+);
+const openapiHostedTrading = fs.existsSync(openapiHostedTradingPath)
+  ? JSON.parse(fs.readFileSync(openapiHostedTradingPath, "utf8"))
+  : null;
+
+const openapiSpecs = {
+  "api-reference/openapi.json": openapi,
+  "api-reference/openapi-hosted.json": openapiHosted,
+  "api-reference/openapi-hosted-trading.json": openapiHostedTrading,
+};
+
+function resolveOpenApiSpec(specFile) {
+  return openapiSpecs[specFile] || null;
+}
 
 // ---------------------------------------------------------------------------
 // 3. Helpers
@@ -468,7 +486,7 @@ for (const page of allPages) {
   } else if (page.type === "openapi") {
     // Resolve which spec to use
     const specFile = page.openapi || "api-reference/openapi.json";
-    const spec = specFile.includes("hosted") ? openapiHosted : openapi;
+    const spec = resolveOpenApiSpec(specFile);
     if (!spec) continue;
 
     const pathObj = spec.paths?.[page.path];
@@ -595,7 +613,7 @@ fullSections.push(errorCodesSection);
 const llmsTxtLines = [
   "# PMXT",
   "",
-  "> One API for every prediction market. Unified data, cross-venue search, and trading across Polymarket, Kalshi, Limitless, Smarkets, and 8 more venues.",
+  "> One API for supported prediction markets. Unified data and hosted catalog search across Polymarket, Kalshi, Limitless, Smarkets, and 12 more venues. Trading where venues expose writes.",
   "",
   `Docs: ${BASE_URL}`,
   `API Base: https://api.pmxt.dev`,
@@ -632,7 +650,7 @@ console.log(`wrote docs/llms.txt  (${llmsTxtLines.length} lines)`);
 const header = [
   "# PMXT — Full Documentation",
   "",
-  "> One API for every prediction market. Unified data, cross-venue search, and trading across Polymarket, Kalshi, Limitless, Smarkets, and 8 more venues.",
+  "> One API for supported prediction markets. Unified data and hosted catalog search across Polymarket, Kalshi, Limitless, Smarkets, and 12 more venues. Trading where venues expose writes.",
   "",
   `Docs: ${BASE_URL}`,
   `API Base: https://api.pmxt.dev`,

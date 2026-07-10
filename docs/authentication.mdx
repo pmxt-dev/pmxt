@@ -3,6 +3,17 @@ title: Authentication
 description: "API keys, SDK setup, and venue credentials."
 ---
 
+## Hosts
+
+PMXT serves two hostnames.
+
+- `api.pmxt.dev` — reads, catalog search via Router, MCP server, venue passthrough (`/api/*`).
+- `trade.pmxt.dev` — hosted writes (build / submit / cancel) and hosted account state (orders, positions, balances, trades) via `/v0/trade/*`, `/v0/user/*`, and `/v0/orders/*`.
+
+The same `pmxt_api_key` authenticates against both — no separate credentials.
+
+Reads and writes have different latency and availability profiles; the trading host is the hot path for signed-order submission and is operated independently.
+
 ## API key
 
 Every request to `https://api.pmxt.dev` needs a Bearer token. Get one
@@ -33,6 +44,8 @@ endpoint. No code changes versus local development.
     Or pass it directly:
 
     ```python
+    import pmxt
+
     poly = pmxt.Polymarket(pmxt_api_key="pmxt_live_...")
     ```
   </Tab>
@@ -47,6 +60,8 @@ endpoint. No code changes versus local development.
     Or pass it directly:
 
     ```typescript
+    import pmxt from "pmxtjs";
+
     const poly = new pmxt.Polymarket({ pmxtApiKey: "pmxt_live_..." });
     ```
   </Tab>
@@ -80,12 +95,13 @@ deposit_tx = client.escrow.deposit_tx(amount=10.0)
 
 See [Trading quickstart](/trading-quickstart) for the full 60-second flow
 and [Escrow lifecycle](/guides/escrow-lifecycle) for the approve / deposit /
-withdraw mechanics. Hosted writes today: Polymarket and Opinion.
+withdraw mechanics. Hosted writes today: Polymarket, Opinion, and Limitless.
 
 ### Self-hosted / direct venue credentials (advanced)
 
-When you run [pmxt-core locally](/guides/self-hosted), or when you need a
-venue that hosted writes don't yet support, you pass venue-native
+When you run [pmxt-core locally](/guides/self-hosted), or when you need
+venue-native trading where the venue exposes writes but hosted mode does
+not, you pass venue-native
 credentials (Polymarket private key, Kalshi RSA, Smarkets session, etc.)
 directly:
 
@@ -93,7 +109,7 @@ directly:
 order = poly.create_order(
     outcome=market.yes,
     side="buy",
-    type="limit",
+    order_type="limit",
     price=0.42,
     amount=100,
 )
@@ -127,9 +143,16 @@ All revocations are logged under **Settings > Audit Log**.
 
 | Status | Body                                     | Meaning                                   | SDK exception |
 | ------ | ---------------------------------------- | ----------------------------------------- | ------------- |
-| `401`  | `{"error": "missing api key"}`           | No `Authorization` header on the request. | [`InvalidApiKey`](/api-reference/errors#invalidapikey) |
-| `401`  | `{"error": "invalid api key"}`           | Key unknown, revoked, or expired.         | [`InvalidApiKey`](/api-reference/errors#invalidapikey) |
+| `401`  | `{"error": "missing api key"}`           | No `Authorization` header on the request. | `PmxtError` (message: `missing api key`) |
+| `401`  | `{"error": "invalid api key"}`           | Key unknown, revoked, or expired.         | `PmxtError` (message: `invalid api key`) |
 | `429`  | `{"error": "rate_limit_exceeded", ... }` | See [Plans & Limits](/rate-limits).       | `RateLimitExceeded` |
+
+<Note>
+Today the SDKs raise the base `pmxt.errors.PmxtError` for both 401 cases
+— match on the message string. A dedicated `InvalidApiKey` subclass may
+be added in a future SDK release; this doc will be updated when that
+ships.
+</Note>
 
 See [API Reference / Errors](/api-reference/errors) for the full error
 class hierarchy.

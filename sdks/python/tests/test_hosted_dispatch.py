@@ -22,7 +22,7 @@ import pytest
 
 from pmxt._hosted_routing import HOSTED_TRADING_BASE_URL
 from pmxt._hosted_errors import MissingWalletAddress, NotSupported
-from pmxt._exchanges import Polymarket
+from pmxt._exchanges import Hunch, Limitless, Myriad, Polymarket
 from pmxt.errors import InvalidSignature
 import pmxt.client as client_module
 from pmxt.models import BuiltOrder
@@ -112,6 +112,17 @@ def _install_signing_bypass(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(client_module, "verify_signature", _noop_verify)
 
 
+def test_myriad_wallet_address_populates_wallet_slot_not_private_key() -> None:
+    client = Myriad(
+        wallet_address=WALLET_ADDRESS,
+        pmxt_api_key=PMXT_API_KEY,
+        auto_start_server=False,
+    )
+
+    assert client.wallet_address == WALLET_ADDRESS
+    assert client.private_key is None
+
+
 def _make_polymarket(
     *,
     with_wallet: bool = True,
@@ -127,6 +138,34 @@ def _make_polymarket(
     if with_signer:
         kwargs["signer"] = _MockSigner()
     return Polymarket(**kwargs)
+
+
+def _make_limitless(
+    *,
+    with_wallet: bool = True,
+    with_signer: bool = False,
+) -> Limitless:
+    """Construct a hosted-mode Limitless client without starting a sidecar."""
+    kwargs: Dict[str, Any] = {
+        "pmxt_api_key": PMXT_API_KEY,
+        "auto_start_server": False,
+    }
+    if with_wallet:
+        kwargs["wallet_address"] = WALLET_ADDRESS
+    if with_signer:
+        kwargs["signer"] = _MockSigner()
+    return Limitless(**kwargs)
+
+
+def test_hunch_constructor_accepts_wallet_address_for_hosted_mode():
+    api = Hunch(
+        pmxt_api_key=PMXT_API_KEY,
+        wallet_address=WALLET_ADDRESS,
+        auto_start_server=False,
+    )
+
+    assert api.exchange_name == "hunch"
+    assert api.wallet_address == WALLET_ADDRESS
 
 
 # --------------------------------------------------------------------------- #
@@ -282,7 +321,9 @@ class TestHostedReadDispatch:
                         "id": "trade-1",
                         "timestamp": "2026-01-01T00:00:00Z",
                         "price": 0.5,
-                        "amount": 2.0,
+                        # The v0 wire sends trade amounts in 6-dec micro-shares;
+                        # user_trade_from_v0 normalizes to decimal shares.
+                        "amount": 2_000_000,
                         "side": "buy",
                         "order_id": "order-1",
                         "market_id": MARKET_ID,
@@ -423,8 +464,25 @@ def _submit_response_payload() -> Dict[str, Any]:
     }
 
 
-def _cancel_build_payload() -> Dict[str, Any]:
+def _cancel_pull_typed_data_payload() -> Dict[str, Any]:
     return {
+        "primaryType": "CancelPull",
+        "domain": {
+            "name": "VenueEscrow",
+            "version": "1",
+            "chainId": 8453,
+            "verifyingContract": "0x" + "2" * 40,
+        },
+        "types": {
+            "EIP712Domain": [],
+            "CancelPull": [{"name": "user", "type": "address"}],
+        },
+        "message": {"user": WALLET_ADDRESS, "nonce": 2},
+    }
+
+
+def _cancel_build_payload(*, with_pull: bool = False) -> Dict[str, Any]:
+    payload = {
         "cancel_id": "cancel-xyz",
         "typed_data": {
             "primaryType": "Cancel",
@@ -441,6 +499,9 @@ def _cancel_build_payload() -> Dict[str, Any]:
             "message": {"user": WALLET_ADDRESS, "nonce": 1},
         },
     }
+    if not with_pull:
+        return payload
+    return {**payload, "pull_typed_data": _cancel_pull_typed_data_payload()}
 
 
 def _cancel_response_payload() -> Dict[str, Any]:
@@ -715,6 +776,37 @@ class TestHostedWriteDispatch:
         body_cancel = _request_body(captured[1])
         assert body_cancel["cancel_id"] == "cancel-xyz"
         assert body_cancel["signature"].startswith("0x")
+        assert order.id == "cancelled-order-1"
+
+    def test_limitless_cancel_order_routes_build_then_cancel_with_pull_signature(
+        self,
+        monkeypatch,
+    ):
+        routes = {
+            "/v0/orders/cancel/build": _cancel_build_payload(with_pull=True),
+            "/v0/orders/cancel": _cancel_response_payload(),
+        }
+        captured = _install_hosted_transport(
+            monkeypatch, _multi_response_handler(routes)
+        )
+        _install_signing_bypass(monkeypatch)
+        api = _make_limitless(with_signer=True)
+
+        order = api.cancel_order("limitless-order-to-cancel")
+
+        assert len(captured) == 2
+        assert captured[0].method == "POST"
+        assert captured[0].url.path == "/v0/orders/cancel/build"
+        body_build = _request_body(captured[0])
+        assert body_build["order_id"] == "limitless-order-to-cancel"
+        assert body_build["user_address"] == WALLET_ADDRESS
+
+        assert captured[1].method == "POST"
+        assert captured[1].url.path == "/v0/orders/cancel"
+        body_cancel = _request_body(captured[1])
+        assert body_cancel["cancel_id"] == "cancel-xyz"
+        assert body_cancel["signature"].startswith("0x")
+        assert body_cancel["pull_signature"].startswith("0x")
         assert order.id == "cancelled-order-1"
 
 

@@ -155,4 +155,18 @@ describe('Kalshi cursor pagination', () => {
         expect(page.events[0].tags).toEqual(['Soccer']);
         expect(calls.map(call => call.operation)).toEqual(['GetEvents', 'GetSeriesList']);
     });
+
+    it('uses a bounded event page for default active limited event reads', async () => {
+        const { fetcher, calls } = createFetcher([
+            { events: buildEvents(1), cursor: 'cursor-1' },
+            { events: buildEvents(1, 1), cursor: null },
+        ]);
+
+        const events = await fetcher.fetchRawEvents({ limit: 1 } as any);
+
+        expect(events).toHaveLength(1);
+        expect(calls).toEqual([
+            { limit: 1, with_nested_markets: true, status: 'open' },
+        ]);
+    });
 });

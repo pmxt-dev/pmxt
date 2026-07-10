@@ -1,6 +1,6 @@
 # PMXT
 
-> One API for every prediction market. Unified data, cross-venue search, and trading across Polymarket, Kalshi, Limitless, Smarkets, and 8 more venues.
+> One API for supported prediction markets. Unified data and hosted catalog search across Polymarket, Kalshi, Limitless, Smarkets, and 12 more venues. Trading where venues expose writes.
 
 Docs: https://pmxt.dev/docs
 API Base: https://api.pmxt.dev
@@ -9,31 +9,26 @@ GitHub: https://github.com/pmxt-dev/pmxt
 
 ## Pages
 
-- [Introduction](https://pmxt.dev/docs/introduction): One API for every prediction market. Unified data, cross-venue search, and trading.
+- [Introduction](https://pmxt.dev/docs/introduction): One API for supported prediction markets. Unified data, hosted catalog search, and venue-native trading where supported.
 - [Quickstart](https://pmxt.dev/docs/quickstart): API key to working code in 30 seconds.
 - [Trading Quickstart](https://pmxt.dev/docs/trading-quickstart): Place your first hosted trade in 60 seconds — API key, escrow deposit, market order.
 - [Authentication](https://pmxt.dev/docs/authentication): API keys, SDK setup, and venue credentials.
 - [MCP Server](https://pmxt.dev/docs/mcp): Give AI assistants access to prediction markets via the Model Context Protocol.
 - [Security & Credential Handling](https://pmxt.dev/docs/security): How PMXT handles credentials in hosted vs self-hosted modes, what risks to understand, and how to protect yourself.
 - [Rate Limits](https://pmxt.dev/docs/rate-limits): How much traffic your API key gives you.
-- [SQL](https://pmxt.dev/docs/sql): Query raw tick-level orderbook history with SQL.
 - [Prediction Markets 101](https://pmxt.dev/docs/concepts/prediction-markets-101): What a prediction market is, what an outcome is, and what 'price' means here.
 - [Unified Schema](https://pmxt.dev/docs/concepts/unified-schema): One shape for events, markets, and outcomes — across every venue.
-- [Catalog vs Live](https://pmxt.dev/docs/concepts/catalog-vs-live): Reads from Postgres, writes to the venue. How the hosted backend chooses.
 - [Supported Venues](https://pmxt.dev/docs/concepts/venues): Every venue PMXT currently speaks.
-- [Hosted Trading](https://pmxt.dev/docs/concepts/hosted-trading): The hosted-default execution path — how PMXT routes orders, why funds sit in the non-custodial PreFundedEscrow, and when to choose self-host instead.
-- [Hosted Custody Model](https://pmxt.dev/docs/concepts/hosted-custody): The non-custodial PreFundedEscrow contract, admin model, audit status, and how to get your USDC out without PMXT's server.
-- [Hosted vs Self-hosted](https://pmxt.dev/docs/concepts/hosted-vs-self-hosted): One-page comparison of the two PMXT execution paths.
+- [Hosted Trading](https://pmxt.dev/docs/concepts/hosted-trading): The hosted-default execution path — how PMXT routes orders, the non-custodial PreFundedEscrow, and when to switch to self-hosted.
 - [Catalog UUID vs Venue ID](https://pmxt.dev/docs/concepts/catalog-uuid-vs-venue-id): Two ways to identify a market. The hosted trading API accepts either — here's when each matters.
 - [Escrow Lifecycle](https://pmxt.dev/docs/guides/escrow-lifecycle): Deposit, trade, withdraw — how USDC moves through PMXT's non-custodial PreFundedEscrow.
-- [Signing Orders](https://pmxt.dev/docs/guides/signing): EIP-712 typed-data signing for hosted trading — what the SDK does, what the protocol looks like, and how to bring your own signer.
+- [Signing Orders](https://pmxt.dev/docs/guides/signing): What the SDK does for you, and how to plug in a custom signer if you need one.
 - [Handling Hosted Errors](https://pmxt.dev/docs/guides/hosted-errors): Every common hosted-trading error, when it fires, and how to recover.
-- [Migrate to Hosted Trading](https://pmxt.dev/docs/guides/migrate-to-hosted-trading): Move existing pmxt / pmxtjs code from venue-direct to hosted-mode trading.
+- [Coming from Polymarket's official SDK](https://pmxt.dev/docs/guides/migrate-to-hosted-trading): Credential and signatureType mapping for users moving off @polymarket/clob-client.
 - [Self-hosted (Advanced)](https://pmxt.dev/docs/guides/self-hosted): Run pmxt-core on your own machine when hosted mode isn't the right fit.
-- [Server Management](https://pmxt.dev/docs/sdk/server): Start, stop, restart, and inspect the PMXT local server from your SDK code.
-- [What is the Router?](https://pmxt.dev/docs/router/overview): One API key. Every prediction market. Cross-venue search, matching, and price comparison.
-- [Search Events](https://pmxt.dev/docs/router/events): Search events across every venue in a single query.
-- [Search Markets](https://pmxt.dev/docs/router/markets): Search markets across every venue in a single query.
+- [Server Management](https://pmxt.dev/docs/sdk/server): The SDK auto-spawns and manages pmxt-core when running self-hosted.
+- [What is the Router?](https://pmxt.dev/docs/router/overview): One API key. Hosted catalog search, matching, and price comparison.
+- [Search](https://pmxt.dev/docs/router/search): Search events and markets across the hosted catalog in a single query.
 - [Find Similar Events](https://pmxt.dev/docs/router/event-matching): Discover cross-venue event clusters and the markets inside each matched event.
 - [Find Similar Markets](https://pmxt.dev/docs/router/matching): Discover cross-venue market clusters with relation types, confidence scores, and source markets.
 - [Compare Prices Across Venues](https://pmxt.dev/docs/router/prices): Compare prices across venues and find related markets.
@@ -47,6 +42,15 @@ GitHub: https://github.com/pmxt-dev/pmxt
 - [Fetch Markets](https://pmxt.dev/docs/api-reference/fetch-markets)
 - [Fetch Markets Paginated](https://pmxt.dev/docs/api-reference/fetchMarketsPaginated): Fetch markets with cursor-based pagination backed by a stable in-memory snapshot. On the first call (or when no cursor is supplied), fetches all markets once and caches them. Subsequent calls with a cursor returned from a previous call slice directly from the cached snapshot — no additional API calls are made. The snapshot is invalidated after `snapshotTTL` ms (configured via `ExchangeOptions` in the constructor). A request using a cursor from an expired snapshot throws `'Cursor has expired'`.
 - [Fetch Market](https://pmxt.dev/docs/api-reference/fetch-market)
+- [Create Order](https://pmxt.dev/docs/api-reference/createOrderHosted): Place a buy or sell order on Polymarket, Opinion, or Limitless. Returns the resulting order with id, fill status, average price, fees, and the on-chain tx hash once it settles.
+- [Build Order](https://pmxt.dev/docs/api-reference/buildOrderHosted): Build an order *without* placing it. Returns the order's typed-data payload (for the wallet to sign) plus a `built_order_id` to pass to `submitOrderHosted` once it's signed.
+- [Submit Order](https://pmxt.dev/docs/api-reference/submitOrderHosted): Submit a signed order returned by `buildOrderHosted` and get back the resulting order — id, fill status, average price, and the on-chain tx hash once it settles.
+- [Cancel Order](https://pmxt.dev/docs/api-reference/cancelOrderHosted): Start a cancel on an existing open order. Returns the cancel payload for the wallet to sign — you then submit the signature to `POST /v0/orders/cancel`.
+- [Fetch Order](https://pmxt.dev/docs/api-reference/fetchOrderHosted): Look up a single order by id. Returns the order's current status, filled / remaining size, average fill price, and — once settled — the on-chain tx hash.
+- [Fetch Open Orders](https://pmxt.dev/docs/api-reference/fetchOpenOrdersHosted): List the wallet's resting orders that haven't filled or been cancelled yet. Each entry has the market, outcome, side, size, price, and time-in-force.
+- [Fetch My Trades](https://pmxt.dev/docs/api-reference/fetchMyTradesHosted): List the wallet's historical fills on Polymarket, Opinion, and Limitless. Each trade carries the executed price (net of venue fees), size, and on-chain settlement tx hash.
+- [Fetch Positions](https://pmxt.dev/docs/api-reference/fetchPositionsHosted): List the open positions held by `address` across Polymarket, Opinion, and Limitless. Each position carries the market, outcome, share count, and average entry price.
+- [Fetch Balance](https://pmxt.dev/docs/api-reference/fetchBalanceHosted): Check the USDC available for trading. Returns the wallet's balance inside the PMXT escrow on Polygon — *not* the wallet's on-chain USDC balance.
 - [Fetch matched event clusters](https://pmxt.dev/docs/api-reference/getV0Matched-event-clusters): Returns connected clusters of semantically matched events across venues. Use this endpoint to browse or anchor event-level matches while preserving each venue's child markets.
 - [Fetch matched market clusters](https://pmxt.dev/docs/api-reference/getV0Matched-market-clusters): Returns connected clusters of semantically matched markets across venues. Use this endpoint to browse or anchor market-level matches without flattening the response into pairwise rows.
 - [Fetch OHLCV](https://pmxt.dev/docs/api-reference/fetch-ohlcv)
@@ -71,7 +75,6 @@ GitHub: https://github.com/pmxt-dev/pmxt
 - [Fetch Oracle History](https://pmxt.dev/docs/api-reference/feedFetchOracleHistory): Returns historical Chainlink oracle rounds for a price feed.
 - [Fetch Historical Prices](https://pmxt.dev/docs/api-reference/feedFetchHistoricalPrices): Returns historical price data as tickers within a time range.
 - [Fetch Series](https://pmxt.dev/docs/api-reference/fetchSeries): Fetch the recurring series (fourth tier above Event -> Market -> Outcome) that this venue exposes. Returns an empty array on venues without a series concept (Limitless, Smarkets, Probable, Metaculus, Baozi, Hyperliquid, SuiBets, Polymarket US). - `params.id` -> a single matching series with its events populated where supported. - no params -> the full list, typically without nested events for payload size.
-- [SQL](https://pmxt.dev/docs/sql): Query raw tick-level orderbook history with SQL.
 - [Execute a read-only SQL query against ClickHouse](https://pmxt.dev/docs/api-reference/postV0Sql)
 
 ## Full documentation

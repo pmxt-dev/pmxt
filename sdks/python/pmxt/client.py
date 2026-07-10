@@ -825,11 +825,17 @@ class Exchange(ABC):
             return "opinion_buy"
         if self.exchange_name == "opinion" and side == "sell":
             return "opinion_sell_polygon"
-        raise NotSupported("Hosted trading is only supported for Polymarket and Opinion.")
+        if self.exchange_name == "limitless" and side == "buy":
+            return "limitless_buy"
+        if self.exchange_name == "limitless" and side == "sell":
+            return "limitless_sell_polygon"
+        raise NotSupported(f"Hosted trading not supported for {self.exchange_name}.")
 
     def _hosted_order_pull_validation_route(self, side: str) -> Optional[str]:
         if self.exchange_name == "opinion" and side == "sell":
             return "opinion_sell_bsc_pull"
+        if self.exchange_name == "limitless" and side == "sell":
+            return "limitless_sell_base_pull"
         return None
 
     def _hosted_cancel_validation_routes(self) -> Tuple[str, Optional[str]]:
@@ -837,7 +843,11 @@ class Exchange(ABC):
             return "cancel_polymarket", None
         if self.exchange_name == "opinion":
             return "cancel_opinion_polygon", "cancel_opinion_bsc_pull"
-        raise NotSupported("Hosted trading is only supported for Polymarket and Opinion.")
+        if self.exchange_name == "limitless":
+            return "cancel_limitless_polygon", "cancel_limitless_base_pull"
+        raise NotSupported(
+            "Hosted trading is only supported for Polymarket, Opinion, and Limitless."
+        )
 
     @staticmethod
     def _hosted_typed_data(payload: Dict[str, Any], key: str) -> Dict[str, Any]:
@@ -1183,7 +1193,7 @@ class Exchange(ABC):
 
     # Low-Level API Access
 
-    def _call_method(self, method_name: str, params: Optional[Dict[str, Any]] = None) -> Any:
+    def _call_method(self, method_name: str, params: Any = None) -> Any:
         """Call any exchange method on the server by name."""
         try:
             url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/{method_name}"
@@ -1340,6 +1350,33 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
+    def fetch_events_paginated(self, params: Optional[dict] = None, **kwargs) -> PaginatedEventsResult:
+        try:
+            args = []
+            if kwargs:
+                params = {**(params or {}), **kwargs}
+            if params is not None:
+                args.append(_convert_params_to_camel(params))
+            body: dict = {"args": args}
+            creds = self._get_credentials_dict()
+            if creds:
+                body["credentials"] = creds
+            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/fetchEventsPaginated"
+            headers = {"Content-Type": "application/json", "Accept": "application/json"}
+            headers.update(self._get_auth_headers())
+            response = self._fetch_with_retry(
+                lambda: self._api_client.call_api(method="POST", url=url, body=body, header_params=headers)
+            )
+            response.read()
+            data = self._handle_response(json.loads(response.data))
+            return PaginatedEventsResult(
+                data=[_convert_event(e) for e in data.get("data", [])],
+                total=data.get("total"),
+                next_cursor=data.get("nextCursor"),
+            )
+        except ApiException as e:
+            raise self._parse_api_exception(e) from None
+
     def fetch_events(self, params: Optional[dict] = None, **kwargs) -> List[UnifiedEvent]:
         try:
             args = []
@@ -1386,9 +1423,11 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def fetch_market(self, params: Optional[dict] = None, **kwargs) -> UnifiedMarket:
+    def fetch_market(self, params: Optional[Union[dict, str]] = None, **kwargs) -> UnifiedMarket:
         try:
             args = []
+            if isinstance(params, str):
+                params = {"market_id": params}
             if kwargs:
                 params = {**(params or {}), **kwargs}
             if params is not None:
@@ -1432,7 +1471,7 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def fetch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, limit: Optional[float] = None, params: Optional[dict] = None, **kwargs) -> Union[OrderBook, List[OrderBook]]:
+    def fetch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, limit: Optional[float] = None, params: Optional[FetchOrderBookParams] = None, **kwargs) -> Union[OrderBook, List[OrderBook]]:
         try:
             args = []
             if kwargs:
@@ -1507,11 +1546,11 @@ class Exchange(ABC):
 
     def fetch_order(self, order_id: str) -> Order:
         if self.is_hosted:
-            payload = self._hosted_request(
+            response = self._hosted_request(
                 "fetch_order",
                 path_params={"order_id": order_id},
             )
-            return self._hosted_single(payload, "order", order_from_v0)
+            return self._hosted_single(response, "order", order_from_v0)
         try:
             args = []
             args.append(order_id)
@@ -1533,12 +1572,15 @@ class Exchange(ABC):
 
     def fetch_open_orders(self, market_id: Optional[str] = None) -> List[Order]:
         if self.is_hosted:
-            address = resolve_wallet_address(self)
-            params: Dict[str, Any] = {"address": address}
+            resolved_address = resolve_wallet_address(self, None)
+            params: Dict[str, Any] = {"address": resolved_address}
             if market_id is not None:
                 params["market_id"] = market_id
-            payload = self._hosted_request("fetch_open_orders", params=params)
-            return self._hosted_collection(payload, "orders", order_from_v0)
+            response = self._hosted_request(
+                "fetch_open_orders",
+                params=params,
+            )
+            return self._hosted_collection(response, "orders", order_from_v0)
         try:
             args = []
             if market_id is not None:
@@ -1561,20 +1603,12 @@ class Exchange(ABC):
 
     def fetch_my_trades(self, params: Optional[dict] = None, **kwargs) -> List[UserTrade]:
         if self.is_hosted:
-            merged = dict(params or {})
-            if kwargs:
-                merged.update(kwargs)
-            address = merged.pop("address", None) or merged.pop("addr", None)
-            resolved_address = resolve_wallet_address(self, address)
-            query_params = {
-                key: value for key, value in merged.items() if value is not None
-            }
-            payload = self._hosted_request(
+            resolved_address = resolve_wallet_address(self, None)
+            response = self._hosted_request(
                 "fetch_my_trades",
                 path_params={"address": resolved_address},
-                params=query_params if query_params else None,
             )
-            return self._hosted_collection(payload, "trades", user_trade_from_v0)
+            return self._hosted_collection(response, "trades", user_trade_from_v0)
         try:
             args = []
             if kwargs:
@@ -1599,9 +1633,10 @@ class Exchange(ABC):
 
     def fetch_closed_orders(self, params: Optional[dict] = None, **kwargs) -> List[Order]:
         if self.is_hosted:
+            from pmxt.errors import NotSupported
             raise NotSupported(
-                "fetch_closed_orders is not available in hosted mode; "
-                "settled orders are modeled as trades, use fetch_my_trades() instead."
+                "fetch_closed_orders is not supported in hosted mode; "
+                "use fetch_my_trades to see executed fills instead.",
             )
         try:
             args = []
@@ -1627,9 +1662,10 @@ class Exchange(ABC):
 
     def fetch_all_orders(self, params: Optional[dict] = None, **kwargs) -> List[Order]:
         if self.is_hosted:
+            from pmxt.errors import NotSupported
             raise NotSupported(
-                "fetch_all_orders is not available in hosted mode; "
-                "use fetch_open_orders() and fetch_my_trades() separately."
+                "fetch_all_orders is not supported in hosted mode; "
+                "use fetch_open_orders + fetch_my_trades to reconstruct order history.",
             )
         try:
             args = []
@@ -1656,11 +1692,11 @@ class Exchange(ABC):
     def fetch_positions(self, address: Optional[str] = None) -> List[Position]:
         if self.is_hosted:
             resolved_address = resolve_wallet_address(self, address)
-            payload = self._hosted_request(
+            response = self._hosted_request(
                 "fetch_positions",
                 path_params={"address": resolved_address},
             )
-            return self._hosted_collection(payload, "positions", position_from_v0)
+            return self._hosted_collection(response, "positions", position_from_v0)
         try:
             args = []
             if address is not None:
@@ -1684,23 +1720,11 @@ class Exchange(ABC):
     def fetch_balance(self, address: Optional[str] = None) -> List[Balance]:
         if self.is_hosted:
             resolved_address = resolve_wallet_address(self, address)
-            payload = self._hosted_request(
+            response = self._hosted_request(
                 "fetch_balance",
                 path_params={"address": resolved_address},
             )
-            data = self._hosted_response_data(payload, "balances")
-            if data is None:
-                return []
-            if isinstance(data, dict) and "balances" in data:
-                data = data["balances"]
-            if isinstance(data, dict):
-                # Some servers return a single balance object rather than a list.
-                return [balance_from_v0(data)]
-            if not isinstance(data, list):
-                raise PmxtError(
-                    "Hosted fetch_balance response must be a list or dict"
-                )
-            return [balance_from_v0(item) for item in data]
+            return self._hosted_collection(response, "balances", balance_from_v0)
         try:
             args = []
             if address is not None:
@@ -1723,10 +1747,8 @@ class Exchange(ABC):
 
     def unwatch_order_book(self, outcome_id: Union[str, "MarketOutcome"] = _UNSET, **_compat_kwargs) -> None:
         try:
-            args = []
             outcome_id = _compat_id(outcome_id, _compat_kwargs)
-            args.append(_resolve_outcome_id(outcome_id))
-            body: dict = {"args": args}
+            body: dict = {"args": [_resolve_outcome_id(outcome_id)]}
             creds = self._get_credentials_dict()
             if creds:
                 body["credentials"] = creds
@@ -2254,7 +2276,7 @@ class Exchange(ABC):
                     params_dict[key] = value
 
             args = [outcome_id, params_dict]
-            query = {"id": outcome_id, **params_dict}
+            query = {"outcomeId": outcome_id, **params_dict}
             data = self._handle_response(
                 self._sidecar_read_request("fetchOHLCV", query, args)
             )
@@ -2314,7 +2336,7 @@ class Exchange(ABC):
                     params_dict[key] = value
 
             args = [outcome_id, params_dict]
-            query = {"id": outcome_id, **params_dict}
+            query = {"outcomeId": outcome_id, **params_dict}
             data = self._handle_response(
                 self._sidecar_read_request("fetchTrades", query, args)
             )
@@ -2863,6 +2885,45 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
+    def pre_warm_market(self, outcome_id: str) -> None:
+        """
+        Pre-warm the SDK's internal caches for a market outcome.
+
+        Args:
+            outcome_id: The CLOB Token ID for the outcome
+
+        Returns:
+            None
+        """
+        self._call_method("preWarmMarket", outcome_id)
+        return None
+
+    def get_event_by_id(self, id: str) -> Optional[UnifiedEvent]:
+        """
+        Fetch a single Probable event by its numeric ID.
+
+        Args:
+            id: The numeric event ID
+
+        Returns:
+            The event, or None if not found
+        """
+        data = self._call_method("getEventById", id)
+        return _convert_event(data) if data is not None else None
+
+    def get_event_by_slug(self, slug: str) -> Optional[UnifiedEvent]:
+        """
+        Fetch a single Probable event by its URL slug.
+
+        Args:
+            slug: The event slug
+
+        Returns:
+            The event, or None if not found
+        """
+        data = self._call_method("getEventBySlug", slug)
+        return _convert_event(data) if data is not None else None
+
     # Trading Methods (require authentication)
 
     def _discover_hosted_account(self) -> dict:
@@ -3345,38 +3406,31 @@ class Exchange(ABC):
         Returns:
             Detailed execution result
         """
-        try:
-            # Convert order_book to dict for API call
-            bids = [{"price": b.price, "size": b.size} for b in order_book.bids]
-            asks = [{"price": a.price, "size": a.size} for a in order_book.asks]
-            ob_dict = {"bids": bids, "asks": asks, "timestamp": order_book.timestamp}
+        if amount <= 0:
+            raise ValueError("Amount must be greater than 0")
 
-            body = {
-                "args": [ob_dict, side, amount]
-            }
+        levels = [level for level in (order_book.asks if side == "buy" else order_book.bids) if level.size > 0]
+        levels.sort(key=lambda level: level.price, reverse=(side == "sell"))
 
-            creds = self._get_credentials_dict()
-            if creds:
-                body["credentials"] = creds
+        if not levels:
+            return ExecutionPriceResult(price=0, filled_amount=0, fully_filled=False)
 
-            url = f"{self._resolve_sidecar_host()}/api/{self.exchange_name}/getExecutionPriceDetailed"
+        remaining_amount = amount
+        total_cost = 0.0
+        filled_amount = 0.0
+        epsilon = 0.00000001
 
-            headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            headers.update(self._get_auth_headers())
+        for level in levels:
+            if remaining_amount <= epsilon:
+                break
 
-            response = self._fetch_with_retry(
-                lambda: self._api_client.call_api(
-                    method="POST",
-                    url=url,
-                    body=body,
-                    header_params=headers
-                )
-            )
+            fill_size = min(remaining_amount, level.size)
+            total_cost += fill_size * level.price
+            filled_amount += fill_size
+            remaining_amount -= fill_size
 
-            response.read()
-            data_json = json.loads(response.data)
-
-            data = self._handle_response(data_json)
-            return _convert_execution_result(data)
-        except Exception as e:
-            raise self._parse_api_exception(e) from None
+        return ExecutionPriceResult(
+            price=total_cost / filled_amount if filled_amount > epsilon else 0,
+            filled_amount=filled_amount,
+            fully_filled=remaining_amount <= epsilon,
+        )

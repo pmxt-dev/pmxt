@@ -209,6 +209,10 @@ export interface Trade {
 export interface UserTrade extends Trade {
     /** The order that produced this trade, if known. */
     orderId?: string;
+    /** The market this trade belongs to, when the venue exposes it (e.g. derivable from the fill's coin/asset). */
+    marketId?: string;
+    /** Trading fee paid by the user for this fill, when the venue exposes it. */
+    fee?: number;
     /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */
     txHash?: string | null;
     /** Populated in hosted mode after on-chain settlement; null for local-mode and for non-on-chain venues. */
@@ -319,6 +323,8 @@ export interface CreateOrderParams {
     /** Size of the order in contracts/shares. */
     amount: number;
     price?: number; // Required for limit orders
+    denom?: 'usdc' | 'shares'; // Hosted mode: amount unit.
+    slippage_pct?: number; // Hosted mode: maximum market-order slippage percentage.
     fee?: number;   // Optional fee rate (e.g., 1000 for 0.1%)
     tickSize?: number; // Optional override for Limitless/Polymarket
     negRisk?: boolean; // Optional override to skip neg-risk lookup (Polymarket)

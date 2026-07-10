@@ -2,8 +2,8 @@ openapi: 3.0.0
 info:
   title: PMXT Sidecar API
   description: >-
-    A unified local sidecar API for prediction markets (Polymarket, Kalshi, Limitless). This API acts as a
-    JSON-RPC-style gateway. Each endpoint corresponds to a specific method on the generic exchange implementation.
+    A unified local sidecar API for supported prediction markets. This API acts as a JSON-RPC-style gateway over PMXT
+    exchange implementations, with venue and write support varying by method and capability.
   version: 0.4.4
 servers:
   - url: 'http://localhost:3847'
@@ -88,7 +88,11 @@ paths:
               - metaculus
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - suibets
+              - rain
+              - hunch
               - router
           required: true
           description: The prediction market exchange to target.
@@ -177,6 +181,18 @@ paths:
           schema:
             type: number
           description: For semantic search (used by Limitless)
+        - in: query
+          name: sourceExchange
+          required: false
+          schema:
+            type: string
+          description: 'Filter by source venue (e.g. ''polymarket'', ''kalshi'', ''myriad''). `exchange` is an alias.'
+        - in: query
+          name: exchange
+          required: false
+          schema:
+            type: string
+          description: Alias for `sourceExchange`.
       responses:
         '200':
           description: Fetch Markets response
@@ -293,7 +309,11 @@ paths:
               - metaculus
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - suibets
+              - rain
+              - hunch
               - router
           required: true
           description: The prediction market exchange to target.
@@ -399,6 +419,18 @@ paths:
             Filter by tags. Returns events matching ANY of the provided tags. Tags are more specific than categories --
             for example a "Politics" event might carry tags ["Politics", "Geopolitics", "Middle East", "Iran"]. Common
             tags include "Crypto", "Elections", "Fed Rates", "FIFA World Cup", "Trump".
+        - in: query
+          name: sourceExchange
+          required: false
+          schema:
+            type: string
+          description: 'Filter by source venue (e.g. ''polymarket'', ''kalshi'', ''myriad''). `exchange` is an alias.'
+        - in: query
+          name: exchange
+          required: false
+          schema:
+            type: string
+          description: Alias for `sourceExchange`.
       responses:
         '200':
           description: Fetch Events response
@@ -431,6 +463,7 @@ paths:
               - kalshi-demo
               - opinion
               - polymarket_us
+              - gemini-titan
               - router
           required: true
           description: The prediction market exchange to target.
@@ -544,6 +577,18 @@ paths:
           schema:
             type: number
           description: For semantic search (used by Limitless)
+        - in: query
+          name: sourceExchange
+          required: false
+          schema:
+            type: string
+          description: 'Filter by source venue (e.g. ''polymarket'', ''kalshi'', ''myriad''). `exchange` is an alias.'
+        - in: query
+          name: exchange
+          required: false
+          schema:
+            type: string
+          description: Alias for `sourceExchange`.
       responses:
         '200':
           description: Fetch Market response
@@ -667,6 +712,18 @@ paths:
             Filter by tags. Returns events matching ANY of the provided tags. Tags are more specific than categories --
             for example a "Politics" event might carry tags ["Politics", "Geopolitics", "Middle East", "Iran"]. Common
             tags include "Crypto", "Elections", "Fed Rates", "FIFA World Cup", "Trump".
+        - in: query
+          name: sourceExchange
+          required: false
+          schema:
+            type: string
+          description: 'Filter by source venue (e.g. ''polymarket'', ''kalshi'', ''myriad''). `exchange` is an alias.'
+        - in: query
+          name: exchange
+          required: false
+          schema:
+            type: string
+          description: Alias for `sourceExchange`.
       responses:
         '200':
           description: Fetch Event response
@@ -700,6 +757,9 @@ paths:
               - baozi
               - myriad
               - opinion
+              - hyperliquid
+              - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -768,7 +828,11 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - suibets
+              - rain
+              - hunch
               - router
           required: true
           description: The prediction market exchange to target.
@@ -847,6 +911,7 @@ paths:
               - polymarket
               - kalshi
               - kalshi-demo
+              - hyperliquid
           required: true
           description: The prediction market exchange to target.
       requestBody:
@@ -903,6 +968,9 @@ paths:
               - baozi
               - myriad
               - smarkets
+              - hyperliquid
+              - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -966,6 +1034,10 @@ paths:
               - metaculus
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
+              - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
       requestBody:
@@ -1014,6 +1086,9 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
+              - rain
           required: true
           description: The prediction market exchange to target.
       requestBody:
@@ -1064,6 +1139,9 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
+              - rain
           required: true
           description: The prediction market exchange to target.
       requestBody:
@@ -1115,6 +1193,9 @@ paths:
               - metaculus
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
+              - rain
           required: true
           description: The prediction market exchange to target.
       requestBody:
@@ -1165,6 +1246,7 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - rain
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -1205,6 +1287,9 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
+              - rain
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -1246,6 +1331,8 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - rain
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -1300,6 +1387,7 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/UserTrade'
+      description: Fetch authenticated user trade history.
   '/api/{exchange}/fetchClosedOrders':
     get:
       summary: Fetch Closed Orders
@@ -1315,6 +1403,9 @@ paths:
               - limitless
               - opinion
               - smarkets
+              - hyperliquid
+              - gemini-titan
+              - rain
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -1363,6 +1454,7 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/Order'
+      description: Fetch authenticated closed orders.
   '/api/{exchange}/fetchAllOrders':
     get:
       summary: Fetch All Orders
@@ -1378,6 +1470,8 @@ paths:
               - limitless
               - opinion
               - smarkets
+              - hyperliquid
+              - gemini-titan
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -1426,6 +1520,7 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/Order'
+      description: Fetch authenticated order history across open and closed orders.
   '/api/{exchange}/fetchPositions':
     get:
       summary: Fetch Positions
@@ -1446,7 +1541,11 @@ paths:
               - opinion
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - gemini-titan
               - suibets
+              - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -1488,6 +1587,9 @@ paths:
               - myriad
               - smarkets
               - polymarket_us
+              - hyperliquid
+              - rain
+              - hunch
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -2847,6 +2949,8 @@ components:
           - gemini-titan
           - hyperliquid
           - suibets
+          - rain
+          - hunch
           - mock
           - router
       required: true
@@ -3368,6 +3472,12 @@ components:
         orderId:
           type: string
           description: 'The order that produced this trade, if known.'
+        marketId:
+          type: string
+          description: 'The market this trade belongs to, when the venue exposes it (e.g. derivable from the fill''s coin/asset).'
+        fee:
+          type: number
+          description: 'Trading fee paid by the user for this fill, when the venue exposes it.'
         txHash:
           type: string
           nullable: true
@@ -3660,6 +3770,12 @@ components:
         similarityThreshold:
           type: number
           description: For semantic search (used by Limitless)
+        sourceExchange:
+          type: string
+          description: 'Filter by source venue (e.g. ''polymarket'', ''kalshi'', ''myriad''). `exchange` is an alias.'
+        exchange:
+          type: string
+          description: Alias for `sourceExchange`.
     EventFetchParams:
       type: object
       properties:
@@ -3726,6 +3842,12 @@ components:
             Filter by tags. Returns events matching ANY of the provided tags. Tags are more specific than categories --
             for example a "Politics" event might carry tags ["Politics", "Geopolitics", "Middle East", "Iran"]. Common
             tags include "Crypto", "Elections", "Fed Rates", "FIFA World Cup", "Trump".
+        sourceExchange:
+          type: string
+          description: 'Filter by source venue (e.g. ''polymarket'', ''kalshi'', ''myriad''). `exchange` is an alias.'
+        exchange:
+          type: string
+          description: Alias for `sourceExchange`.
     HistoryFilterParams:
       type: object
       description: Deprecated - use OHLCVParams or TradesParams instead. Resolution is optional for backward compatibility.
@@ -3831,6 +3953,15 @@ components:
         price:
           type: number
           description: Required for limit orders
+        denom:
+          type: string
+          enum:
+            - usdc
+            - shares
+          description: 'Hosted mode: amount unit.'
+        slippage_pct:
+          type: number
+          description: 'Hosted mode: maximum market-order slippage percentage.'
         fee:
           type: number
           description: 'Optional fee rate (e.g., 1000 for 0.1%)'
@@ -4680,7 +4811,7 @@ x-sdk-constructors:
         type: string
         description: Private key for authentication
   polymarket_us:
-    className: PolymarketUs
+    className: PolymarketUS
     params:
       - name: pmxt_api_key
         tsName: pmxtApiKey
@@ -4725,12 +4856,34 @@ x-sdk-constructors:
         type: string
         description: API secret for authentication
   suibets:
-    className: Suibets
+    className: SuiBets
     params:
       - name: pmxt_api_key
         tsName: pmxtApiKey
         type: string
         description: PMXT API key for hosted access
+  rain:
+    className: Rain
+    params:
+      - name: pmxt_api_key
+        tsName: pmxtApiKey
+        type: string
+        description: PMXT API key for hosted access
+      - name: private_key
+        tsName: privateKey
+        type: string
+        description: Private key for authentication
+  hunch:
+    className: Hunch
+    params:
+      - name: pmxt_api_key
+        tsName: pmxtApiKey
+        type: string
+        description: PMXT API key for hosted access
+      - name: private_key
+        tsName: privateKey
+        type: string
+        description: Private key for authentication
   mock:
     className: Mock
     params:

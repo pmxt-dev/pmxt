@@ -23,8 +23,13 @@ export interface PolymarketUSConfig {
  * Return a typed config object for the Polymarket US API.
  */
 export function getPolymarketUSConfig(baseUrlOverride?: string): PolymarketUSConfig {
+    const apiUrl =
+        baseUrlOverride || process.env.POLYMARKET_US_BASE_URL || POLYMARKET_US_API_BASE_URL;
+    const gatewayUrl =
+        process.env.POLYMARKET_US_GATEWAY_URL || POLYMARKET_US_GATEWAY_BASE_URL;
+
     return {
-        apiUrl: baseUrlOverride || POLYMARKET_US_API_BASE_URL,
-        gatewayUrl: POLYMARKET_US_GATEWAY_BASE_URL,
+        apiUrl,
+        gatewayUrl,
     };
 }

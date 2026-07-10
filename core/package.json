@@ -1,7 +1,7 @@
 {
   "name": "pmxt-core",
   "version": "2.17.1",
-  "description": "pmxt is a unified prediction market data API. The ccxt for prediction markets.",
+  "description": "Local sidecar API for supported prediction markets.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": {
@@ -22,9 +22,9 @@
     "test": "test"
   },
   "scripts": {
-    "clean": "rm -rf dist",
+    "clean": "node scripts/clean.js",
     "prebuild": "npm run clean",
-    "build": "tsc && cp src/server/openapi.yaml dist/server/openapi.yaml && cp src/server/method-verbs.json dist/server/method-verbs.json",
+    "build": "tsc && node scripts/copy-assets.js",
     "bundle:server": "npm run build && esbuild dist/server/index.js --bundle --platform=node --target=node18 --outfile=dist/server/bundled.js --define:__PMXT_VERSION__=\\\"$npm_package_version\\\" --external:fsevents --external:@opinion-labs/opinion-clob-sdk",
     "test": "jest -c jest.config.js",
     "server": "tsx watch src/server/index.ts",
@@ -45,6 +45,7 @@
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {
+    "@buidlrrr/rain-sdk": "^2.0.0",
     "@limitless-exchange/sdk": "^1.0.5",
     "@opinion-labs/opinion-clob-sdk": "^0.6.0",
     "@polymarket/clob-client-v2": "^1.0.5",
@@ -55,11 +56,11 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "ethers": "^5.8.0",
-    "viem": "^2.0.0",
     "express": "^5.2.1",
     "isows": "^1.0.6",
     "msgpackr": "^2.0.1",
     "polymarket-us": "0.1.1",
+    "viem": "^2.0.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

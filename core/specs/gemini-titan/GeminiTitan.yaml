@@ -1,0 +1,414 @@
+# core/specs/gemini-titan/GeminiTitan.yaml
+# Gemini Titan API Specification
+# Source: https://developer.gemini.com/rest-api/prediction-markets
+
+openapi: 3.0.0
+info:
+  title: Gemini Titan API
+  version: 1.0.0
+  description: Gemini Prediction Markets API
+
+servers:
+  - url: https://api.gemini.com
+    description: Production
+
+paths:
+  # ============================================================
+  # Public Endpoints
+  # ============================================================
+
+  /v1/prediction-markets/events:
+    get:
+      operationId: getEvents
+      summary: Get prediction market events
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+          description: Number of events to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Offset for pagination
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, pending, settled, all]
+          description: Filter by event status
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by title or description
+      responses:
+        '200':
+          description: Events retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      offset:
+                        type: integer
+                      limit:
+                        type: integer
+
+  /v1/prediction-markets/events/{eventTicker}:
+    get:
+      operationId: getEvent
+      summary: Get a single event by ticker
+      parameters:
+        - name: eventTicker
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Event ticker symbol
+      responses:
+        '200':
+          description: Event retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+
+  # ============================================================
+  # Terms Endpoints (NEW)
+  # ============================================================
+
+  /v1/prediction-markets/terms:
+    get:
+      operationId: getTerms
+      summary: Get current terms version and content
+      description: |
+        Returns the current Prediction Markets terms version and content.
+        Users must accept the latest terms before placing orders.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Terms retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                    description: Current terms version
+                  content:
+                    type: string
+                    description: Terms content (HTML or plain text)
+        '401':
+          description: Unauthorized - invalid API key
+
+  /v1/prediction-markets/terms/status:
+    get:
+      operationId: getTermsStatus
+      summary: Check if API key has accepted the latest terms
+      description: |
+        Returns whether the current API key has accepted the latest
+        Prediction Markets terms. If not, orders will be rejected.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Terms status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasAcceptedLatest:
+                    type: boolean
+                    description: Whether the latest terms have been accepted
+                  acceptedVersion:
+                    type: string
+                    description: Version that was accepted (if any)
+                  latestVersion:
+                    type: string
+                    description: Latest terms version
+        '401':
+          description: Unauthorized - invalid API key
+
+  /v1/prediction-markets/terms/accept:
+    post:
+      operationId: acceptTerms
+      summary: Accept the latest terms version
+      description: |
+        Accepts the latest Prediction Markets terms for the current API key.
+        This must be done before placing orders.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Terms accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: boolean
+                    description: Whether acceptance was successful
+                  version:
+                    type: string
+                    description: Version that was accepted
+        '400':
+          description: Bad request - terms version mismatch
+        '401':
+          description: Unauthorized - invalid API key
+
+  # ============================================================
+  # Order Endpoints
+  # ============================================================
+
+  /v1/prediction-markets/order:
+    post:
+      operationId: submitOrder
+      summary: Submit a new order
+      description: |
+        Places a new order on the prediction market.
+        **IMPORTANT:** Terms must be accepted before placing orders.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientOrderId:
+                  type: string
+                  description: Client-provided order ID (optional)
+                symbol:
+                  type: string
+                  description: Instrument symbol (e.g., "BTC-2024-12-31")
+                side:
+                  type: string
+                  enum: [buy, sell]
+                  description: Order side
+                type:
+                  type: string
+                  enum: [market, limit, stop-limit]
+                  description: Order type
+                quantity:
+                  type: string
+                  description: Order quantity as string
+                price:
+                  type: string
+                  description: Limit price (required for limit/stop-limit)
+                stopPrice:
+                  type: string
+                  description: Stop price (required for stop-limit)
+      responses:
+        '200':
+          description: Order submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad request - invalid order parameters
+        '401':
+          description: Unauthorized - invalid API key or terms not accepted
+        '429':
+          description: Rate limit exceeded
+
+  /v1/prediction-markets/order/cancel:
+    post:
+      operationId: cancelOrder
+      summary: Cancel an existing order
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orderId:
+                  type: integer
+                  description: Order ID to cancel
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized - invalid API key
+
+  /v1/prediction-markets/orders/active:
+    post:
+      operationId: getActiveOrders
+      summary: Get active orders
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                symbol:
+                  type: string
+                  description: Filter by symbol (optional)
+                limit:
+                  type: integer
+                  default: 100
+                offset:
+                  type: integer
+                  default: 0
+      responses:
+        '200':
+          description: Active orders retrieved
+
+  /v1/prediction-markets/orders/history:
+    post:
+      operationId: getOrderHistory
+      summary: Get order history
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                  default: 100
+                offset:
+                  type: integer
+                  default: 0
+      responses:
+        '200':
+          description: Order history retrieved
+
+  /v1/prediction-markets/positions:
+    post:
+      operationId: getPositions
+      summary: Get current positions
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: Positions retrieved
+
+# ============================================================
+# Components
+# ============================================================
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-GEMINI-APIKEY
+
+  schemas:
+    Event:
+      type: object
+      properties:
+        ticker:
+          type: string
+          description: Event ticker symbol
+        title:
+          type: string
+          description: Event title
+        status:
+          type: string
+          enum: [active, pending, settled]
+        category:
+          type: string
+        contracts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contract'
+
+    Contract:
+      type: object
+      properties:
+        instrumentSymbol:
+          type: string
+          description: Unique instrument identifier
+        displayName:
+          type: string
+          description: Display name of the contract
+        outcome:
+          type: string
+          description: Outcome description (e.g., "Yes", "No")
+        prices:
+          type: object
+          properties:
+            bestBid:
+              type: string
+              description: Best bid price
+            bestAsk:
+              type: string
+              description: Best ask price
+            lastPrice:
+              type: string
+              description: Last traded price
+
+    Order:
+      type: object
+      properties:
+        orderId:
+          type: integer
+        clientOrderId:
+          type: string
+        symbol:
+          type: string
+        side:
+          type: string
+          enum: [buy, sell]
+        type:
+          type: string
+          enum: [market, limit, stop-limit]
+        quantity:
+          type: string
+        price:
+          type: string
+        status:
+          type: string
+          enum: [pending, filled, cancelled, rejected]
+        filledQuantity:
+          type: string
+        avgPrice:
+          type: string
+        createdAt:
+          type: string
+          format: date-time

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pmxt"
 version = "2.18.0"
-description = "Unified prediction market data API - The ccxt for prediction markets"
+description = "SDK for supported prediction markets with hosted services and local sidecar access"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}

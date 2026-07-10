@@ -8,7 +8,7 @@ price helpers or venue exchanges to inspect executable bid/ask data.
 
 ## compareMarketPrices
 
-Side-by-side bid/ask for the same market on every venue.
+Side-by-side bid/ask for identity matches in the hosted catalog.
 
 This returns a flat side-by-side view for one anchored market. For
 cluster-first discovery across the whole catalog, use
@@ -72,12 +72,14 @@ is a subset or superset of the target market.
 <Tabs>
   <Tab title="Python">
     ```python
-    related = router.fetch_related_markets(market_id="d35bc8c6-...")
+    # Positional dict, camelCase keys. Returns a list of plain dicts
+    # (not typed dataclasses like compare_market_prices).
+    related = router.fetch_related_markets({"marketId": "d35bc8c6-..."})
 
     for r in related:
-        print(f"{r.relation:10s} {r.venue:12s}  {r.market.title}")
-        print(f"           confidence {r.confidence:.0%}  bid {r.best_bid}  ask {r.best_ask}")
-        print(f"           {r.reasoning}")
+        print(f"{r['relation']:10s} {r['venue']:12s}  {r['market']['title']}")
+        print(f"           confidence {r['confidence']:.0%}  bid {r['bestBid']}  ask {r['bestAsk']}")
+        print(f"           {r['reasoning']}")
     ```
 
     ```
@@ -202,13 +204,20 @@ poly   = pmxt.Polymarket(private_key="0x...")
 # 1. Browse matched market clusters across venues
 clusters = router.fetch_matched_market_clusters(relation="identity", limit=20)
 
-# 2. Inspect the order book on a specific venue
-book = poly.fetch_order_book(market_id=clusters[0].markets[0].market_id)
+# 2. Direct self-hosted calls need IDs returned by the venue client.
+# Re-fetch or reverse-resolve the matched venue market, then verify the outcome.
+polymarket_match = next(m for m in clusters[0].markets if m.source_exchange == "polymarket")
+venue_markets = poly.fetch_markets({"query": polymarket_match.title, "limit": 1})
+venue_outcome = venue_markets[0].outcomes[0]  # verify label/slug before trading
 
-# 3. Place an order locally (never proxied through PMXT)
+# 3. Inspect the order book on that venue with its native outcome ID
+book = poly.fetch_order_book(outcome_id=venue_outcome.outcome_id)
+
+# 4. Place an order locally (never proxied through PMXT)
 # poly.create_order(...)
 ```
 
 Router returns the same [unified schema](/concepts/unified-schema) as
-every other exchange, so `marketId`, `outcomes`, and all other fields
-work interchangeably.
+every other exchange, but identifiers keep their address space. Catalog
+IDs work for Router and hosted flows; direct self-hosted venue calls need
+venue-native IDs returned by that venue client.

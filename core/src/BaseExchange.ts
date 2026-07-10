@@ -89,6 +89,10 @@ export interface MarketFilterParams {
     eventId?: string;     // Find markets belonging to an event
     page?: number;   // For pagination (used by Limitless)
     similarityThreshold?: number; // For semantic search (used by Limitless)
+    /** Filter by source venue (e.g. 'polymarket', 'kalshi', 'myriad'). `exchange` is an alias. */
+    sourceExchange?: string;
+    /** Alias for `sourceExchange`. */
+    exchange?: string;
 }
 
 export interface MarketFetchParams extends MarketFilterParams {
@@ -123,6 +127,10 @@ export interface EventFetchParams {
     category?: string;
     /** Filter by tags. Returns events matching ANY of the provided tags. Tags are more specific than categories -- for example a "Politics" event might carry tags ["Politics", "Geopolitics", "Middle East", "Iran"]. Common tags include "Crypto", "Elections", "Fed Rates", "FIFA World Cup", "Trump". */
     tags?: string[];
+    /** Filter by source venue (e.g. 'polymarket', 'kalshi', 'myriad'). `exchange` is an alias. */
+    sourceExchange?: string;
+    /** Alias for `sourceExchange`. */
+    exchange?: string;
 }
 
 /**
@@ -641,8 +649,14 @@ export abstract class PredictionMarketExchange {
             return limit !== undefined ? filtered.slice(start, start + limit) : filtered.slice(start);
         }
         const { limit, offset, ...venueParams } = fetchParams;
+        const hasVenueParams = Object.keys(venueParams).length > 0;
+        const shouldForwardSimpleLimit = limit !== undefined && offset === undefined && !hasVenueParams;
         const markets = await this.fetchMarketsImpl(
-            Object.keys(venueParams).length > 0 ? venueParams : undefined
+            shouldForwardSimpleLimit
+                ? { limit }
+                : hasVenueParams
+                  ? venueParams
+                  : undefined
         );
         const start = offset ?? 0;
         return limit !== undefined ? markets.slice(start, start + limit) : markets.slice(start);
@@ -816,7 +830,11 @@ export abstract class PredictionMarketExchange {
             return limit !== undefined ? filtered.slice(start, start + limit) : filtered.slice(start);
         }
         const { limit, offset, ...venueParams } = fetchParams;
-        const events = await this.fetchEventsImpl(venueParams);
+        const hasVenueParams = Object.keys(venueParams).length > 0;
+        const shouldForwardSimpleLimit = limit !== undefined && offset === undefined && !hasVenueParams;
+        const events = await this.fetchEventsImpl(
+            shouldForwardSimpleLimit ? { limit } : venueParams
+        );
         const start = offset ?? 0;
         return limit !== undefined ? events.slice(start, start + limit) : events.slice(start);
     }
@@ -1095,14 +1113,48 @@ export abstract class PredictionMarketExchange {
         throw new Error("Method fetchOpenOrders not implemented.");
     }
 
+    /**
+     * Fetch authenticated user trade history.
+     *
+     * @param params - Optional trade history filters
+     * @param params.outcomeId - Filter by outcome token ID
+     * @param params.marketId - Filter by market ID or ticker
+     * @param params.since - Start timestamp or ISO date
+     * @param params.until - End timestamp or ISO date
+     * @param params.limit - Maximum number of trades
+     * @param params.cursor - Pagination cursor
+     * @returns Array of user trades
+     */
     async fetchMyTrades(params?: MyTradesParams): Promise<UserTrade[]> {
         throw new Error("Method fetchMyTrades not implemented.");
     }
 
+    /**
+     * Fetch authenticated closed orders.
+     *
+     * @param params - Optional order history filters
+     * @param params.marketId - Filter by market ID or ticker
+     * @param params.since - Start timestamp or ISO date
+     * @param params.until - End timestamp or ISO date
+     * @param params.limit - Maximum number of orders
+     * @param params.cursor - Pagination cursor
+     * @returns Array of closed orders
+     */
     async fetchClosedOrders(params?: OrderHistoryParams): Promise<Order[]> {
         throw new Error("Method fetchClosedOrders not implemented.");
     }
 
+    /**
+     * Fetch authenticated order history across open and closed orders.
+     *
+     * @param params - Optional order history filters
+     * @param params.marketId - Filter by market ID or ticker
+     * @param params.since - Start timestamp or ISO date
+     * @param params.until - End timestamp or ISO date
+     * @param params.limit - Maximum number of orders
+     * @param params.cursor - Pagination cursor
+     * @returns Array of orders
+     */
     async fetchAllOrders(params?: OrderHistoryParams): Promise<Order[]> {
         throw new Error("Method fetchAllOrders not implemented.");
     }

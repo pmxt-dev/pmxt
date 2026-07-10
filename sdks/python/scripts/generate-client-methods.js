@@ -42,6 +42,11 @@ const PRESERVE_EXISTING_METHODS = new Set([
     'fetchBalance',
     'unwatchOrderBook',
     'fetchMatchedMarkets',
+
+    'getAuthNonce',
+    'loginWithSignature',
+    'logout',
+    'isSessionActive',
 ]);
 
 function extractExistingPyMethod(generatedRegion, snakeName) {
@@ -96,6 +101,9 @@ const TYPE_MAP = {
     // Pagination wrapper: detected by name, not structure — gets its own response handler
     PaginatedMarketsResult: { pyType: 'PaginatedMarketsResult', converter: null, pattern: 'paginatedMarkets' },
     PaginatedEventsResult: { pyType: 'PaginatedEventsResult', converter: null, pattern: 'paginatedEvents' },
+
+    AuthNonceResponse: { pyType: 'Dict[str, Any]', converter: null, pattern: 'raw' },
+    AuthLoginResponse: { pyType: 'Dict[str, Any]', converter: null, pattern: 'raw' },
 };
 
 // Parameter names that represent outcome IDs and should accept MarketOutcome.

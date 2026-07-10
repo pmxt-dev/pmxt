@@ -74,6 +74,11 @@ GitHub: https://github.com/pmxt-dev/pmxt
 - [Fetch Oracle Round](https://pmxt.dev/docs/api-reference/feedFetchOracleRound): Returns the latest Chainlink oracle round for a price feed.
 - [Fetch Oracle History](https://pmxt.dev/docs/api-reference/feedFetchOracleHistory): Returns historical Chainlink oracle rounds for a price feed.
 - [Fetch Historical Prices](https://pmxt.dev/docs/api-reference/feedFetchHistoricalPrices): Returns historical price data as tickers within a time range.
+- [Get Auth Nonce](https://pmxt.dev/docs/api-reference/getAuthNonce): Get a cryptographic nonce for Web3 login.
+- [Login With Signature](https://pmxt.dev/docs/api-reference/loginWithSignature): Login with a signed nonce to obtain session credentials.
+- [Logout](https://pmxt.dev/docs/api-reference/logout): Logout and invalidate the current session.
+- [Is Session Active](https://pmxt.dev/docs/api-reference/isSessionActive): Check if a session is active for the given wallet address.
+- [Get Session](https://pmxt.dev/docs/api-reference/getSession): Get the stored session for a wallet address.
 - [Fetch Series](https://pmxt.dev/docs/api-reference/fetchSeries): Fetch the recurring series (fourth tier above Event -> Market -> Outcome) that this venue exposes. Returns an empty array on venues without a series concept (Limitless, Smarkets, Probable, Metaculus, Baozi, Hyperliquid, SuiBets, Polymarket US). - `params.id` -> a single matching series with its events populated where supported. - no params -> the full list, typically without nested events for payload size.
 - [Fetch Event Metadata](https://pmxt.dev/docs/api-reference/fetchEventMetadata): Fetch venue-native metadata for a specific event when the exchange exposes a dedicated metadata endpoint. Kalshi implements this for `GET /events/{event_ticker}/metadata`.
 - [Execute a read-only SQL query against ClickHouse](https://pmxt.dev/docs/api-reference/postV0Sql)

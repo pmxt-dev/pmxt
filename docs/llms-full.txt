@@ -6103,6 +6103,159 @@ for (const p of prices) {
 
 ## Other
 
+### Get Auth Nonce
+
+`POST /api/{exchange}/getAuthNonce`
+
+Get a cryptographic nonce for Web3 login.
+
+**Response:** `{ success: true, data: ... }`
+
+**Python:**
+```python
+import pmxt
+
+# API key optional — enables faster catalog-backed lookups
+exchange = pmxt.Kalshi(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+)
+result = exchange.get_auth_nonce()
+```
+
+**TypeScript:**
+```typescript
+import { Kalshi } from "pmxtjs";
+
+// API key optional — enables faster catalog-backed lookups
+const exchange = new Kalshi({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+});
+const result = await exchange.getAuthNonce();
+```
+
+
+### Login With Signature
+
+`POST /api/{exchange}/loginWithSignature`
+
+Login with a signed nonce to obtain session credentials.
+
+**Response:** `{ success: true, data: ... }`
+
+**Python:**
+```python
+import pmxt
+
+# API key optional — enables faster catalog-backed lookups
+exchange = pmxt.Kalshi(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+)
+result = exchange.login_with_signature()
+```
+
+**TypeScript:**
+```typescript
+import { Kalshi } from "pmxtjs";
+
+// API key optional — enables faster catalog-backed lookups
+const exchange = new Kalshi({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+});
+const result = await exchange.loginWithSignature();
+```
+
+
+### Logout
+
+`POST /api/{exchange}/logout`
+
+Logout and invalidate the current session.
+
+**Python:**
+```python
+import pmxt
+
+# API key optional — enables faster catalog-backed lookups
+exchange = pmxt.Kalshi(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+)
+result = exchange.logout()
+```
+
+**TypeScript:**
+```typescript
+import { Kalshi } from "pmxtjs";
+
+// API key optional — enables faster catalog-backed lookups
+const exchange = new Kalshi({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+});
+const result = await exchange.logout();
+```
+
+
+### Is Session Active
+
+`POST /api/{exchange}/isSessionActive`
+
+Check if a session is active for the given wallet address.
+
+**Response:** `{ success: true, data: ... }`
+
+**Python:**
+```python
+import pmxt
+
+# API key optional — enables faster catalog-backed lookups
+exchange = pmxt.Kalshi(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+)
+result = exchange.is_session_active()
+```
+
+**TypeScript:**
+```typescript
+import { Kalshi } from "pmxtjs";
+
+// API key optional — enables faster catalog-backed lookups
+const exchange = new Kalshi({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+});
+const result = await exchange.isSessionActive();
+```
+
+
+### Get Session
+
+`POST /api/{exchange}/getSession`
+
+Get the stored session for a wallet address.
+
+**Response:** `{ success: true, data: ... }`
+
+**Python:**
+```python
+import pmxt
+
+# API key optional — enables faster catalog-backed lookups
+exchange = pmxt.Kalshi(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+)
+result = exchange.get_session()
+```
+
+**TypeScript:**
+```typescript
+import { Kalshi } from "pmxtjs";
+
+// API key optional — enables faster catalog-backed lookups
+const exchange = new Kalshi({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+});
+const result = await exchange.getSession();
+```
+
+
 ### Fetch Series
 
 `GET /api/{exchange}/fetchSeries`

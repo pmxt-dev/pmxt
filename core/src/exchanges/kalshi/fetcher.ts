@@ -463,6 +463,16 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
         }
     }
 
+    async fetchRawEventMetadata(eventTicker: string): Promise<Record<string, unknown>> {
+        try {
+            return this.ctx.callApi('GetEventMetadata', {
+                event_ticker: eventTicker.toUpperCase(),
+            });
+        } catch (e: any) {
+            throw kalshiErrorMapper.mapError(e);
+        }
+    }
+
     async fetchRawSeriesMap(): Promise<Map<string, KalshiSeriesInfo>> {
         try {
             const data = await this.ctx.callApi('GetSeriesList');

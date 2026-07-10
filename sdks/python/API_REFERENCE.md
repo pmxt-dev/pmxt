@@ -348,6 +348,31 @@ exchange.fetch_event()
 
 
 ---
+### `fetch_event_metadata`
+
+Fetch venue-native metadata for a specific event when the exchange
+
+
+**Signature:**
+
+```python
+def fetch_event_metadata(event_ticker: str) -> Dict[str, unknown]:
+```
+
+**Parameters:**
+
+- `event_ticker` (str): eventTicker
+
+**Returns:** Dict[str, unknown] - Result
+
+**Example:**
+
+```python
+exchange.fetch_event_metadata(event_ticker="...")
+```
+
+
+---
 ### `fetch_ohlcv`
 
 Fetch historical OHLCV (candlestick) price data for a specific market outcome.

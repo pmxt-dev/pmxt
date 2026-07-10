@@ -739,6 +739,33 @@ paths:
       description: >-
         Fetch a single event by lookup parameters. Convenience wrapper around fetchEvents() that returns a single result
         or throws EventNotFound.
+  '/api/{exchange}/fetchEventMetadata':
+    get:
+      summary: Fetch Event Metadata
+      operationId: fetchEventMetadata
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+        - in: query
+          name: eventTicker
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fetch Event Metadata response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: {}
+      description: >-
+        Fetch venue-native metadata for a specific event when the exchange exposes a dedicated metadata endpoint. Kalshi
+        implements this for `GET /events/{event_ticker}/metadata`.
   '/api/{exchange}/fetchOHLCV':
     get:
       summary: Fetch OHLCV

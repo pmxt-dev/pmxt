@@ -75,6 +75,7 @@ GitHub: https://github.com/pmxt-dev/pmxt
 - [Fetch Oracle History](https://pmxt.dev/docs/api-reference/feedFetchOracleHistory): Returns historical Chainlink oracle rounds for a price feed.
 - [Fetch Historical Prices](https://pmxt.dev/docs/api-reference/feedFetchHistoricalPrices): Returns historical price data as tickers within a time range.
 - [Fetch Series](https://pmxt.dev/docs/api-reference/fetchSeries): Fetch the recurring series (fourth tier above Event -> Market -> Outcome) that this venue exposes. Returns an empty array on venues without a series concept (Limitless, Smarkets, Probable, Metaculus, Baozi, Hyperliquid, SuiBets, Polymarket US). - `params.id` -> a single matching series with its events populated where supported. - no params -> the full list, typically without nested events for payload size.
+- [Fetch Event Metadata](https://pmxt.dev/docs/api-reference/fetchEventMetadata): Fetch venue-native metadata for a specific event when the exchange exposes a dedicated metadata endpoint. Kalshi implements this for `GET /events/{event_ticker}/metadata`.
 - [Execute a read-only SQL query against ClickHouse](https://pmxt.dev/docs/api-reference/postV0Sql)
 
 ## Full documentation

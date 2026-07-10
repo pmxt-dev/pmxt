@@ -228,6 +228,16 @@ export class KalshiExchange extends PredictionMarketExchange {
         return filtered;
     }
 
+    /**
+     * Fetch Kalshi's venue-native per-event metadata payload.
+     *
+     * This surfaces Kalshi's `GET /events/{event_ticker}/metadata` endpoint,
+     * which is distinct from the normalized `fetchEvent` response.
+     */
+    async fetchEventMetadata(eventTicker: string): Promise<Record<string, unknown>> {
+        return this.fetcher.fetchRawEventMetadata(eventTicker);
+    }
+
     async fetchEventsPage(
         params: EventFetchParams = {},
     ): Promise<{ events: UnifiedEvent[]; cursor: string | null; nextCursor: string | null }> {

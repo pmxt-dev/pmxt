@@ -381,6 +381,9 @@ function buildReturnLines(config) {
         case 'single':
             return `${i}const data = this.handleResponse(json);\n${i}return ${converter}(data);`;
         case 'record':
+            if (!converter) {
+                return `${i}return this.handleResponse(json);`;
+            }
             return [
                 `${i}const data = this.handleResponse(json);`,
                 `${i}const result: ${config.returnTs} = {};`,

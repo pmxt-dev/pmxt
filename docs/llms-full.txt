@@ -6134,6 +6134,41 @@ const result = await exchange.fetchSeries();
 ```
 
 
+### Fetch Event Metadata
+
+`GET /api/{exchange}/fetchEventMetadata`
+
+Fetch venue-native metadata for a specific event when the exchange exposes a dedicated metadata endpoint. Kalshi implements this for `GET /events/{event_ticker}/metadata`.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventTicker` | string | Yes |  |
+
+**Response:** `{ success: true, data: ... }`
+
+**Python:**
+```python
+import pmxt
+
+# API key optional — enables faster catalog-backed lookups
+exchange = pmxt.Kalshi(
+    pmxt_api_key="YOUR_PMXT_API_KEY",
+)
+result = exchange.fetch_event_metadata(event_ticker="value")
+```
+
+**TypeScript:**
+```typescript
+import { Kalshi } from "pmxtjs";
+
+// API key optional — enables faster catalog-backed lookups
+const exchange = new Kalshi({
+  pmxtApiKey: "YOUR_PMXT_API_KEY",
+});
+const result = await exchange.fetchEventMetadata({ eventTicker: "value" });
+```
+
+
 
 ## Enterprise
 

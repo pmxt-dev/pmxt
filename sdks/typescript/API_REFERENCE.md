@@ -132,7 +132,7 @@ exchange.has
 ---
 ### `loadMarkets`
 
-Load and cache all markets from the exchange into `this.markets` and `this.marketsBySlug`.
+Load and cache all markets from the exchange into `this.markets` and `this.marketsBySlug`.
 
 
 **Signature:**
@@ -157,7 +157,7 @@ await exchange.loadMarkets(true)
 ---
 ### `fetchMarkets`
 
-Fetch markets with optional filtering, search, or slug lookup.
+Fetch markets with optional filtering, search, or slug lookup.
 
 
 **Signature:**
@@ -192,7 +192,7 @@ Some exchanges (like Limitless) may only support status 'active' for search resu
 ---
 ### `fetchMarketsPaginated`
 
-Fetch markets with cursor-based pagination backed by a stable in-memory snapshot.
+Fetch markets with cursor-based pagination backed by a stable in-memory snapshot.
 
 
 **Signature:**
@@ -219,7 +219,7 @@ await exchange.fetchMarketsPaginated({ limit: 10, cursor: "..." })
 ---
 ### `fetchEventsPaginated`
 
-Paginated variant of {@link fetchEvents}.
+Paginated variant of {@link fetchEvents}.
 
 
 **Signature:**
@@ -246,7 +246,7 @@ await exchange.fetchEventsPaginated({ limit: 10, cursor: "..." })
 ---
 ### `fetchEvents`
 
-Fetch events with optional keyword search.
+Fetch events with optional keyword search.
 
 
 **Signature:**
@@ -277,7 +277,7 @@ Some exchanges (like Limitless) may only support status 'active' for search resu
 ---
 ### `fetchSeries`
 
-Fetch the recurring series (fourth tier above Event -> Market -> Outcome)
+Fetch the recurring series (fourth tier above Event -> Market -> Outcome)
 
 
 **Signature:**
@@ -302,7 +302,7 @@ await exchange.fetchSeries()
 ---
 ### `fetchMarket`
 
-Fetch a single market by lookup parameters.
+Fetch a single market by lookup parameters.
 
 
 **Signature:**
@@ -327,7 +327,7 @@ await exchange.fetchMarket()
 ---
 ### `fetchEvent`
 
-Fetch a single event by lookup parameters.
+Fetch a single event by lookup parameters.
 
 
 **Signature:**
@@ -382,7 +382,7 @@ Common resolutions: '1m' | '5m' | '15m' | '1h' | '6h' | '1d'. Arbitrary interval
 ---
 ### `fetchOrderBook`
 
-Fetch the order book (bids/asks) for a specific outcome.
+Fetch the order book (bids/asks) for a specific outcome.
 
 
 **Signature:**
@@ -409,7 +409,7 @@ await exchange.fetchOrderBook("abc123", 10, {})
 ---
 ### `fetchOrderBooks`
 
-Batch variant of {@link fetchOrderBook}. Fetches order books for
+Batch variant of {@link fetchOrderBook}. Fetches order books for
 
 
 **Signature:**
@@ -494,7 +494,7 @@ await exchange.createOrder({
 ---
 ### `buildOrder`
 
-Build an order payload without submitting it to the exchange.
+Build an order payload without submitting it to the exchange.
 
 
 **Signature:**
@@ -775,7 +775,7 @@ await exchange.fetchBalance("0xabc...")
 ---
 ### `getExecutionPrice`
 
-Calculate the volume-weighted average execution price for a given order size.
+Calculate the volume-weighted average execution price for a given order size.
 
 
 **Signature:**
@@ -831,7 +831,7 @@ await exchange.getExecutionPriceDetailed(orderBook, "buy", 50)
 ---
 ### `filterMarkets`
 
-Filter a list of markets by criteria.
+Filter a list of markets by criteria.
 
 
 **Signature:**
@@ -858,7 +858,7 @@ await exchange.filterMarkets(markets, "Trump")
 ---
 ### `filterEvents`
 
-Filter a list of events by criteria.
+Filter a list of events by criteria.
 
 
 **Signature:**
@@ -885,7 +885,7 @@ await exchange.filterEvents(events, "Trump")
 ---
 ### `watchOrderBook`
 
-Watch order book updates in real-time via WebSocket.
+Watch order book updates in real-time via WebSocket.
 
 
 **Signature:**
@@ -912,7 +912,7 @@ await exchange.watchOrderBook("abc123", 10, {})
 ---
 ### `watchOrderBooks`
 
-Watch multiple order books simultaneously via WebSocket.
+Watch multiple order books simultaneously via WebSocket.
 
 
 **Signature:**
@@ -964,7 +964,7 @@ await exchange.unwatchOrderBook("abc123")
 ---
 ### `watchTrades`
 
-Watch trade executions in real-time via WebSocket.
+Watch trade executions in real-time via WebSocket.
 
 
 **Signature:**
@@ -992,7 +992,7 @@ await exchange.watchTrades("abc123", "0xabc...", 1710000000000, 50)
 ---
 ### `watchAddress`
 
-Stream activity for a public wallet address
+Stream activity for a public wallet address
 
 
 **Signature:**
@@ -1043,7 +1043,7 @@ await exchange.unwatchAddress("0xabc...")
 ---
 ### `close`
 
-Close all WebSocket connections and clean up resources.
+Close all WebSocket connections and clean up resources.
 
 
 **Signature:**
@@ -1068,7 +1068,7 @@ await exchange.close()
 ---
 ### `fetchMarketMatches`
 
-Find the same or related market on other venues. Two modes:
+Find the same or related market on other venues. Two modes:
 
 
 **Signature:**
@@ -1118,7 +1118,7 @@ await exchange.fetchMatches()
 ---
 ### `fetchEventMatches`
 
-Find the same or related event on other venues. Two modes:
+Find the same or related event on other venues. Two modes:
 
 
 **Signature:**
@@ -1149,12 +1149,12 @@ Compare live prices for the same market across venues. Finds identity matches an
 **Signature:**
 
 ```typescript
-async compareMarketPrices(params: FetchMatchesParams): Promise<PriceComparison[]>
+async compareMarketPrices(params: CompareMarketPricesParams): Promise<PriceComparison[]>
 ```
 
 **Parameters:**
 
-- `params` (FetchMatchesParams): Match filter parameters (uses relation: 'identity' internally)
+- `params` (CompareMarketPricesParams): Match filter parameters (uses relation: 'identity' internally)
 
 **Returns:** Promise<[PriceComparison](#pricecomparison)[]> - Array of price comparisons across venues
 
@@ -1168,7 +1168,7 @@ await exchange.compareMarketPrices()
 ---
 ### `fetchRelatedMarkets`
 
-Find related markets across venues. Discovers subset/superset market relationships
+Find related markets across venues. Discovers subset/superset market relationships
 
 
 **Signature:**
@@ -1293,7 +1293,7 @@ await exchange.fetchArbitrage()
 ---
 ### `watchPrices`
 
-Watch AMM price updates for a market address (Limitless only).
+Watch AMM price updates for a market address (Limitless only).
 
 > **Note**: This method is only available on **limitless** exchange.
 
@@ -1321,7 +1321,7 @@ await exchange.watchPrices("0xabc...", (data) => { void data })
 ---
 ### `watchUserPositions`
 
-Watch user positions in real-time (Limitless only).
+Watch user positions in real-time (Limitless only).
 
 > **Note**: This method is only available on **limitless** exchange.
 
@@ -1348,7 +1348,7 @@ await exchange.watchUserPositions((data) => { void data })
 ---
 ### `watchUserTransactions`
 
-Watch user transactions in real-time (Limitless only).
+Watch user transactions in real-time (Limitless only).
 
 > **Note**: This method is only available on **limitless** exchange.
 
@@ -1375,7 +1375,7 @@ await exchange.watchUserTransactions((data) => { void data })
 ---
 ### `initAuth`
 
-Initialize L2 API credentials for implicit API signing.
+Initialize L2 API credentials for implicit API signing.
 
 > **Note**: This method is only available on **polymarket** exchange.
 
@@ -1402,7 +1402,7 @@ await exchange.initAuth()
 ---
 ### `preWarmMarket`
 
-Pre-warm the SDK's internal caches for a market outcome.
+Pre-warm the SDK's internal caches for a market outcome.
 
 > **Note**: This method is only available on **polymarket** exchange.
 
@@ -1483,7 +1483,7 @@ await exchange.getEventBySlug("will-trump-win")
 ---
 ### `watchAllOrderBooks`
 
-Stream all orderbook updates across venues via the hosted WebSocket API.
+Stream all orderbook updates across venues via the hosted WebSocket API.
 
 
 **Signature:**

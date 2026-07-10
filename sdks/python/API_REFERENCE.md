@@ -130,7 +130,7 @@ exchange.has
 ---
 ### `load_markets`
 
-Load and cache all markets from the exchange into `this.markets` and `this.marketsBySlug`.
+Load and cache all markets from the exchange into `this.markets` and `this.marketsBySlug`.
 
 
 **Signature:**
@@ -155,7 +155,7 @@ exchange.load_markets(reload=True)
 ---
 ### `fetch_markets`
 
-Fetch markets with optional filtering, search, or slug lookup.
+Fetch markets with optional filtering, search, or slug lookup.
 
 
 **Signature:**
@@ -190,7 +190,7 @@ Some exchanges (like Limitless) may only support status 'active' for search resu
 ---
 ### `fetch_markets_paginated`
 
-Fetch markets with cursor-based pagination backed by a stable in-memory snapshot.
+Fetch markets with cursor-based pagination backed by a stable in-memory snapshot.
 
 
 **Signature:**
@@ -217,7 +217,7 @@ exchange.fetch_markets_paginated(limit=10, cursor="...")
 ---
 ### `fetch_events_paginated`
 
-Paginated variant of {@link fetchEvents}.
+Paginated variant of {@link fetchEvents}.
 
 
 **Signature:**
@@ -244,7 +244,7 @@ exchange.fetch_events_paginated(limit=10, cursor="...")
 ---
 ### `fetch_events`
 
-Fetch events with optional keyword search.
+Fetch events with optional keyword search.
 
 
 **Signature:**
@@ -275,7 +275,7 @@ Some exchanges (like Limitless) may only support status 'active' for search resu
 ---
 ### `fetch_series`
 
-Fetch the recurring series (fourth tier above Event -> Market -> Outcome)
+Fetch the recurring series (fourth tier above Event -> Market -> Outcome)
 
 
 **Signature:**
@@ -300,7 +300,7 @@ exchange.fetch_series()
 ---
 ### `fetch_market`
 
-Fetch a single market by lookup parameters.
+Fetch a single market by lookup parameters.
 
 
 **Signature:**
@@ -325,7 +325,7 @@ exchange.fetch_market()
 ---
 ### `fetch_event`
 
-Fetch a single event by lookup parameters.
+Fetch a single event by lookup parameters.
 
 
 **Signature:**
@@ -380,7 +380,7 @@ Common resolutions: '1m' | '5m' | '15m' | '1h' | '6h' | '1d'. Arbitrary interval
 ---
 ### `fetch_order_book`
 
-Fetch the order book (bids/asks) for a specific outcome.
+Fetch the order book (bids/asks) for a specific outcome.
 
 
 **Signature:**
@@ -407,7 +407,7 @@ exchange.fetch_order_book(outcome_id="abc123", limit=10, params={})
 ---
 ### `fetch_order_books`
 
-Batch variant of {@link fetchOrderBook}. Fetches order books for
+Batch variant of {@link fetchOrderBook}. Fetches order books for
 
 
 **Signature:**
@@ -492,7 +492,7 @@ exchange.create_order(
 ---
 ### `build_order`
 
-Build an order payload without submitting it to the exchange.
+Build an order payload without submitting it to the exchange.
 
 
 **Signature:**
@@ -773,7 +773,7 @@ exchange.fetch_balance(address="0xabc...")
 ---
 ### `get_execution_price`
 
-Calculate the volume-weighted average execution price for a given order size.
+Calculate the volume-weighted average execution price for a given order size.
 
 
 **Signature:**
@@ -829,7 +829,7 @@ exchange.get_execution_price_detailed(order_book=order_book, side="buy", amount=
 ---
 ### `filter_markets`
 
-Filter a list of markets by criteria.
+Filter a list of markets by criteria.
 
 
 **Signature:**
@@ -856,7 +856,7 @@ exchange.filter_markets(markets=markets, criteria="Trump")
 ---
 ### `filter_events`
 
-Filter a list of events by criteria.
+Filter a list of events by criteria.
 
 
 **Signature:**
@@ -883,7 +883,7 @@ exchange.filter_events(events=events, criteria="Trump")
 ---
 ### `watch_order_book`
 
-Watch order book updates in real-time via WebSocket.
+Watch order book updates in real-time via WebSocket.
 
 
 **Signature:**
@@ -910,7 +910,7 @@ exchange.watch_order_book(outcome_id="abc123", limit=10, params={})
 ---
 ### `watch_order_books`
 
-Watch multiple order books simultaneously via WebSocket.
+Watch multiple order books simultaneously via WebSocket.
 
 
 **Signature:**
@@ -962,7 +962,7 @@ exchange.unwatch_order_book(outcome_id="abc123")
 ---
 ### `watch_trades`
 
-Watch trade executions in real-time via WebSocket.
+Watch trade executions in real-time via WebSocket.
 
 
 **Signature:**
@@ -990,7 +990,7 @@ exchange.watch_trades(outcome_id="abc123", address="0xabc...", since=17100000000
 ---
 ### `watch_address`
 
-Stream activity for a public wallet address
+Stream activity for a public wallet address
 
 
 **Signature:**
@@ -1041,7 +1041,7 @@ exchange.unwatch_address(address="0xabc...")
 ---
 ### `close`
 
-Close all WebSocket connections and clean up resources.
+Close all WebSocket connections and clean up resources.
 
 
 **Signature:**
@@ -1066,7 +1066,7 @@ exchange.close()
 ---
 ### `fetch_market_matches`
 
-Find the same or related market on other venues. Two modes:
+Find the same or related market on other venues. Two modes:
 
 
 **Signature:**
@@ -1116,7 +1116,7 @@ exchange.fetch_matches()
 ---
 ### `fetch_event_matches`
 
-Find the same or related event on other venues. Two modes:
+Find the same or related event on other venues. Two modes:
 
 
 **Signature:**
@@ -1147,12 +1147,12 @@ Compare live prices for the same market across venues. Finds identity matches an
 **Signature:**
 
 ```python
-def compare_market_prices(params: FetchMatchesParams) -> List[PriceComparison]:
+def compare_market_prices(params: CompareMarketPricesParams) -> List[PriceComparison]:
 ```
 
 **Parameters:**
 
-- `params` (FetchMatchesParams): Match filter parameters (uses relation: 'identity' internally)
+- `params` (CompareMarketPricesParams): Match filter parameters (uses relation: 'identity' internally)
 
 **Returns:** List[[PriceComparison](#pricecomparison)] - Array of price comparisons across venues
 
@@ -1166,7 +1166,7 @@ exchange.compare_market_prices()
 ---
 ### `fetch_related_markets`
 
-Find related markets across venues. Discovers subset/superset market relationships
+Find related markets across venues. Discovers subset/superset market relationships
 
 
 **Signature:**
@@ -1291,7 +1291,7 @@ exchange.fetch_arbitrage()
 ---
 ### `watch_prices`
 
-Watch AMM price updates for a market address (Limitless only).
+Watch AMM price updates for a market address (Limitless only).
 
 > **Note**: This method is only available on **limitless** exchange.
 
@@ -1321,7 +1321,7 @@ exchange.watch_prices(market_address="0xabc...", callback=handle_price_update)
 ---
 ### `watch_user_positions`
 
-Watch user positions in real-time (Limitless only).
+Watch user positions in real-time (Limitless only).
 
 > **Note**: This method is only available on **limitless** exchange.
 
@@ -1350,7 +1350,7 @@ exchange.watch_user_positions(callback=handle_position_update)
 ---
 ### `watch_user_transactions`
 
-Watch user transactions in real-time (Limitless only).
+Watch user transactions in real-time (Limitless only).
 
 > **Note**: This method is only available on **limitless** exchange.
 
@@ -1379,7 +1379,7 @@ exchange.watch_user_transactions(callback=handle_transaction_update)
 ---
 ### `init_auth`
 
-Initialize L2 API credentials for implicit API signing.
+Initialize L2 API credentials for implicit API signing.
 
 > **Note**: This method is only available on **polymarket** exchange.
 
@@ -1406,7 +1406,7 @@ exchange.init_auth()
 ---
 ### `pre_warm_market`
 
-Pre-warm the SDK's internal caches for a market outcome.
+Pre-warm the SDK's internal caches for a market outcome.
 
 > **Note**: This method is only available on **polymarket** exchange.
 
@@ -1487,7 +1487,7 @@ exchange.get_event_by_slug(slug="will-trump-win")
 ---
 ### `watch_all_order_books`
 
-Stream all orderbook updates across venues via the hosted WebSocket API.
+Stream all orderbook updates across venues via the hosted WebSocket API.
 
 
 **Signature:**

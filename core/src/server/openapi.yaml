@@ -2042,7 +2042,7 @@ paths:
                   type: array
                   maxItems: 1
                   items:
-                    $ref: '#/components/schemas/FetchMarketMatchesParams'
+                    type: object
                   minItems: 1
                 credentials:
                   $ref: '#/components/schemas/ExchangeCredentials'

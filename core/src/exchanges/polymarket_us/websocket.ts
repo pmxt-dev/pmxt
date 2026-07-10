@@ -148,7 +148,7 @@ export class PolymarketUSWebSocket {
             // Wrap connection in a timeout with proper garbage collection
             const CONNECTION_TIMEOUT_MS = 15000; // 15s is standard for trading API handshakes
             let timeoutHandle: NodeJS.Timeout;
-            
+
             const timeoutPromise = new Promise<never>((_, reject) => {
                 timeoutHandle = setTimeout(() => {
                     reject(new Error(`PolymarketUS WebSocket connection timed out after ${CONNECTION_TIMEOUT_MS}ms`));

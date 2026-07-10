@@ -193,13 +193,13 @@ export class LimitlessWebSocket {
 
             return await Promise.race([wsUpdatePromise, timeoutPromise]);
         } catch (err) {
-            logger.error('LimitlessWS: watchOrderBook failed', { 
-                market: marketSlug, 
+            logger.error('LimitlessWS: watchOrderBook failed', {
+                market: marketSlug,
                 error: err instanceof Error ? err.message : String(err)
             });
-            
+
             // Do not return fake liquidity. Force the upstream loop to handle the break.
-            throw err; 
+            throw err;
         }
     }
 

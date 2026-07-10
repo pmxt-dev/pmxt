@@ -1131,9 +1131,6 @@ export abstract class Exchange {
     }
 
     async submitOrder(built: BuiltOrder): Promise<Order> {
-        if (this.isHostedTradingMode()) {
-            return this._hostedSubmitOrder(built);
-        }
         await this.initPromise;
         if (this.isHosted) {
             throw new PmxtError("submitOrder is not available in hosted mode. Use createOrder instead.");
@@ -1162,88 +1159,7 @@ export abstract class Exchange {
         }
     }
 
-    /**
-     * Hosted-mode submitOrder: validate the stored build response, sign the
-     * typed_data (and pull_typed_data for Opinion cross-chain sells), then
-     * POST to `/v0/trade/submit-order`.
-     */
-    private async _hostedSubmitOrder(built: BuiltOrder): Promise<Order> {
-        const signer = this.requireHostedSigner();
-        if (!this.walletAddress) {
-            throw new MissingWalletAddress(
-                "hosted submitOrder requires walletAddress",
-            );
-        }
-        // BuiltOrder is the SDK-side wrapper around the build response —
-        // expect typed_data, optional pull_typed_data, built_order_id, and
-        // the originating build_request to be present.
-        const payload = built as unknown as Record<string, unknown>;
-        const typedData = payload["typed_data"] as TypedData | undefined;
-        if (!typedData) {
-            throw new HostedInvalidSignature(0, "typed_data missing from built order");
-        }
-        const buildRequest = (payload["build_request"] as Record<string, unknown> | undefined)
-            ?? ((payload["params"] as Record<string, unknown> | undefined)?.["build_request"] as Record<string, unknown> | undefined);
-
-        const side = String(buildRequest?.["side"] ?? "buy");
-        const primaryRoute = this._hostedTypedDataRoute(side, false);
-        // Layer 1: schema, Layer 2: economics.
-        validateTypedData(typedData, primaryRoute, this.walletAddress);
-        if (buildRequest) {
-            validateEconomics(typedData, primaryRoute, buildRequest, payload);
-        }
-
-        const signature = await signer.signTypedData(typedData);
-        // Layer 3: post-sign recovery + canonical check.
-        verifySignature(typedData, signature, signer.address);
-
-        const body: Record<string, unknown> = {
-            built_order_id: payload["built_order_id"],
-            signature,
-        };
-
-        const pullTypedData = payload["pull_typed_data"] as TypedData | undefined;
-        if (pullTypedData) {
-            const pullRoute = this._hostedTypedDataRoute(side, true);
-            if (pullRoute) {
-                validateTypedData(pullTypedData, pullRoute, this.walletAddress);
-            }
-            const pullSig = await signer.signTypedData(pullTypedData);
-            verifySignature(pullTypedData, pullSig, signer.address);
-            body["pull_signature"] = pullSig;
-        }
-
-        const route = HOSTED_METHOD_ROUTES.get("submitOrder")!;
-        const data = await _tradingRequest(this, { method: route.method, path: route.path, body });
-        return orderFromV0(data as Record<string, unknown>);
-    }
-
-    /**
-     * Resolve the per-(venue, side, pull) typed-data schema route used by
-     * `validateTypedData` / `validateEconomics`. Returns undefined for the
-     * pull leg when a venue/side combo doesn't have one.
-     */
-    private _hostedTypedDataRoute(side: string, isPull: boolean): string {
-        const venue = this.exchangeName;
-        const sideLower = side.toLowerCase();
-        if (venue === "polymarket") {
-            return sideLower === "sell" ? "polymarket_sell" : "polymarket_buy";
-        }
-        // opinion
-        if (sideLower === "buy") return "opinion_buy";
-        // sell — polygon, or BSC pull leg for cross-chain
-        return isPull ? "opinion_sell_bsc_pull" : "opinion_sell_polygon";
-    }
-
-    private _hostedCancelTypedDataRoute(isPull: boolean): string {
-        if (this.exchangeName === "polymarket") return "cancel_polymarket";
-        return isPull ? "cancel_opinion_bsc_pull" : "cancel_opinion_polygon";
-    }
-
     async cancelOrder(orderId: string): Promise<Order> {
-        if (this.isHostedTradingMode()) {
-            return this._hostedCancelOrder(orderId);
-        }
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1269,56 +1185,7 @@ export abstract class Exchange {
         }
     }
 
-    /**
-     * Hosted-mode cancelOrder: build the cancel typed_data on the server,
-     * validate + sign (dual-sign for Opinion cross-chain), then submit.
-     */
-    private async _hostedCancelOrder(orderId: string): Promise<Order> {
-        const signer = this.requireHostedSigner();
-        if (!this.walletAddress) {
-            throw new MissingWalletAddress(
-                "hosted cancelOrder requires walletAddress",
-            );
-        }
-
-        const buildRoute = HOSTED_METHOD_ROUTES.get("cancelOrderBuild")!;
-        const buildResp = await _tradingRequest(this, {
-            method: buildRoute.method,
-            path: buildRoute.path,
-            body: { order_id: orderId },
-        }) as Record<string, unknown>;
-
-        const typedData = buildResp["typed_data"] as TypedData | undefined;
-        if (!typedData) {
-            throw new HostedInvalidSignature(0, "typed_data missing from cancel build response");
-        }
-
-        validateTypedData(typedData, this._hostedCancelTypedDataRoute(false), this.walletAddress);
-        const signature = await signer.signTypedData(typedData);
-        verifySignature(typedData, signature, signer.address);
-
-        const body: Record<string, unknown> = {
-            cancel_id: buildResp["cancel_id"],
-            signature,
-        };
-
-        const pullTypedData = buildResp["pull_typed_data"] as TypedData | undefined;
-        if (pullTypedData) {
-            validateTypedData(pullTypedData, this._hostedCancelTypedDataRoute(true), this.walletAddress);
-            const pullSig = await signer.signTypedData(pullTypedData);
-            verifySignature(pullTypedData, pullSig, signer.address);
-            body["pull_signature"] = pullSig;
-        }
-
-        const route = HOSTED_METHOD_ROUTES.get("cancelOrder")!;
-        const data = await _tradingRequest(this, { method: route.method, path: route.path, body });
-        return orderFromV0(data as Record<string, unknown>);
-    }
-
     async fetchOrder(orderId: string): Promise<Order> {
-        if (this.isHostedTradingMode()) {
-            return this._hostedFetchOrder(orderId);
-        }
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1344,17 +1211,7 @@ export abstract class Exchange {
         }
     }
 
-    private async _hostedFetchOrder(orderId: string): Promise<Order> {
-        const route = HOSTED_METHOD_ROUTES.get("fetchOrder")!;
-        const path = formatRoutePath(route, { order_id: orderId });
-        const data = await _tradingRequest(this, { method: route.method, path });
-        return orderFromV0(data as Record<string, unknown>);
-    }
-
     async fetchOpenOrders(marketId?: string): Promise<Order[]> {
-        if (this.isHostedTradingMode()) {
-            return this._hostedFetchOpenOrders(marketId);
-        }
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1380,24 +1237,7 @@ export abstract class Exchange {
         }
     }
 
-    private async _hostedFetchOpenOrders(marketId?: string): Promise<Order[]> {
-        const address = resolveWalletAddress(this, undefined);
-        const route = HOSTED_METHOD_ROUTES.get("fetchOpenOrders")!;
-        const params: Record<string, string> = { address };
-        if (marketId !== undefined) params["market_id"] = marketId;
-        const data = await _tradingRequest(this, {
-            method: route.method,
-            path: route.path,
-            params,
-        });
-        const items = (Array.isArray(data) ? data : (data as Record<string, unknown>)?.["orders"] ?? []) as unknown[];
-        return (items as Record<string, unknown>[]).map(orderFromV0);
-    }
-
     async fetchMyTrades(params?: MyTradesParams): Promise<UserTrade[]> {
-        if (this.isHostedTradingMode()) {
-            return this._hostedFetchMyTrades(params);
-        }
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1423,32 +1263,7 @@ export abstract class Exchange {
         }
     }
 
-    private async _hostedFetchMyTrades(params?: MyTradesParams): Promise<UserTrade[]> {
-        const address = resolveWalletAddress(this, undefined);
-        const route = HOSTED_METHOD_ROUTES.get("fetchMyTrades")!;
-        const path = formatRoutePath(route, { address });
-        const q: Record<string, string> = {};
-        if (params?.marketId) q["market_id"] = params.marketId;
-        if (params?.outcomeId) q["outcome_id"] = params.outcomeId;
-        if (params?.limit !== undefined) q["limit"] = String(params.limit);
-        if (params?.cursor) q["cursor"] = params.cursor;
-        if (params?.since) q["since"] = String(params.since.getTime());
-        if (params?.until) q["until"] = String(params.until.getTime());
-        const data = await _tradingRequest(this, {
-            method: route.method,
-            path,
-            params: Object.keys(q).length ? q : undefined,
-        });
-        const items = (Array.isArray(data) ? data : (data as Record<string, unknown>)?.["trades"] ?? []) as unknown[];
-        return (items as Record<string, unknown>[]).map(userTradeFromV0);
-    }
-
     async fetchClosedOrders(params?: OrderHistoryParams): Promise<Order[]> {
-        if (this.isHostedTradingMode()) {
-            throw new NotSupported(
-                "Settled orders are modeled as trades — use fetchMyTrades().",
-            );
-        }
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1475,11 +1290,6 @@ export abstract class Exchange {
     }
 
     async fetchAllOrders(params?: OrderHistoryParams): Promise<Order[]> {
-        if (this.isHostedTradingMode()) {
-            throw new NotSupported(
-                "Use fetchOpenOrders() and fetchMyTrades() separately.",
-            );
-        }
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1506,9 +1316,6 @@ export abstract class Exchange {
     }
 
     async fetchPositions(address?: string): Promise<Position[]> {
-        if (this.isHostedTradingMode()) {
-            return this._hostedFetchPositions(address);
-        }
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1534,19 +1341,7 @@ export abstract class Exchange {
         }
     }
 
-    private async _hostedFetchPositions(address?: string): Promise<Position[]> {
-        const resolvedAddr = resolveWalletAddress(this, address);
-        const route = HOSTED_METHOD_ROUTES.get("fetchPositions")!;
-        const path = formatRoutePath(route, { address: resolvedAddr });
-        const data = await _tradingRequest(this, { method: route.method, path });
-        const items = (Array.isArray(data) ? data : (data as Record<string, unknown>)?.["positions"] ?? []) as unknown[];
-        return (items as Record<string, unknown>[]).map(positionFromV0);
-    }
-
     async fetchBalance(address?: string): Promise<Balance[]> {
-        if (this.isHostedTradingMode()) {
-            return this._hostedFetchBalance(address);
-        }
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1570,19 +1365,6 @@ export abstract class Exchange {
             if (error instanceof PmxtError) throw error;
             throw new PmxtError(`Failed to fetchBalance: ${error}`);
         }
-    }
-
-    private async _hostedFetchBalance(address?: string): Promise<Balance[]> {
-        const resolvedAddr = resolveWalletAddress(this, address);
-        const route = HOSTED_METHOD_ROUTES.get("fetchBalance")!;
-        const path = formatRoutePath(route, { address: resolvedAddr });
-        const data = await _tradingRequest(this, { method: route.method, path });
-        // Hosted balance is a single USDC escrow record; wrap in an array
-        // to match the existing Balance[] return shape.
-        if (Array.isArray(data)) {
-            return (data as Record<string, unknown>[]).map(balanceFromV0);
-        }
-        return [balanceFromV0(data as Record<string, unknown>)];
     }
 
     async unwatchOrderBook(outcomeId: string | MarketOutcome): Promise<void> {
@@ -1659,7 +1441,7 @@ export abstract class Exchange {
         }
     }
 
-    async fetchMarketMatches(params?: any): Promise<any[]> {
+    async fetchMarketMatches(params?: FetchMarketMatchesParams): Promise<MatchResult[]> {
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1684,7 +1466,7 @@ export abstract class Exchange {
         }
     }
 
-    async fetchMatches(params: any): Promise<any[]> {
+    async fetchMatches(params: any): Promise<MatchResult[]> {
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1709,7 +1491,7 @@ export abstract class Exchange {
         }
     }
 
-    async fetchEventMatches(params?: any): Promise<any[]> {
+    async fetchEventMatches(params?: FetchEventMatchesParams): Promise<EventMatchResult[]> {
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1734,7 +1516,7 @@ export abstract class Exchange {
         }
     }
 
-    async compareMarketPrices(params: any): Promise<any[]> {
+    async compareMarketPrices(params: CompareMarketPricesParams): Promise<PriceComparison[]> {
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1759,7 +1541,7 @@ export abstract class Exchange {
         }
     }
 
-    async fetchRelatedMarkets(params: any): Promise<any[]> {
+    async fetchRelatedMarkets(params: any): Promise<PriceComparison[]> {
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1809,7 +1591,7 @@ export abstract class Exchange {
         }
     }
 
-    async fetchMatchedPrices(params?: any): Promise<any[]> {
+    async fetchMatchedPrices(params?: FetchMatchedPricesParams): Promise<any[]> {
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1834,7 +1616,7 @@ export abstract class Exchange {
         }
     }
 
-    async fetchHedges(params: any): Promise<any[]> {
+    async fetchHedges(params: any): Promise<PriceComparison[]> {
         await this.initPromise;
         try {
             const args: any[] = [];
@@ -1859,7 +1641,7 @@ export abstract class Exchange {
         }
     }
 
-    async fetchArbitrage(params?: any): Promise<any[]> {
+    async fetchArbitrage(params?: FetchArbitrageParams): Promise<ArbitrageOpportunity[]> {
         await this.initPromise;
         try {
             const args: any[] = [];

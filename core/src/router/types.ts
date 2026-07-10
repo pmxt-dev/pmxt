@@ -71,6 +71,23 @@ export interface ArbitrageOpportunity {
 // Param types
 // ---------------------------------------------------------------------------
 
+
+/**
+ * Parameters for comparing market prices across venues.
+ */
+export interface CompareMarketPricesParams {
+    /** The source market ID to compare against. */
+    marketId: string;
+    /** Optional list of target market IDs to compare with. If not provided, the router finds matches automatically. */
+    targetMarketIds?: string[];
+    /** Minimum price difference to return. */
+    minDifference?: number;
+    /** Maximum number of results to return. */
+    limit?: number;
+}
+
+
+
 export interface FetchMarketMatchesParams {
     /** Keyword search across matched market titles. */
     query?: string;

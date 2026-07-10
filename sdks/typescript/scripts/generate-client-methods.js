@@ -64,6 +64,11 @@ const TYPE_MAP = {
     PriceCandle: { converter: 'convertCandle' },
     // Pagination wrapper — gets its own response handler
     PaginatedMarketsResult: { converter: null, pattern: 'paginatedMarkets' },
+
+    MatchResult: { converter: null, pattern: 'raw' },
+    EventMatchResult: { converter: null, pattern: 'raw' },
+    PriceComparison: { converter: null, pattern: 'raw' },
+    ArbitrageOpportunity: { converter: null, pattern: 'raw' },
 };
 
 // SDK types that can appear in generated signatures without extra imports
@@ -77,6 +82,16 @@ const SDK_PARAM_TYPES = new Set([
     'MyTradesParams', 'OrderHistoryParams', 'CreateOrderParams',
     'MarketFilterCriteria', 'EventFilterCriteria',
     'SubscriptionOption',
+
+    'FetchMarketMatchesParams',
+    'FetchEventMatchesParams',
+    'CompareMarketPricesParams',
+    'FetchMatchedPricesParams',
+    'FetchArbitrageParams',
+    'MatchResult',
+    'EventMatchResult',
+    'PriceComparison',
+    'ArbitrageOpportunity',
 ]);
 
 // Parameter names that represent outcome IDs and should accept MarketOutcome.

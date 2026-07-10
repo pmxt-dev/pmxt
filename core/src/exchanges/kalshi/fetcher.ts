@@ -158,7 +158,7 @@ export interface KalshiRawTrade {
     count?: number;
     /** New API field: count as a string e.g. "424.00" */
     count_fp?: string;
-    
+
     /** @deprecated removal deadline May 14, 2026 */
     taker_side?: string;
     /** New v2 directional fields */

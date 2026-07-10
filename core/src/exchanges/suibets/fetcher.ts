@@ -23,6 +23,12 @@ export interface SuibetsRawOffer {
     isOnchain?: boolean;
     onchainOfferId?: string;
     leagueName?: string;
+    onchainState?: {
+        makerRemaining?: string;
+        totalLiquidity?: string;
+        filledAmount?: string;
+        status?: string;
+    };
 }
 
 export interface SuibetsRawEvent {

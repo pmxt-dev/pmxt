@@ -4711,7 +4711,6 @@ components:
         - no_price
         - yes_price_dollars
         - no_price_dollars
-        - taker_side
       properties:
         trade_id:
           type: string
@@ -4744,7 +4743,19 @@ components:
           type: string
           enum: ['yes', 'no']
           x-enum-varnames: ['TradeTakerSideYes', 'TradeTakerSideNo']
-          description: Side for the taker of this trade
+          deprecated: true
+          description: Deprecated (removal deadline May 14, 2026). Use taker_outcome_side and taker_book_side instead.
+        taker_outcome_side:
+          type: string
+          enum: ['yes', 'no']
+          description: '"yes" or "no" — which side of the outcome the taker is on'
+        taker_book_side:
+          type: string
+          enum: ['bid', 'ask']
+          description: '"bid" or "ask" — taker''s side of the order book'
+        is_block_trade:
+          type: boolean
+          description: Whether this was a block trade
         created_time:
           type: string
           format: date-time

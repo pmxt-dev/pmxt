@@ -2331,6 +2331,214 @@
         ]
       }
     },
+    "/api/{exchange}/fetchEventMetadata": {
+      "get": {
+        "summary": "Fetch Event Metadata",
+        "operationId": "fetchEventMetadata",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ExchangeParam"
+          },
+          {
+            "in": "query",
+            "name": "eventTicker",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fetch Event Metadata response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "description": "Fetch venue-native metadata for a specific event when the exchange exposes a dedicated metadata endpoint. Kalshi implements this for `GET /events/{event_ticker}/metadata`.",
+        "security": [],
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Polymarket",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Limitless",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Limitless(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Kalshi",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Kalshi(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "KalshiDemo",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.KalshiDemo(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Probable",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Probable(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Baozi",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Baozi(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Myriad",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Myriad(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Opinion",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Metaculus",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Metaculus(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Smarkets",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Smarkets(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "PolymarketUS",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.PolymarketUS(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Hyperliquid",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hyperliquid(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "GeminiTitan",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.GeminiTitan(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "SuiBets",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.SuiBets(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Rain",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Rain(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "python",
+            "label": "Hunch",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
+            "lang": "javascript",
+            "label": "Polymarket",
+            "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Limitless",
+            "source": "import { Limitless } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Limitless({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Kalshi",
+            "source": "import { Kalshi } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Kalshi({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "KalshiDemo",
+            "source": "import { KalshiDemo } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new KalshiDemo({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Probable",
+            "source": "import { Probable } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Probable({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Baozi",
+            "source": "import { Baozi } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Baozi({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Myriad",
+            "source": "import { Myriad } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Myriad({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Opinion",
+            "source": "import { Opinion } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Metaculus",
+            "source": "import { Metaculus } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Metaculus({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Smarkets",
+            "source": "import { Smarkets } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Smarkets({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "PolymarketUS",
+            "source": "import { PolymarketUS } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new PolymarketUS({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Hyperliquid",
+            "source": "import { Hyperliquid } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hyperliquid({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "GeminiTitan",
+            "source": "import { GeminiTitan } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new GeminiTitan({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "SuiBets",
+            "source": "import { SuiBets } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new SuiBets({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Rain",
+            "source": "import { Rain } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Rain({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Hunch",
+            "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          }
+        ]
+      }
+    },
     "/api/{exchange}/fetchOHLCV": {
       "get": {
         "summary": "Fetch OHLCV",

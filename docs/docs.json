@@ -216,7 +216,8 @@
           {
             "group": "Other",
             "pages": [
-              "GET /api/{exchange}/fetchSeries"
+              "GET /api/{exchange}/fetchSeries",
+              "GET /api/{exchange}/fetchEventMetadata"
             ],
             "openapi": "api-reference/openapi.json"
           },

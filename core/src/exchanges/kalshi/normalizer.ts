@@ -303,7 +303,8 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
             timestamp: new Date(raw.created_time).getTime(),
             price,
             amount,
-            side: raw.taker_side === 'yes' ? 'buy' : 'sell',
+            // Support legacy taker_side, fallback to v2 taker_outcome_side
+            side: (raw.taker_side || raw.taker_outcome_side) === 'yes' ? 'buy' : 'sell',
         };
     }
 
@@ -323,7 +324,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
             timestamp: new Date(raw.created_time).getTime(),
             price,
             amount,
-            side: raw.side === 'yes' ? 'buy' as const : 'sell' as const,
+            side: (raw.side || raw.outcome_side) === 'yes' ? 'buy' as const : 'sell' as const,
             orderId: raw.order_id,
         };
     }

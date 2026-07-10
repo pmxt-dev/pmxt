@@ -221,6 +221,17 @@ export interface UserTrade extends Trade {
     blockNumber?: number | null;
 }
 
+export interface AuthNonceResponse {
+    nonce: string;
+    messageToSign: string;
+}
+
+export interface SessionCredentials {
+    apiKey: string;
+    apiSecret: string;
+    passphrase?: string;
+    expiresAt?: number;
+}
 
 export interface QueuedPromise<T> {
     /** Internal: resolver for a queued promise. */

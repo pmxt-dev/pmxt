@@ -19,6 +19,40 @@
       }
     ]
   },
+  "getAuthNonce": {
+    "verb": "post",
+    "args": [
+      {
+        "name": "walletAddress",
+        "kind": "string",
+        "optional": false
+      }
+    ]
+  },
+  "loginWithSignature": {
+    "verb": "post",
+    "args": [
+      {
+        "name": "walletAddress",
+        "kind": "string",
+        "optional": false
+      },
+      {
+        "name": "signature",
+        "kind": "string",
+        "optional": false
+      },
+      {
+        "name": "nonce",
+        "kind": "string",
+        "optional": false
+      }
+    ]
+  },
+  "logout": {
+    "verb": "post",
+    "args": []
+  },
   "fetchMarketsPaginated": {
     "verb": "get",
     "args": [

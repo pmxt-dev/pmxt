@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { EventNotFound, MarketNotFound } from './errors';
 import { SubscribedAddressSnapshot, SubscriptionOption } from './subscriber/base';
+import { AuthNonceResponse, SessionCredentials } from './types';
 import {
     Balance,
     BuiltOrder,
@@ -659,6 +660,29 @@ export abstract class PredictionMarketExchange {
         );
         const start = offset ?? 0;
         return limit !== undefined ? markets.slice(start, start + limit) : markets.slice(start);
+    }
+
+    /**
+     * Retrieves a cryptographic challenge string (nonce) from a Web3 exchange.
+     * Required for EIP-712 / wallet signature authentication workflows.
+     */
+    async getAuthNonce(walletAddress: string): Promise<AuthNonceResponse> {
+        throw new Error(`getAuthNonce not implemented for exchange ${this.id}`);
+    }
+
+    /**
+     * Submits a completed wallet signature to exchange authentication endpoints 
+     * to acquire temporary API credentials or establish a valid session.
+     */
+    async loginWithSignature(walletAddress: string, signature: string, nonce: string): Promise<SessionCredentials> {
+        throw new Error(`loginWithSignature not implemented for exchange ${this.id}`);
+    }
+
+    /**
+     * Programmatically terminates the active session or revokes the current credentials.
+     */
+    async logout(): Promise<void> {
+        throw new Error(`logout not implemented for exchange ${this.id}`);
     }
 
     /**

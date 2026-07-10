@@ -210,6 +210,112 @@ paths:
       description: >-
         Fetch markets with optional filtering, search, or slug lookup. Always hits the exchange API — results reflect
         the live state at the time of the call.
+  '/api/{exchange}/getAuthNonce':
+    post:
+      summary: Get Auth Nonce
+      operationId: getAuthNonce
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: GetAuthNonceRequest
+              type: object
+              properties:
+                args:
+                  type: array
+                  maxItems: 1
+                  items:
+                    type: string
+                  minItems: 1
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+              required:
+                - args
+      responses:
+        '200':
+          description: Get Auth Nonce response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+      description: >-
+        Retrieves a cryptographic challenge string (nonce) from a Web3 exchange. Required for EIP-712 / wallet signature
+        authentication workflows.
+  '/api/{exchange}/loginWithSignature':
+    post:
+      summary: Login With Signature
+      operationId: loginWithSignature
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: LoginWithSignatureRequest
+              type: object
+              properties:
+                args:
+                  type: array
+                  minItems: 3
+                  maxItems: 3
+                  items:
+                    oneOf:
+                      - type: string
+                      - type: string
+                      - type: string
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+              required:
+                - args
+      responses:
+        '200':
+          description: Login With Signature response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/BaseResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+      description: >-
+        Submits a completed wallet signature to exchange authentication endpoints to acquire temporary API credentials
+        or establish a valid session.
+  '/api/{exchange}/logout':
+    post:
+      summary: Logout
+      operationId: logout
+      parameters:
+        - $ref: '#/components/parameters/ExchangeParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: LogoutRequest
+              type: object
+              properties:
+                args:
+                  type: array
+                  maxItems: 0
+                  items: {}
+                credentials:
+                  $ref: '#/components/schemas/ExchangeCredentials'
+      responses:
+        '200':
+          description: Logout response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+      description: Programmatically terminates the active session or revokes the current credentials.
   '/api/{exchange}/fetchMarketsPaginated':
     get:
       summary: Fetch Markets Paginated

@@ -4,6 +4,7 @@ import { createWalletClient, http } from 'viem';
 import { bsc, bscTestnet } from 'viem/chains';
 import { ExchangeCredentials } from '../../BaseExchange';
 import { PROBABLE_CHAIN_ID, PROBABLE_TESTNET_CHAIN_ID } from './config';
+import { AuthNonceResponse, SessionCredentials } from '../../types';
 
 /**
  * Manages Probable authentication and CLOB client initialization.
@@ -79,4 +80,50 @@ export class ProbableAuth {
     getAddress(): string {
         return this.walletAddress;
     }
+}
+
+/**
+ * Fetches a cryptographic nonce for EIP-712 wallet login.
+ */
+export async function getAuthNonce(walletAddress: string, callApi: Function): Promise<AuthNonceResponse> {
+    // OperationId based on Probable's OpenAPI spec for GET /public/api/v1/auth/nonce
+    const response = await callApi('getAuthNonce', { address: walletAddress });
+    
+    return {
+        nonce: response.nonce,
+        // Fallbacks based on how different versions of the spec name the message field
+        messageToSign: response.message || response.messageToSign || `Sign to login: ${response.nonce}`
+    };
+}
+
+/**
+ * Submits the signed nonce to generate an API Key triplet.
+ */
+export async function loginWithSignature(
+    walletAddress: string, 
+    signature: string, 
+    nonce: string, 
+    callApi: Function
+): Promise<SessionCredentials> {
+    // OperationId for POST /auth/login
+    const response = await callApi('postAuthLogin', { 
+        address: walletAddress, 
+        signature, 
+        nonce 
+    });
+    
+    return {
+        apiKey: response.apiKey,
+        apiSecret: response.apiSecret,
+        passphrase: response.passphrase,
+        expiresAt: response.expiresAt
+    };
+}
+
+/**
+ * Destroys the current API key session.
+ */
+export async function logoutSession(callApi: Function): Promise<void> {
+    // OperationId for POST /auth/logout
+    await callApi('postAuthLogout', {});
 }

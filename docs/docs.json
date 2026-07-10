@@ -216,6 +216,9 @@
           {
             "group": "Other",
             "pages": [
+              "POST /api/{exchange}/getAuthNonce",
+              "POST /api/{exchange}/loginWithSignature",
+              "POST /api/{exchange}/logout",
               "GET /api/{exchange}/fetchSeries",
               "GET /api/{exchange}/fetchEventMetadata"
             ],

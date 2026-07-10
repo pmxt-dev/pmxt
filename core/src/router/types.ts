@@ -92,6 +92,20 @@ export interface FetchMarketMatchesParams {
     sort?: 'confidence' | 'volume' | 'priceDifference';
 }
 
+export interface AuthNonceResponse {
+    nonce: string;
+    messageToSign: string;
+    expiresAt?: number;
+}
+
+export interface SessionCredentials {
+    apiKey: string;
+    apiSecret: string;
+    passphrase?: string;
+    expiresAt?: number;
+    active?: boolean;
+}
+
 /** @deprecated Use {@link FetchMarketMatchesParams} instead. */
 export type FetchMatchesParams = FetchMarketMatchesParams;
 

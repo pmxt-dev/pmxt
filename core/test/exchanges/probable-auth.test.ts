@@ -17,7 +17,7 @@ describe('Probable Auth Lifecycle', () => {
 
         const result = await getAuthNonce(walletAddress, mockCallApi);
 
-        expect(mockCallApi).toHaveBeenCalledWith('getNonce', { address: walletAddress });
+        expect(mockCallApi).toHaveBeenCalledWith('getPublicApiV1AuthNonce', { address: walletAddress });
         expect(result.nonce).toBe('abc123');
         expect(result.messageToSign).toBe('Sign this message');
     });
@@ -38,7 +38,7 @@ describe('Probable Auth Lifecycle', () => {
             mockCallApi
         );
 
-        expect(mockCallApi).toHaveBeenCalledWith('postLogin', {
+        expect(mockCallApi).toHaveBeenCalledWith('postPublicApiV1AuthLogin', {
             address: walletAddress,
             signature: '0xSignature',
             nonce: 'abc123',
@@ -52,7 +52,7 @@ describe('Probable Auth Lifecycle', () => {
 
         await logout(mockCallApi);
 
-        expect(mockCallApi).toHaveBeenCalledWith('postLogout', {});
+        expect(mockCallApi).toHaveBeenCalledWith('postPublicApiV1AuthLogout', {});
     });
 
     test('verifyL1 should return verification result', async () => {
@@ -60,7 +60,7 @@ describe('Probable Auth Lifecycle', () => {
 
         const result = await verifyL1(walletAddress, '0xSignature', mockCallApi);
 
-        expect(mockCallApi).toHaveBeenCalledWith('postVerifyL1', {
+        expect(mockCallApi).toHaveBeenCalledWith('postPublicApiV1AuthVerifyL1', {
             address: walletAddress,
             signature: '0xSignature',
         });
@@ -72,7 +72,7 @@ describe('Probable Auth Lifecycle', () => {
 
         const result = await verifyL2(walletAddress, '0xSignature', mockCallApi);
 
-        expect(mockCallApi).toHaveBeenCalledWith('postVerifyL2', {
+        expect(mockCallApi).toHaveBeenCalledWith('postPublicApiV1AuthVerifyL2', {
             address: walletAddress,
             signature: '0xSignature',
         });

@@ -82,17 +82,16 @@ export class ProbableAuth {
     }
 }
 
-
 /**
  * Get a nonce from Probable.
- * Uses the implicit API endpoint 'getNonce' from api.ts.
+ * Uses the implicit API endpoint 'getPublicApiV1AuthNonce'.
  */
 export async function getAuthNonce(
     walletAddress: string,
     callApi: Function
 ): Promise<AuthNonceResponse> {
     try {
-        const response = await callApi('getNonce', { address: walletAddress });
+        const response = await callApi('getPublicApiV1AuthNonce', { address: walletAddress });
         return {
             nonce: response.nonce,
             messageToSign: response.message || response.messageToSign,
@@ -105,7 +104,7 @@ export async function getAuthNonce(
 
 /**
  * Login to Probable with signature.
- * Uses the implicit API endpoint 'postLogin' from api.ts.
+ * Uses the implicit API endpoint 'postPublicApiV1AuthLogin'.
  */
 export async function loginWithSignature(
     walletAddress: string,
@@ -114,7 +113,7 @@ export async function loginWithSignature(
     callApi: Function
 ): Promise<AuthLoginResponse> {
     try {
-        const response = await callApi('postLogin', {
+        const response = await callApi('postPublicApiV1AuthLogin', {
             address: walletAddress,
             signature,
             nonce,
@@ -133,11 +132,11 @@ export async function loginWithSignature(
 
 /**
  * Logout from Probable.
- * Uses the implicit API endpoint 'postLogout' from api.ts.
+ * Uses the implicit API endpoint 'postPublicApiV1AuthLogout'.
  */
 export async function logout(callApi: Function): Promise<void> {
     try {
-        await callApi('postLogout', {});
+        await callApi('postPublicApiV1AuthLogout', {});
     } catch (error: any) {
         // Log but don't throw - logout should be best-effort
         console.warn(`Failed to logout from Probable: ${error.message}`);
@@ -146,7 +145,7 @@ export async function logout(callApi: Function): Promise<void> {
 
 /**
  * Verify L1 signature.
- * Uses the implicit API endpoint 'postVerifyL1' from api.ts.
+ * Uses the implicit API endpoint 'postPublicApiV1AuthVerifyL1'.
  */
 export async function verifyL1(
     walletAddress: string,
@@ -154,7 +153,7 @@ export async function verifyL1(
     callApi: Function
 ): Promise<boolean> {
     try {
-        const response = await callApi('postVerifyL1', {
+        const response = await callApi('postPublicApiV1AuthVerifyL1', {
             address: walletAddress,
             signature,
         });
@@ -166,7 +165,7 @@ export async function verifyL1(
 
 /**
  * Verify L2 signature.
- * Uses the implicit API endpoint 'postVerifyL2' from api.ts.
+ * Uses the implicit API endpoint 'postPublicApiV1AuthVerifyL2'.
  */
 export async function verifyL2(
     walletAddress: string,
@@ -174,7 +173,7 @@ export async function verifyL2(
     callApi: Function
 ): Promise<boolean> {
     try {
-        const response = await callApi('postVerifyL2', {
+        const response = await callApi('postPublicApiV1AuthVerifyL2', {
             address: walletAddress,
             signature,
         });

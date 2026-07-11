@@ -8,6 +8,7 @@ does not support the /ws endpoint.
 """
 
 import json
+import logging
 import socket
 import threading
 import time
@@ -21,6 +22,7 @@ from .errors import PmxtError
 MAX_QUEUED_MESSAGES_PER_SUBSCRIPTION = 100_000
 CONNECT_ATTEMPTS = 3
 _NO_DATA = object()
+logger = logging.getLogger(__name__)
 
 
 def _connect_websocket(ws: Any, url: str, timeout: float) -> None:
@@ -130,7 +132,10 @@ class SidecarWsClient:
                 try:
                     ws.close()
                 except Exception:
-                    pass
+                    logger.debug(
+                        "Failed to close unsuccessful WebSocket connection",
+                        exc_info=True,
+                    )
                 if attempt < CONNECT_ATTEMPTS - 1:
                     time.sleep(0.25 * (attempt + 1))
 

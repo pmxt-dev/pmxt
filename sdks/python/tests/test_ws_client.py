@@ -1,11 +1,35 @@
+import importlib.util
+import logging
+import pathlib
 import threading
 import time
 import socket
 import sys
 import types
 
-import pmxt.ws_client as ws_client
-from pmxt.ws_client import SidecarWsClient, _WsSubscription, _connect_websocket
+
+def _load_ws_client_module():
+    """Load pmxt.ws_client without requiring generated pmxt_internal artifacts."""
+    package_dir = pathlib.Path(__file__).resolve().parents[1] / "pmxt"
+    package = sys.modules.setdefault("pmxt", types.ModuleType("pmxt"))
+    package.__path__ = [str(package_dir)]
+
+    errors_spec = importlib.util.spec_from_file_location("pmxt.errors", package_dir / "errors.py")
+    errors_module = importlib.util.module_from_spec(errors_spec)
+    sys.modules["pmxt.errors"] = errors_module
+    errors_spec.loader.exec_module(errors_module)
+
+    spec = importlib.util.spec_from_file_location("pmxt.ws_client", package_dir / "ws_client.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["pmxt.ws_client"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+ws_client = _load_ws_client_module()
+SidecarWsClient = ws_client.SidecarWsClient
+_WsSubscription = ws_client._WsSubscription
+_connect_websocket = ws_client._connect_websocket
 
 
 def _register_subscription(client, request_id="req-firehose"):
@@ -133,3 +157,30 @@ def test_connect_retries_transient_handshake_failures(monkeypatch):
 
     assert attempts["count"] == 3
     assert client._ws is not None
+
+
+def test_logs_failed_cleanup_when_retrying_handshake_failure(monkeypatch, caplog):
+    class FakeWebSocket:
+        def close(self):
+            raise RuntimeError("close failed")
+
+    def fail_connect(*_args, **_kwargs):
+        raise OSError("handshake failed")
+
+    monkeypatch.setitem(sys.modules, "websocket", types.SimpleNamespace(WebSocket=FakeWebSocket))
+    monkeypatch.setattr(ws_client, "_connect_websocket", fail_connect)
+    monkeypatch.setattr(ws_client.time, "sleep", lambda _seconds: None)
+
+    client = SidecarWsClient("https://api.pmxt.dev", api_key="pmxt_test")
+
+    with caplog.at_level(logging.DEBUG, logger="pmxt.ws_client"):
+        try:
+            with client._lock:
+                client._ensure_connected()
+        except OSError as exc:
+            assert str(exc) == "handshake failed"
+        else:
+            raise AssertionError("expected handshake failure")
+
+    assert "Failed to close unsuccessful WebSocket connection" in caplog.text
+    assert "close failed" in caplog.text

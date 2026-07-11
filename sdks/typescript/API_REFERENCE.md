@@ -350,6 +350,31 @@ await exchange.fetchEvent()
 
 
 ---
+### `fetchEventMetadata`
+
+Fetch venue-native metadata for a specific event when the exchange
+
+
+**Signature:**
+
+```typescript
+async fetchEventMetadata(eventTicker: string): Promise<Record<string, unknown>>
+```
+
+**Parameters:**
+
+- `eventTicker` (string): eventTicker
+
+**Returns:** Promise<Record<string, unknown>> - Result
+
+**Example:**
+
+```typescript
+await exchange.fetchEventMetadata("...")
+```
+
+
+---
 ### `fetchOHLCV`
 
 Fetch historical OHLCV (candlestick) price data for a specific market outcome.

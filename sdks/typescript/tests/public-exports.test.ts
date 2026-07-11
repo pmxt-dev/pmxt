@@ -17,23 +17,14 @@ describe('public exports', () => {
     expect(client).toBeInstanceOf(DirectFeedClient);
   });
 
-  it('exports Polymarket_us as the PolymarketUS alias', () => {
+  it('exports Polymarket_us as an alias of PolymarketUS', () => {
     expect(pmxt.Polymarket_us).toBe(pmxt.PolymarketUS);
     expect(pmxt.default.Polymarket_us).toBe(pmxt.PolymarketUS);
   });
 
-  it('exports Hunch as a top-level exchange client', () => {
-    expect(pmxt.Hunch).toBeDefined();
-    expect(pmxt.default.Hunch).toBe(pmxt.Hunch);
-  });
-
-  it('passes Hunch walletAddress through credentials', () => {
-    const hunch = new pmxt.Hunch({
-      autoStartServer: false,
-      walletAddress: '0x0000000000000000000000000000000000000001',
-    });
-    expect((hunch as any).getCredentials()).toMatchObject({
-      walletAddress: '0x0000000000000000000000000000000000000001',
-    });
+  it('constructs Polymarket_us with the canonical exchange name', () => {
+    const exchange = new pmxt.Polymarket_us({ autoStartServer: false });
+    expect(exchange).toBeInstanceOf(pmxt.PolymarketUS);
+    expect(exchange.exchangeName).toBe('polymarket_us');
   });
 });

@@ -1164,6 +1164,31 @@ export abstract class Exchange {
         }
     }
 
+    async fetchEventMetadata(eventTicker: string): Promise<Record<string, any>> {
+        await this.initPromise;
+        try {
+            const args: any[] = [];
+            args.push(eventTicker);
+            const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/fetchEventMetadata`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ args, credentials: this.getCredentials() }),
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                if (body.error && typeof body.error === "object") {
+                    throw fromServerError(body.error);
+                }
+                throw new PmxtError(body.error?.message || response.statusText);
+            }
+            const json = await response.json();
+            return this.handleResponse(json);
+        } catch (error) {
+            if (error instanceof PmxtError) throw error;
+            throw new PmxtError(`Failed to fetchEventMetadata: ${error}`);
+        }
+    }
+
     async fetchOrderBook(outcomeId: string | MarketOutcome, limit?: number, params?: FetchOrderBookParams): Promise<OrderBook | OrderBook[]> {
         await this.initPromise;
         try {
@@ -3574,31 +3599,12 @@ export class Rain extends Exchange {
 /**
  * Hunch exchange client.
  *
- * Hunch is a Base USDC parimutuel prediction market. Public reads are
- * unauthenticated; trading requires an EVM privateKey and optional walletAddress.
- *
- * @example
- * ```typescript
- * const hunch = new Hunch();
- * const markets = await hunch.fetchMarkets({ limit: 20 });
- * ```
+ * Hunch is a crypto-native prediction market. Reads are unauthenticated;
+ * trading requires an EVM private key.
  */
 export class Hunch extends Exchange {
     constructor(options: ExchangeOptions = {}) {
         super("hunch", options);
-    }
-
-    /**
-     * Includes walletAddress in hosted credentials for Hunch private reads
-     * and x402/EIP-3009 payment flows.
-     */
-    protected override getCredentials(): ExchangeCredentials | undefined {
-        const base = super.getCredentials();
-        if (!this.walletAddress) return base;
-        return {
-            ...(base ?? {}),
-            walletAddress: this.walletAddress,
-        } as ExchangeCredentials & { walletAddress: string };
     }
 }
 

@@ -974,6 +974,17 @@ export abstract class PredictionMarketExchange {
     }
 
     /**
+     * Fetch venue-native metadata for a specific event when the exchange
+     * exposes a dedicated metadata endpoint.
+     *
+     * Kalshi implements this for `GET /events/{event_ticker}/metadata`.
+     */
+    async fetchEventMetadata(eventTicker: string): Promise<Record<string, unknown>> {
+        void eventTicker;
+        throw new Error("Method fetchEventMetadata not implemented.");
+    }
+
+    /**
      * Fetch historical OHLCV (candlestick) price data for a specific market outcome.
      *
      * @param outcomeId - The Outcome ID (outcomeId). Use outcome.outcomeId, NOT market.marketId

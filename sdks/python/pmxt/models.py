@@ -656,6 +656,7 @@ class ExchangeOptions(TypedDict, total=False):
     base_url: str
     auto_start_server: bool
     api_key: str
+    api_secret: str
     private_key: str
     api_token: str
     proxy_address: str

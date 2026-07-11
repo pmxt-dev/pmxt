@@ -26,8 +26,10 @@ import { FeedClient } from "./pmxt/feed-client.js";
 import * as models from "./pmxt/models.js";
 import * as errors from "./pmxt/errors.js";
 
+export const __version__ = "2.17.1";
+
 export { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, Baozi, Opinion, Metaculus, Smarkets, PolymarketUS, Polymarket_us, GeminiTitan, Hyperliquid, SuiBets, Suibets, Rain, Hunch, Mock, PolymarketOptions } from "./pmxt/client.js";
-export type { SuiBetsOptions } from "./pmxt/client.js";
+export type { ExchangeOptions, SuiBetsOptions } from "./pmxt/client.js";
 export { FeedClient } from "./pmxt/feed-client.js";
 export type { Ticker, Tickers, OHLCV, Market as FeedMarket, OracleRound, FeedClientOptions } from "./pmxt/feed-client.js";
 export { Router } from "./pmxt/router.js";

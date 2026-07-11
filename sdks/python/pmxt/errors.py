@@ -15,6 +15,7 @@ class PmxtError(Exception):
 
     def __init__(self, message: str, code: str = "UNKNOWN_ERROR", retryable: bool = False, exchange: str | None = None) -> None:
         super().__init__(message)
+        self.name = type(self).__name__
         self.message = message
         self.code = code
         self.retryable = retryable
@@ -35,22 +36,30 @@ def _format_not_found_message(prefix: str, identifier: str) -> str:
 
 class BadRequest(PmxtError):
     """400 Bad Request - The request was malformed or contains invalid parameters."""
-    pass
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        kwargs.setdefault("code", "BAD_REQUEST")
+        super().__init__(message, **kwargs)
 
 
 class AuthenticationError(PmxtError):
     """401 Unauthorized - Authentication credentials are missing or invalid."""
-    pass
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        kwargs.setdefault("code", "AUTHENTICATION_ERROR")
+        super().__init__(message, **kwargs)
 
 
 class PermissionDenied(PmxtError):
     """403 Forbidden - The authenticated user doesn't have permission."""
-    pass
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        kwargs.setdefault("code", "PERMISSION_DENIED")
+        super().__init__(message, **kwargs)
 
 
 class NotFoundError(PmxtError):
     """404 Not Found - The requested resource doesn't exist."""
-    pass
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        kwargs.setdefault("code", "NOT_FOUND")
+        super().__init__(message, **kwargs)
 
 
 class OrderNotFound(NotFoundError):
@@ -87,24 +96,31 @@ class RateLimitExceeded(PmxtError):
     """429 Too Many Requests - Rate limit exceeded."""
 
     def __init__(self, message: str, retry_after: float | None = None, **kwargs) -> None:
+        kwargs.setdefault("code", "RATE_LIMIT_EXCEEDED")
+        kwargs.setdefault("retryable", True)
         super().__init__(message, **kwargs)
         self.retry_after = retry_after
 
 
 class InvalidOrder(PmxtError):
     """400 Bad Request - The order parameters are invalid."""
-    pass
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        kwargs.setdefault("code", "INVALID_ORDER")
+        super().__init__(message, **kwargs)
 
 
 class InsufficientFunds(PmxtError):
     """400 Bad Request - Insufficient funds to complete the operation."""
-    pass
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        kwargs.setdefault("code", "INSUFFICIENT_FUNDS")
+        super().__init__(message, **kwargs)
 
 
 class ValidationError(PmxtError):
     """400 Bad Request - Input validation failed."""
 
     def __init__(self, message: str, field: str | None = None, **kwargs) -> None:
+        kwargs.setdefault("code", "VALIDATION_ERROR")
         super().__init__(message, **kwargs)
         self.field = field
 
@@ -171,7 +187,9 @@ def from_server_error(error_data: Dict[str, Any]) -> PmxtError:
 
 class NotSupported(PmxtError):
     """The requested operation is not supported."""
-    pass
+    def __init__(self, message: str, **kwargs: Any) -> None:
+        kwargs.setdefault("code", "NOT_SUPPORTED")
+        super().__init__(message, **kwargs)
 
 
 _HOSTED_ERROR_EXPORTS = frozenset(

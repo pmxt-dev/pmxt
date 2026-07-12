@@ -67,9 +67,10 @@ export function resolvePmxtBaseUrl(args: {
 }
 
 /**
- * Lowercase 0x-prefixed escrow addresses that are pre-funded by pmxt for
- * hosted trading. Orders routed through these addresses use the shared
- * escrow balance rather than a per-venue deposit.
+ * Lowercase 0x-prefixed PreFundedEscrow addresses on Polygon (chain 137).
+ * Hosted typed-data validation accepts these addresses as EIP-712
+ * verifyingContract values, allowing orders to use the shared escrow balance
+ * rather than a per-venue deposit.
  */
 export const PREFUNDED_ESCROW_ADDRESSES: ReadonlySet<string> = new Set([
     "0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2",

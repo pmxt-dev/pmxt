@@ -76,10 +76,11 @@ def resolve_pmxt_base_url(
     return ResolvedBaseUrl(LOCAL_URL, None, False)
 
 
-#: Known PreFundedEscrow contract addresses on Polygon (chain 137).
+#: Known pre-funded PreFundedEscrow contract addresses on Polygon (chain 137).
 #:
 #: Hosted typed-data validation accepts these addresses as EIP-712
-#: ``verifyingContract`` values.
+#: ``verifyingContract`` values, allowing orders to use the shared escrow
+#: balance rather than a per-venue deposit.
 PREFUNDED_ESCROW_ADDRESSES: frozenset[str] = frozenset({
     "0x3ad326f78b1390b9a5dc5f00e7f62f8632de23e2",
 })

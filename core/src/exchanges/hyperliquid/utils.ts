@@ -71,14 +71,26 @@ export function toMarketId(outcomeId: number): string {
 }
 
 /**
- * Extract the numeric outcome ID from our market ID format.
+ * Extract the numeric outcome ID from a Hyperliquid identifier.
+ *
+ * Accepts either:
+ *   - our canonical market ID, "hl-outcome-{N}"
+ *   - a raw encoded asset token (numeric string >= OUTCOME_ASSET_BASE),
+ *     as returned in UnifiedMarket.outcomes[].outcomeId. Decoded via
+ *     decodeAssetId so callers can pass an outcome token directly.
  */
 export function fromMarketId(marketId: string): number {
     const match = marketId.match(/^hl-outcome-(\d+)$/);
-    if (!match) {
-        throw new Error(`Invalid Hyperliquid market ID: ${marketId}`);
+    if (match) {
+        return parseInt(match[1], 10);
     }
-    return parseInt(match[1], 10);
+    if (/^\d+$/.test(marketId)) {
+        const assetId = parseInt(marketId, 10);
+        if (assetId >= OUTCOME_ASSET_BASE) {
+            return decodeAssetId(assetId).outcomeId;
+        }
+    }
+    throw new Error(`Invalid Hyperliquid market ID: ${marketId}`);
 }
 
 /**

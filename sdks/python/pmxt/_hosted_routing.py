@@ -261,7 +261,7 @@ def ensure_hosted_trading_supported(client: Any) -> None:
     if venue not in HOSTED_TRADING_VENUES:
         venue_label = venue or "unknown"
         raise NotSupported(
-            "Hosted trading is only supported for Polymarket and Opinion; "
+            "Hosted trading is only supported for Polymarket, Opinion, and Limitless; "
             f"{venue_label} is not supported with pmxt_api_key."
         )
 

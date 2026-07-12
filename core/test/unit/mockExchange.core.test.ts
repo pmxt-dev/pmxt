@@ -91,6 +91,38 @@ describe('MockExchange', () => {
         expect(trades).toHaveLength(3);
     });
 
+    test('fetchTrades applies start and end filters before limit', async () => {
+        const nowSpy = jest
+            .spyOn(Date, 'now')
+            .mockReturnValue(Date.parse('2026-01-01T00:00:00.000Z'));
+
+        try {
+            const ex = new MockExchange({ marketCount: 1, orderLatencyMs: 0 });
+            const market = (await ex.fetchMarkets())[0]!;
+            const outcomeId = market.outcomes[0]!.outcomeId;
+            const allTrades = await ex.fetchTrades(outcomeId);
+            const ascendingTrades = [...allTrades].sort((a, b) => a.timestamp - b.timestamp);
+            const start = new Date(ascendingTrades[1]!.timestamp);
+            const end = new Date(ascendingTrades[ascendingTrades.length - 2]!.timestamp);
+            const expectedIds = allTrades
+                .filter((trade) => trade.timestamp >= start.getTime() && trade.timestamp <= end.getTime())
+                .slice(0, 2)
+                .map((trade) => trade.id);
+
+            const filteredTrades = await ex.fetchTrades(outcomeId, {
+                start,
+                end,
+                limit: 2,
+            });
+
+            expect(filteredTrades.map((trade) => trade.id)).toEqual(expectedIds);
+            expect(filteredTrades.every((trade) => trade.timestamp >= start.getTime())).toBe(true);
+            expect(filteredTrades.every((trade) => trade.timestamp <= end.getTime())).toBe(true);
+        } finally {
+            nowSpy.mockRestore();
+        }
+    });
+
     test('instant limit buy debits free cash and creates position', async () => {
         const ex = new MockExchange({ marketCount: 1, orderLatencyMs: 0, balance: 10_000 });
         const m = (await ex.fetchMarkets()).find(x => x.yes) ?? (await ex.fetchMarkets())[0]!;
@@ -166,6 +198,42 @@ describe('MockExchange', () => {
         expect(p1.filled).toBe(3);
         const p2 = await ex.fillOrder(o.id, 7);
         expect(p2.status).toBe('filled');
+    });
+
+    test('fetchOpenOrders filters resting orders by market id', async () => {
+        const ex = new MockExchange({
+            marketCount: 2,
+            orderLatencyMs: 0,
+            balance: 10_000,
+            limitOrderMode: 'resting',
+        });
+        const markets = await ex.fetchMarkets({ limit: 2 });
+        const first = markets[0]!;
+        const second = markets[1]!;
+        const firstOutcome = first.yes?.outcomeId ?? first.outcomes[0]!.outcomeId;
+        const secondOutcome = second.yes?.outcomeId ?? second.outcomes[0]!.outcomeId;
+
+        const firstOrder = await ex.createOrder({
+            marketId: first.marketId,
+            outcomeId: firstOutcome,
+            side: 'buy',
+            type: 'limit',
+            price: 0.5,
+            amount: 4,
+        });
+        const secondOrder = await ex.createOrder({
+            marketId: second.marketId,
+            outcomeId: secondOutcome,
+            side: 'buy',
+            type: 'limit',
+            price: 0.5,
+            amount: 4,
+        });
+
+        const firstMarketOpen = await ex.fetchOpenOrders(first.marketId);
+
+        expect(firstMarketOpen.map((order) => order.id)).toEqual([firstOrder.id]);
+        expect(firstMarketOpen.map((order) => order.id)).not.toContain(secondOrder.id);
     });
 
     test('resting: cancel buy unlocks USDC', async () => {

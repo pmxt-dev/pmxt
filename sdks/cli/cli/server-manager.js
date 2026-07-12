@@ -37,8 +37,11 @@ class ServerManager {
   }
 
   async isServerRunning() {
+    const info = this.getServerInfo();
+    if (!info?.port) return false;
+
     try {
-      const response = await fetch(`http://localhost:${this.getRunningPort()}/health`, {
+      const response = await fetch(`http://localhost:${info.port}/health`, {
         signal: AbortSignal.timeout(5_000),
       });
       if (!response.ok) return false;

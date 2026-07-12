@@ -26,6 +26,7 @@ import { FetcherContext } from '../interfaces';
 import { GeminiWebSocket, GeminiWebSocketConfig } from './websocket';
 import { fromOutcomeId, fromMarketId } from './utils';
 
+
 export interface GeminiTitanExchangeOptions {
     credentials?: ExchangeCredentials;
     sandbox?: boolean;
@@ -330,5 +331,11 @@ export class GeminiTitanExchange extends PredictionMarketExchange {
             await this.geminiWs.close();
             this.geminiWs = undefined;
         }
-    }
+    }   
 }
+
+
+export { GeminiFetcher } from './fetcher';
+export { GeminiAuth } from './auth';
+export { geminiErrorMapper } from './errors';
+export * from './types';

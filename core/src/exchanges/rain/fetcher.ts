@@ -29,6 +29,7 @@ export interface RainFetcherConfig {
     subgraphApiKey?: string;
     rpcUrl?: string;
     wsRpcUrl?: string;
+    sdk?: RainSdk;
 }
 
 // Re-export raw SDK types as the fetcher's contract surface.
@@ -60,7 +61,7 @@ export class RainFetcher {
 
     private async getClient(): Promise<RainClient> {
         if (!this.client) {
-            const sdk = await loadSdk();
+            const sdk = this.config.sdk ?? await loadSdk();
             this.client = new sdk.Rain({
                 environment: this.config.environment ?? 'production',
                 rpcUrl: this.config.rpcUrl,
@@ -140,15 +141,14 @@ export class RainFetcher {
         }
     }
 
-    async fetchRawOHLCV(marketId: string, optionIndex: number, interval: string, limit?: number): Promise<RainRawPriceHistory | null> {
+    async fetchRawOHLCV(marketAddress: string, optionIndex: number, _interval: string, _limit?: number): Promise<RainRawPriceHistory | null> {
         if (!this.config.subgraphUrl) return null;
         try {
             const client = await this.getClient();
-            return await client.getPriceHistory({
-                marketId,
-                optionIndex,
-                interval: interval as any,
-                limit,
+            return await (client as any).getPriceHistory({
+                marketAddress: marketAddress as `0x${string}`,
+                interval: _interval,
+                option: optionIndex,
             });
         } catch (error: any) {
             throw rainErrorMapper.mapError(error);

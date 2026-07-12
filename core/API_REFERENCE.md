@@ -1,6 +1,6 @@
 # Prediction Market API Reference
 
-A unified interface for interacting with multiple prediction market exchanges (Kalshi, Polymarket) identically.
+A unified interface for interacting with multiple prediction market exchanges and venues through one interface.
 
 ## Installation & Usage
 
@@ -8,32 +8,21 @@ A unified interface for interacting with multiple prediction market exchanges (K
 npm install pmxtjs
 ```
 
-### Basic Import (CommonJS)
+### Import Styles
+
+```typescript
+import { Polymarket, Kalshi } from 'pmxtjs';
+
+const polymarket = new Polymarket();
+const kalshi = new Kalshi();
+```
 
 ```typescript
 import pmxt from 'pmxtjs';
 
-const poly = new pmxt.Polymarket();
+const polymarket = new pmxt.Polymarket();
 const kalshi = new pmxt.Kalshi();
 ```
-
-### Note for ESM Users
-
-**pmxt is currently CommonJS-only.** If you're using `"type": "module"` in your `package.json`, you have two options:
-
-**Option 1: Default import (recommended)**
-```typescript
-import pmxt from 'pmxtjs';
-const poly = new pmxt.Polymarket();
-```
-
-**Option 2: Dynamic import**
-```typescript
-const pmxt = await import('pmxtjs');
-const poly = new pmxt.default.Polymarket();
-```
-
-**Note**: Named exports like `import { Polymarket } from 'pmxtjs'` will **not work** in ESM projects.
 
 ---
 
@@ -46,8 +35,8 @@ Get active markets from an exchange. This is the unified method for all market f
 - `limit`: Number of results (default: 20)
 - `offset`: Pagination offset
 - `sort`: 'volume' | 'liquidity' | 'newest'
-- `query`: Search text (replaces `searchMarkets`)
-- `slug`: Market slug or ticker (replaces `getMarketsBySlug`)
+- `query`: Search text
+- `slug`: Market slug or ticker
 
 ```typescript
 // 1. Fetch recent markets
@@ -56,13 +45,13 @@ const markets = await polymarket.fetchMarkets({
   sort: 'volume' 
 });
 
-// 2. Search by text (replaces searchMarkets)
+// 2. Search by text
 const results = await kalshi.fetchMarkets({ 
   query: 'Fed rates',
   limit: 10
 });
 
-// 3. Fetch by slug/ticker (replaces getMarketsBySlug)
+// 3. Fetch by slug/ticker
 const market = await polymarket.fetchMarkets({ 
   slug: 'who-will-trump-nominate-as-fed-chair'
 });
@@ -140,7 +129,7 @@ Calculate the volume-weighted average price for a given amount. Returns `0` if t
 
 ```typescript
 const orderBook = await polymarket.fetchOrderBook(outcomeId);
-const price = await polymarket.getExecutionPrice(orderBook, 'buy', 100);
+const price = polymarket.getExecutionPrice(orderBook, 'buy', 100);
 console.log(`Average price for 100 shares: ${price}`);
 ```
 
@@ -148,7 +137,7 @@ console.log(`Average price for 100 shares: ${price}`);
 Calculate detailed execution price information, including partial fills.
 
 ```typescript
-const detailed = await polymarket.getExecutionPriceDetailed(orderBook, 'buy', 100);
+const detailed = polymarket.getExecutionPriceDetailed(orderBook, 'buy', 100);
 console.log(`Average Price: ${detailed.price}`);
 console.log(`Filled Amount: ${detailed.filledAmount}`);
 console.log(`Fully Filled: ${detailed.fullyFilled}`);
@@ -275,10 +264,10 @@ console.log(`Spread: ${(spread * 100).toFixed(2)}%`);
 
 ```typescript
 try {
-  const markets = await kalshi.getMarketsBySlug('INVALID-TICKER');
+  const market = await kalshi.fetchMarket({ slug: 'INVALID-TICKER' });
+  console.log(market.title);
 } catch (error) {
-  // Kalshi: "Event not found: INVALID-TICKER"
-  // Polymarket: Returns empty array []
+  // Throws MarketNotFound when no market matches the lookup
   console.error(error.message);
 }
 ```
@@ -310,7 +299,7 @@ import pmxt, {
 
 ## Authentication & Trading
 
-Both Polymarket and Kalshi support authenticated trading operations. You must provide credentials when initializing the exchange.
+Authenticated trading is available on venues that expose trading APIs. You must provide the venue-specific credentials when initializing the exchange; the examples below show Polymarket and Kalshi.
 
 ### Polymarket Authentication
 

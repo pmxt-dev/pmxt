@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: "One API for every prediction market. Unified data, cross-venue search, and trading."
+description: "One API for supported prediction markets. Unified data, hosted catalog search, and venue-native trading where supported."
 tag: "Start here"
 ---
 
@@ -9,10 +9,10 @@ tag: "Start here"
   or [Trading Quickstart](/trading-quickstart) (hosted writes, 5 minutes).
 </Note>
 
-PMXT is a unified API for every major prediction market — Polymarket,
-Kalshi, Limitless, Smarkets, and [8 more venues](/concepts/venues). Same
-SDK methods, same response shape, regardless of which venue you're
-talking to.
+PMXT is a unified API for supported prediction-market venues — Polymarket,
+Kalshi, Limitless, Smarkets, and [12 more venues](/concepts/venues). It uses
+shared SDK method names and unified response shapes where each venue supports
+the underlying capability.
 
 <Note>
 New to prediction markets? Start at the [101](/concepts/prediction-markets-101) page for the vocabulary — outcome, price-as-probability, EIP-712, escrow, USDC on Polygon, and Group A methods.
@@ -20,7 +20,7 @@ New to prediction markets? Start at the [101](/concepts/prediction-markets-101) 
 
 It runs two ways:
 
-- **Hosted (default)** — `api.pmxt.dev` and `trade.pmxt.dev` give you a
+- **Hosted (default)** — PMXT's [hosts](/authentication#hosts) give you a
   shared catalog, cross-venue search, and end-to-end [hosted
   trading](/concepts/hosted-trading) with [PreFundedEscrow](/concepts/prediction-markets-101#prefundedescrow) custody. Set
   an API key and the SDK is fully operational.
@@ -29,12 +29,12 @@ It runs two ways:
   No API key, no external dependency. Your requests go directly to the
   venues. See [self-hosted](/guides/self-hosted).
 
-The code is identical either way:
+The SDK call shape is shared, but the runtime target changes:
 
 ```python
 import pmxt
 
-# Hosted (default): talks to api.pmxt.dev / trade.pmxt.dev
+# Hosted (default): talks to PMXT's hosts — see /authentication#hosts
 poly = pmxt.Polymarket(pmxt_api_key="pmxt_live_...")
 
 markets = poly.fetch_markets(query="fed rate cut", limit=5)
@@ -45,25 +45,34 @@ for m in markets:
 If you'd rather run pmxt-core yourself, drop the API key:
 
 ```python
+import pmxt
+
 # Self-hosted: SDK spawns pmxt-core on localhost
 poly = pmxt.Polymarket()
 ```
 
+Hosted mode uses a PMXT API key and hosted services. Self-hosted mode talks
+to local `pmxt-core` and uses venue-native credentials where a capability
+requires them.
+
 See [self-hosted](/guides/self-hosted) for when that's the right choice.
 
 Swap the venue class — `pmxt.Kalshi(...)`, `pmxt.Limitless(...)` — and
-the methods and response shapes stay the same.
+use the same method names and response shapes where that venue implements the
+capability.
 
 ## The Router — cross-venue intelligence
 
 The **[Router](/router/overview)** is PMXT's cross-venue intelligence
-layer. Search, match, and compare prices across every venue — all from
-a single PMXT API key:
+layer. Search, match, and compare prices across the hosted catalog — all
+from a single PMXT API key:
 
 ```python
+import pmxt
+
 router = pmxt.Router(pmxt_api_key="pmxt_live_...")
 
-# Search every venue at once
+# Search catalog venues at once
 markets = router.fetch_markets(query="fed rate cut")
 
 # Find the cluster of matching markets on other venues
@@ -74,9 +83,9 @@ top_clusters = router.fetch_matched_market_clusters(sort="volume", min_venues=2,
 ```
 
 <CardGroup cols={2}>
-  <Card title="Cross-venue search" icon="magnifying-glass" href="/router/events">
-    One query fans out across every venue. Results in ~10ms from a
-    shared catalog.
+  <Card title="Cross-venue search" icon="magnifying-glass" href="/router/search">
+    One query searches the hosted catalog. Results in ~10ms from a
+    shared index.
   </Card>
   <Card title="Market matching" icon="link" href="/router/matching">
     Find clusters of the same or related market across venues with
@@ -86,24 +95,26 @@ top_clusters = router.fetch_matched_market_clusters(sort="volume", min_venues=2,
     Compare bid/ask across venues and find related markets.
   </Card>
   <Card title="Compose with venues" icon="puzzle-piece" href="/router/prices#composing-with-venue-exchanges">
-    Discover with the Router, trade on venue exchanges. Same schema,
-    same `marketId`.
+    Discover with the Router, then trade with venue clients. Same schema;
+    catalog IDs for Router and hosted flows, venue-native IDs for direct
+    self-hosted writes.
   </Card>
 </CardGroup>
 
 ## Unified venue interface
 
-Same methods, same response shape, every venue. `fetch_markets`,
-`create_order`, `fetch_positions` work identically whether you're on
-Polymarket or Kalshi.
+Same method names, same response shapes, with support varying by venue.
+`fetch_markets`, `create_order`, and `fetch_positions` use the unified
+schema where the venue implements them.
 
 <CardGroup cols={2}>
   <Card title="Unified schema" icon="layer-group" href="/concepts/unified-schema">
     `Event` / `Market` / `Outcome` — the shape that works everywhere.
   </Card>
   <Card title="Same SDK, local or hosted" icon="code" href="/quickstart">
-    The `pmxt` (Python) and `pmxtjs` (TypeScript) SDKs work identically
-    against localhost or the hosted API. Set one env var to switch.
+    The `pmxt` (Python) and `pmxtjs` (TypeScript) SDKs share high-level
+    calls across hosted and self-hosted modes. Credentials and supported
+    writes vary by mode.
   </Card>
 </CardGroup>
 
@@ -111,12 +122,12 @@ Polymarket or Kalshi.
 
 Without PMXT, getting cross-venue prediction market data means:
 
-- **11 venue integrations** — each with its own auth, pagination, field
+- **15+ venue integrations** — each with its own auth, pagination, field
   names, and rate limits. Polymarket uses CLOB token IDs. Kalshi uses
   tickers. Smarkets uses contract IDs. You normalize all of it.
 - **A data pipeline** — to ingest, deduplicate, and keep fresh as markets
-  open, resolve, and re-price across every venue.
-- **A search layer** — because querying 11 APIs sequentially is slow.
+  open, resolve, and re-price across supported venues.
+- **A search layer** — because querying venue APIs sequentially is slow.
 - **Ongoing maintenance** — every time a venue changes a field name or
   ships a new endpoint, your integration breaks.
 
@@ -129,7 +140,7 @@ back clean, unified data.
   <Card title="Quickstart" icon="rocket" href="/quickstart">
     API key to working code in 30 seconds.
   </Card>
-  <Card title="Router" icon="router" href="/router/events">
+  <Card title="Router" icon="router" href="/router/search">
     Cross-venue search and the beginning of smart order routing.
   </Card>
   <Card title="Unified schema" icon="layer-group" href="/concepts/unified-schema">

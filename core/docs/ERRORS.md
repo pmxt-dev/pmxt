@@ -1,6 +1,6 @@
 # Error Handling Guide
 
-PMXT implements CCXT-style unified error handling across all exchanges (Polymarket, Kalshi, Limitless). All errors follow a consistent structure with HTTP status codes, error codes, and retry semantics.
+PMXT implements CCXT-style unified error handling across supported exchanges and venues. All errors follow a consistent structure with HTTP status codes, error codes, and retry semantics.
 
 ## Table of Contents
 

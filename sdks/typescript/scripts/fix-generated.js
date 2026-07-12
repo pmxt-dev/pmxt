@@ -1,10 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
+const generatedRootDir = path.resolve(__dirname, '../generated');
 const generatedModelsDir = path.resolve(__dirname, '../generated/src/models');
+const generatedDocsDir = path.resolve(__dirname, '../generated/docs');
 
-function fixOneOfFile(typeName) {
-    const targetFile = path.join(generatedModelsDir, `${typeName}.ts`);
+function fixOneOfFile(typeName, modelsDir = generatedModelsDir) {
+    const targetFile = path.join(modelsDir, `${typeName}.ts`);
     const functionName = `instanceOf${typeName}`;
 
     if (!fs.existsSync(targetFile)) {
@@ -54,7 +56,7 @@ export function ${functionName}(value: any): value is ${typeName} {
     return true;
 }
 
-function fixFilterRequestsTypeIssue() {
+function fixFilterRequestsTypeIssue(modelsDir = generatedModelsDir) {
     // Fix type narrowing issues in Filter*RequestArgsInner files
     const filesToFix = [
         'FilterEventsRequestArgsInner',
@@ -62,7 +64,7 @@ function fixFilterRequestsTypeIssue() {
     ];
 
     for (const fileName of filesToFix) {
-        const filePath = path.join(generatedModelsDir, `${fileName}.ts`);
+        const filePath = path.join(modelsDir, `${fileName}.ts`);
         if (!fs.existsSync(filePath)) continue;
 
         let content = fs.readFileSync(filePath, 'utf8');
@@ -101,26 +103,144 @@ function fixFilterRequestsTypeIssue() {
     }
 }
 
-console.log('Fixing generated code...');
+function stripGeneratedModelDocExample(content) {
+    return content.replace(
+        /\n## Example\n\n```typescript\n[\s\S]*?```\n\n(?=\[\[Back to top\]\])/,
+        '\n'
+    );
+}
 
-// Fix all OneOf files that the generator creates
-const oneOfFiles = [
-    'FilterMarketsRequestArgsInnerOneOf',
-    'FetchOHLCVRequestArgsInnerOneOf',
-    'FetchTradesRequestArgsInnerOneOf'
-];
+function stripGeneratedApiDocExamples(content) {
+    return content.replace(
+        /\n### Example\n\n```(?:ts|typescript)\n[\s\S]*?```\n\n(?=### Parameters)/g,
+        '\n'
+    );
+}
 
-let fixed = 0;
-for (const file of oneOfFiles) {
-    if (fixOneOfFile(file)) {
-        console.log(`Added missing instanceOf function to ${file}.ts`);
-        fixed++;
+function stripGeneratedReadmeUsageExample(content) {
+    return content.replace(
+        /\nNext, try it out\.\n\n\n```(?:ts|typescript)\n[\s\S]*?```\n+(?=## Documentation)/,
+        '\n'
+    );
+}
+
+function removeGeneratedModelDocExamples(docsDir = generatedDocsDir) {
+    if (!fs.existsSync(docsDir)) {
+        return 0;
     }
+
+    const fileNames = fs
+        .readdirSync(docsDir)
+        .filter(fileName => fileName.endsWith('.md'))
+        .filter(fileName => !fileName.endsWith('Api.md'));
+
+    const changedFiles = fileNames
+        .map(fileName => {
+            const filePath = path.join(docsDir, fileName);
+            const content = fs.readFileSync(filePath, 'utf8');
+            const fixedContent = stripGeneratedModelDocExample(content);
+            return { filePath, content, fixedContent };
+        })
+        .filter(file => file.fixedContent !== file.content);
+
+    for (const file of changedFiles) {
+        fs.writeFileSync(file.filePath, file.fixedContent, 'utf8');
+    }
+
+    return changedFiles.length;
 }
 
-fixFilterRequestsTypeIssue();
+function removeGeneratedApiDocExamples(docsDir = generatedDocsDir) {
+    if (!fs.existsSync(docsDir)) {
+        return 0;
+    }
 
-if (fixed === 0 && !fs.existsSync(path.join(generatedModelsDir, 'FilterEventsRequestArgsInner.ts'))) {
-    console.log('No files needed fixing');
+    const fileNames = fs
+        .readdirSync(docsDir)
+        .filter(fileName => fileName.endsWith('Api.md'));
+
+    const changedFiles = fileNames
+        .map(fileName => {
+            const filePath = path.join(docsDir, fileName);
+            const content = fs.readFileSync(filePath, 'utf8');
+            const fixedContent = stripGeneratedApiDocExamples(content);
+            return { filePath, content, fixedContent };
+        })
+        .filter(file => file.fixedContent !== file.content);
+
+    for (const file of changedFiles) {
+        fs.writeFileSync(file.filePath, file.fixedContent, 'utf8');
+    }
+
+    return changedFiles.length;
 }
-console.log('Generated code fixes complete.');
+
+function removeGeneratedReadmeUsageExample(rootDir = generatedRootDir) {
+    const readmePath = path.join(rootDir, 'README.md');
+    if (!fs.existsSync(readmePath)) {
+        return 0;
+    }
+
+    const content = fs.readFileSync(readmePath, 'utf8');
+    const fixedContent = stripGeneratedReadmeUsageExample(content);
+    if (fixedContent === content) {
+        return 0;
+    }
+
+    fs.writeFileSync(readmePath, fixedContent, 'utf8');
+    return 1;
+}
+
+function run() {
+    console.log('Fixing generated code...');
+
+    // Fix all OneOf files that the generator creates
+    const oneOfFiles = [
+        'FilterMarketsRequestArgsInnerOneOf',
+        'FetchOHLCVRequestArgsInnerOneOf',
+        'FetchTradesRequestArgsInnerOneOf'
+    ];
+
+    let fixed = 0;
+    for (const file of oneOfFiles) {
+        if (fixOneOfFile(file)) {
+            console.log(`Added missing instanceOf function to ${file}.ts`);
+            fixed++;
+        }
+    }
+
+    fixFilterRequestsTypeIssue();
+
+    const strippedDocExamples = removeGeneratedModelDocExamples();
+    if (strippedDocExamples > 0) {
+        console.log(`Removed placeholder examples from ${strippedDocExamples} generated model docs`);
+    }
+
+    const strippedApiExamples = removeGeneratedApiDocExamples();
+    if (strippedApiExamples > 0) {
+        console.log(`Removed placeholder examples from ${strippedApiExamples} generated API docs`);
+    }
+
+    const strippedReadmeExample = removeGeneratedReadmeUsageExample();
+    if (strippedReadmeExample > 0) {
+        console.log('Removed placeholder usage example from generated README');
+    }
+
+    if (fixed === 0 && !fs.existsSync(path.join(generatedModelsDir, 'FilterEventsRequestArgsInner.ts'))) {
+        console.log('No files needed fixing');
+    }
+    console.log('Generated code fixes complete.');
+}
+
+if (require.main === module) {
+    run();
+}
+
+module.exports = {
+    removeGeneratedApiDocExamples,
+    removeGeneratedModelDocExamples,
+    removeGeneratedReadmeUsageExample,
+    stripGeneratedApiDocExamples,
+    stripGeneratedModelDocExample,
+    stripGeneratedReadmeUsageExample,
+};

@@ -491,15 +491,30 @@ export class Router extends Exchange {
             const json = await response.json();
             const data = this.handleResponse(json);
             if (!data) return [];
-            return (data as any[]).map((r) => ({
-                market: convertMarket(r.market || {}),
-                relation: r.relation || 'identity',
-                confidence: r.confidence || 0,
-                reasoning: r.reasoning,
-                bestBid: r.bestBid,
-                bestAsk: r.bestAsk,
-                venue: r.venue || '',
-            }));
+            return (data as any[]).map((r) => {
+                const marketPayload = r.market || {};
+                const market = convertMarket(marketPayload);
+                // Hosted /api/router response carries the live bid/ask on the
+                // nested market (and the venue via market.sourceExchange). The
+                // top-level bestBid/bestAsk/venue fields are legacy and often
+                // null on the wire, so prefer the market fields and fall back
+                // to the top-level only when needed.
+                const bestBid =
+                    r.bestBid ?? (market as any).bestBid ?? marketPayload.bestBid ?? null;
+                const bestAsk =
+                    r.bestAsk ?? (market as any).bestAsk ?? marketPayload.bestAsk ?? null;
+                const venue =
+                    r.venue || (market as any).sourceExchange || marketPayload.sourceExchange || '';
+                return {
+                    market,
+                    relation: r.relation || 'identity',
+                    confidence: r.confidence || 0,
+                    reasoning: r.reasoning,
+                    bestBid,
+                    bestAsk,
+                    venue,
+                };
+            });
         } catch (error) {
             if (error instanceof Error) throw error;
             throw new Error(`Failed to compareMarketPrices: ${error}`);
@@ -540,15 +555,25 @@ export class Router extends Exchange {
             const json = await this.sidecarReadRequest('fetchHedges', query, [query]);
             const data = this.handleResponse(json);
             if (!data) return [];
-            return (data as any[]).map((r) => ({
-                market: convertMarket(r.market || {}),
-                relation: r.relation || 'identity',
-                confidence: r.confidence || 0,
-                reasoning: r.reasoning,
-                bestBid: r.bestBid,
-                bestAsk: r.bestAsk,
-                venue: r.venue || '',
-            }));
+            return (data as any[]).map((r) => {
+                const marketPayload = r.market || {};
+                const market = convertMarket(marketPayload);
+                const bestBid =
+                    r.bestBid ?? (market as any).bestBid ?? marketPayload.bestBid ?? null;
+                const bestAsk =
+                    r.bestAsk ?? (market as any).bestAsk ?? marketPayload.bestAsk ?? null;
+                const venue =
+                    r.venue || (market as any).sourceExchange || marketPayload.sourceExchange || '';
+                return {
+                    market,
+                    relation: r.relation || 'identity',
+                    confidence: r.confidence || 0,
+                    reasoning: r.reasoning,
+                    bestBid,
+                    bestAsk,
+                    venue,
+                };
+            });
         } catch (error) {
             if (error instanceof Error) throw error;
             throw new Error(`Failed to fetchHedges: ${error}`);

@@ -145,7 +145,24 @@ export class PolymarketUSWebSocket {
             socket.on('trade', (msg: SdkTrade) => this.handleTrade(msg));
             socket.on('error', (err: Error) => this.handleError(err));
             socket.on('close', () => this.handleClose());
-            await socket.connect();
+            // Wrap connection in a timeout with proper garbage collection
+            const CONNECTION_TIMEOUT_MS = 15000; // 15s is standard for trading API handshakes
+            let timeoutHandle: NodeJS.Timeout;
+
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                timeoutHandle = setTimeout(() => {
+                    reject(new Error(`PolymarketUS WebSocket connection timed out after ${CONNECTION_TIMEOUT_MS}ms`));
+                }, CONNECTION_TIMEOUT_MS);
+            });
+
+            try {
+                await Promise.race([
+                    socket.connect(),
+                    timeoutPromise
+                ]);
+            } finally {
+                clearTimeout(timeoutHandle!); // Always clear the timer so the event loop can breathe
+            }
             this.socket = socket;
         })();
 

@@ -310,11 +310,24 @@ export class MockExchange extends PredictionMarketExchange {
             const q = params.query.toLowerCase();
             markets = markets.filter(m => m.title.toLowerCase().includes(q));
         }
+        if (params?.slug) {
+            markets = markets.filter(m => m.slug === params.slug);
+        }
         if (params?.eventId) {
             markets = markets.filter(m => m.eventId === params.eventId);
         }
         if (params?.marketId) {
             markets = markets.filter(m => m.marketId === params.marketId);
+        }
+        if (params?.outcomeId) {
+            markets = markets.filter(m => m.outcomes.some(o => o.outcomeId === params.outcomeId));
+        }
+        if (params?.status && params.status !== 'all') {
+            markets = markets.filter(m => (m.status ?? 'active') === params.status);
+        }
+        const sourceExchange = params?.sourceExchange ?? params?.exchange;
+        if (sourceExchange) {
+            markets = markets.filter(m => m.sourceExchange === sourceExchange);
         }
         const offset = params?.offset ?? 0;
         const limit = params?.limit;
@@ -329,6 +342,19 @@ export class MockExchange extends PredictionMarketExchange {
         }
         if (params?.eventId) {
             events = events.filter(e => e.id === params.eventId);
+        }
+        if (params?.slug) {
+            events = events.filter(e => e.slug === params.slug);
+        }
+        if (params?.series) {
+            events = events.filter(e => e.sourceMetadata?.series === params.series);
+        }
+        if (params?.status && params.status !== 'all') {
+            events = events.filter(e => ((e as { status?: string }).status ?? 'active') === params.status);
+        }
+        const sourceExchange = params?.sourceExchange ?? params?.exchange;
+        if (sourceExchange) {
+            events = events.filter(e => e.sourceExchange === sourceExchange);
         }
         const offset = params?.offset ?? 0;
         const limit = params?.limit;
@@ -419,8 +445,15 @@ export class MockExchange extends PredictionMarketExchange {
                 outcomeId: id,
             });
         }
-        const sorted = trades.sort((a, b) => b.timestamp - a.timestamp);
-        return params.limit === undefined ? sorted : sorted.slice(0, Math.max(0, Math.floor(params.limit)));
+        const start = toTimestamp(params.start);
+        const end = toTimestamp(params.end);
+        const filtered = [...trades]
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .filter((trade) => start === undefined || trade.timestamp >= start)
+            .filter((trade) => end === undefined || trade.timestamp <= end);
+        return params.limit === undefined
+            ? filtered
+            : filtered.slice(0, Math.max(0, Math.floor(params.limit)));
     }
 
     override async fetchBalance(_address?: string): Promise<Balance[]> {
@@ -678,9 +711,10 @@ export class MockExchange extends PredictionMarketExchange {
         return { ...o };
     }
 
-    override async fetchOpenOrders(_marketId?: string): Promise<Order[]> {
+    override async fetchOpenOrders(marketId?: string): Promise<Order[]> {
         return Array.from(this._orders.values())
             .filter(o => o.status === 'open' || o.status === 'pending')
+            .filter(o => marketId === undefined || o.marketId === marketId)
             .map(o => ({ ...o }));
     }
 

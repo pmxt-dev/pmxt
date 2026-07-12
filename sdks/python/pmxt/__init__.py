@@ -1,8 +1,8 @@
 """
 PMXT - Unified Prediction Market API
 
-A unified interface for interacting with multiple prediction market exchanges
-(Kalshi, Polymarket) identically.
+A unified Python SDK for supported prediction markets.
+Provides local sidecar access to PMXT exchange implementations and hosted services where configured.
 
 Example:
     >>> import pmxt
@@ -12,7 +12,7 @@ Example:
     >>> kalshi = pmxt.Kalshi()
     >>>
     >>> # Fetch markets
-    >>> markets = await poly.fetch_markets(query="Trump")
+    >>> markets = poly.fetch_markets(query="Trump")
     >>> print(markets[0].title)
 """
 
@@ -20,7 +20,7 @@ from typing import Any, Dict, List
 
 from .client import Exchange
 from .constants import ENV, ENV_BASE_URL, ENV_API_KEY
-from ._exchanges import Polymarket, Limitless, Kalshi, KalshiDemo, Probable, Baozi, Myriad, Opinion, Metaculus, Smarkets, PolymarketUS, Polymarket_us, Hyperliquid, GeminiTitan, SuiBets, Suibets, Rain, Mock, Router
+from ._exchanges import Polymarket, Limitless, Kalshi, KalshiDemo, Probable, Baozi, Myriad, Opinion, Metaculus, Smarkets, PolymarketUS, Polymarket_us, Hyperliquid, GeminiTitan, SuiBets, Suibets, Rain, Hunch, Mock, Router
 from .router import Router
 from .feed_client import FeedClient
 from .server_manager import ServerManager
@@ -61,7 +61,9 @@ from .models import (
     Position,
     Balance,
     MarketFilterCriteria,
+    MarketFilterFunction,
     EventFilterCriteria,
+    EventFilterFunction,
     MarketFetchParams,
     EventFetchParams,
     SeriesFetchParams,
@@ -185,6 +187,7 @@ __all__ = [
     "SuiBets",
     "Suibets",
     "Rain",
+    "Hunch",
     "Mock",
     "Router",
     "Exchange",
@@ -254,7 +257,9 @@ __all__ = [
     "FetchMatchedMarketClustersParams",
     "FetchMatchedEventClustersParams",
     "MarketFilterCriteria",
+    "MarketFilterFunction",
     "EventFilterCriteria",
+    "EventFilterFunction",
     "MarketFetchParams",
     "EventFetchParams",
     "SeriesFetchParams",

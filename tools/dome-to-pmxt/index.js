@@ -32,7 +32,12 @@ const TS_TRANSFORMS = [
   ['dome.kalshi.markets.', /\bdome\.kalshi\.markets\./g, 'kalshi. /* TODO(dome-to-pmxt): check method — fetchMarkets/fetchOHLCV/fetchOrderBook */'],
   ['dome.kalshi.', /\bdome\.kalshi\./g, 'kalshi.'],
 
-  // Constructor.
+  // Declaration-specific constructors. Keep these before generic constructor
+  // replacements so Polymarket method rewrites have a matching `poly` binding.
+  ['const|let|var dome = new DomeClient({...})', /\b(const|let|var)\s+dome\s*=\s*new\s+DomeClient\s*\(\{[^}]*\}\)/g, '$1 poly = /* TODO(dome-to-pmxt): new pmxt.Polymarket() or new pmxt.Kalshi() */ new pmxt.Polymarket()'],
+  ['const|let|var dome = new DomeClient()', /\b(const|let|var)\s+dome\s*=\s*new\s+DomeClient\s*\(\s*\)/g, '$1 poly = /* TODO(dome-to-pmxt): new pmxt.Polymarket() or new pmxt.Kalshi() */ new pmxt.Polymarket()'],
+
+  // Generic constructor fallbacks for non-declaration contexts.
   ['new DomeClient({...})', /new\s+DomeClient\s*\(\{[^}]*\}\)/g, '/* TODO(dome-to-pmxt): new pmxt.Polymarket() or new pmxt.Kalshi() */ new pmxt.Polymarket()'],
   ['new DomeClient()', /new\s+DomeClient\s*\(\s*\)/g, '/* TODO(dome-to-pmxt): new pmxt.Polymarket() or new pmxt.Kalshi() */ new pmxt.Polymarket()'],
 
@@ -68,7 +73,12 @@ const PY_TRANSFORMS = [
   ['dome.polymarket.', /\bdome\.polymarket\./g, 'poly.'],
   ['dome.kalshi.', /\bdome\.kalshi\./g, 'kalshi.'],
 
-  // Constructor.
+  // Assignment-specific constructors. Keep these before generic constructor
+  // replacements so Polymarket method rewrites have a matching `poly` binding.
+  ['dome = DomeClient({...})', /^(\s*)dome\s*=\s*DomeClient\s*\(\{[^}]*\}\)/gm, '$1poly = pmxt.Polymarket()  # TODO(dome-to-pmxt): or pmxt.Kalshi()'],
+  ['dome = DomeClient()', /^(\s*)dome\s*=\s*DomeClient\s*\(\s*\)/gm, '$1poly = pmxt.Polymarket()  # TODO(dome-to-pmxt): or pmxt.Kalshi()'],
+
+  // Generic constructor fallbacks for non-assignment contexts.
   ['DomeClient({...})', /DomeClient\s*\(\{[^}]*\}\)/g, 'pmxt.Polymarket()  # TODO(dome-to-pmxt): or pmxt.Kalshi()'],
   ['DomeClient()', /DomeClient\s*\(\s*\)/g, 'pmxt.Polymarket()  # TODO(dome-to-pmxt): or pmxt.Kalshi()'],
 

@@ -1,7 +1,7 @@
 # pmxt [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=The%20ccxt%20for%20prediction%20markets.&url=https://github.com/pmxt-dev/pmxt&hashtags=predictionmarkets,trading)  [![DOI](https://zenodo.org/badge/1130657894.svg)](https://doi.org/10.5281/zenodo.19111315)
 
 
-**The [ccxt](https://github.com/ccxt/ccxt) for prediction markets.** Hosted unified API for prediction markets — trade Polymarket, Kalshi, Opinion, and more from one API key. Open-source SDK and self-host option included.
+**The [ccxt](https://github.com/ccxt/ccxt) for prediction markets.** Hosted unified API for prediction-market data and supported hosted trading — Polymarket, Opinion, and Limitless writes today. Open-source SDKs and a self-host option for venue-native credentials included.
 
 
 <img width="3840" height="2160" alt="plot" src="https://github.com/user-attachments/assets/ed77d244-c95f-4fe0-a7a7-89af713c053f" />
@@ -59,7 +59,8 @@
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://probable.markets" style="color: inherit; text-decoration: none;"><img src="https://developer.probable.markets/logo.svg" alt="Probable" width="100"></a>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <!-- # The baozi website seems to just show 50:50 odds for everything. Something must be fundamentally broken on their end. -->
+  <a href="https://baozi.bet" style="color: inherit; text-decoration: none;"><img src="https://baozi.bet/favicon.ico" alt="Baozi" width="24" height="24"> <b>Baozi</b></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://myriad.markets" style="color: inherit; text-decoration: none;"><img src="https://myriad.markets/favicon.ico" alt="Myriad" width="24" height="24"> <b>Myriad</b></a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://opinion.trade" style="color: inherit; text-decoration: none;"><img src="https://app.opinion.trade/assets/apple-splash-2048-2732.jpg" alt="Opinion" width="24" height="24"> <b>Opinion</b></a>
@@ -72,7 +73,11 @@
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://gemini.com" style="color: inherit; text-decoration: none;"><img src="https://pmxt.dev/venues/gemini-titan.png" alt="Gemini Titan" width="24" height="24"> <b>Gemini Titan</b></a>
   &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.suibets.com" style="color: inherit; text-decoration: none;"><img src="https://www.suibets.com/favicon.ico" alt="SuiBets" width="24" height="24"> <b>SuiBets</b></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://rain.one" style="color: inherit; text-decoration: none;"><img src="https://www.rain.one/favicon.png" alt="Rain" width="24" height="24"> <b>Rain</b></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.playhunch.xyz" style="color: inherit; text-decoration: none;"><img src="https://www.playhunch.xyz/favicon.ico" alt="Hunch" width="24" height="24"> <b>Hunch</b></a>
 </p>
 
 [Feature Support & Compliance](core/COMPLIANCE.md).
@@ -85,7 +90,7 @@ Different prediction market platforms have different APIs, data formats, and con
 - **Open source (MIT).** Self-host the local server for full control — your keys, your machine, no PMXT in the loop. See [Self-hosted](#self-hosted).
 - **Language-agnostic.** Python and TypeScript SDKs today, with HTTP access for any other language. No lock-in to a single ecosystem.
 - **Drop-in Dome API replacement.** Automatic codemod (`dome-to-pmxt`) for teams migrating after the Polymarket acquisition.
-- **Unified trading, not just data.** Place orders across Polymarket, Kalshi, and Limitless with a single interface.
+- **Unified trading, not just data.** Hosted writes cover Polymarket, Opinion, and Limitless today; self-host for venue-native writes such as Kalshi where supported.
 - **[MCP-native](https://pmxt.dev/mcp).** Use pmxt directly from Claude, Cursor, and other AI agents.
   
 
@@ -127,7 +132,7 @@ See [@pmxt/mcp](https://github.com/pmxt-dev/pmxt-mcp) for setup with Claude, Cur
 
 ## Migrating from Dome API
 
-If you're currently using **Dome API**, pmxt is a drop-in replacement with a unified interface for Polymarket and Kalshi.
+If you're currently using **Dome API**, pmxt is a drop-in replacement for DomeAPI's Polymarket/Kalshi workflows and also exposes PMXT's broader supported venue catalog where current capabilities exist.
 
 Check out [pmxt as a Dome API alternative](https://pmxt.dev/dome-api-alternative) for a detailed migration guide, API comparison, and automatic codemod tool (`dome-to-pmxt`) to help you transition your code.
 
@@ -173,7 +178,7 @@ order = trader.create_order(
 
 ### TypeScript
 
-> **Note:** Named imports do not work in ESM. Use `import pmxt from 'pmxtjs'` (default import) for the namespaced form, or import `Polymarket` from `pmxtjs` only via the CJS build.
+> **Import style:** Use named imports such as `import { Polymarket } from "pmxtjs"` for direct classes, or `import pmxt from "pmxtjs"` for the namespaced form.
 
 ```typescript
 import { Polymarket } from "pmxtjs";
@@ -201,7 +206,7 @@ const order = await trader.createOrder({
   amount: 5.0,
   denom: "usdc",
   slippage_pct: 30.0,
-} as any);
+});
 ```
 
 ### Prediction market hierarchy
@@ -213,7 +218,7 @@ Prediction markets are structured in a hierarchy to group related information.
 *   **Outcome**: The actual share you buy (e.g., *"Yes"* or *"No"*)
 
 ## Trading
-pmxt supports unified trading across exchanges. The hosted API is the default — see Quickstart above for the basic flow.
+pmxt supports unified trading where venues expose writes. Hosted trading is the default for supported hosted venues; self-host when you need raw venue credentials or another venue's write API.
 
 ### Hosted trading (recommended)
 
@@ -254,6 +259,9 @@ Use this when you self-host the local server. See [Self-hosted](#self-hosted) fo
 
 #### Polymarket
 ```python
+import os
+import pmxt
+
 exchange = pmxt.Polymarket(
     private_key=os.getenv('POLYMARKET_PRIVATE_KEY'),
     proxy_address=os.getenv('POLYMARKET_PROXY_ADDRESS'), # Optional: For proxy trading
@@ -263,7 +271,10 @@ exchange = pmxt.Polymarket(
 
 #### Kalshi
 ```python
- exchange = pmxt.Kalshi(
+import os
+import pmxt
+
+exchange = pmxt.Kalshi(
     api_key=os.getenv('KALSHI_API_KEY'),
     private_key=os.getenv('KALSHI_PRIVATE_KEY') # RSA Private Key
 )
@@ -271,6 +282,9 @@ exchange = pmxt.Polymarket(
 
 #### Limitless
 ```python
+import os
+import pmxt
+
 exchange = pmxt.Limitless(
     api_key=os.getenv('LIMITLESS_API_KEY'),
     private_key=os.getenv('LIMITLESS_PRIVATE_KEY') # For order signing (EIP-712)

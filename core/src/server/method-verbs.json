@@ -79,6 +79,16 @@
       }
     ]
   },
+  "fetchEventMetadata": {
+    "verb": "get",
+    "args": [
+      {
+        "name": "eventTicker",
+        "kind": "string",
+        "optional": false
+      }
+    ]
+  },
   "fetchOHLCV": {
     "verb": "get",
     "args": [

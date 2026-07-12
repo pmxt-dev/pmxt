@@ -45,7 +45,7 @@ try {
   await client.createOrder({ ... });
 } catch (e) {
   if (e instanceof InsufficientEscrowBalance) {
-    console.log(`Need to deposit. ${(e as any).detail}`);
+    console.log(`Need to deposit. ${e.detail}`);
     const tx = await client.escrow.depositTx(20);
     // sign and broadcast, retry
   } else if (isHostedError(e)) {
@@ -59,9 +59,14 @@ try {
 
 ## OrderSizeTooSmall
 
-**When it fires:** the resolved share count is below the venue's minimum. Polymarket's minimum is **5 shares per order**. A $2 buy at $0.78/share is only 2.5 shares — rejected.
+**When it fires:** the resolved order is below one of Polymarket's two independent venue-side minimums on marketable BUY orders. Both rules are enforced by the venue itself (not PMXT), and the **higher of the two binds**:
 
-**Detail string:** `Order size 2.564 below the minimum 5 shares for venue polymarket`.
+- **5-share minimum.** A $2 buy at $0.78/share is only 2.5 shares — rejected.
+- **$1 notional minimum (marketable BUY).** A 5-share buy at $0.138/share is $0.69 — passes the 5-share rule but is rejected by the venue with the literal error `invalid amount for a marketable BUY order ($0.69), min size: 1`. The effective minimum at that price is ~8 shares (~$1.10).
+
+**Detail string (5-share rule):** `Order size 2.564 below the minimum 5 shares for venue polymarket`.
+
+**Detail string ($1 rule, passed through from venue):** `invalid amount for a marketable BUY order ($X), min size: 1`.
 
 **Parent classes:** `InvalidOrder`, `HostedTradingError`.
 
@@ -151,15 +156,12 @@ Hardware-wallet signing is the most common cause — Ledger confirmations can ta
 ```python Python
 from pmxt._hosted_errors import BuiltOrderExpired
 
-def submit_with_retry(client, *, market_id, outcome_id, **kwargs):
+def submit_with_retry(client, **kwargs):
+    # In hosted mode, create_order handles build -> sign -> submit atomically.
+    # On BuiltOrderExpired the internal submit raced the 30s TTL; just call again.
     for attempt in range(2):
-        built = client.build_order(market_id=market_id, outcome_id=outcome_id, **kwargs)
-        sig = signer.sign_typed_data(built.typed_data)
         try:
-            return client.submit_order(
-                built_order_id=built.built_order_id,
-                signature=sig,
-            )
+            return client.create_order(**kwargs)
         except BuiltOrderExpired:
             if attempt == 1:
                 raise
@@ -168,25 +170,20 @@ def submit_with_retry(client, *, market_id, outcome_id, **kwargs):
 
 ```typescript TypeScript
 import { BuiltOrderExpired } from "pmxtjs";
+import type { CreateOrderInput, Order } from "pmxtjs";
 
-async function submitWithRetry(client, params) {
+async function submitWithRetry(client, params: CreateOrderInput): Promise<Order> {
+  // In hosted mode, createOrder handles build -> sign -> submit atomically.
+  // On BuiltOrderExpired the internal submit raced the 30s TTL; just call again.
   for (let attempt = 0; attempt < 2; attempt++) {
-    const built = await client.buildOrder(params);
-    const sig = await signer.signTypedData(
-      built.typedData.domain,
-      built.typedData.types,
-      built.typedData.message,
-    );
     try {
-      return await client.submitOrder({
-        builtOrderId: built.builtOrderId,
-        signature: sig,
-      });
+      return await client.createOrder(params);
     } catch (e) {
       if (e instanceof BuiltOrderExpired && attempt === 0) continue;
       throw e;
     }
   }
+  throw new Error("unreachable");
 }
 ```
 </CodeGroup>
@@ -199,7 +196,7 @@ async function submitWithRetry(client, params) {
 
 **Parent classes:** `InvalidOrder`, `HostedTradingError`.
 
-**Recovery:** wait for liquidity, post a limit order instead of a market order, or pick a different outcome.
+**Recovery:** wait for liquidity, pick a different outcome, or post a resting limit order via `client.create_order(order_type="limit", price=..., amount=...)`. Limit BUY and SELL are supported, and both use `denom="shares"` in hosted SDK requests.
 
 <CodeGroup>
 ```python Python
@@ -208,18 +205,18 @@ from pmxt._hosted_errors import NoLiquidity
 try:
     client.create_order(order_type="market", ...)
 except NoLiquidity:
-    # Fall back to a limit order at a price you'd accept
-    client.create_order(order_type="limit", price=0.50, ...)
+    # Wait, retry against a different outcome, or post a hosted limit order.
+    pass
 ```
 
 ```typescript TypeScript
 import { NoLiquidity } from "pmxtjs";
 
 try {
-  await client.createOrder({ orderType: "market", ... });
+  await client.createOrder({ type: "market", ... });
 } catch (e) {
   if (e instanceof NoLiquidity) {
-    await client.createOrder({ orderType: "limit", price: 0.5, ... });
+    // Wait, retry against a different outcome, or post a hosted limit order.
   } else {
     throw e;
   }
@@ -234,7 +231,13 @@ try {
 </Warning>
 
 <Warning>
-**`fetch_markets` returns venue-native IDs**, but `create_order` needs catalog UUIDs. If you see `OutcomeNotFound` despite having a valid-looking ID, you are almost certainly passing a venue-native ID to a hosted endpoint. See [Catalog UUID vs venue ID](/concepts/catalog-uuid-vs-venue-id).
+**Marketable limit price selection.** The SDK's `_validate_worst_price` gate applies a slippage buffer on top of the book — it is NOT simply "must cross top-of-book". For an immediately-executable price:
+- **Marketable limit BUY:** use `price = best_ask` (a small +1-tick buffer works too).
+- **Marketable limit SELL:** use `price = best_ask` (i.e. at or above the ask), NOT `best_bid` or `best_bid - 0.01`. Posting at `best_bid` looks marketable in book terms, but the validator's slippage floor (currently `worst_price ≥ best_bid × 0.8 + 0.029`, see `_hosted_typeddata.py:519`) will reject it for thin books or low-price outcomes. Pricing at or above `best_ask` is the reliable rule.
+</Warning>
+
+<Warning>
+If you see `OutcomeNotFound` despite having a valid-looking ID, the SDK could not resolve it on either the catalog UUID or `(venue, venue_outcome_id)` path. Most commonly: the outcome was resolved against a different venue than the client's `exchange_name`, or the outcome has since been removed from the catalog. See [Catalog UUID vs venue ID](/concepts/catalog-uuid-vs-venue-id).
 </Warning>
 
 ## Catching everything hosted

@@ -64,7 +64,7 @@ try {
   await client.createOrder({ ... });
 } catch (e) {
   if (e instanceof HostedTradingError) {
-    console.log((e as any).status, (e as any).detail);
+    console.log(e.status, e.detail);
   } else if (isHostedError(e)) {
     // Subclass without the direct extends-chain — still hosted
   }
@@ -114,7 +114,7 @@ Recovery: rotate the key in the [dashboard](https://pmxt.dev/dashboard). Do not 
 
 ## `OutcomeNotFound`
 
-**Catalog could not resolve the requested `outcome_id` (or `market_id`).**
+**The hosted resolver could not resolve the requested outcome target.**
 
 | | |
 | - | - |
@@ -124,7 +124,7 @@ Recovery: rotate the key in the [dashboard](https://pmxt.dev/dashboard). Do not 
 | TS extends | `NotFoundError`; `static isHostedError = true` |
 | Retryable | No |
 
-Most often: you passed a **venue-native ID** to a hosted endpoint that expects a **catalog UUID**. See [Catalog UUID vs venue ID](/concepts/catalog-uuid-vs-venue-id).
+Most often: the backend could not resolve either a catalog UUID or a `venue` + `venue_outcome_id` pair. Common causes are a bare venue-native ID sent without the venue tuple, a mismatch between the outcome's venue and the client exchange, or an outcome removed from the catalog. See [Catalog UUID vs venue ID](/concepts/catalog-uuid-vs-venue-id).
 
 ## `CatalogUnavailable`
 

@@ -33,5 +33,5 @@ def test_list_feeds_hits_the_root_endpoint(monkeypatch):
 
     assert client.list_feeds() == ["binance", "chainlink"]
     assert captured["url"] == "http://localhost:3847/api/feeds/"
-    assert captured["timeout"] == 15
+    assert captured["timeout"] == 30
     assert captured["headers"] == {}

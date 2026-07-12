@@ -3,212 +3,32 @@ title: MCP Server
 description: "Give AI assistants access to prediction markets via the Model Context Protocol."
 ---
 
-PMXT provides a hosted **Streamable HTTP MCP server** at `https://api.pmxt.dev/mcp`.
-Any MCP-compatible client — Claude Code, Cursor, Windsurf, or your own agent — can
-connect and use the full PMXT tool surface through natural language.
+PMXT hosts a Streamable HTTP MCP server at `https://api.pmxt.dev/mcp`. Any
+MCP-compatible client — Claude Code, Cursor, or your own agent — can connect
+and use the full PMXT tool surface. No install required.
 
-No installation required. Just add the config and your API key.
+## Claude Code
 
-## Setup
-
-<Steps>
-  <Step title="Get an API key">
-    Go to [pmxt.dev/dashboard](https://pmxt.dev/dashboard) and create a key.
-    It starts with `pmxt_live_` and works immediately.
-  </Step>
-  <Step title="Add the MCP config to your editor">
-    Add the following to your editor's MCP configuration file.
-
-    <Tabs>
-      <Tab title="Claude Code">
-        Add to `~/.claude.json` (global) or `.mcp.json` (per-project):
-
-        ```json
-        {
-          "mcpServers": {
-            "pmxt": {
-              "type": "streamableHttp",
-              "url": "https://api.pmxt.dev/mcp",
-              "headers": {
-                "Authorization": "Bearer pmxt_live_..."
-              }
-            }
-          }
-        }
-        ```
-      </Tab>
-      <Tab title="Cursor">
-        Add to your Cursor MCP settings:
-
-        ```json
-        {
-          "mcpServers": {
-            "pmxt": {
-              "type": "streamableHttp",
-              "url": "https://api.pmxt.dev/mcp",
-              "headers": {
-                "Authorization": "Bearer pmxt_live_..."
-              }
-            }
-          }
-        }
-        ```
-      </Tab>
-      <Tab title="Custom client">
-        Connect to the endpoint using any MCP SDK:
-
-        ```typescript
-        import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-        import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-
-        const transport = new StreamableHTTPClientTransport(
-          new URL("https://api.pmxt.dev/mcp"),
-          {
-            requestInit: {
-              headers: {
-                Authorization: "Bearer pmxt_live_...",
-              },
-            },
-          }
-        );
-
-        const client = new Client({ name: "my-app", version: "1.0.0" });
-        await client.connect(transport);
-
-        const tools = await client.listTools();
-        ```
-      </Tab>
-    </Tabs>
-  </Step>
-  <Step title="Start using it">
-    Ask your AI assistant something like:
-
-    - *"What are the top Polymarket markets right now?"*
-    - *"Show me the orderbook for the presidential election market on Kalshi"*
-    - *"Compare prices for this market across venues"*
-
-    Here's what a typical response looks like when you ask *"Find markets about bitcoin"*:
-
-    ```json
-    [
-      {
-        "marketId": "63146e19-...",
-        "title": "Will Satoshi move any Bitcoin in 2026?",
-        "outcomes": [
-          { "label": "Yes", "price": 0.085 },
-          { "label": "No", "price": 0.915 }
-        ],
-        "volume24h": 33099.91,
-        "liquidity": 159439.89
-      }
-    ]
-    ```
-
-    If you see market data, the MCP server is working.
-  </Step>
-</Steps>
-
-## Authentication
-
-The MCP server uses the same API key as the REST API. Pass it as a `Bearer` token
-in the `Authorization` header.
-
-Every tool call the AI makes is proxied through the authenticated API, so your
-usage limits and quotas apply as normal.
-
-## Available tools
-
-The MCP server exposes the same tools as the PMXT REST API. Every tool requires
-an `exchange` parameter (e.g., `polymarket`, `kalshi`, `limitless`).
-
-### Market discovery
-
-| Tool | Description |
-|------|-------------|
-| `fetchMarkets` | Search and list markets |
-| `fetchMarket` | Get a single market by ID, slug, or keyword |
-| `fetchMarketsPaginated` | Cursor-based paginated market listing |
-| `fetchEvents` | Search and list events |
-| `fetchEvent` | Get a single event by ID or slug |
-| `fetchEventsPaginated` | Cursor-based paginated event listing |
-| `loadMarkets` | Load and cache all markets for a venue |
-
-### Pricing and data
-
-| Tool | Description |
-|------|-------------|
-| `fetchOrderBook` | Get the current orderbook for an outcome |
-| `fetchTrades` | Get recent trade history |
-| `fetchOHLCV` | Get candlestick/OHLCV price data |
-| `getExecutionPrice` | Quote a volume-weighted execution price |
-| `getExecutionPriceDetailed` | Detailed execution breakdown with partial fill data |
-
-### Cross-venue comparison
-
-These tools query the PMXT catalog to find and compare the same market across different venues.
-
-| Tool | Description |
-|------|-------------|
-| `fetchMatchedMarketClusters` | Find clusters of matched markets across venues |
-| `fetchMatchedEventClusters` | Find clusters of matched events across venues |
-| `compareMarketPrices` | Side-by-side price comparison across venues |
-| `fetchRelatedMarkets` | Find subset/superset market relationships |
-
-### Account and orders
-
-| Tool | Description |
-|------|-------------|
-| `fetchBalance` | Get account balance |
-| `fetchPositions` | List your positions |
-| `fetchOpenOrders` | List open orders |
-| `fetchClosedOrders` | List closed orders |
-| `fetchAllOrders` | List all orders |
-| `fetchOrder` | Get a specific order by ID |
-| `fetchMyTrades` | List your trade history |
-
-### Trading (requires user confirmation)
-
-| Tool | Description |
-|------|-------------|
-| `buildOrder` | Preview an order without placing it |
-| `submitOrder` | Execute a previously built order |
-| `createOrder` | Build and submit in one step |
-| `cancelOrder` | Cancel an open order |
-
-<Warning>
-  The MCP server instructs the AI to **always ask for explicit confirmation**
-  before calling trading tools. These operations spend real money.
-</Warning>
-
-## How it works
-
-The hosted MCP server uses the **Streamable HTTP** transport — every request is a
-stateless `POST` to `https://api.pmxt.dev/mcp`. There are no sessions, no
-WebSocket upgrades, and no local processes.
-
-Each tool call is proxied back to the PMXT REST API using your Bearer token,
-so all authentication, rate limiting, and usage tracking works identically
-to direct API calls.
-
-## Running locally with the npm package
-
-PMXT also publishes [`@pmxt/mcp`](https://www.npmjs.com/package/@pmxt/mcp) on npm
-for running the MCP server as a local process. Use this if you need to self-host,
-work offline, or customize tool behavior.
+Add to `~/.claude.json` (global) or `.mcp.json` (per-project):
 
 ```json
 {
   "mcpServers": {
     "pmxt": {
-      "command": "npx",
-      "args": ["-y", "@pmxt/mcp"],
-      "env": {
-        "PMXT_API_KEY": "pmxt_live_..."
+      "type": "streamableHttp",
+      "url": "https://api.pmxt.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer pmxt_live_..."
       }
     }
   }
 }
 ```
 
-The hosted version above is functionally identical but requires no install,
-stays automatically up to date, and works in cloud-hosted editors.
+## Other clients
+
+Cursor uses the same config shape in its MCP settings. For custom clients,
+connect to `https://api.pmxt.dev/mcp` with any MCP SDK and pass your key as
+a `Bearer` token in the `Authorization` header.
+
+Source and local-process install at [`@pmxt/mcp`](https://www.npmjs.com/package/@pmxt/mcp).

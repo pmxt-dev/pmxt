@@ -11,7 +11,7 @@ PMXT speaks two market identifier languages:
 **The hosted trading API accepts either.** Whichever you have in hand, you can pass it straight to `create_order` / `build_order` — the SDK picks the right wire field and the backend resolves it. No conversion step required.
 
 ```python
-# Both of these work identically against trade.pmxt.dev:
+# Both of these work against trade.pmxt.dev without a conversion step:
 
 # Via the venue client — outcome carries a venue-native id from fetch_markets.
 client = pmxt.Polymarket(pmxt_api_key=..., wallet_address=..., private_key=...)
@@ -45,15 +45,16 @@ In [self-hosted mode](/guides/self-hosted) — `POST /api/{exchange}/createOrder
 
 If you already have a venue-native id (e.g. a saved database of Polymarket `conditionId`s) and want the catalog UUID for cross-venue work:
 
-```python
-clusters = router.fetch_matched_market_clusters(
-    venue="polymarket",
-    venue_market_id="0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5",
-)
-catalog_uuid = clusters[0].market_id
+The SDK does not expose a single-shot `venue_market_id` -> catalog UUID kwarg today. For batch or one-off reverse lookups, query the catalog directly via `POST /v0/sql`:
+
+```sql
+SELECT market_id
+FROM prediction_markets.markets
+WHERE venue = 'polymarket'
+  AND venue_market_id = '0xc704f74e2f9dfae70f770cb253ffadde10768eeab41233098bf5ac67995a94b5';
 ```
 
-For batch workflows, the [SQL endpoint](/sql) gives you direct access to `prediction_markets.markets` and `prediction_markets.outcomes` with the canonical UUID alongside the venue-native fields (`venue_market_id`, `venue_outcome_id` / `token_id`).
+`prediction_markets.markets` and `prediction_markets.outcomes` carry the canonical UUID alongside the venue-native fields (`venue_market_id`, `venue_outcome_id` / `token_id`), so the same query shape covers outcomes too.
 
 ## Examples (the two ids for one market)
 

@@ -1,5 +1,5 @@
 import { Polymarket } from "../pmxt/client";
-import { LOCAL_URL } from "../pmxt/constants";
+import { ENV, LOCAL_URL } from "../pmxt/constants";
 
 interface CapturedFetch {
   url: string;
@@ -38,6 +38,31 @@ afterEach(() => {
 });
 
 describe("sidecar order param forwarding", () => {
+  it("does not follow sidecar lock when PMXT_BASE_URL is explicitly set", async () => {
+    const previousBaseUrl = process.env[ENV.BASE_URL];
+    process.env[ENV.BASE_URL] = LOCAL_URL;
+    const spy = installFetchSpy(() =>
+      jsonResponse({
+        success: true,
+        data: [],
+      }),
+    );
+
+    try {
+      const api = new Polymarket({ autoStartServer: false });
+      (api as any).serverManager.getRunningPort = () => 4999;
+
+      await api.fetchMarkets({ limit: 1 });
+
+      const reqs = captured(spy);
+      expect(reqs).toHaveLength(1);
+      expect(reqs[0].url).toBe(`${LOCAL_URL}/api/polymarket/fetchMarkets`);
+    } finally {
+      if (previousBaseUrl === undefined) delete process.env[ENV.BASE_URL];
+      else process.env[ENV.BASE_URL] = previousBaseUrl;
+    }
+  });
+
   it("buildOrder forwards tickSize, negRisk, and onBehalfOf", async () => {
     const spy = installFetchSpy(() =>
       jsonResponse({

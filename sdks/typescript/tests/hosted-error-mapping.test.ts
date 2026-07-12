@@ -114,6 +114,20 @@ describe("isHostedError flag", () => {
     expect(isHostedError(err)).toBe(true);
   });
 
+  it.each([
+    ["HostedTradingError", new HostedTradingError(500, "x")],
+    ["InvalidApiKey", new InvalidApiKey(401, "x")],
+    ["InsufficientEscrowBalance", new InsufficientEscrowBalance(403, "x")],
+    ["OrderSizeTooSmall", new OrderSizeTooSmall(422, "x")],
+    ["OutcomeNotFound", new OutcomeNotFound(404, "x")],
+    ["CatalogUnavailable", new CatalogUnavailable(503, "x")],
+    ["BuiltOrderExpired", new BuiltOrderExpired(410, "x")],
+    ["InvalidSignature", new InvalidSignature(422, "x")],
+    ["NoLiquidity", new NoLiquidity(422, "x")],
+  ])("%s is catchable as HostedTradingError", (_label, err) => {
+    expect(err).toBeInstanceOf(HostedTradingError);
+  });
+
   it("MissingWalletAddress is NOT a hosted error (local-only)", () => {
     expect(isHostedError(new MissingWalletAddress("x"))).toBe(false);
   });

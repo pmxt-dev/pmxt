@@ -14,6 +14,7 @@ import { HyperliquidExchange } from "../exchanges/hyperliquid";
 import { GeminiTitanExchange } from "../exchanges/gemini-titan";
 import { SuiBetsExchange } from "../exchanges/suibets";
 import { RainExchange } from "../exchanges/rain";
+import { HunchExchange } from "../exchanges/hunch";
 import { MockExchange } from "../exchanges/mock";
 import { Router } from "../router";
 
@@ -63,9 +64,14 @@ export function createExchange(
     case "kalshi-demo":
       return new KalshiDemoExchange({
         credentials: {
-          apiKey: credentials?.apiKey || process.env.KALSHI_API_KEY,
+          apiKey:
+            credentials?.apiKey ||
+            process.env.KALSHI_DEMO_API_KEY ||
+            process.env.KALSHI_API_KEY,
           privateKey:
-            credentials?.privateKey || process.env.KALSHI_PRIVATE_KEY,
+            credentials?.privateKey ||
+            process.env.KALSHI_DEMO_PRIVATE_KEY ||
+            process.env.KALSHI_PRIVATE_KEY,
         },
       });
     case "probable":
@@ -96,7 +102,10 @@ export function createExchange(
         apiKey: credentials?.apiKey || process.env.OPINION_API_KEY,
         privateKey:
           credentials?.privateKey || process.env.OPINION_PRIVATE_KEY,
-        funderAddress: credentials?.funderAddress,
+        funderAddress:
+          credentials?.funderAddress ||
+          process.env.OPINION_FUNDER_ADDRESS ||
+          process.env.OPINION_PROXY_ADDRESS,
       });
     case "metaculus":
       return new MetaculusExchange({
@@ -159,6 +168,14 @@ export function createExchange(
             | "stage"
             | "production"
             | undefined,
+      });
+    case "hunch":
+      return new HunchExchange({
+        privateKey: credentials?.privateKey || process.env.HUNCH_PRIVATE_KEY,
+        walletAddress:
+          (credentials as { walletAddress?: string })?.walletAddress ||
+          process.env.HUNCH_WALLET_ADDRESS,
+        baseUrl: credentials?.baseUrl || process.env.HUNCH_BASE_URL,
       });
     case "mock":
       return new MockExchange();

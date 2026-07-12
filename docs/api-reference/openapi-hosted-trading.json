@@ -119,26 +119,26 @@
           {
             "lang": "python",
             "label": "Polymarket",
-            "source": "# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\norder = client.build_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\nprint(order.id, order.status)\n"
+            "source": "# Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\norder = client.build_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\nprint(order.id, order.status)\n"
           },
           {
             "lang": "javascript",
             "label": "Polymarket",
-            "source": "// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst markets = await client.fetchMarkets({ query: \"trump 2028\" });\nconst market = markets[0];\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst order = await client.buildOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconsole.log(order.id, order.status);\n"
+            "source": "// Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst markets = await client.fetchMarkets({ query: \"trump 2028\" });\nconst market = markets[0];\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst order = await client.buildOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconsole.log(order.id, order.status);\n"
           },
           {
             "lang": "python",
             "label": "Opinion",
-            "source": "# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\norder = client.build_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\nprint(order.id, order.status)\n"
+            "source": "# Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\norder = client.build_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\nprint(order.id, order.status)\n"
           },
           {
             "lang": "javascript",
             "label": "Opinion",
-            "source": "// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst markets = await client.fetchMarkets({ query: \"trump 2028\" });\nconst market = markets[0];\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst order = await client.buildOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconsole.log(order.id, order.status);\n"
+            "source": "// Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst markets = await client.fetchMarkets({ query: \"trump 2028\" });\nconst market = markets[0];\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst order = await client.buildOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconsole.log(order.id, order.status);\n"
           }
         ],
         "x-mint": {
-          "content": "<Info>\n  **Available on:** Polymarket, Opinion. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Note>\n  **Before your first call:** deposit USDC on Polygon at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) (one-time setup). For the programmatic flow, see [escrow lifecycle](/guides/escrow-lifecycle).\n</Note>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
+          "content": "<Info>\n  **Available on:** Polymarket, Opinion, Limitless. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Note>\n  **Before your first call:** deposit USDC on Polygon at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) (one-time setup). For the programmatic flow, see [escrow lifecycle](/guides/escrow-lifecycle).\n</Note>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — for Polymarket, Opinion, and Limitless. PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
         }
       }
     },
@@ -206,33 +206,33 @@
           {
             "lang": "python",
             "label": "Polymarket",
-            "source": "# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nbuilt = client.build_order(\n    outcome=market.yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\norder = client.submit_order(built)\nprint(order.id, order.status)\n"
+            "source": "# Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\nbuilt = client.build_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\norder = client.submit_order(built)\nprint(order.id, order.status)\n"
           },
           {
             "lang": "javascript",
             "label": "Polymarket",
-            "source": "// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst [market] = await client.fetchMarkets({ query: \"trump 2028\" });\nconst built = await client.buildOrder({\n  outcome: market.yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconst order = await client.submitOrder(built);\nconsole.log(order.id, order.status);\n"
+            "source": "// Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst [market] = await client.fetchMarkets({ query: \"trump 2028\" });\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst built = await client.buildOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconst order = await client.submitOrder(built);\nconsole.log(order.id, order.status);\n"
           },
           {
             "lang": "python",
             "label": "Opinion",
-            "source": "# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nbuilt = client.build_order(\n    outcome=market.yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\norder = client.submit_order(built)\nprint(order.id, order.status)\n"
+            "source": "# Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\nbuilt = client.build_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\norder = client.submit_order(built)\nprint(order.id, order.status)\n"
           },
           {
             "lang": "javascript",
             "label": "Opinion",
-            "source": "// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst [market] = await client.fetchMarkets({ query: \"trump 2028\" });\nconst built = await client.buildOrder({\n  outcome: market.yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconst order = await client.submitOrder(built);\nconsole.log(order.id, order.status);\n"
+            "source": "// Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst [market] = await client.fetchMarkets({ query: \"trump 2028\" });\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst built = await client.buildOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconst order = await client.submitOrder(built);\nconsole.log(order.id, order.status);\n"
           }
         ],
         "x-mint": {
-          "content": "<Info>\n  **Available on:** Polymarket, Opinion. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Note>\n  **Before your first call:** deposit USDC on Polygon at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) (one-time setup). For the programmatic flow, see [escrow lifecycle](/guides/escrow-lifecycle).\n</Note>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
+          "content": "<Info>\n  **Available on:** Polymarket, Opinion, Limitless. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Note>\n  **Before your first call:** deposit USDC on Polygon at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) (one-time setup). For the programmatic flow, see [escrow lifecycle](/guides/escrow-lifecycle).\n</Note>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — for Polymarket, Opinion, and Limitless. PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
         }
       }
     },
     "/v0/trade/create-order": {
       "post": {
         "summary": "Create Order",
-        "description": "Place a buy or sell order on Polymarket or Opinion. Returns the resulting order with id, fill status, average price, fees, and the on-chain tx hash once it settles.\n\nMost callers pass an outcome straight from `client.fetch_markets()`:\n\n```python\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\norder = client.create_order(outcome=market.yes, side=\"buy\", amount=10, order_type=\"limit\", price=0.55)\n```\n\nNeed to show the order to a user before they sign it (custom approval UX)? Use `buildOrderHosted` + `submitOrderHosted` instead — together they do the same thing.",
+        "description": "Place a buy or sell order on Polymarket, Opinion, or Limitless. Returns the resulting order with id, fill status, average price, fees, and the on-chain tx hash once it settles.\n\nMost callers pass an outcome straight from `client.fetch_markets()`:\n\n```python\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\norder = client.create_order(outcome=market.yes, side=\"buy\", amount=10, order_type=\"limit\", price=0.55)\n```\n\nNeed to show the order to a user before they sign it (custom approval UX)? Use `buildOrderHosted` + `submitOrderHosted` instead — together they do the same thing.",
         "tags": [
           "Trading"
         ],
@@ -313,26 +313,26 @@
           {
             "lang": "python",
             "label": "Polymarket",
-            "source": "# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\norder = client.create_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\nprint(order.id, order.status)\n"
+            "source": "# Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\norder = client.create_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\nprint(order.id, order.status)\n"
           },
           {
             "lang": "javascript",
             "label": "Polymarket",
-            "source": "// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst markets = await client.fetchMarkets({ query: \"trump 2028\" });\nconst market = markets[0];\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst order = await client.createOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconsole.log(order.id, order.status);\n"
+            "source": "// Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst markets = await client.fetchMarkets({ query: \"trump 2028\" });\nconst market = markets[0];\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst order = await client.createOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconsole.log(order.id, order.status);\n"
           },
           {
             "lang": "python",
             "label": "Opinion",
-            "source": "# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\norder = client.create_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\nprint(order.id, order.status)\n"
+            "source": "# Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\n# Pass an outcome straight from client.fetch_markets() — no UUID lookup needed.\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\nmarket = client.fetch_markets({\"query\": \"trump 2028\"})[0]\nyes = next(o for o in market.outcomes if o.label.lower() == \"yes\")\norder = client.create_order(\n    outcome=yes,\n    side=\"buy\",\n    type=\"limit\",\n    amount=10,\n    price=0.55,\n)\nprint(order.id, order.status)\n"
           },
           {
             "lang": "javascript",
             "label": "Opinion",
-            "source": "// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst markets = await client.fetchMarkets({ query: \"trump 2028\" });\nconst market = markets[0];\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst order = await client.createOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconsole.log(order.id, order.status);\n"
+            "source": "// Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\n// Pass an outcome straight from client.fetchMarkets() — no UUID lookup needed.\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst markets = await client.fetchMarkets({ query: \"trump 2028\" });\nconst market = markets[0];\nconst yes = market.outcomes.find((o) => o.label.toLowerCase() === \"yes\")!;\nconst order = await client.createOrder({\n  outcome: yes,\n  side: \"buy\",\n  type: \"limit\",\n  amount: 10,\n  price: 0.55,\n});\nconsole.log(order.id, order.status);\n"
           }
         ],
         "x-mint": {
-          "content": "<Info>\n  **Available on:** Polymarket, Opinion. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Note>\n  **Before your first call:** deposit USDC on Polygon at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) (one-time setup). For the programmatic flow, see [escrow lifecycle](/guides/escrow-lifecycle).\n</Note>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
+          "content": "<Info>\n  **Available on:** Polymarket, Opinion, Limitless. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Note>\n  **Before your first call:** deposit USDC on Polygon at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) (one-time setup). For the programmatic flow, see [escrow lifecycle](/guides/escrow-lifecycle).\n</Note>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — for Polymarket, Opinion, and Limitless. PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
         }
       }
     },
@@ -400,26 +400,26 @@
           {
             "lang": "python",
             "label": "Polymarket",
-            "source": "# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\ncancelled = client.cancel_order(\"order_abc123\")\nprint(cancelled.id, cancelled.status)\n"
+            "source": "# Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\ncancelled = client.cancel_order(\"order_abc123\")\nprint(cancelled.id, cancelled.status)\n"
           },
           {
             "lang": "javascript",
             "label": "Polymarket",
-            "source": "// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst cancelled = await client.cancelOrder(\"order_abc123\");\nconsole.log(cancelled.id, cancelled.status);\n"
+            "source": "// Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst cancelled = await client.cancelOrder(\"order_abc123\");\nconsole.log(cancelled.id, cancelled.status);\n"
           },
           {
             "lang": "python",
             "label": "Opinion",
-            "source": "# All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\ncancelled = client.cancel_order(\"order_abc123\")\nprint(cancelled.id, cancelled.status)\n"
+            "source": "# Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n# Hosted writes need: pmxt_api_key + wallet_address + private_key (signs EIP-712 locally).\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",    # EVM address — its Polygon USDC funds the escrow\n    private_key=\"0x...\",    # any EVM key controlling that address\n)\ncancelled = client.cancel_order(\"order_abc123\")\nprint(cancelled.id, cancelled.status)\n"
           },
           {
             "lang": "javascript",
             "label": "Opinion",
-            "source": "// All hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst cancelled = await client.cancelOrder(\"order_abc123\");\nconsole.log(cancelled.id, cancelled.status);\n"
+            "source": "// Current hosted venues are funded once on Polygon — see /guides/escrow-lifecycle.\n// Hosted writes need: pmxtApiKey + walletAddress + privateKey (signs EIP-712 locally).\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",  // EVM address — its Polygon USDC funds the escrow\n  privateKey: \"0x...\",  // any EVM key controlling that address\n});\n\nconst cancelled = await client.cancelOrder(\"order_abc123\");\nconsole.log(cancelled.id, cancelled.status);\n"
           }
         ],
         "x-mint": {
-          "content": "<Info>\n  **Available on:** Polymarket, Opinion. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Note>\n  **Before your first call:** deposit USDC on Polygon at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) (one-time setup). For the programmatic flow, see [escrow lifecycle](/guides/escrow-lifecycle).\n</Note>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
+          "content": "<Info>\n  **Available on:** Polymarket, Opinion, Limitless. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Note>\n  **Before your first call:** deposit USDC on Polygon at [pmxt.dev/dashboard/wallet](https://pmxt.dev/dashboard/wallet) (one-time setup). For the programmatic flow, see [escrow lifecycle](/guides/escrow-lifecycle).\n</Note>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — for Polymarket, Opinion, and Limitless. PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
         }
       }
     },
@@ -478,33 +478,33 @@
           {
             "lang": "python",
             "label": "Polymarket",
-            "source": "# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",\n)\nbalance = client.fetch_balance()\nprint(balance.amount, balance.currency)\n"
+            "source": "# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).\nimport pmxt\n\nclient = pmxt.Polymarket(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",\n)\nbalances = client.fetch_balance()\nbalance = balances[0]\nprint(balance.available, balance.currency)\n"
           },
           {
             "lang": "javascript",
             "label": "Polymarket",
-            "source": "// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",\n});\n\nconst balance = await client.fetchBalance();\nconsole.log(balance.amount, balance.currency);\n"
+            "source": "// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).\nimport { Polymarket } from \"pmxtjs\";\n\nconst client = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",\n});\n\nconst balances = await client.fetchBalance();\nconsole.log(balances[0].available, balances[0].currency);\n"
           },
           {
             "lang": "python",
             "label": "Opinion",
-            "source": "# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",\n)\nbalance = client.fetch_balance()\nprint(balance.amount, balance.currency)\n"
+            "source": "# Hosted reads need: pmxt_api_key + wallet_address (private_key is only required for writes).\nimport pmxt\n\nclient = pmxt.Opinion(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n    wallet_address=\"0xYourWallet\",\n)\nbalances = client.fetch_balance()\nbalance = balances[0]\nprint(balance.available, balance.currency)\n"
           },
           {
             "lang": "javascript",
             "label": "Opinion",
-            "source": "// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",\n});\n\nconst balance = await client.fetchBalance();\nconsole.log(balance.amount, balance.currency);\n"
+            "source": "// Hosted reads need: pmxtApiKey + walletAddress (privateKey is only required for writes).\nimport { Opinion } from \"pmxtjs\";\n\nconst client = new Opinion({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n  walletAddress: \"0xYourWallet\",\n});\n\nconst balances = await client.fetchBalance();\nconsole.log(balances[0].available, balances[0].currency);\n"
           }
         ],
         "x-mint": {
-          "content": "<Info>\n  **Available on:** Polymarket, Opinion. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
+          "content": "<Info>\n  **Available on:** Polymarket, Opinion, Limitless. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — for Polymarket, Opinion, and Limitless. PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
         }
       }
     },
     "/v0/user/{address}/positions": {
       "get": {
         "summary": "Fetch Positions",
-        "description": "List the open positions held by `address` across Polymarket and Opinion. Each position carries the market, outcome, share count, and average entry price.\n\nMark-to-market fields (`current_price`, `current_value`, `unrealized_pnl`) are reserved for a future release and currently return `null`.",
+        "description": "List the open positions held by `address` across Polymarket, Opinion, and Limitless. Each position carries the market, outcome, share count, and average entry price.\n\nMark-to-market fields (`current_price`, `current_value`, `unrealized_pnl`) are reserved for a future release and currently return `null`.",
         "tags": [
           "Orders & Positions"
         ],
@@ -578,14 +578,14 @@
           }
         ],
         "x-mint": {
-          "content": "<Info>\n  **Available on:** Polymarket, Opinion. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
+          "content": "<Info>\n  **Available on:** Polymarket, Opinion, Limitless. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — for Polymarket, Opinion, and Limitless. PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
         }
       }
     },
     "/v0/orders/open": {
       "get": {
         "summary": "Fetch Open Orders",
-        "description": "List the wallet's resting orders that haven't filled or been cancelled yet. Each entry has the market, outcome, side, size, price, and time-in-force.\n\nFilter by `venue` to scope to Polymarket or Opinion only.",
+        "description": "List the wallet's resting orders that haven't filled or been cancelled yet. Each entry has the market, outcome, side, size, price, and time-in-force.\n\nFilter by `venue` to scope to Polymarket, Opinion, or Limitless.",
         "tags": [
           "Orders & Positions"
         ],
@@ -607,7 +607,8 @@
               "type": "string",
               "enum": [
                 "polymarket",
-                "opinion"
+                "opinion",
+                "limitless"
               ]
             },
             "description": "Restrict to a single hosted venue."
@@ -661,14 +662,14 @@
           }
         ],
         "x-mint": {
-          "content": "<Info>\n  **Available on:** Polymarket, Opinion. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
+          "content": "<Info>\n  **Available on:** Polymarket, Opinion, Limitless. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — for Polymarket, Opinion, and Limitless. PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
         }
       }
     },
     "/v0/user/{address}/trades": {
       "get": {
         "summary": "Fetch My Trades",
-        "description": "List the wallet's historical fills on Polymarket and Opinion. Each trade carries the executed price (net of venue fees), size, and on-chain settlement tx hash.\n\nClosed orders are modelled as trades in hosted mode — use this endpoint instead of `fetchClosedOrders` / `fetchAllOrders` (which raise `NotSupported`).",
+        "description": "List the wallet's historical fills on Polymarket, Opinion, and Limitless. Each trade carries the executed price (net of venue fees), size, and on-chain settlement tx hash.\n\nClosed orders are modelled as trades in hosted mode — use this endpoint instead of `fetchClosedOrders` / `fetchAllOrders` (which raise `NotSupported`).",
         "tags": [
           "Orders & Positions"
         ],
@@ -732,7 +733,7 @@
           }
         ],
         "x-mint": {
-          "content": "<Info>\n  **Available on:** Polymarket, Opinion. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
+          "content": "<Info>\n  **Available on:** Polymarket, Opinion, Limitless. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — for Polymarket, Opinion, and Limitless. PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
         }
       }
     },
@@ -810,7 +811,7 @@
           }
         ],
         "x-mint": {
-          "content": "<Info>\n  **Available on:** Polymarket, Opinion. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — the single funding location for every hosted venue (including Opinion, which PMXT settles cross-chain for you). PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
+          "content": "<Info>\n  **Available on:** Polymarket, Opinion, Limitless. Other venues raise `NotSupported` in hosted mode — for those, run a [local PMXT service](/guides/self-hosted).\n</Info>\n\n<Tip>\n  Use any EVM private key. Your USDC sits in a non-custodial PreFundedEscrow on Polygon — for Polymarket, Opinion, and Limitless. PMXT cannot move funds without your EIP-712 signature.\n</Tip>"
         }
       }
     }
@@ -1146,7 +1147,7 @@
               "exchange": {
                 "type": "string",
                 "nullable": true,
-                "description": "Source venue that produced the error (e.g. `polymarket`, `opinion`), when the failure originated upstream of PMXT. `null` for PMXT-side errors."
+                "description": "Source venue that produced the error (e.g. `polymarket`, `opinion`, `limitless`), when the failure originated upstream of PMXT. `null` for PMXT-side errors."
               },
               "detail": {
                 "type": "object",
@@ -1171,13 +1172,14 @@
             "type": "string",
             "enum": [
               "polymarket",
-              "opinion"
+              "opinion",
+              "limitless"
             ],
             "description": "Venue the outcome trades on. Inferred automatically from your client class in the SDKs."
           },
           "venue_outcome_id": {
             "type": "string",
-            "description": "The outcome's identifier (e.g. Polymarket `tokenId`, Opinion outcome hash). Returned by `client.fetch_markets()`."
+            "description": "The outcome's identifier (e.g. Polymarket `tokenId`, Opinion outcome hash, or Limitless token address). Returned by `client.fetch_markets()`."
           },
           "side": {
             "type": "string",
@@ -1308,13 +1310,14 @@
                 "type": "string",
                 "enum": [
                   "polymarket",
-                  "opinion"
+                  "opinion",
+                  "limitless"
                 ],
                 "description": "Venue the order will execute on."
               },
               "token_id": {
                 "type": "string",
-                "description": "Venue-native outcome identifier (Polymarket ERC-1155 `tokenId`, or Opinion outcome hash)."
+                "description": "Venue-native outcome identifier (Polymarket ERC-1155 `tokenId`, Opinion outcome hash, or Limitless token address)."
               },
               "neg_risk": {
                 "type": "boolean",
@@ -1327,7 +1330,7 @@
               "opinion_market_id": {
                 "type": "integer",
                 "nullable": true,
-                "description": "Opinion-native integer market id. `null` for Polymarket orders."
+                "description": "Opinion-native integer market id. `null` for Polymarket and Limitless orders."
               }
             }
           }
@@ -1536,7 +1539,8 @@
             "type": "string",
             "enum": [
               "polymarket",
-              "opinion"
+              "opinion",
+              "limitless"
             ],
             "nullable": true,
             "description": "Source venue that produced the fill."
@@ -1555,13 +1559,14 @@
             "type": "string",
             "enum": [
               "polymarket",
-              "opinion"
+              "opinion",
+              "limitless"
             ],
             "description": "Venue the position is held on. Defaults to `polymarket` for tokens whose source venue could not be inferred."
           },
           "shares": {
             "type": "number",
-            "description": "Outcome shares held -- the ERC-1155 (or Opinion-native) token balance held by the PMXT PreFundedEscrow on behalf of the wallet."
+            "description": "Outcome shares held -- the ERC-1155, Opinion-native, or Limitless token balance held by the PMXT PreFundedEscrow on behalf of the wallet."
           },
           "current_price": {
             "type": "number",
@@ -1605,13 +1610,14 @@
           },
           "amount": {
             "type": "number",
-            "description": "Spendable USDC dollars held inside the PMXT PreFundedEscrow on Polygon (NOT the venue-native CLOB-proxy balance). Backs trading across every hosted venue, including Opinion."
+            "description": "Spendable USDC dollars held inside the PMXT PreFundedEscrow on Polygon (NOT the venue-native CLOB-proxy balance). Backs trading on Polymarket, Opinion, and Limitless."
           },
           "venue": {
             "type": "string",
             "enum": [
               "polymarket",
-              "opinion"
+              "opinion",
+              "limitless"
             ],
             "nullable": true,
             "description": "Set when the hosted backend returns a per-venue breakdown; null when balance is venue-agnostic."

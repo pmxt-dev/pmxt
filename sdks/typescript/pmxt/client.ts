@@ -944,6 +944,19 @@ export abstract class Exchange {
 
     // BEGIN GENERATED METHODS
 
+import {
+    // Router types
+    FetchMarketMatchesParams,
+    MatchResult,
+    FetchEventMatchesParams,
+    EventMatchResult,
+    CompareMarketPricesParams,
+    PriceComparison,
+    FetchMatchedPricesParams,
+    FetchArbitrageParams,
+    ArbitrageOpportunity,
+} from './models.js';
+
     async loadMarkets(reload: boolean = false): Promise<Record<string, UnifiedMarket>> {
         await this.initPromise;
         try {

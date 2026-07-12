@@ -173,6 +173,10 @@ function generateClass(exchange) {
     constructorParams.push('base_url: Optional[str] = None');
     constructorParams.push('auto_start_server: Optional[bool] = None');
     constructorParams.push('pmxt_api_key: Optional[str] = None');
+    constructorParams.push('wallet_address: Optional[str] = None');
+    constructorParams.push('signer: Optional[object] = None');
+    superArgs.push('wallet_address=wallet_address');
+    superArgs.push('signer=signer');
     superArgs.push('base_url=base_url');
     superArgs.push('auto_start_server=auto_start_server');
     superArgs.push('pmxt_api_key=pmxt_api_key');

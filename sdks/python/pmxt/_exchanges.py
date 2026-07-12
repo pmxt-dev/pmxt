@@ -21,6 +21,8 @@ class Polymarket(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Polymarket client.
@@ -42,6 +44,8 @@ class Polymarket(Exchange):
             private_key=private_key,
             proxy_address=proxy_address,
             signature_type=signature_type,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -76,6 +80,8 @@ class Limitless(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Limitless client.
@@ -93,6 +99,8 @@ class Limitless(Exchange):
             exchange_name="limitless",
             api_key=api_key,
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -120,6 +128,8 @@ class Kalshi(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Kalshi client.
@@ -135,6 +145,8 @@ class Kalshi(Exchange):
             exchange_name="kalshi",
             api_key=api_key,
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -151,6 +163,8 @@ class KalshiDemo(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize KalshiDemo client.
@@ -166,6 +180,8 @@ class KalshiDemo(Exchange):
             exchange_name="kalshi-demo",
             api_key=api_key,
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -184,6 +200,8 @@ class Probable(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Probable client.
@@ -201,6 +219,8 @@ class Probable(Exchange):
             exchange_name="probable",
             api_key=api_key,
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -227,6 +247,8 @@ class Baozi(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Baozi client.
@@ -240,6 +262,8 @@ class Baozi(Exchange):
         super().__init__(
             exchange_name="baozi",
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -256,6 +280,8 @@ class Myriad(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Myriad client.
@@ -271,6 +297,8 @@ class Myriad(Exchange):
             exchange_name="myriad",
             api_key=api_key,
             private_key=wallet_address,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -288,6 +316,8 @@ class Opinion(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Opinion client.
@@ -305,6 +335,8 @@ class Opinion(Exchange):
             api_key=api_key,
             private_key=private_key,
             proxy_address=proxy_address,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -320,6 +352,8 @@ class Metaculus(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Metaculus client.
@@ -333,6 +367,8 @@ class Metaculus(Exchange):
         super().__init__(
             exchange_name="metaculus",
             api_token=api_token,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -349,6 +385,8 @@ class Smarkets(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Smarkets client.
@@ -364,6 +402,8 @@ class Smarkets(Exchange):
             exchange_name="smarkets",
             api_key=api_key,
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -380,6 +420,8 @@ class PolymarketUS(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize PolymarketUS client.
@@ -395,6 +437,8 @@ class PolymarketUS(Exchange):
             exchange_name="polymarket_us",
             api_key=api_key,
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -411,6 +455,8 @@ class Hyperliquid(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Hyperliquid client.
@@ -426,6 +472,8 @@ class Hyperliquid(Exchange):
             exchange_name="hyperliquid",
             api_key=api_key,
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -442,6 +490,8 @@ class GeminiTitan(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize GeminiTitan client.
@@ -456,6 +506,8 @@ class GeminiTitan(Exchange):
         super().__init__(
             exchange_name="gemini-titan",
             api_key=api_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -478,6 +530,8 @@ class SuiBets(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize SuiBets client.
@@ -489,6 +543,8 @@ class SuiBets(Exchange):
         """
         super().__init__(
             exchange_name="suibets",
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -504,6 +560,8 @@ class Rain(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Rain client.
@@ -517,6 +575,8 @@ class Rain(Exchange):
         super().__init__(
             exchange_name="rain",
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -532,6 +592,8 @@ class Hunch(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Hunch client.
@@ -545,6 +607,8 @@ class Hunch(Exchange):
         super().__init__(
             exchange_name="hunch",
             private_key=private_key,
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -559,6 +623,8 @@ class Mock(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Mock client.
@@ -570,6 +636,8 @@ class Mock(Exchange):
         """
         super().__init__(
             exchange_name="mock",
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
@@ -584,6 +652,8 @@ class Router(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        signer: Optional[object] = None,
     ) -> None:
         """
         Initialize Router client.
@@ -595,6 +665,8 @@ class Router(Exchange):
         """
         super().__init__(
             exchange_name="router",
+            wallet_address=wallet_address,
+            signer=signer,
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,

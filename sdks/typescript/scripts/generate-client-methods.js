@@ -48,6 +48,19 @@ function extractExistingTsMethod(generatedRegion, methodName) {
     return match ? match[0].replace(/\n+$/, '') : null;
 }
 
+const GENERATED_IMPORTS = `import {
+    // Router types
+    FetchMarketMatchesParams,
+    MatchResult,
+    FetchEventMatchesParams,
+    EventMatchResult,
+    CompareMarketPricesParams,
+    PriceComparison,
+    FetchMatchedPricesParams,
+    FetchArbitrageParams,
+    ArbitrageOpportunity,
+} from './models.js';`;
+
 // Methods kept hand-maintained in client.ts (special logic, streaming, local-only)
 const SKIP_GENERATE = new Set([
     'callApi',
@@ -530,7 +543,8 @@ function main() {
         throw new Error(`Generation markers not found in ${CLIENT_PATH}.\nAdd:\n  ${MARKER_BEGIN}\n  ${MARKER_END}`);
     }
 
-    const before = client.slice(0, beginIdx + MARKER_BEGIN.length);
+    
+    const before = client.slice(0, beginIdx + MARKER_BEGIN.length) + '\n\n' + GENERATED_IMPORTS;
     const existingRegion = client.slice(beginIdx + MARKER_BEGIN.length, endIdx);
     const after = client.slice(endIdx);
 

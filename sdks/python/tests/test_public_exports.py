@@ -25,7 +25,7 @@ def test_websocket_return_types_are_public_exports():
                 if isinstance(item, ast.Constant) and isinstance(item.value, str)
             )
 
-    expected = {"FirehoseEvent", "SubscribedAddressSnapshot", "ExchangeOptions", "PolymarketOptions", "RouterOptions", "FeedClientOptions", "SeriesFetchParams", "TradesParams", "FetchOrderBookParams", "MatchedClusterSort", "FetchMatchedMarketClustersParams", "FetchMatchedEventClustersParams"}
+    expected = {"FirehoseEvent", "SubscribedAddressSnapshot", "ExchangeOptions", "PolymarketOptions", "SuiBetsOptions", "RouterOptions", "FeedClientOptions", "SeriesFetchParams", "TradesParams", "FetchOrderBookParams", "MatchedClusterSort", "FetchMatchedMarketClustersParams", "FetchMatchedEventClustersParams"}
     assert expected <= imported_models
     assert expected <= public_exports
 

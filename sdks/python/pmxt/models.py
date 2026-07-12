@@ -668,6 +668,11 @@ class PolymarketOptions(ExchangeOptions, total=False):
     signature_type: Union[Literal["eoa", "poly-proxy", "gnosis-safe"], int]
 
 
+class SuiBetsOptions(ExchangeOptions, total=False):
+    """Constructor options for SuiBets clients."""
+    wallet_address: str
+
+
 class RouterOptions(TypedDict, total=False):
     """Constructor options for Router clients."""
     pmxt_api_key: str

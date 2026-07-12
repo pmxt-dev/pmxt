@@ -75,6 +75,7 @@ from .models import (
     OrderHistoryParams,
     ExchangeOptions,
     PolymarketOptions,
+    SuiBetsOptions,
     RouterOptions,
     FeedClientOptions,
     MatchResult,
@@ -194,6 +195,7 @@ __all__ = [
     "FeedClient",
     "ExchangeOptions",
     "PolymarketOptions",
+    "SuiBetsOptions",
     "RouterOptions",
     "FeedClientOptions",
     # Environment

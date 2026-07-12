@@ -500,6 +500,7 @@ class SuiBets(Exchange):
         base_url: Optional[str] = None,
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
     ) -> None:
         """
         Initialize SuiBets client.
@@ -508,13 +509,21 @@ class SuiBets(Exchange):
             base_url: Base URL of the PMXT sidecar server
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
+            wallet_address: Sui wallet address used for hosted reads
         """
         super().__init__(
             exchange_name="suibets",
             base_url=base_url,
             auto_start_server=auto_start_server,
             pmxt_api_key=pmxt_api_key,
+            wallet_address=wallet_address,
         )
+
+    def _get_credentials_dict(self) -> Optional[Dict[str, Any]]:
+        creds = super()._get_credentials_dict() or {}
+        if self.wallet_address:
+            creds["walletAddress"] = self.wallet_address
+        return creds if creds else None
 
 
 class Rain(Exchange):

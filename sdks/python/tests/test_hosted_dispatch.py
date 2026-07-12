@@ -22,7 +22,7 @@ import pytest
 
 from pmxt._hosted_routing import HOSTED_TRADING_BASE_URL
 from pmxt._hosted_errors import MissingWalletAddress, NotSupported
-from pmxt._exchanges import Hunch, Limitless, Myriad, Polymarket
+from pmxt._exchanges import Hunch, Limitless, Myriad, Polymarket, SuiBets
 from pmxt.errors import InvalidSignature
 import pmxt.client as client_module
 from pmxt.models import BuiltOrder
@@ -166,6 +166,17 @@ def test_hunch_constructor_accepts_wallet_address_for_hosted_mode():
 
     assert api.exchange_name == "hunch"
     assert api.wallet_address == WALLET_ADDRESS
+
+
+def test_suibets_constructor_accepts_wallet_address_for_hosted_mode() -> None:
+    api = SuiBets(
+        pmxt_api_key="hosted-key",
+        wallet_address=WALLET_ADDRESS,
+        auto_start_server=False,
+    )
+
+    assert api.wallet_address == WALLET_ADDRESS
+    assert api._get_credentials_dict() == {"walletAddress": WALLET_ADDRESS}
 
 
 # --------------------------------------------------------------------------- #

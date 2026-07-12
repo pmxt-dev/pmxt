@@ -1567,7 +1567,7 @@ export abstract class Exchange {
         }
     }
 
-    async fetchMatchedMarkets(params?: FetchMatchedMarketClustersParams): Promise<any[]> {
+    async fetchMatchedMarkets(params?: any): Promise<any[]> {
         await this.initPromise;
         try {
             const args: any[] = [];

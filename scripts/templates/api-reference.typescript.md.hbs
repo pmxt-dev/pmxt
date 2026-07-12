@@ -1,7 +1,6 @@
 # pmxtjs - API Reference
 
-A unified TypeScript SDK for interacting with multiple prediction market exchanges (Polymarket, Kalshi, Limitless)
-identically.
+A unified TypeScript SDK for supported prediction markets, with local sidecar access to PMXT exchange implementations and hosted services where configured.
 
 ## Installation
 
@@ -118,7 +117,15 @@ for (const line of pmxt.server.logs(100)) {
 **Signature:**
 
 ```typescript
+{{#if this.signature}}
+{{this.signature}}
+{{else}}
+{{#if this.isSync}}
+{{this.name}}({{tsParams this.params}}): {{tsTypeClean this.returns.type}}
+{{else}}
 async {{this.name}}({{tsParams this.params}}): Promise<{{tsTypeClean this.returns.type}}>
+{{/if}}
+{{/if}}
 ```
 
 **Parameters:**
@@ -136,7 +143,7 @@ async {{this.name}}({{tsParams this.params}}): Promise<{{tsTypeClean this.return
 - None
 {{/if}}
 
-**Returns:** Promise<{{tsType this.returns.type}}> - {{this.returns.description}}
+**Returns:** {{#if this.isSync}}{{tsType this.returns.type}}{{else}}Promise<{{tsType this.returns.type}}>{{/if}} - {{this.returns.description}}
 
 **Example:**
 
@@ -191,6 +198,18 @@ interface {{this.name}} {
 {{this.name}}{{tsOptional this.required}}: {{tsTypeClean this.type}}; // {{this.description}}
 {{/each}}
 }
+```
+
+---
+{{/each}}
+
+{{#each extraTypes}}
+### `{{this.name}}`
+
+{{this.description}}
+
+```typescript
+{{this.definition}}
 ```
 
 ---

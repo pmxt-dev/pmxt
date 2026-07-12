@@ -1,6 +1,6 @@
 # PMXT Python SDK - API Reference
 
-A unified Python interface for interacting with multiple prediction market exchanges (Polymarket, Kalshi, Limitless) identically.
+A unified Python SDK for supported prediction markets, with local sidecar access to PMXT exchange implementations and hosted services where configured.
 
 ## Installation
 
@@ -115,7 +115,11 @@ for line in pmxt.server.logs(100):
 **Signature:**
 
 ```python
+{{#if this.signature}}
+{{this.signature}}
+{{else}}
 def {{pythonName this.name}}({{pythonParams this.params}}) -> {{pythonTypeClean this.returns.type}}:
+{{/if}}
 ```
 
 **Parameters:**

@@ -7,6 +7,36 @@ function read(relativePath: string): string {
     return fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
 }
 
+const orderBookStreamingVenues = [
+    'polymarket',
+    'kalshi',
+    'limitless',
+    'opinion',
+    'polymarket_us',
+    'probable',
+    'baozi',
+    'myriad',
+    'gemini-titan',
+    'rain',
+    'hunch',
+];
+
+const tradeStreamingVenues = [
+    'polymarket',
+    'kalshi',
+    'limitless',
+    'opinion',
+    'polymarket_us',
+    'myriad',
+    'gemini-titan',
+    'rain',
+    'hunch',
+];
+
+function inlineVenueList(venues: string[]): string {
+    return venues.map((venue) => `\`${venue}\``).join(', ');
+}
+
 describe('watchOrderBook API consistency', () => {
     it('keeps the core signature CCXT-compatible with limit and params', () => {
         const baseExchange = read('core/src/BaseExchange.ts');
@@ -48,5 +78,28 @@ describe('watchOrderBook API consistency', () => {
                 '| `params` | object | No | Optional exchange-specific parameters |',
             );
         }
+    });
+
+    it('documents the implemented streaming venue scope', () => {
+        const watchOrderBookDocs = read('docs/api-reference/watch-order-book.mdx');
+        const watchOrderBooksDocs = read('docs/api-reference/watch-order-books.mdx');
+        const watchTradesDocs = read('docs/api-reference/watch-trades.mdx');
+        const watchAllOrderBooksDocs = read('docs/api-reference/watch-all-order-books.mdx');
+        const llms = read('docs/llms-full.txt');
+
+        const orderBookVenueList = inlineVenueList(orderBookStreamingVenues);
+        const tradeVenueList = inlineVenueList(tradeStreamingVenues);
+
+        expect(watchOrderBookDocs).toContain(`Supported venues: ${orderBookVenueList}.`);
+        expect(watchOrderBooksDocs).toContain(`Supported venues: ${orderBookVenueList}.`);
+        expect(watchTradesDocs).toContain(`Supported venues: ${tradeVenueList}.`);
+        expect(watchAllOrderBooksDocs).toContain(
+            'Available venues: `polymarket`, `kalshi`, `limitless`, `opinion`.',
+        );
+        expect(llms).toContain(`Supported venues: ${orderBookVenueList}.`);
+        expect(llms).toContain(`Supported venues: ${tradeVenueList}.`);
+        expect(llms).toContain(
+            'Available venues: `polymarket`, `kalshi`, `limitless`, `opinion`.',
+        );
     });
 });

@@ -22,14 +22,19 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
     private readonly ctx: FetcherContext;
     private readonly baseUrl: string;
     private readonly auth: GeminiAuth | undefined;
+    private readonly httpClient: any; // Add httpClient
 
     // Index mapping instrumentSymbol -> eventTicker, built during fetchRawEvents
     private symbolToEventTicker: Map<string, string> = new Map();
+
+    // Track terms acceptance status to avoid repeated checks
+    private termsAccepted: boolean = false;
 
     constructor(ctx: FetcherContext, baseUrl: string, auth?: GeminiAuth) {
         this.ctx = ctx;
         this.baseUrl = baseUrl;
         this.auth = auth;
+        this.httpClient = ctx.http; // Initialize httpClient from ctx
     }
 
     // -- Public data -----------------------------------------------------------
@@ -132,9 +137,75 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
         return this.symbolToEventTicker.get(instrumentSymbol);
     }
 
+    // -- Terms Acceptance Flow -----------------------------------------------
+
+    /**
+     * Get current terms version and content
+     */
+    async getTerms(): Promise<{ version: string; content: string }> {
+        return this.getAuthenticated('/v1/prediction-markets/terms');
+    }
+
+    /**
+     * Check if API key has accepted the latest terms
+     */
+    async getTermsStatus(): Promise<{
+        hasAcceptedLatest: boolean;
+        acceptedVersion?: string;
+        latestVersion?: string;
+    }> {
+        return this.getAuthenticated('/v1/prediction-markets/terms/status');
+    }
+
+    /**
+     * Accept the latest terms version
+     */
+    async acceptTerms(): Promise<{ accepted: boolean; version: string }> {
+        const result = await this.postAuthenticated<{ accepted: boolean; version: string }>(
+            '/v1/prediction-markets/terms/accept',
+            {},
+        );
+        this.termsAccepted = true;
+        return result;
+    }
+
+    /**
+     * Ensure terms are accepted before placing orders.
+     * This is called automatically before order submission.
+     */
+    async ensureTermsAccepted(): Promise<void> {
+        // Skip if already accepted in this session
+        if (this.termsAccepted) {
+            return;
+        }
+
+        try {
+            const status = await this.getTermsStatus();
+            if (!status.hasAcceptedLatest) {
+                // Terms not accepted - accept them
+                await this.acceptTerms();
+                // Log acceptance (using logger instead of console if available)
+                
+            } else {
+                this.termsAccepted = true;
+            }
+        } catch (error: any) {
+            // If terms check fails with a specific error, re-throw
+            if (error.message?.includes('TERMS') || error.message?.includes('terms')) {
+                throw geminiErrorMapper.mapError(error);
+            }
+            // Otherwise log warning but don't block order submission
+            // The order will fail with a clear error if terms are required
+            
+        }
+    }
+
     // -- Authenticated endpoints -----------------------------------------------
 
     async submitRawOrder(payload: Record<string, unknown>): Promise<GeminiRawOrder> {
+        // ✅ Ensure terms are accepted before placing order
+        await this.ensureTermsAccepted();
+
         return this.postAuthenticated<GeminiRawOrder>(
             '/v1/prediction-markets/order',
             payload,
@@ -218,7 +289,30 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
         }
     }
 
-    private async postAuthenticated<T>(
+    /**
+     * Authenticated GET request
+     */
+    private async getAuthenticated<T = any>(path: string): Promise<T> {
+        if (!this.auth) {
+            throw new Error('Authentication required. Provide apiKey and apiSecret.');
+        }
+
+        const url = `${this.baseUrl}${path}`;
+        const payload: Record<string, unknown> = {
+            request: path,
+            nonce: this.auth.nonce(),
+        };
+        const headers = this.auth.buildHeaders(payload);
+        
+        try {
+            const response = await this.httpClient.get(url, { headers });
+            return response.data as T;
+        } catch (error: any) {
+            throw geminiErrorMapper.mapError(error);
+        }
+    }
+
+    private async postAuthenticated<T = any>(
         path: string,
         extraFields: Record<string, unknown>,
     ): Promise<T> {

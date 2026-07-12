@@ -141,7 +141,9 @@ export type HostedRoute =
     | "opinion_sell_bsc_pull"
     | "cancel_polymarket"
     | "cancel_opinion_polygon"
-    | "cancel_opinion_bsc_pull";
+    | "cancel_opinion_bsc_pull"
+    | "cancel_limitless_polygon"
+    | "cancel_limitless_base_pull";
 
 const SCHEMAS: Readonly<Record<HostedRoute, TypedDataSchema>> = {
     polymarket_buy: {
@@ -217,6 +219,20 @@ const SCHEMAS: Readonly<Record<HostedRoute, TypedDataSchema>> = {
     cancel_opinion_bsc_pull: {
         primaryType: "CancelPull",
         domain: VENUE_DOMAIN,
+        fields: CANCEL_PULL_FIELDS,
+        messageKeys: messageKeysFromFields(CANCEL_PULL_FIELDS),
+        walletField: "user",
+    },
+    cancel_limitless_polygon: {
+        primaryType: "CancelOrder",
+        domain: PREFUNDED_DOMAIN,
+        fields: CANCEL_ORDER_FIELDS,
+        messageKeys: messageKeysFromFields(CANCEL_ORDER_FIELDS),
+        walletField: "user",
+    },
+    cancel_limitless_base_pull: {
+        primaryType: "CancelPull",
+        domain: LIMITLESS_VENUE_DOMAIN,
         fields: CANCEL_PULL_FIELDS,
         messageKeys: messageKeysFromFields(CANCEL_PULL_FIELDS),
         walletField: "user",

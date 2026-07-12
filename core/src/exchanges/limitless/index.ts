@@ -132,7 +132,11 @@ export class LimitlessExchange extends PredictionMarketExchange {
             getHeaders: () => this.getHeaders(),
         };
 
-        const limitlessBaseUrl = this.auth?.host || credentials?.baseUrl || DEFAULT_LIMITLESS_API_URL;
+        const limitlessBaseUrl =
+            this.auth?.host ||
+            credentials?.baseUrl ||
+            process.env.LIMITLESS_BASE_URL ||
+            DEFAULT_LIMITLESS_API_URL;
         this.fetcher = new LimitlessFetcher(ctx, this.http, this.auth?.getApiKey(), limitlessBaseUrl);
         this.normalizer = new LimitlessNormalizer();
     }

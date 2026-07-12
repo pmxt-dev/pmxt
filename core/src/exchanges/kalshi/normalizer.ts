@@ -201,24 +201,47 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
             const ask = c.yes_ask || {};
             const bid = c.yes_bid || {};
 
+            /**
+             * Kalshi's new candlestick API returns prices as dollar-denominated
+             * strings under `*_dollars` fields (e.g. `close_dollars: "0.9700"`).
+             * The legacy API returned integer cents under bare fields
+             * (e.g. `close: 97`). Prefer dollars when present; fall back to
+             * cents (converted via {@link fromKalshiCents}).
+             */
             const getVal = (field: OhlcField): number => {
+                const dollarsKey = `${field}_dollars` as const;
+                const pd = p[dollarsKey];
+                const ad = ask[dollarsKey];
+                const bd = bid[dollarsKey];
+                if (pd != null) return Number(pd);
+                if (ad != null && bd != null) {
+                    return (Number(ad) + Number(bd)) / 2;
+                }
+
                 const pf = p[field];
                 const af = ask[field];
                 const bf = bid[field];
-                if (pf != null) return pf;
+                if (pf != null) return fromKalshiCents(pf);
                 if (af != null && bf != null) {
-                    return (af + bf) / 2;
+                    return (fromKalshiCents(af) + fromKalshiCents(bf)) / 2;
                 }
-                return p.previous || 0;
+
+                if (p.previous_dollars != null) return Number(p.previous_dollars);
+                if (p.previous != null) return fromKalshiCents(p.previous);
+                return 0;
             };
+
+            const volume = c.volume_fp != null
+                ? parseFloat(c.volume_fp) || 0
+                : (c.volume || 0);
 
             return {
                 timestamp: c.end_period_ts * 1000,
-                open: fromKalshiCents(getVal('open')),
-                high: fromKalshiCents(getVal('high')),
-                low: fromKalshiCents(getVal('low')),
-                close: fromKalshiCents(getVal('close')),
-                volume: c.volume || 0,
+                open: getVal('open'),
+                high: getVal('high'),
+                low: getVal('low'),
+                close: getVal('close'),
+                volume,
             };
         });
 
@@ -280,7 +303,8 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
             timestamp: new Date(raw.created_time).getTime(),
             price,
             amount,
-            side: raw.taker_side === 'yes' ? 'buy' : 'sell',
+            // Support legacy taker_side, fallback to v2 taker_outcome_side
+            side: (raw.taker_side || raw.taker_outcome_side) === 'yes' ? 'buy' : 'sell',
         };
     }
 
@@ -300,7 +324,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
             timestamp: new Date(raw.created_time).getTime(),
             price,
             amount,
-            side: raw.side === 'yes' ? 'buy' as const : 'sell' as const,
+            side: (raw.side || raw.outcome_side) === 'yes' ? 'buy' as const : 'sell' as const,
             orderId: raw.order_id,
         };
     }

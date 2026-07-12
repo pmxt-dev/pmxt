@@ -39,7 +39,7 @@ function isServerRunning() {
         // Check if process exists
         try {
             process.kill(pid, 0); // Signal 0 checks existence without killing
-            return { running: true, port };
+            return { running: true, pid, port };
         } catch (err) {
             // Process doesn't exist, remove stale lock file
             fs.unlinkSync(LOCK_FILE);
@@ -48,6 +48,26 @@ function isServerRunning() {
     } catch (err) {
         return false;
     }
+}
+
+/**
+ * Remove the lock we just proved unhealthy, without deleting a newer sidecar's
+ * lock if another launcher won the race and replaced it first.
+ */
+function removeLockFileIfMatches(staleLock) {
+    try {
+        if (!fs.existsSync(LOCK_FILE)) {
+            return false;
+        }
+        const currentLock = JSON.parse(fs.readFileSync(LOCK_FILE, 'utf-8'));
+        if (currentLock.pid === staleLock.pid && currentLock.port === staleLock.port) {
+            fs.unlinkSync(LOCK_FILE);
+            return true;
+        }
+    } catch (err) {
+        return false;
+    }
+    return false;
 }
 
 /**
@@ -196,6 +216,7 @@ async function main() {
             } catch (err) {
                 // Server process exists but not responding, try to start fresh
                 console.error('Server process exists but not responding, starting fresh...');
+                removeLockFileIfMatches(serverStatus);
             }
         }
 

@@ -67,7 +67,8 @@ export class MetaculusExchange extends PredictionMarketExchange {
         // Rate-limit conservatively; authenticated users get higher Metaculus quotas
         this.rateLimit = 500;
 
-        this.baseUrl = credentials?.baseUrl || DEFAULT_BASE_URL;
+        this.baseUrl =
+            credentials?.baseUrl || process.env.METACULUS_BASE_URL || DEFAULT_BASE_URL;
         const descriptor = parseOpenApiSpec(metaculusApiSpec, this.baseUrl);
         this.defineImplicitApi(descriptor);
     }

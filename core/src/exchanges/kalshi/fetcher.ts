@@ -87,10 +87,49 @@ export interface KalshiRawEventPage {
 
 export interface KalshiRawCandlestick {
     end_period_ts: number;
+    /** @deprecated Old API field — new API uses `volume_fp` (string) */
     volume?: number;
-    price?: { open?: number; high?: number; low?: number; close?: number; previous?: number };
-    yes_ask?: { open?: number; high?: number; low?: number; close?: number };
-    yes_bid?: { open?: number; high?: number; low?: number; close?: number };
+    /** New API field: cumulative volume as a fixed-point string */
+    volume_fp?: string;
+    /**
+     * Kalshi candlestick prices come nested under `price`. The new API returns
+     * dollar-denominated string fields (e.g. `close_dollars: "0.9700"`); older
+     * responses used integer cent fields (e.g. `close: 97`). Both shapes are
+     * supported by the normalizer.
+     */
+    price?: {
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+        previous?: number;
+        open_dollars?: string;
+        high_dollars?: string;
+        low_dollars?: string;
+        close_dollars?: string;
+        mean_dollars?: string;
+        previous_dollars?: string;
+    };
+    yes_ask?: {
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+        open_dollars?: string;
+        high_dollars?: string;
+        low_dollars?: string;
+        close_dollars?: string;
+    };
+    yes_bid?: {
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+        open_dollars?: string;
+        high_dollars?: string;
+        low_dollars?: string;
+        close_dollars?: string;
+    };
 
     [key: string]: unknown;
 }
@@ -108,7 +147,6 @@ export interface KalshiRawOrderBook {
 export interface KalshiRawOrderBooks {
     orderbooks: KalshiRawOrderBook[];
 }
-
 export interface KalshiRawTrade {
     trade_id: string;
     created_time: string;
@@ -120,7 +158,13 @@ export interface KalshiRawTrade {
     count?: number;
     /** New API field: count as a string e.g. "424.00" */
     count_fp?: string;
-    taker_side: string;
+
+    /** @deprecated removal deadline May 14, 2026 */
+    taker_side?: string;
+    /** New v2 directional fields */
+    taker_outcome_side?: string;
+    taker_book_side?: string;
+    is_block_trade?: boolean;
 
     [key: string]: unknown;
 }
@@ -134,8 +178,15 @@ export interface KalshiRawFill {
     /** @deprecated Old API field */
     count?: number;
     count_fp?: string;
-    side: string;
     order_id: string;
+
+    /** @deprecated removal deadline May 14, 2026 */
+    side?: string;
+    /** @deprecated removal deadline May 14, 2026 */
+    action?: string;
+    /** New v2 directional fields */
+    outcome_side?: string;
+    book_side?: string;
 
     [key: string]: unknown;
 }
@@ -233,6 +284,20 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
             }
 
             const status = (params?.status as string | undefined) || 'active';
+            const hasBoundedDefaultRead =
+                status === 'active' &&
+                (params.limit !== undefined || params.cursor !== undefined) &&
+                !params.query &&
+                params.offset === undefined &&
+                params.sort === undefined &&
+                params.searchIn === undefined &&
+                params.category === undefined &&
+                params.tags === undefined &&
+                params.filter === undefined;
+            if (hasBoundedDefaultRead) {
+                const page = await this.fetchRawEventPage(params);
+                return page.events;
+            }
 
             if (status === 'all') {
                 const openEvents = await this.fetchAllWithStatus('open');
@@ -405,6 +470,16 @@ export class KalshiFetcher implements IExchangeFetcher<KalshiRawEvent, KalshiRaw
         try {
             const data = await this.ctx.callApi('GetSeriesList');
             return (data.series || []) as KalshiRawSeries[];
+        } catch (e: any) {
+            throw kalshiErrorMapper.mapError(e);
+        }
+    }
+
+    async fetchRawEventMetadata(eventTicker: string): Promise<Record<string, unknown>> {
+        try {
+            return this.ctx.callApi('GetEventMetadata', {
+                event_ticker: eventTicker.toUpperCase(),
+            });
         } catch (e: any) {
             throw kalshiErrorMapper.mapError(e);
         }

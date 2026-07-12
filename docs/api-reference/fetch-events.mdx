@@ -4,7 +4,7 @@ openapi: GET /api/{exchange}/fetchEvents
 ---
 
 <Info>
-**Faster with an API key** — With a PMXT API key this endpoint is served from an indexed catalog (~10 ms) instead of proxying to the venue (~500 ms). No code changes required — same request, same response, just faster. [Learn more](/concepts/catalog-vs-live).
+**Faster with an API key** — With a PMXT API key this endpoint is served from an indexed catalog (~10 ms) instead of proxying to the venue (~500 ms). No code changes required — same request, same response, just faster. [Learn more](/concepts/unified-schema).
 </Info>
 
 ## Use cases
@@ -92,9 +92,9 @@ curl "https://api.pmxt.dev/api/polymarket/fetchEvents?tags=Geopolitics&tags=Midd
 ```
 </CodeGroup>
 
-### Sort by volume
+### Filter active by category
 
-Find the highest-volume active sports events:
+Find active sports events:
 
 <CodeGroup>
 ```python Python
@@ -103,7 +103,6 @@ import pmxt
 api = pmxt.Polymarket()
 events = api.fetch_events(
     category="Sports",
-    sort="volume",
     status="active",
     limit=5,
 )
@@ -115,14 +114,13 @@ import { Polymarket } from "pmxtjs";
 const api = new Polymarket();
 const events = await api.fetchEvents({
   category: "Sports",
-  sort: "volume",
   status: "active",
   limit: 5,
 });
 ```
 
 ```bash curl
-curl "https://api.pmxt.dev/api/polymarket/fetchEvents?category=Sports&sort=volume&status=active&limit=5" \
+curl "https://api.pmxt.dev/api/polymarket/fetchEvents?category=Sports&status=active&limit=5" \
   -H "Authorization: Bearer $PMXT_API_KEY"
 ```
 </CodeGroup>

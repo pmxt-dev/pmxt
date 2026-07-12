@@ -16,4 +16,15 @@ describe('public exports', () => {
     const client = new pmxt.FeedClient('chainlink');
     expect(client).toBeInstanceOf(DirectFeedClient);
   });
+
+  it('exports Polymarket_us as an alias of PolymarketUS', () => {
+    expect(pmxt.Polymarket_us).toBe(pmxt.PolymarketUS);
+    expect(pmxt.default.Polymarket_us).toBe(pmxt.PolymarketUS);
+  });
+
+  it('constructs Polymarket_us with the canonical exchange name', () => {
+    const exchange = new pmxt.Polymarket_us({ autoStartServer: false });
+    expect(exchange).toBeInstanceOf(pmxt.PolymarketUS);
+    expect(exchange.exchangeName).toBe('polymarket_us');
+  });
 });

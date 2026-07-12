@@ -27,7 +27,7 @@ import { HyperliquidNormalizer } from './normalizer';
 import { HyperliquidAuth, floatToWire } from './auth';
 import { hyperliquidErrorMapper } from './errors';
 import { FetcherContext } from '../interfaces';
-import { fromMarketId } from './utils';
+import { fromMarketId, encodeAssetId, fromCoinEncoding } from './utils';
 
 export interface HyperliquidExchangeOptions {
     credentials?: ExchangeCredentials;
@@ -126,14 +126,15 @@ export class HyperliquidExchange extends PredictionMarketExchange {
             return [];
         }
 
-        const [rawQuestions, meta, mids] = await Promise.all([
+        const [rawQuestions, meta, mids, volumeMap] = await Promise.all([
             this.fetcher.fetchRawEvents(params),
             this.fetcher.fetchOutcomeMeta(),
             this.fetcher.fetchAllMids(),
+            this.fetcher.fetchOutcomeVolumeMap(),
         ]);
 
         return rawQuestions
-            .map(q => this.normalizer.normalizeEventWithMarkets(q, meta, mids))
+            .map(q => this.normalizer.normalizeEventWithMarkets(q, meta, mids, volumeMap))
             .filter((e): e is UnifiedEvent => e !== null);
     }
 
@@ -145,7 +146,16 @@ export class HyperliquidExchange extends PredictionMarketExchange {
         return this.normalizer.normalizeOrderBook(raw, outcomeId);
     }
 
-    async fetchOHLCV(outcomeId: string, params: OHLCVParams): Promise<PriceCandle[]> {
+    // ponytail: Hyperliquid has no native batch order-book endpoint; loop client-side.
+    // Add a concurrency cap if rate limits start biting in practice.
+    async fetchOrderBooks(outcomeIds: string[]): Promise<Record<string, OrderBook>> {
+        const entries = await Promise.all(
+            outcomeIds.map(async id => [id, await this.fetchOrderBook(id)] as const),
+        );
+        return Object.fromEntries(entries);
+    }
+
+    async fetchOHLCV(outcomeId: string, params: OHLCVParams = { resolution: '1h' }): Promise<PriceCandle[]> {
         const raw = await this.fetcher.fetchRawOHLCV(outcomeId, params);
         return this.normalizer.normalizeOHLCV(raw, params);
     }
@@ -161,8 +171,11 @@ export class HyperliquidExchange extends PredictionMarketExchange {
 
     async fetchBalance(): Promise<Balance[]> {
         const wallet = this.requireWallet();
-        const raw = await this.fetcher.fetchRawUserState(wallet);
-        return this.normalizer.normalizeBalance(raw);
+        const [perp, spot] = await Promise.all([
+            this.fetcher.fetchRawUserState(wallet),
+            this.fetcher.fetchRawSpotState(wallet),
+        ]);
+        return this.normalizer.normalizeBalance(perp, spot);
     }
 
     async fetchPositions(): Promise<Position[]> {
@@ -187,6 +200,35 @@ export class HyperliquidExchange extends PredictionMarketExchange {
         return raw
             .filter(f => f.coin.startsWith('#'))
             .map((f, i) => this.normalizer.normalizeUserTrade(f, i));
+    }
+
+    // ponytail: HL exposes no "closed orders" endpoint, only userFills + openOrders.
+    // Synthesize closed orders as: oids seen in fills that are not currently open.
+    // Caveat — this surfaces *filled* orders, not *cancelled-with-no-fills* (HL drops those from public history).
+    async fetchClosedOrders(): Promise<Order[]> {
+        const wallet = this.requireWallet();
+        const [rawFills, rawOpen] = await Promise.all([
+            this.fetcher.fetchRawUserFills(wallet),
+            this.fetcher.fetchRawOpenOrders(wallet),
+        ]);
+        const openOids = new Set(rawOpen.map(o => o.oid));
+        const byOid = new Map<number, typeof rawFills>();
+        for (const f of rawFills) {
+            if (!f.coin.startsWith('#')) continue;
+            if (openOids.has(f.oid)) continue;
+            const list = byOid.get(f.oid) ?? [];
+            list.push(f);
+            byOid.set(f.oid, list);
+        }
+        return [...byOid.values()].map(fills => this.normalizer.synthesizeClosedOrder(fills));
+    }
+
+    async fetchAllOrders(): Promise<Order[]> {
+        const [open, closed] = await Promise.all([
+            this.fetchOpenOrders(),
+            this.fetchClosedOrders(),
+        ]);
+        return [...open, ...closed];
     }
 
     // -------------------------------------------------------------------------
@@ -242,18 +284,24 @@ export class HyperliquidExchange extends PredictionMarketExchange {
                 );
             }
 
-            const resting = data.response?.data?.statuses?.[0];
+            const status0 = data.response?.data?.statuses?.[0];
+            // HL returns one of: { resting: { oid } } | { filled: { oid, totalSz, avgPx } } | { error: string }
+            if (status0?.error) {
+                throw hyperliquidErrorMapper.mapError(new Error(status0.error));
+            }
+            const oid = status0?.resting?.oid ?? status0?.filled?.oid;
+            const filledSz = status0?.filled?.totalSz ? parseFloat(status0.filled.totalSz) : 0;
             return {
-                id: resting?.resting?.oid ? String(resting.resting.oid) : 'unknown',
+                id: oid !== undefined ? String(oid) : 'unknown',
                 marketId: built.params.marketId,
                 outcomeId: built.params.outcomeId,
                 side: built.params.side,
                 type: built.params.type,
-                price: built.params.price,
+                price: status0?.filled?.avgPx ? parseFloat(status0.filled.avgPx) : built.params.price,
                 amount: built.params.amount,
-                status: resting?.resting ? 'open' : 'filled',
-                filled: resting?.filled?.totalSz ? parseFloat(resting.filled.totalSz) : 0,
-                remaining: built.params.amount - (resting?.filled?.totalSz ? parseFloat(resting.filled.totalSz) : 0),
+                status: status0?.resting ? 'open' : (status0?.filled ? 'filled' : 'pending'),
+                filled: filledSz,
+                remaining: built.params.amount - filledSz,
                 timestamp: Date.now(),
             };
         } catch (error: any) {
@@ -268,12 +316,26 @@ export class HyperliquidExchange extends PredictionMarketExchange {
 
     async cancelOrder(orderId: string): Promise<Order> {
         const auth = this.requireAuth();
+        const wallet = this.requireWallet();
 
-        // Key order matters for msgpack hash: type, cancels
-        // Each cancel entry: a (asset), o (order id)
+        // HL needs the asset id of the order being cancelled, not just the oid.
+        // ponytail: look it up from openOrders. One extra HTTP call per cancel,
+        // and gives us a typed OrderNotFound when the caller's id is stale.
+        const oidNum = parseInt(orderId, 10);
+        if (!Number.isFinite(oidNum)) {
+            throw new Error(`Invalid Hyperliquid order id: ${orderId}`);
+        }
+        const open = await this.fetcher.fetchRawOpenOrders(wallet);
+        const target = open.find(o => o.oid === oidNum);
+        if (!target) {
+            throw hyperliquidErrorMapper.mapError(new Error(`Order not found: ${orderId}`));
+        }
+        const decoded = fromCoinEncoding(parseInt(target.coin.slice(1), 10));
+        const assetId = encodeAssetId(decoded.outcomeId, decoded.side);
+
         const action: Record<string, unknown> = {
             type: 'cancel',
-            cancels: [{ a: 0, o: parseInt(orderId, 10) }],
+            cancels: [{ a: assetId, o: oidNum }],
         };
 
         try {
@@ -290,17 +352,23 @@ export class HyperliquidExchange extends PredictionMarketExchange {
                 throw new Error(data.response || 'Cancel failed');
             }
 
+            const status0 = data.response?.data?.statuses?.[0];
+            if (status0?.error) {
+                throw hyperliquidErrorMapper.mapError(new Error(status0.error));
+            }
+
             return {
                 id: orderId,
-                marketId: '',
-                outcomeId: '',
-                side: 'buy',
+                marketId: this.normalizer['coinToMarketId'](target.coin),
+                outcomeId: this.normalizer['coinToOutcomeId'](target.coin),
+                side: target.side === 'B' ? 'buy' : 'sell',
                 type: 'limit',
-                amount: 0,
+                price: parseFloat(target.limitPx),
+                amount: parseFloat(target.sz),
                 status: 'canceled',
                 filled: 0,
-                remaining: 0,
-                timestamp: Date.now(),
+                remaining: parseFloat(target.sz),
+                timestamp: target.timestamp,
             };
         } catch (error: any) {
             throw hyperliquidErrorMapper.mapError(error);

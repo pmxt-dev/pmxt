@@ -5,9 +5,9 @@
  * does not support multiple inheritance, so each hosted error class extends
  * the semantically-closest legacy parent (e.g. `InsufficientEscrowBalance`
  * extends `InsufficientFunds`) so existing `instanceof` checks continue to
- * match. The `static isHostedError = true` flag and the {@link isHostedError}
- * helper provide a structural alternative for callers that want to detect
- * hosted-mode failures regardless of the concrete subclass.
+ * match. `HostedTradingError[Symbol.hasInstance]` uses the `static
+ * isHostedError = true` flag so callers can also catch any hosted-mode failure
+ * with `e instanceof HostedTradingError`.
  */
 
 import {
@@ -24,6 +24,14 @@ export class HostedTradingError extends PmxtError {
     static readonly isHostedError = true;
     readonly status: number;
     readonly detail: string;
+
+    static [Symbol.hasInstance](value: unknown): boolean {
+        if (this !== HostedTradingError) {
+            return Function.prototype[Symbol.hasInstance].call(this, value);
+        }
+        const ctor = (value as { constructor?: { isHostedError?: boolean } } | null)?.constructor;
+        return ctor != null && ctor.isHostedError === true;
+    }
 
     constructor(status: number, detail: string) {
         super(detail);

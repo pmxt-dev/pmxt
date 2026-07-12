@@ -72,7 +72,7 @@ export function ensureHostedTradingSupported(client: HostedClientLike): void {
     if (!client.pmxtApiKey) return;
     if (!HOSTED_TRADING_VENUES.has(client.exchangeName)) {
         throw new NotSupported(
-            `Hosted trading is only supported for Polymarket and Opinion; ${client.exchangeName} is not supported with pmxtApiKey.`,
+            `Hosted trading is only supported for Polymarket, Opinion, and Limitless; ${client.exchangeName} is not supported with pmxtApiKey.`,
         );
     }
 }
@@ -156,11 +156,21 @@ export async function _tradingRequest(
         body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     });
 
+    const text = await resp.text();
+
     if (!resp.ok) {
-        await raiseFromResponse(resp);
+        await raiseFromResponse(new Response(text, { status: resp.status, statusText: resp.statusText }));
     }
 
-    const text = await resp.text();
     if (!text) return null;
-    return JSON.parse(text);
+    const payload = JSON.parse(text);
+    if (
+        payload != null &&
+        typeof payload === "object" &&
+        ((payload as Record<string, unknown>).success === false ||
+            typeof (payload as Record<string, unknown>).error === "string")
+    ) {
+        await raiseFromResponse(new Response(text, { status: resp.status, statusText: resp.statusText }));
+    }
+    return payload;
 }

@@ -81,6 +81,12 @@ def user_trade_from_v0(payload: Mapping[str, Any] | Any) -> UserTrade:
     """Map a ``UserTradeV0`` JSON object to :class:`pmxt.models.UserTrade`."""
     data = _as_dict(payload)
     raw_amount = _float_or_none(data.get("amount"))
+    raw_fee = _float_or_none(data.get("fee"))
+    venue = data.get("venue")
+    # Limitless reports fees in raw micro-USDC (6 decimals); normalize to USDC
+    # to match the Polymarket convention where fee is already decimal-scaled.
+    if raw_fee is not None and venue == "limitless":
+        raw_fee = raw_fee / 1_000_000
     values = {
         "id": _str_or_none(data.get("id")),
         "timestamp": _timestamp_to_ms(data.get("timestamp")),
@@ -94,7 +100,7 @@ def user_trade_from_v0(payload: Mapping[str, Any] | Any) -> UserTrade:
         "order_id": _str_or_none(data.get("order_id")),
         "market_id": _str_or_none(data.get("market_id")),
         "outcome_id": _str_or_none(data.get("outcome_id")),
-        "fee": _float_or_none(data.get("fee")),
+        "fee": raw_fee,
         "tx_hash": data.get("tx_hash"),
         "chain": data.get("chain"),
         "venue": data.get("venue"),
@@ -107,6 +113,11 @@ def user_trade_to_v0(trade: UserTrade | Mapping[str, Any]) -> dict[str, Any]:
     """Map :class:`pmxt.models.UserTrade` back to a ``UserTradeV0`` object."""
     data = _as_dict(trade)
     decimal_amount = _float_or_none(data.get("amount"))
+    decimal_fee = _float_or_none(data.get("fee"))
+    venue = data.get("venue")
+    # Inverse of user_trade_from_v0: Limitless wire wants raw micro-USDC fee.
+    if decimal_fee is not None and venue == "limitless":
+        decimal_fee = round(decimal_fee * 1_000_000)
     out = {
         "id": _str_or_none(data.get("id")),
         "market_id": _str_or_none(data.get("market_id")),
@@ -115,7 +126,7 @@ def user_trade_to_v0(trade: UserTrade | Mapping[str, Any]) -> dict[str, Any]:
         # Inverse of user_trade_from_v0: decimal shares -> 6-dec micro-shares.
         "amount": round(decimal_amount * 1_000_000) if decimal_amount is not None else None,
         "price": _float_or_none(data.get("price")),
-        "fee": _float_or_none(data.get("fee")),
+        "fee": decimal_fee,
         "timestamp": _ms_to_timestamp(data.get("timestamp")),
     }
     _copy_if_present(out, data, "tx_hash")

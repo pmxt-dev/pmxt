@@ -4,19 +4,25 @@ description: "How much traffic your API key gives you."
 ---
 
 Every API key includes the full surface — cross-venue search, unified
-schema, and the complete venue pass-through.
+schema, and the supported venue pass-through.
+
+Limits are **per API key** and apply across both hosts (`api.pmxt.dev`
+and `trade.pmxt.dev`) — see [hosts](/authentication#hosts).
 
 ## Limits
 
 {/* HOSTED-AUTOGEN:rate-limits-table:START */}
-| Endpoint | Per-minute | Per-month |
-| -------- | ---------- | --------- |
-| `/v0/*` | 60 | 25,000 |
-| `/api/*` | 60 | 25,000 |
+| Plan | Monthly credits | Per-minute | WebSocket streams | Price |
+| ---- | --------------- | ---------- | ----------------- | ----- |
+| Free | 25,000 | 60 | 5 | $0/mo |
+| Starter | 250,000 | 300 | 20 | $29.99/mo |
+| Pro | 1,000,000 | 1,000 | 100 | $99.99/mo |
+| Enterprise | Custom | Custom | Custom | [Contact us](https://pmxt.dev/pricing) |
 {/* HOSTED-AUTOGEN:rate-limits-table:END */}
 
-Every request to `/v0/*` or `/api/*` counts as **1 request**, regardless
-of how much data it returns. Health checks are free.
+Limits apply per API key across both hosts (`api.pmxt.dev` and
+`trade.pmxt.dev`). Credit accounting: **1 REST call = 1 credit**, **1
+WebSocket message = 0.1 credits**. Health checks are free.
 
 ## Rate limit responses
 
@@ -56,6 +62,6 @@ is what's being counted.
 
 ## Need more?
 
-<Card title="Contact us" icon="envelope" href="https://pmxt.dev/dashboard">
-  Reach out from the dashboard if you need higher limits.
+<Card title="Pricing" icon="tag" href="https://pmxt.dev/pricing">
+  See plans and limits, or reach out for custom quotas.
 </Card>

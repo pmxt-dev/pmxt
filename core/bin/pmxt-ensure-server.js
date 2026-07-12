@@ -39,7 +39,7 @@ function isServerRunning() {
         // Check if process exists
         try {
             process.kill(pid, 0); // Signal 0 checks existence without killing
-            return { running: true, port };
+            return { running: true, pid, port };
         } catch (err) {
             // Process doesn't exist, remove stale lock file
             fs.unlinkSync(LOCK_FILE);
@@ -48,6 +48,26 @@ function isServerRunning() {
     } catch (err) {
         return false;
     }
+}
+
+/**
+ * Remove the lock we just proved unhealthy, without deleting a newer sidecar's
+ * lock if another launcher won the race and replaced it first.
+ */
+function removeLockFileIfMatches(staleLock) {
+    try {
+        if (!fs.existsSync(LOCK_FILE)) {
+            return false;
+        }
+        const currentLock = JSON.parse(fs.readFileSync(LOCK_FILE, 'utf-8'));
+        if (currentLock.pid === staleLock.pid && currentLock.port === staleLock.port) {
+            fs.unlinkSync(LOCK_FILE);
+            return true;
+        }
+    } catch (err) {
+        return false;
+    }
+    return false;
 }
 
 /**
@@ -82,6 +102,44 @@ function waitForHealth(port, timeout = HEALTH_CHECK_TIMEOUT) {
         };
 
         checkHealth();
+    });
+}
+
+/**
+ * Wait for the lock file to appear, then health-check the port it specifies.
+ *
+ * The sidecar may bind a non-default port when the default is occupied by an
+ * orphan.  Polling DEFAULT_PORT would be fooled by the orphan, so we wait for
+ * the new sidecar to write its lock file and health-check THAT port.
+ */
+function waitForLockAndHealth(timeout = HEALTH_CHECK_TIMEOUT) {
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+
+        const poll = () => {
+            if (Date.now() - startTime > timeout) {
+                return reject(new Error('Server health check timeout (lock file never appeared)'));
+            }
+
+            try {
+                if (fs.existsSync(LOCK_FILE)) {
+                    const lockData = JSON.parse(fs.readFileSync(LOCK_FILE, 'utf-8'));
+                    const port = lockData.port || DEFAULT_PORT;
+                    // Lock file appeared — now health-check the actual port
+                    const remaining = timeout - (Date.now() - startTime);
+                    waitForHealth(port, Math.max(remaining, 1000))
+                        .then(resolve)
+                        .catch(reject);
+                    return;
+                }
+            } catch (err) {
+                // Lock file partially written or unreadable — retry
+            }
+
+            setTimeout(poll, HEALTH_CHECK_INTERVAL);
+        };
+
+        poll();
     });
 }
 
@@ -136,8 +194,10 @@ async function startServer() {
     // Detach from parent process
     serverProcess.unref();
 
-    // Wait for server to be ready
-    await waitForHealth(DEFAULT_PORT);
+    // Wait for the sidecar to write its lock file, then health-check
+    // the actual port it bound (which may differ from DEFAULT_PORT if
+    // an orphan sidecar is occupying it).
+    await waitForLockAndHealth();
 }
 
 /**
@@ -156,6 +216,7 @@ async function main() {
             } catch (err) {
                 // Server process exists but not responding, try to start fresh
                 console.error('Server process exists but not responding, starting fresh...');
+                removeLockFileIfMatches(serverStatus);
             }
         }
 

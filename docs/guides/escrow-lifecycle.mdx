@@ -6,7 +6,13 @@ description: "Deposit, trade, withdraw — how USDC moves through PMXT's non-cus
 Hosted trading on PMXT settles through a non-custodial `PreFundedEscrow` smart contract on **Polygon** (chainId 137). USDC sits in the escrow under your wallet's beneficial ownership; PMXT cannot move funds without an EIP-712 signature from your wallet. This page walks through the full lifecycle: approve, deposit, trade, withdraw.
 
 <Info>
-  **You fund Polygon only.** USDC always sits in the Polygon `PreFundedEscrow` — the single funding location for *every* hosted venue (Polymarket today, Opinion today, more coming). For venues that don't live on Polygon (e.g. Opinion on BSC), PMXT operates an internal cross-chain leg that holds outcome tokens on the venue's chain; you neither fund nor sign anything on that side. Pass any EVM-compatible private key — the same key handles every venue.
+  **You fund Polygon only.** USDC always sits in the Polygon `PreFundedEscrow`
+  for the currently hosted trading venues (Polymarket, Opinion, and
+  Limitless). For hosted venues that don't settle on Polygon (Opinion on BSC,
+  Limitless on Base), PMXT operates an internal cross-chain leg that holds
+  outcome tokens on the venue's chain; you neither fund nor sign anything on
+  that side. Pass any EVM-compatible private key; the same EVM wallet/key can
+  trade the currently hosted venues.
 </Info>
 
 ## Why escrow at all?
@@ -17,7 +23,7 @@ For Opinion, the same Polygon escrow balance funds a cross-chain settlement leg 
 
 ## The `client.escrow` namespace
 
-Hosted exchange clients (Polymarket, Opinion) expose an `escrow` namespace. Every method **builds an unsigned transaction**. Your wallet — MetaMask, ethers `Wallet`, viem, web3.py, etc. — is responsible for signing and broadcasting it. PMXT never holds your private key.
+Hosted exchange clients (Polymarket, Opinion, Limitless) expose an `escrow` namespace. Every method **builds an unsigned transaction**. Your wallet — MetaMask, ethers `Wallet`, viem, web3.py, etc. — is responsible for signing and broadcasting it. PMXT never holds your private key.
 
 | Method (Python / TypeScript) | Description |
 | ---------------------------- | ----------- |
@@ -53,29 +59,36 @@ If you're scripting deposits (CI, treasury automation, custom wallet integration
 <CodeGroup>
 ```python Python
 # Unlimited approval for USDC (most common)
-tx = client.escrow.approve_tx("usdc")
-# tx is a dict like:
-#   { "to": "0x...", "data": "0x...", "value": "0", "chain_id": 137 }
-# Sign and broadcast it with your preferred wallet library.
+result = client.escrow.approve_tx("usdc")
+# result is a dict wrapping the unsigned tx, e.g.:
+#   { "tx": { "to": "0x...", "data": "0x...", "value": "0",
+#             "chainId": 137, "gas": "...", "maxFeePerGas": "...",
+#             "maxPriorityFeePerGas": "...", "nonce": "..." } }
+tx = result["tx"]
+# Sign and broadcast `tx` with your preferred wallet library.
 
 # Or scope the approval to a specific wei amount
-tx = client.escrow.approve_tx("usdc", amount_wei=1_000_000_000)  # 1,000 USDC
+result = client.escrow.approve_tx("usdc", amount_wei=1_000_000_000)  # 1,000 USDC
+tx = result["tx"]
 
 # Approve the Polymarket CTF token (only needed for direct CTF transfers)
-tx = client.escrow.approve_tx("ctf")
+result = client.escrow.approve_tx("ctf")
+tx = result["tx"]
 ```
 
 ```typescript TypeScript
 // Unlimited approval for USDC (most common)
-const tx = await client.escrow.approveTx("usdc");
-// tx is an object like:
-//   { to: "0x...", data: "0x...", value: "0", chainId: 137 }
+const { tx } = await client.escrow.approveTx("usdc");
+// The returned object wraps the unsigned tx, e.g.:
+//   { tx: { to: "0x...", data: "0x...", value: "0", chainId: 137,
+//           gas: "...", maxFeePerGas: "...",
+//           maxPriorityFeePerGas: "...", nonce: "..." } }
 
 // Or scope the approval to a specific wei amount (bigint)
-const txScoped = await client.escrow.approveTx("usdc", 1_000_000_000n);
+const { tx: txScoped } = await client.escrow.approveTx("usdc", 1_000_000_000n);
 
 // Approve the CTF token
-const ctfTx = await client.escrow.approveTx("ctf");
+const { tx: ctfTx } = await client.escrow.approveTx("ctf");
 ```
 </CodeGroup>
 
@@ -86,19 +99,20 @@ Amounts are in **whole USDC** (6 decimals); the SDK validates precision and reje
 <CodeGroup>
 ```python Python
 # Deposit 10 USDC
-tx = client.escrow.deposit_tx(amount=10.0)
-# Sign and send with your wallet library.
+result = client.escrow.deposit_tx(amount=10.0)
+tx = result["tx"]
+# Sign and send `tx` with your wallet library.
 
 # Decimals up to 6 places are supported
-tx = client.escrow.deposit_tx(amount=10.5)
-tx = client.escrow.deposit_tx(amount=10.123456)
+tx = client.escrow.deposit_tx(amount=10.5)["tx"]
+tx = client.escrow.deposit_tx(amount=10.123456)["tx"]
 ```
 
 ```typescript TypeScript
 // Deposit 10 USDC — number, decimal string, or wei BigInt all accepted
-const tx = await client.escrow.depositTx(10);
-const tx2 = await client.escrow.depositTx("10.5");
-const tx3 = await client.escrow.depositTx(10_500_000n); // wei micro-USDC
+const { tx } = await client.escrow.depositTx(10);
+const { tx: tx2 } = await client.escrow.depositTx("10.5");
+const { tx: tx3 } = await client.escrow.depositTx(10_500_000n); // wei micro-USDC
 ```
 </CodeGroup>
 
@@ -113,13 +127,15 @@ After the deposit transaction confirms on-chain, the balance shows up in escrow.
 
 <CodeGroup>
 ```python Python
-balance = client.fetch_balance()
-print(f"Free: {balance.free}, Used: {balance.used}, Total: {balance.total}")
+balances = client.fetch_balance()
+usdc = balances[0]
+print(f"Available: {usdc.available}, Locked: {usdc.locked}, Total: {usdc.total}")
 ```
 
 ```typescript TypeScript
-const balance = await client.fetchBalance();
-console.log(`Free: ${balance.free}, Used: ${balance.used}, Total: ${balance.total}`);
+const balances = await client.fetchBalance();
+const usdc = balances[0];
+console.log(`Available: ${usdc.available}, Locked: ${usdc.locked}, Total: ${usdc.total}`);
 ```
 </CodeGroup>
 
@@ -167,12 +183,12 @@ For scripted withdrawals, `client.escrow.withdraw_tx` builds **unsigned** reques
 
 <CodeGroup>
 ```python Python
-tx = client.escrow.withdraw_tx("request", amount=10.0)
-# Sign and send. After the timelock, the funds become claimable.
+tx = client.escrow.withdraw_tx("request", amount=10.0)["tx"]
+# Sign and send `tx`. After the timelock, the funds become claimable.
 ```
 
 ```typescript TypeScript
-const tx = await client.escrow.withdrawTx("request", 10);
+const { tx } = await client.escrow.withdrawTx("request", 10);
 ```
 </CodeGroup>
 
@@ -201,11 +217,11 @@ Once `claimable_at` has passed, claim the funds — they move from escrow to you
 
 <CodeGroup>
 ```python Python
-tx = client.escrow.withdraw_tx("claim")
+tx = client.escrow.withdraw_tx("claim")["tx"]
 ```
 
 ```typescript TypeScript
-const tx = await client.escrow.withdrawTx("claim");
+const { tx } = await client.escrow.withdrawTx("claim");
 ```
 </CodeGroup>
 
@@ -219,11 +235,11 @@ If you change your mind during the timelock window, cancel a pending request and
 
 <CodeGroup>
 ```python Python
-tx = client.escrow.withdraw_tx("cancel")
+tx = client.escrow.withdraw_tx("cancel")["tx"]
 ```
 
 ```typescript TypeScript
-const tx = await client.escrow.withdrawTx("cancel");
+const { tx } = await client.escrow.withdrawTx("cancel");
 ```
 </CodeGroup>
 </Accordion>

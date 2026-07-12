@@ -8,28 +8,28 @@ This document details the feature support and compliance status for each exchang
 
 ## Functions Status
 
-| Category | Function | Polymarket | Kalshi | Limitless | Probable | Baozi | Myriad | Opinion | Metaculus |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Market Data** | `fetchMarkets` | Y | Y | Y | Y | Y | Y | Y | Y |
-|  | `fetchEvents` | Y | Y | Y | Y | Y | Y | Y | Y |
-|  | `fetchMarket` | Y | Y | Y | Y | Y | Y | Y | Y |
-|  | `fetchEvent` | Y | Y | Y | Y | Y | Y | Y | Y |
-| **Public Data** | `fetchOHLCV` | Y | Y | Y | Y | Y | Y | Y | - |
-|  | `fetchOrderBook` | Y | Y | Y | Y | Y | Y | Y | - |
-|  | `fetchTrades` | Y | Y | Y | Y | Y | Y | - | - |
-| **Private Data** | `fetchBalance` | Y | Y | Y | Y | Y | Y | - | - |
-|  | `fetchPositions` | Y | Y | Y | Y | Y | Y | Y | - |
-|  | `fetchMyTrades` | Y | Y | Y | Y | - | Y | Y | - |
-| **Trading** | `createOrder` | Y | Y | Y | Y | Y | Y | Y | Y |
-|  | `cancelOrder` | Y | Y | Y | Y | Y | - | Y | Y |
-|  | `fetchOrder` | Y | Y | Y | Y | Y | - | Y | - |
-|  | `fetchOpenOrders` | Y | Y | Y | Y | Y | Y | Y | - |
-|  | `fetchClosedOrders` | - | Y | Y | - | - | - | Y | - |
-|  | `fetchAllOrders` | - | Y | Y | - | - | - | Y | - |
-| **Calculations** | `getExecutionPrice` | Y | Y | Y | Y | Y | Y | Y | - |
-|  | `getExecutionPriceDetailed` | Y | Y | Y | Y | Y | Y | Y | - |
-| **Real-time** | `watchOrderBook` | Y | Y | Y | Y | Y | Y | Y | - |
-|  | `watchTrades` | Y | Y | Y | - | - | Y | Y | - |
+| Category | Function | Polymarket | PolymarketUS | Kalshi | Limitless | Probable | Baozi | Myriad | Opinion | Metaculus | Smarkets | Hyperliquid | GeminiTitan | SuiBets | Rain | Hunch |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Market Data** | `fetchMarkets` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+|  | `fetchEvents` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+|  | `fetchMarket` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+|  | `fetchEvent` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+| **Public Data** | `fetchOHLCV` | Y | - | Y | Y | Y | Y | Y | Y | - | - | Y | - | - | Y | Y |
+|  | `fetchOrderBook` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y |
+|  | `fetchTrades` | Y | - | Y | Y | Y | Y | Y | - | - | Y | Y | - | - | Y | Y |
+| **Private Data** | `fetchBalance` | Y | Y | Y | Y | Y | Y | Y | - | - | Y | Y | - | - | Y | Y |
+|  | `fetchPositions` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y |
+|  | `fetchMyTrades` | Y | Y | Y | Y | Y | - | Y | Y | - | Y | Y | - | - | Y | - |
+| **Trading** | `createOrder` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y |
+|  | `cancelOrder` | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | - | Y | - |
+|  | `fetchOrder` | Y | Y | Y | Y | Y | Y | - | Y | - | Y | - | - | - | Y | - |
+|  | `fetchOpenOrders` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | - | Y | Y |
+|  | `fetchClosedOrders` | - | - | Y | Y | - | - | - | Y | - | Y | Y | Y | - | - | - |
+|  | `fetchAllOrders` | - | - | Y | Y | - | - | - | Y | - | Y | Y | Y | - | - | - |
+| **Calculations** | `getExecutionPrice` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y |
+|  | `getExecutionPriceDetailed` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y |
+| **Real-time** | `watchOrderBook` | Y | Y | Y | Y | Y | Y | Y | Y | - | - | - | Y | - | Y | Y |
+|  | `watchTrades` | Y | Y | Y | Y | - | - | Y | Y | - | - | - | Y | - | Y | Y |
 
 ## Legend
 - **Y** - Supported
@@ -39,17 +39,77 @@ This document details the feature support and compliance status for each exchang
 - **Failure over Warning**: Tests must fail if no relevant data (markets, events, candles) is found. This ensures that we catch API breakages or unexpected empty responses.
 
 ## Tests with authentication
-requires a dotenv in the root dir with
+Authenticated tests require a dotenv in the root dir with the venue credentials
+needed for the methods under test. Use only test accounts or intentionally
+funded wallets.
+
 ```
+# Polymarket
 POLYMARKET_PRIVATE_KEY=0x...
+POLYMARKET_API_KEY=...
+POLYMARKET_API_SECRET=...
+POLYMARKET_PASSPHRASE=...
+POLYMARKET_FUNDER_ADDRESS=0x...
+
+# Polymarket US
+POLYMARKET_US_KEY_ID=...
+POLYMARKET_US_SECRET_KEY=...
+
 # Kalshi
 KALSHI_API_KEY=...
 KALSHI_PRIVATE_KEY=... (RSA Private Key)
+
 # Limitless
 LIMITLESS_PRIVATE_KEY=0x...
+LIMITLESS_API_KEY=...
+LIMITLESS_API_SECRET=...
+LIMITLESS_PASSPHRASE=...
+
+# Probable
+PROBABLE_API_KEY=...
+PROBABLE_API_SECRET=...
+PROBABLE_PASSPHRASE=...
+PROBABLE_PRIVATE_KEY=0x...
+
+# Baozi
+BAOZI_PRIVATE_KEY=...
+
 # Myriad
 MYRIAD_API_KEY=...
 MYRIAD_WALLET_ADDRESS=0x...
+
+# Opinion
+OPINION_API_KEY=...
+OPINION_PRIVATE_KEY=0x...
+OPINION_FUNDER_ADDRESS=0x...
+
 # Metaculus (required for API access — unauthenticated requests return 403)
 METACULUS_API_TOKEN=...
+
+# Smarkets
+SMARKETS_EMAIL=...
+SMARKETS_PASSWORD=...
+
+# Hyperliquid
+HYPERLIQUID_WALLET_ADDRESS=0x...
+HYPERLIQUID_PRIVATE_KEY=0x...
+
+# Gemini Titan
+GEMINI_API_KEY=...
+GEMINI_API_SECRET=...
+
+# SuiBets
+SUIBETS_WALLET_ADDRESS=0x...
+
+# Rain
+RAIN_PRIVATE_KEY=0x...
+RAIN_WALLET_ADDRESS=0x...
+RAIN_SUBGRAPH_URL=...
+RAIN_SUBGRAPH_API_KEY=...
+RAIN_WS_RPC_URL=...
+
+# Hunch
+HUNCH_PRIVATE_KEY=0x...
+HUNCH_WALLET_ADDRESS=0x...
+HUNCH_BASE_URL=...
 ```

@@ -215,6 +215,36 @@ describe('SmarketsNormalizer', () => {
             expect(result.resolutionDate.getFullYear()).toBe(2025);
         });
 
+        it('does not use start_datetime as a fallback resolutionDate when end_date is missing', () => {
+            const rawEventWithoutEndDate: SmarketsRawEvent = {
+                ...rawEvent,
+                end_date: null,
+                start_datetime: '2025-05-01T09:00:00Z',
+            };
+            const raw = {
+                ...rawEventWithMarkets,
+                event: rawEventWithoutEndDate,
+            };
+
+            const result = normalizer.normalizeMarket(raw)!;
+            expect(result.resolutionDate).toBeUndefined();
+        });
+
+        it('does not default resolutionDate to the current time when Smarkets provides no dates', () => {
+            const rawEventWithoutDates: SmarketsRawEvent = {
+                ...rawEvent,
+                end_date: null,
+                start_datetime: null,
+            };
+            const raw = {
+                ...rawEventWithMarkets,
+                event: rawEventWithoutDates,
+            };
+
+            const result = normalizer.normalizeMarket(raw)!;
+            expect(result.resolutionDate).toBeUndefined();
+        });
+
         it('extracts category from event type string', () => {
             const result = normalizer.normalizeMarket(rawEventWithMarkets)!;
             expect(result.category).toBe('politics');

@@ -1,6 +1,6 @@
 # Migrating from DomeAPI to pmxt
 
-> **DomeAPI is shutting down March 31, 2025.** Polymarket acquired DomeAPI and is discontinuing the service. If you rely on DomeAPI for market data or trading, you need to migrate before that date.
+> **DomeAPI shut down on March 31, 2025.** Polymarket acquired DomeAPI and discontinued the service. If you relied on DomeAPI for market data or trading, you need to migrate to a replacement.
 
 This guide helps you migrate your prediction market integration from [DomeAPI](https://docs.domeapi.io/) to pmxt.
 
@@ -9,7 +9,7 @@ This guide helps you migrate your prediction market integration from [DomeAPI](h
 | | DomeAPI | pmxt |
 |---|---|---|
 | **Authentication** | API key (paid tiers) | No API key for market data |
-| **Exchanges** | Polymarket, Kalshi | Polymarket, Kalshi, Limitless, Probable, Baozi, Myriad |
+| **Exchanges** | Polymarket, Kalshi | Supported venue catalog (Polymarket, Kalshi, Limitless, Smarkets, Opinion, and more) |
 | **Trading** | Order router (linked wallet) | Native (your private key, direct on-chain) |
 | **License** | Proprietary service | Open source (MIT) |
 | **Rate limits** | Tiered (10-300 QPS) | Exchange-native |
@@ -227,7 +227,7 @@ GET https://api.domeapi.io/v1/polymarket/orderbook-history
   &end_ts=...
 ```
 
-> DomeAPI provides historical orderbook snapshots. pmxt provides the current live order book.
+> DomeAPI historical orderbook snapshots map to PMXT Archive-backed `fetchOrderBook` / `fetch_order_book` with `since` / `until` params where supported; omit archive params for the current live order book.
 
 **After (pmxt):**
 ```typescript
@@ -237,6 +237,15 @@ const outcomeId = markets[0].outcomes[0].outcomeId;
 const book = await poly.fetchOrderBook(outcomeId);
 console.log('Best bid:', book.bids[0].price);
 console.log('Best ask:', book.asks[0].price);
+
+const history = await poly.fetchOrderBook(outcomeId, undefined, {
+  since: 1710000000000,
+  until: 1710003600000,
+  outcome: 'yes',
+  limit: 100,
+});
+const snapshots = Array.isArray(history) ? history : [history];
+console.log('Historical snapshots:', snapshots.length);
 ```
 ```python
 markets = poly.fetch_markets(query='Trump')
@@ -245,6 +254,17 @@ outcome_id = markets[0].outcomes[0].outcome_id
 book = poly.fetch_order_book(outcome_id)
 print('Best bid:', book.bids[0].price)
 print('Best ask:', book.asks[0].price)
+
+history = poly.fetch_order_book(
+    outcome_id,
+    params={
+        "since": 1710000000000,
+        "until": 1710003600000,
+        "outcome": "yes",
+        "limit": 100,
+    },
+)
+print("Historical snapshots:", len(history))
 ```
 
 **Calculate execution price** (new in pmxt, not in DomeAPI):
@@ -360,6 +380,8 @@ DomeAPI has an "Order Router" that requires linking your wallet. pmxt trades dir
 ### Setup (Polymarket)
 
 ```typescript
+import pmxt from 'pmxtjs';
+
 const exchange = new pmxt.Polymarket({
   privateKey: process.env.POLYMARKET_PRIVATE_KEY,
   funderAddress: process.env.POLYMARKET_PROXY_ADDRESS, // optional
@@ -367,6 +389,8 @@ const exchange = new pmxt.Polymarket({
 ```
 ```python
 import os
+import pmxt
+
 exchange = pmxt.Polymarket(
     private_key=os.getenv('POLYMARKET_PRIVATE_KEY'),
     proxy_address=os.getenv('POLYMARKET_PROXY_ADDRESS'),  # optional
@@ -455,31 +479,33 @@ dt = datetime.fromtimestamp(candle.timestamp / 1000)
 
 ---
 
-## Feature gaps
+## Feature gaps and replacements
 
-Some DomeAPI features have no direct pmxt equivalent:
+Some DomeAPI features map to a different PMXT surface or have no direct equivalent:
 
 | DomeAPI feature | pmxt alternative |
 |---|---|
 | Wallet positions by address | `fetch_positions()` (own account only) |
 | Wallet P&L by address | `fetch_positions()` unrealized/realized P&L |
 | Sports cross-platform matching | Not available |
-| Binance / Chainlink price feeds | Not available |
+| Binance / Chainlink price feeds | Feed API via `FeedClient` and `/api/feeds/{feed}/...` endpoints |
 | Activity feed by wallet | Not available |
-| Historical orderbook snapshots | `watch_order_book()` for live data |
+| Historical orderbook snapshots | Historical `fetch_order_book(..., params={...})` via PMXT Archive where supported; live `watch_order_book()` for streaming |
 
 ---
 
 ## Multi-exchange support (new in pmxt)
 
-pmxt gives you the same API across all supported exchanges:
+pmxt uses the same method names across venues that implement each capability:
 
 ```typescript
+import pmxt from 'pmxtjs';
+
 const poly = new pmxt.Polymarket();
 const kalshi = new pmxt.Kalshi();
 const limitless = new pmxt.Limitless();
 
-// Same methods on all exchanges
+// Same method names where each venue supports the capability
 const polyMarkets = await poly.fetchMarkets({ query: 'Fed Chair' });
 const kalshiMarkets = await kalshi.fetchMarkets({ query: 'Fed Chair' });
 ```
@@ -493,7 +519,7 @@ const kalshiMarkets = await kalshi.fetchMarkets({ query: 'Fed Chair' });
 | Get market price | `getMarketPrice({ token_id })` | `fetchMarkets({ query })` then `.yes.price` | `fetch_markets(query=...)` then `.yes.price` |
 | Search markets | `GET /polymarket/markets?search=` | `fetchMarkets({ query })` | `fetch_markets(query=...)` |
 | Get OHLCV | `GET /polymarket/candlestick?condition_id=` | `fetchOHLCV(outcomeId, { resolution })` | `fetch_ohlcv(outcome_id, resolution=...)` |
-| Get order book | `GET /polymarket/orderbook-history?token_id=` | `fetchOrderBook(outcomeId)` | `fetch_order_book(outcome_id)` |
+| Get order book history | `GET /polymarket/orderbook-history?token_id=` | `fetchOrderBook(outcomeId, undefined, { since, until, outcome })` | `fetch_order_book(outcome_id, params={...})` |
 | Get trades | `GET /polymarket/trade-history?token_id=` | `fetchTrades(outcomeId, params)` | `fetch_trades(outcome_id, ...)` |
 | Real-time book | WebSocket subscribe | `watchOrderBook(outcomeId)` | `watch_order_book(outcome_id)` |
 | Place order | Order Router API | `createOrder(params)` | `create_order(...)` |

@@ -216,6 +216,18 @@ SCHEMAS: Mapping[str, TypedDataSchema] = {
         fields=CANCEL_PULL_FIELDS,
         message_keys=frozenset(name for name, _ in CANCEL_PULL_FIELDS),
     ),
+    "cancel_limitless_polygon": TypedDataSchema(
+        primary_type="CancelOrder",
+        domain=_PREFUNDED_DOMAIN,
+        fields=CANCEL_ORDER_FIELDS,
+        message_keys=frozenset(name for name, _ in CANCEL_ORDER_FIELDS),
+    ),
+    "cancel_limitless_base_pull": TypedDataSchema(
+        primary_type="CancelPull",
+        domain=_LIMITLESS_VENUE_DOMAIN,
+        fields=CANCEL_PULL_FIELDS,
+        message_keys=frozenset(name for name, _ in CANCEL_PULL_FIELDS),
+    ),
 }
 
 
@@ -401,8 +413,13 @@ def _validate_polymarket_buy_economics(
     build_request: Any,
 ) -> None:
     denom = _value(build_request, "denom")
-    if denom != "usdc":
-        _economic_fail(f"denom expected 'usdc' got {denom!r}")
+    order_type = _value(build_request, "order_type")
+    if order_type == "limit":
+        expected_denom = "shares"
+    else:
+        expected_denom = "usdc"
+    if denom != expected_denom:
+        _economic_fail(f"denom expected {expected_denom!r} got {denom!r}")
 
     amount = _first_present(
         _value(build_request, "amount"),
@@ -412,10 +429,21 @@ def _validate_polymarket_buy_economics(
     if amount is _MISSING:
         _economic_fail("amount missing")
 
-    expected = _to_6dec(amount, "max_cost_usdc")
     actual = _message_int(message, "max_cost_usdc", "maxCostUsdc")
-    if actual != expected:
-        _economic_fail(f"max_cost_usdc expected {expected} got {actual}")
+    if order_type == "limit":
+        # Limit BUY: amount is shares, max_cost_usdc ceiling >= shares * price.
+        # Server may add a slippage buffer; validator only checks the floor.
+        price = _value(build_request, "price")
+        if price is _MISSING or price is None:
+            _economic_fail("price missing for limit order")
+        expected = _to_6dec(float(amount) * float(price), "max_cost_usdc")
+        if actual < expected:
+            _economic_fail(f"max_cost_usdc expected >= {expected} got {actual}")
+    else:
+        # Market BUY: amount is the USDC budget; signed value must match exactly.
+        expected = _to_6dec(amount, "max_cost_usdc")
+        if actual != expected:
+            _economic_fail(f"max_cost_usdc expected {expected} got {actual}")
 
 
 def _validate_polymarket_sell_economics(
@@ -688,4 +716,3 @@ def _typed_data_fail(message: str) -> None:
 
 def _economic_fail(message: str) -> None:
     raise InvalidSignature(f"economic mismatch: {message}")
-

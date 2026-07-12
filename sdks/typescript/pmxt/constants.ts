@@ -76,10 +76,11 @@ export const PREFUNDED_ESCROW_ADDRESSES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Lowercase 0x-prefixed escrow addresses that the hosted trading API treats
- * as venue-owned escrows. Currently empty; populated as venues onboard.
+ * Lowercase 0x-prefixed VenueEscrow addresses on BSC (chain 56).
  */
-export const VENUE_ESCROW_ADDRESSES: ReadonlySet<string> = new Set<string>();
+export const VENUE_ESCROW_ADDRESSES: ReadonlySet<string> = new Set<string>([
+    "0x6a273643d84edbb603b808d8a724fb963c7a298a",
+]);
 
 /**
  * Limitless VenueEscrow contract addresses on Base (chain 8453).

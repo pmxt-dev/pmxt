@@ -52,7 +52,10 @@ export interface SmarketsApiConfig {
  * Return a typed config object for the Smarkets API.
  */
 export function getSmarketsConfig(baseUrlOverride?: string): SmarketsApiConfig {
+  const apiUrl =
+    baseUrlOverride || process.env.SMARKETS_BASE_URL || DEFAULT_SMARKETS_BASE_URL;
+
   return {
-    apiUrl: baseUrlOverride || DEFAULT_SMARKETS_BASE_URL,
+    apiUrl,
   };
 }

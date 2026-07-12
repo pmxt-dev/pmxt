@@ -54,7 +54,7 @@
   "scripts": {
     "build": "node scripts/validate.js",
     "prepack": "npm run build",
-    "test": "node scripts/validate.js && node scripts/verify-argv-alias-normalizer.js && node scripts/verify-root-help.js && node scripts/verify-color.js && node scripts/verify-runtime-errors.js && node scripts/verify-feed-cli.js && node scripts/verify-enterprise-cli.js && node scripts/verify-production-copy.js"
+    "test": "node scripts/validate.js && node scripts/verify-argv-alias-normalizer.js && node scripts/verify-root-help.js && node scripts/verify-color.js && node scripts/verify-runtime-errors.js && node scripts/verify-feed-cli.js && node scripts/verify-enterprise-cli.js && node scripts/verify-server-manager.js && node scripts/verify-production-copy.js"
   },
   "keywords": [
     "prediction-markets",

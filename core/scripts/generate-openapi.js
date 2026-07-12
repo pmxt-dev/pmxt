@@ -42,7 +42,14 @@ const DOCS_OPENAPI_OUT_PATH = path.join(
 const HOSTED_URL = process.env.HOSTED_PMXT_URL || 'https://api.pmxt.dev';
 const HOSTED_TITLE = 'PMXT Hosted API';
 const HOSTED_DESCRIPTION =
-    'One API for every prediction market. Cross-venue search in under 10ms, a single unified schema, and the complete venue surface from reads to trades.';
+    'One API for supported prediction markets. Hosted catalog search in under 10ms, a unified schema for supported venues, and venue-native trading where venues expose writes.';
+const INTERNAL_HOSTED_EXCHANGE_KEYS = new Set(['mock']);
+const EXAMPLE_EVM_ADDRESS = '0x1111111111111111111111111111111111111111';
+const ROUTER_BACKED_SAMPLE_OPERATIONS = new Set([
+    'fetchMarkets',
+    'fetchEvents',
+    'fetchSeries',
+]);
 
 function readCoreVersion() {
     try {
@@ -95,6 +102,45 @@ function rewriteForHosted(spec, coreVersion) {
     // assignHostedTags() for API-only endpoints.
 
     return next;
+}
+
+function stripInternalHostedTargets(spec) {
+    const constructors = spec['x-sdk-constructors'];
+    const nextConstructors = constructors
+        ? Object.fromEntries(
+            Object.entries(constructors).filter(
+                ([wireKey]) => !INTERNAL_HOSTED_EXCHANGE_KEYS.has(wireKey)
+            )
+        )
+        : constructors;
+
+    const components = { ...(spec.components || {}) };
+    const parameters = { ...(components.parameters || {}) };
+    const exchangeParam = parameters.ExchangeParam;
+    const exchangeSchema = exchangeParam?.schema;
+    const filteredExchangeParam = Array.isArray(exchangeSchema?.enum)
+        ? {
+            ...exchangeParam,
+            schema: {
+                ...exchangeSchema,
+                enum: exchangeSchema.enum.filter(
+                    (wireKey) => !INTERNAL_HOSTED_EXCHANGE_KEYS.has(wireKey)
+                ),
+            },
+        }
+        : exchangeParam;
+
+    return {
+        ...spec,
+        ...(nextConstructors ? { 'x-sdk-constructors': nextConstructors } : {}),
+        components: {
+            ...components,
+            parameters: {
+                ...parameters,
+                ...(filteredExchangeParam ? { ExchangeParam: filteredExchangeParam } : {}),
+            },
+        },
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -317,6 +363,11 @@ function exampleValue(name, schema) {
     if (schema) {
         if (schema.example !== undefined) return schema.example;
         if (Array.isArray(schema.enum) && schema.enum.length > 0) return schema.enum[0];
+        if (schema.format === 'date-time') {
+            return lowerName.includes('until') || lowerName === 'end'
+                ? '2026-01-31T00:00:00Z'
+                : '2026-01-01T00:00:00Z';
+        }
     }
 
     if (lowerName === 'query') return 'election';
@@ -331,7 +382,7 @@ function exampleValue(name, schema) {
     if (lowerName === 'amount') return 10;
     if (lowerName === 'price') return 0.55;
     if (lowerName === 'symbol' || lowerName === 'slug') return 'BTC-USD';
-    if (lowerName === 'address') return '0xabc...';
+    if (lowerName === 'address') return EXAMPLE_EVM_ADDRESS;
     if (lowerName === 'resolution') return '1h';
     if (lowerName.includes('id')) return '12345';
 
@@ -431,13 +482,31 @@ function extractPostParamsSdk(operation, spec) {
 }
 
 const PARAM_OVERRIDES = {
+    fetchMarkets: [
+        { name: 'query', value: 'election' },
+        { name: 'limit', value: 10 },
+        { name: 'status', value: 'active' },
+    ],
+    fetchEvents: [
+        { name: 'query', value: 'election' },
+        { name: 'limit', value: 10 },
+        { name: 'status', value: 'active' },
+    ],
     fetchMarket: [{ name: 'marketId', value: '12345' }],
     fetchEvent: [{ name: 'eventId', value: '12345' }],
+    fetchMarketsPaginated: [
+        { name: 'limit', value: 10 },
+        { name: 'cursor', value: 'abc123' },
+    ],
+    fetchEventsPaginated: [
+        { name: 'limit', value: 10 },
+        { name: 'cursor', value: 'abc123' },
+    ],
     cancelOrder: [{ name: 'orderId', value: 'ord-001' }],
     watchOrderBook: [{ name: 'id', value: '12345' }],
     watchTrades: [{ name: 'id', value: '12345' }],
-    watchAddress: [{ name: 'address', value: '0xabc...' }],
-    unwatchAddress: [{ name: 'address', value: '0xabc...' }],
+    watchAddress: [{ name: 'address', value: EXAMPLE_EVM_ADDRESS }],
+    unwatchAddress: [{ name: 'address', value: EXAMPLE_EVM_ADDRESS }],
     getExecutionPrice: [
         { name: 'orderBook', value: 'orderBook' },
         { name: 'side', value: 'buy' },
@@ -486,14 +555,154 @@ const PARAM_OVERRIDES = {
 };
 
 const FULL_OVERRIDES = {
+    fetchOHLCV: {
+        pythonBody: [
+            'result = exchange.fetch_ohlcv(',
+            '    "67890",',
+            '    resolution="1h",',
+            '    start=datetime(2026, 1, 1, tzinfo=timezone.utc),',
+            '    end=datetime(2026, 1, 31, tzinfo=timezone.utc),',
+            '    limit=10,',
+            ')',
+        ],
+        typescriptBody: [
+            'const result = await exchange.fetchOHLCV(',
+            '  "67890",',
+            '  {',
+            '    resolution: "1h",',
+            '    start: new Date("2026-01-01T00:00:00Z"),',
+            '    end: new Date("2026-01-31T00:00:00Z"),',
+            '    limit: 10,',
+            '  },',
+            ');',
+        ],
+    },
+    fetchOrderBook: {
+        pythonBody: [
+            'result = exchange.fetch_order_book(',
+            '    "67890",',
+            '    limit=10,',
+            '    params={"outcome": "yes"},',
+            ')',
+        ],
+        typescriptBody: [
+            'const result = await exchange.fetchOrderBook(',
+            '  "67890",',
+            '  10,',
+            '  { outcome: "yes" },',
+            ');',
+        ],
+    },
+    fetchOrderBooks: {
+        pythonBody: [
+            'result = exchange.fetch_order_books(["67890"])',
+        ],
+        typescriptBody: [
+            'const result = await exchange.fetchOrderBooks(["67890"]);',
+        ],
+    },
+    fetchTrades: {
+        pythonBody: [
+            'result = exchange.fetch_trades(',
+            '    "67890",',
+            '    start="2026-01-01T00:00:00Z",',
+            '    end="2026-01-31T00:00:00Z",',
+            '    limit=10,',
+            ')',
+        ],
+        typescriptBody: [
+            'const result = await exchange.fetchTrades(',
+            '  "67890",',
+            '  {',
+            '    start: new Date("2026-01-01T00:00:00Z"),',
+            '    end: new Date("2026-01-31T00:00:00Z"),',
+            '    limit: 10,',
+            '  },',
+            ');',
+        ],
+    },
     submitOrder: {
         pythonBody: [
-            'built = exchange.build_order(market_id="12345", side="buy", type="limit", amount=10, price=0.55)',
+            'built = exchange.build_order(market_id="12345", outcome_id="67890", side="buy", type="limit", amount=10, price=0.55)',
             'result = exchange.submit_order(built)',
         ],
         typescriptBody: [
-            'const built = await exchange.buildOrder({ marketId: "12345", side: "buy", type: "limit", amount: 10, price: 0.55 });',
+            'const built = await exchange.buildOrder({ marketId: "12345", outcomeId: "67890", side: "buy", type: "limit", amount: 10, price: 0.55 });',
             'const result = await exchange.submitOrder(built);',
+        ],
+    },
+    cancelOrder: {
+        pythonBody: [
+            'result = exchange.cancel_order("ord-001")',
+        ],
+        typescriptBody: [
+            'const result = await exchange.cancelOrder("ord-001");',
+        ],
+    },
+    fetchOrder: {
+        pythonBody: [
+            'result = exchange.fetch_order("ord-001")',
+        ],
+        typescriptBody: [
+            'const result = await exchange.fetchOrder("ord-001");',
+        ],
+    },
+    fetchOpenOrders: {
+        pythonBody: [
+            'result = exchange.fetch_open_orders("12345")',
+        ],
+        typescriptBody: [
+            'const result = await exchange.fetchOpenOrders("12345");',
+        ],
+    },
+    fetchPositions: {
+        pythonBody: [
+            `result = exchange.fetch_positions(address="${EXAMPLE_EVM_ADDRESS}")`,
+        ],
+        typescriptBody: [
+            `const result = await exchange.fetchPositions("${EXAMPLE_EVM_ADDRESS}");`,
+        ],
+    },
+    fetchBalance: {
+        pythonBody: [
+            `result = exchange.fetch_balance(address="${EXAMPLE_EVM_ADDRESS}")`,
+        ],
+        typescriptBody: [
+            `const result = await exchange.fetchBalance("${EXAMPLE_EVM_ADDRESS}");`,
+        ],
+    },
+    getExecutionPrice: {
+        pythonBody: [
+            'order_book = pmxt.OrderBook(',
+            '    bids=[pmxt.OrderLevel(price=0.52, size=100)],',
+            '    asks=[pmxt.OrderLevel(price=0.54, size=100)],',
+            ')',
+            'result = exchange.get_execution_price(order_book, "buy", 10)',
+        ],
+        typescriptBody: [
+            'const orderBook = {',
+            '  bids: [{ price: 0.52, size: 100 }],',
+            '  asks: [{ price: 0.54, size: 100 }],',
+            '  timestamp: Date.now(),',
+            '};',
+            'const result = exchange.getExecutionPrice(orderBook, "buy", 10);',
+        ],
+    },
+    getExecutionPriceDetailed: {
+        pythonBody: [
+            'order_book = pmxt.OrderBook(',
+            '    bids=[pmxt.OrderLevel(price=0.52, size=100)],',
+            '    asks=[pmxt.OrderLevel(price=0.54, size=100)],',
+            ')',
+            'result = exchange.get_execution_price_detailed(order_book, "buy", 10)',
+        ],
+        typescriptBody: [
+            'const orderBook = {',
+            '  bids: [{ price: 0.52, size: 100 }],',
+            '  asks: [{ price: 0.54, size: 100 }],',
+            '  timestamp: Date.now(),',
+            '};',
+            'const result = await exchange.getExecutionPriceDetailed(orderBook, "buy", 10);',
         ],
     },
 };
@@ -524,7 +733,11 @@ const WRITE_METHODS = new Set([
 ]);
 
 function buildPyPreamble(exchangeInfo, operationId) {
-    const lines = ['import pmxt', ''];
+    const lines = ['import pmxt'];
+    if (operationId === 'fetchOHLCV') {
+        lines.push('from datetime import datetime, timezone');
+    }
+    lines.push('');
     const tag = TAG_MAP[operationId];
 
     if (tag === 'Local Only') {
@@ -621,6 +834,22 @@ function buildTsMethodCall(jsMethod, params) {
     return lines;
 }
 
+function shouldIncludeSdkSampleConstructor(wireKey, operationId) {
+    if (INTERNAL_HOSTED_EXCHANGE_KEYS.has(wireKey)) return false;
+    if (wireKey === 'router') {
+        return ROUTER_ONLY_OPERATIONS.has(operationId)
+            || ROUTER_BACKED_SAMPLE_OPERATIONS.has(operationId);
+    }
+    if (ROUTER_ONLY_OPERATIONS.has(operationId)) return false;
+    return true;
+}
+
+function getSdkSampleEntries(constructors, operationId) {
+    return Object.entries(constructors).filter(
+        ([wireKey]) => shouldIncludeSdkSampleConstructor(wireKey, operationId)
+    );
+}
+
 /**
  * Generate an x-codeSamples array for a single operation.
  * Returns undefined for healthCheck (no SDK equivalent).
@@ -629,7 +858,7 @@ function generateCodeSamples(operationId, httpMethod, pathKey, operation, spec) 
     if (!operationId || operationId === 'healthCheck') return undefined;
 
     const constructors = spec['x-sdk-constructors'] || FALLBACK_CONSTRUCTORS;
-    const exchangeEntries = Object.entries(constructors);
+    const exchangeEntries = getSdkSampleEntries(constructors, operationId);
 
     const params = PARAM_OVERRIDES[operationId]
         || (httpMethod === 'get'
@@ -687,8 +916,8 @@ function injectCodeSamples(spec) {
                 newMethods[method] = op;
                 continue;
             }
-            const samples = generateCodeSamples(op.operationId, method, pathKey, op, spec)
-                || buildFeedCodeSamples(op.operationId);
+            const samples = buildFeedCodeSamples(op.operationId)
+                || generateCodeSamples(op.operationId, method, pathKey, op, spec);
             if (samples) {
                 newMethods[method] = { ...op, 'x-codeSamples': samples };
             } else {
@@ -758,8 +987,11 @@ function buildCapabilityMap() {
         metaculus: new pmxt.Metaculus(),
         smarkets: new pmxt.Smarkets(),
         polymarket_us: new pmxt.PolymarketUS(),
+        hyperliquid: new pmxt.Hyperliquid(),
+        'gemini-titan': new pmxt.GeminiTitan(),
         suibets: new pmxt.SuiBets(),
         rain: new pmxt.Rain(),
+        hunch: new pmxt.Hunch(),
         router: new pmxt.Router({ apiKey: '_' }),
     };
 
@@ -906,7 +1138,8 @@ function scopeExchangeParams(spec, capMap, { collapsePaths = true } = {}) {
  */
 function generateHostedDocsSpec(spec) {
     const coreVersion = readCoreVersion();
-    const rewritten = rewriteForHosted(spec, coreVersion);
+    const publicSpec = stripInternalHostedTargets(spec);
+    const rewritten = rewriteForHosted(publicSpec, coreVersion);
     const tagged = assignHostedTags(rewritten);
     const withNotices = injectCatalogNotices(tagged);
     const withSamples = injectCodeSamples(withNotices);
@@ -2375,6 +2608,14 @@ function buildFeedCodeSamples(operationId) {
       python: 'from pmxt.feed_client import FeedClient\n\nfeed = FeedClient("chainlink", pmxt_api_key="YOUR_PMXT_API_KEY")\ntickers = feed.fetch_tickers()\nfor symbol, ticker in tickers.items():\n    print(f"{symbol}: ${ticker.last}")',
       typescript: 'import { FeedClient } from "pmxtjs";\n\nconst feed = new FeedClient("chainlink", { pmxtApiKey: "YOUR_PMXT_API_KEY" });\nconst tickers = await feed.fetchTickers();\nfor (const [symbol, ticker] of Object.entries(tickers)) {\n  console.log(`${symbol}: $${ticker.last}`);\n}',
     },
+    feedFetchOHLCV: {
+      python: 'from pmxt.feed_client import FeedClient\n\nfeed = FeedClient("binance", pmxt_api_key="YOUR_PMXT_API_KEY")\ncandles = feed.fetch_ohlcv("BTC/USDT", timeframe="1m", since=1700000000000, limit=3)\nfor timestamp, open_, high, low, close, volume in candles:\n    print(timestamp, close)',
+      typescript: 'import { FeedClient } from "pmxtjs";\n\nconst feed = new FeedClient("binance", { pmxtApiKey: "YOUR_PMXT_API_KEY" });\nconst candles = await feed.fetchOHLCV("BTC/USDT", "1m", 1700000000000, 3);\nfor (const [timestamp, _open, _high, _low, close, _volume] of candles) {\n  console.log(timestamp, close);\n}',
+    },
+    feedFetchOrderBook: {
+      python: 'import requests\n\nresp = requests.get(\n    "https://api.pmxt.dev/api/feeds/binance/fetchOrderBook",\n    params={"symbol": "BTC/USDT", "limit": 10},\n    headers={"Authorization": "Bearer YOUR_PMXT_API_KEY"},\n)\nbook = resp.json()["data"]\nprint(book["bids"][:3])',
+      typescript: 'const params = new URLSearchParams({ symbol: "BTC/USDT", limit: "10" });\nconst resp = await fetch(`https://api.pmxt.dev/api/feeds/binance/fetchOrderBook?${params}`, {\n  headers: { Authorization: "Bearer YOUR_PMXT_API_KEY" },\n});\nconst { data: book } = await resp.json();\nconsole.log(book.bids.slice(0, 3));',
+    },
     feedFetchOracleRound: {
       python: 'from pmxt.feed_client import FeedClient\n\nfeed = FeedClient("chainlink", pmxt_api_key="YOUR_PMXT_API_KEY")\nround = feed.fetch_oracle_round("BTC/USD")\nprint(f"Round {round.round_id}: ${round.answer} (decimals: {round.decimals})")',
       typescript: 'import { FeedClient } from "pmxtjs";\n\nconst feed = new FeedClient("chainlink", { pmxtApiKey: "YOUR_PMXT_API_KEY" });\nconst round = await feed.fetchOracleRound("BTC/USD");\nconsole.log(`Round ${round.roundId}: $${round.answer}`);',
@@ -2446,9 +2687,9 @@ function buildSpec(methodSpecs) {
     info: {
       title: 'PMXT Sidecar API',
       description:
-        'A unified local sidecar API for prediction markets (Polymarket, Kalshi, Limitless). ' +
-        'This API acts as a JSON-RPC-style gateway. Each endpoint corresponds to a specific method ' +
-        'on the generic exchange implementation.',
+        'A unified local sidecar API for supported prediction markets. ' +
+        'This API acts as a JSON-RPC-style gateway over PMXT exchange implementations, ' +
+        'with venue and write support varying by method and capability.',
       version: '0.4.4',
     },
     servers: [
@@ -2462,7 +2703,7 @@ function buildSpec(methodSpecs) {
           name: 'exchange',
           schema: {
             type: 'string',
-            enum: ['polymarket', 'kalshi', 'kalshi-demo', 'limitless', 'probable', 'baozi', 'myriad', 'opinion', 'metaculus', 'smarkets', 'polymarket_us', 'gemini-titan', 'hyperliquid', 'suibets', 'rain', 'mock', 'router'],
+            enum: ['polymarket', 'kalshi', 'kalshi-demo', 'limitless', 'probable', 'baozi', 'myriad', 'opinion', 'metaculus', 'smarkets', 'polymarket_us', 'gemini-titan', 'hyperliquid', 'suibets', 'rain', 'hunch', 'mock', 'router'],
           },
           required: true,
           description: 'The prediction market exchange to target.',
@@ -2519,6 +2760,12 @@ function buildMethodVerbs(methodSpecs) {
 const EXCHANGE_OVERRIDES = {
     polymarket: {
         defaults: { signature_type: 'gnosis-safe' },
+    },
+    polymarket_us: {
+        className: 'PolymarketUS',
+    },
+    suibets: {
+        className: 'SuiBets',
     },
     myriad: {
         paramAliases: { private_key: 'wallet_address' },
@@ -2616,6 +2863,7 @@ function buildSdkConstructors(exchanges) {
         const aliases = ov.paramAliases || {};
         const defaults = ov.defaults || {};
         const paramDocs = ov.paramDocs || {};
+        const className = ov.className || toClassName(name);
 
         // Every exchange gets the hosted API key param first
         const params = [
@@ -2650,7 +2898,7 @@ function buildSdkConstructors(exchanges) {
         }
 
         result[name] = {
-            className: toClassName(name),
+            className,
             params,
         };
     }

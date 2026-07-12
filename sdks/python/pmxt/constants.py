@@ -85,8 +85,9 @@ PREFUNDED_ESCROW_ADDRESSES: frozenset[str] = frozenset({
 })
 
 #: Known VenueEscrow contract addresses on BSC (chain 56).
-#: Add the BSC VenueEscrow address before Opinion sells go live.
-VENUE_ESCROW_ADDRESSES: frozenset[str] = frozenset()
+VENUE_ESCROW_ADDRESSES: frozenset[str] = frozenset({
+    "0x6a273643d84edbb603b808d8a724fb963c7a298a",
+})
 
 #: Limitless VenueEscrow on Base (chain 8453).
 LIMITLESS_VENUE_ESCROW_ADDRESSES: frozenset[str] = frozenset({

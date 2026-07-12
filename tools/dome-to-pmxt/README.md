@@ -82,7 +82,7 @@ async function main() {
 ```typescript
 import pmxt from 'pmxtjs';
 
-const dome = /* TODO(dome-to-pmxt): new pmxt.Polymarket() or new pmxt.Kalshi() */ new pmxt.Polymarket();
+const poly = /* TODO(dome-to-pmxt): new pmxt.Polymarket() or new pmxt.Kalshi() */ new pmxt.Polymarket();
 
 async function main() {
   const markets = await poly.fetchMarkets({

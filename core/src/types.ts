@@ -326,6 +326,10 @@ export interface CreateOrderParams {
     denom?: 'usdc' | 'shares'; // Hosted mode: amount unit.
     slippage_pct?: number; // Hosted mode: maximum market-order slippage percentage.
     fee?: number;   // Optional fee rate (e.g., 1000 for 0.1%)
+    /** Hyperliquid builder address to attach to the order action. */
+    builder?: string;
+    /** Hyperliquid builder fee in tenths of a basis point (e.g. 10 = 1 bp). */
+    builderFee?: number;
     tickSize?: number; // Optional override for Limitless/Polymarket
     negRisk?: boolean; // Optional override to skip neg-risk lookup (Polymarket)
     onBehalfOf?: number; // Limitless delegated signing: profile ID to trade on behalf of

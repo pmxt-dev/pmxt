@@ -250,12 +250,26 @@ export class HyperliquidExchange extends PredictionMarketExchange {
                 : { limit: { tif: 'Gtc' } },
         };
 
-        // Key order matters for msgpack hash: type, orders, grouping
+        // Key order matters for msgpack hash: type, orders, grouping, builder
         const action: Record<string, unknown> = {
             type: 'order',
             orders: [orderWire],
             grouping: 'na',
         };
+
+        if (params.builder !== undefined || params.builderFee !== undefined) {
+            if (!params.builder) {
+                throw new Error('Hyperliquid builderFee requires builder address');
+            }
+            if (!/^0x[0-9a-fA-F]{40}$/.test(params.builder)) {
+                throw new Error(`Invalid Hyperliquid builder address: ${params.builder}`);
+            }
+            const builderFee = params.builderFee ?? 0;
+            if (!Number.isInteger(builderFee) || builderFee < 0) {
+                throw new Error('Hyperliquid builderFee must be a non-negative integer in tenths of a basis point');
+            }
+            action.builder = { b: params.builder.toLowerCase(), f: builderFee };
+        }
 
         return {
             exchange: this.name,

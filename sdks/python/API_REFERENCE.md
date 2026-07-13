@@ -2274,6 +2274,8 @@ price: float # Required for limit orders
 denom: str # Hosted mode: amount unit.
 slippage_pct: float # Hosted mode: maximum market-order slippage percentage.
 fee: float # Optional fee rate (e.g., 1000 for 0.1%)
+builder: str # Hyperliquid builder address to attach to the order action.
+builder_fee: float # Hyperliquid builder fee in tenths of a basis point (e.g. 10 = 1 bp).
 tick_size: float # Optional override for Limitless/Polymarket
 neg_risk: bool # Optional override to skip neg-risk lookup (Polymarket)
 on_behalf_of: float # Limitless delegated signing: profile ID to trade on behalf of

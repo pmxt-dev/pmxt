@@ -64,92 +64,138 @@ export class SidecarWsClient {
     // ------------------------------------------------------------------
 
     private async ensureConnected(): Promise<void> {
-        if (this.ws && !this.closed) return;
-        if (this.connectPromise) return this.connectPromise;
+    // If already connected, return
+    if (this.ws && !this.closed) return;
+    
+    // If connection is in progress, wait for it
+    if (this.connectPromise) return this.connectPromise;
 
-        this.connectPromise = this.connect();
+    // ✅ Retry loop: 3 attempts (matching Python SDK)
+    const MAX_ATTEMPTS = 3;
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         try {
+            this.connectPromise = this.connect();
             await this.connectPromise;
-        } finally {
             this.connectPromise = null;
+            return;
+        } catch (error) {
+            lastError = error as Error;
+            this.connectPromise = null;
+            this.ws = null;
+            this.closed = true;
+            
+            // ✅ Exponential backoff: 250ms, 500ms, etc. (matching Python)
+            if (attempt < MAX_ATTEMPTS - 1) {
+                const delay = 250 * (attempt + 1);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
         }
     }
 
+    throw lastError || new PmxtError(`WebSocket connection failed after ${MAX_ATTEMPTS} attempts`);
+}
+
     private connect(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            let hostPart = this.host;
-            let scheme = "ws";
-            if (hostPart.startsWith("https://")) {
-                hostPart = hostPart.slice("https://".length);
-                scheme = "wss";
-            } else if (hostPart.startsWith("http://")) {
-                hostPart = hostPart.slice("http://".length);
+    return new Promise<void>((resolve, reject) => {
+        let hostPart = this.host;
+        let scheme = "ws";
+        if (hostPart.startsWith("https://")) {
+            hostPart = hostPart.slice("https://".length);
+            scheme = "wss";
+        } else if (hostPart.startsWith("http://")) {
+            hostPart = hostPart.slice("http://".length);
+        }
+
+        let url = `${scheme}://${hostPart}/ws`;
+        if (this.accessToken) {
+            url = `${url}?${this.authParamName}=${this.accessToken}`;
+        }
+
+        // Use the ws package in Node.js, native WebSocket in browsers
+        const WsConstructor = this.getWebSocketConstructor();
+        if (!WsConstructor) {
+            reject(new PmxtError("No WebSocket implementation available"));
+            return;
+        }
+
+        const ws = new WsConstructor(url);
+        this.closed = false;
+
+        // ✅ Timeout: 10 seconds (matching Python SDK)
+        let timeoutId: NodeJS.Timeout | null = null;
+
+        const cleanup = () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
             }
+        };
 
-            let url = `${scheme}://${hostPart}/ws`;
-            if (this.accessToken) {
-                url = `${url}?${this.authParamName}=${this.accessToken}`;
+        // ✅ Set timeout
+        timeoutId = setTimeout(() => {
+            cleanup();
+            try {
+                ws.close();
+            } catch (e) {
+                // Ignore close errors on timeout
             }
+            reject(new PmxtError(`WebSocket connection timeout after 10 seconds`));
+        }, 10000);
 
-            // Use the ws package in Node.js, native WebSocket in browsers
-            const WsConstructor = this.getWebSocketConstructor();
-            if (!WsConstructor) {
-                reject(new PmxtError("No WebSocket implementation available"));
-                return;
-            }
+        ws.onopen = () => {
+            cleanup();
+            this.ws = ws;
+            resolve();
+        };
 
-            const ws = new WsConstructor(url);
-            this.closed = false;
-
-            ws.onopen = () => {
-                this.ws = ws;
-                resolve();
-            };
-
-            ws.onerror = (err: any) => {
-                if (!this.ws) {
-                    // Connection failed during handshake
-                    reject(new PmxtError(`WebSocket connection failed: ${err.message || err}`));
-                } else {
-                    // Post-handshake error — propagate to all pending subscribers
-                    const error = new PmxtError(`WebSocket error: ${err.message || err}`);
-                    for (const sub of this.subscriptions.values()) {
-                        if (sub.reject) {
-                            sub.reject(error);
-                            sub.reject = null;
-                            sub.resolve = null;
-                        }
+        ws.onerror = (err: any) => {
+            cleanup();
+            if (!this.ws) {
+                // Connection failed during handshake
+                reject(new PmxtError(`WebSocket connection failed: ${err.message || err}`));
+            } else {
+                // Post-handshake error — propagate to all pending subscribers
+                const error = new PmxtError(`WebSocket error: ${err.message || err}`);
+                for (const sub of this.subscriptions.values()) {
+                    if (sub.reject) {
+                        sub.reject(error);
+                        sub.reject = null;
+                        sub.resolve = null;
                     }
-                    this.closed = true;
-                    this.ws = null;
                 }
-            };
-
-            ws.onclose = () => {
                 this.closed = true;
                 this.ws = null;
-            };
+            }
+        };
 
-            ws.onmessage = (event: any) => {
-                const raw = typeof event.data === "string"
-                    ? event.data
-                    : event.data.toString();
-                let msg: WsMessage;
-                try {
-                    msg = JSON.parse(raw);
-                } catch {
-                    // Non-JSON control frame -- ignore.
-                    return;
-                }
-                try {
-                    this.dispatch(msg);
-                } catch (err) {
-                    // Dispatch bug -- log and continue; don't kill the connection.
-                    logger.error('[SidecarWsClient] dispatch error:', { err });
-                }
-            };
-        });
-    }
+        ws.onclose = () => {
+            cleanup();
+            this.closed = true;
+            this.ws = null;
+        };
+
+        ws.onmessage = (event: any) => {
+            const raw = typeof event.data === "string"
+                ? event.data
+                : event.data.toString();
+            let msg: WsMessage;
+            try {
+                msg = JSON.parse(raw);
+            } catch {
+                // Non-JSON control frame -- ignore.
+                return;
+            }
+            try {
+                this.dispatch(msg);
+            } catch (err) {
+                // Dispatch bug -- log and continue; don't kill the connection.
+                logger.error('[SidecarWsClient] dispatch error:', { err });
+            }
+        };
+    });
+}
 
     private getWebSocketConstructor(): (new (url: string) => WebSocket) | null {
         // Browser / Deno / Bun

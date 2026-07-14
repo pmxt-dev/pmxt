@@ -10,7 +10,7 @@ import warnings
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 
-from .client import Exchange, _convert_market, _convert_event
+from .client import Exchange, _convert_market, _convert_event, _convert_order_book
 from .models import (
     MatchResult,
     EventMatchResult,
@@ -235,6 +235,50 @@ class Router(Exchange):
             limit=limit,
             include_prices=include_prices,
         )
+
+    
+def fetch_order_book(
+    self,
+    outcome_id: str,
+    limit: Optional[int] = None,
+    params: Optional[Dict[str, Any]] = None,
+) -> OrderBook:
+    """
+    Fetch a merged order book across all matched venues for a given outcome.
+
+    Finds identity matches for the outcome across all configured exchanges,
+    fetches each venue's order book in parallel, and merges bid/ask levels
+    by summing size at each price point.
+
+    Args:
+        outcome_id: The outcome ID to fetch order books for
+        limit: Maximum number of price levels per side (default: 20)
+        params: Additional parameters (e.g., exchange filters)
+
+    Returns:
+        OrderBook: A merged OrderBook with bids sorted descending, asks sorted ascending
+
+    Example:
+        ```python
+        router = Router(pmxt_api_key="...")
+        order_book = router.fetch_order_book("outcome-123", 10)
+        print("Best bid:", order_book.bids[0])
+        print("Best ask:", order_book.asks[0])
+        ```
+    """
+    args = [outcome_id]
+    if limit is not None:
+        args.append(limit)
+    if params is not None:
+        args.append(params)
+
+    raw = self._call_method("fetchOrderBook", args)
+    if raw is None:
+        return OrderBook(bids=[], asks=[])
+
+    return _convert_order_book(raw)
+
+
 
     def fetch_event_matches(
         self,

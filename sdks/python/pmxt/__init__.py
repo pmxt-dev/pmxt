@@ -17,7 +17,7 @@ Example:
 """
 
 from typing import Any, Dict, List
-
+from .router import Router, SqlResult, SqlMeta, SqlColumn
 from .client import Exchange
 from .constants import ENV, ENV_BASE_URL, ENV_API_KEY
 from ._exchanges import Polymarket, Limitless, Kalshi, KalshiDemo, Probable, Baozi, Myriad, Opinion, Metaculus, Smarkets, PolymarketUS, Polymarket_us, Hyperliquid, GeminiTitan, SuiBets, Suibets, Rain, Hunch, Mock, Router
@@ -274,4 +274,9 @@ __all__ = [
     "OrderSide",
     "OrderType",
     "CandleInterval",
+    
+    'Router',
+    'SqlResult',
+    'SqlMeta',
+    'SqlColumn',
 ]

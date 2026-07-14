@@ -178,7 +178,7 @@ function convertCandle(raw: any): PriceCandle {
     return { ...raw };
 }
 
-function convertOrderBook(raw: any): OrderBook {
+export function convertOrderBook(raw: any): OrderBook {
     return {
         ...raw,
         bids: (raw.bids || []).map((b: any) => ({ ...b })),

@@ -5,7 +5,8 @@
  * every venue PMXT supports. Only requires a PMXT API key.
  */
 
-import { Exchange, ExchangeOptions } from "./client.js";
+import { Exchange, ExchangeOptions,
+    convertOrderBook, } from "./client.js";
 import { logger } from "./logger.js";
 import {
     MatchResult,
@@ -20,7 +21,24 @@ import {
     ArbitrageOpportunity,
     UnifiedMarket,
     UnifiedEvent,
+    OrderBook
 } from "./models.js";
+
+export interface SqlColumn {
+    name: string;
+    type: string;
+}
+
+export interface SqlMeta {
+    columns: SqlColumn[];
+    rows: number;
+}
+
+export interface SqlResult {
+    data: Record<string, unknown>[];
+    meta: SqlMeta;
+}
+
 
 function withQuestionAlias<T extends UnifiedMarket>(market: T): T {
     Object.defineProperty(market, 'question', {
@@ -377,6 +395,46 @@ export class Router extends Exchange {
     }
 
     /**
+ * Fetch a merged order book across all matched venues for a given outcome.
+ * 
+ * Finds identity matches for the outcome across all configured exchanges,
+ * fetches each venue's order book in parallel, and merges bid/ask levels
+ * by summing size at each price point.
+ * 
+ * @param outcomeId - The outcome ID to fetch order books for
+ * @param limit - Maximum number of price levels per side (default: 20)
+ * @param params - Additional parameters (e.g., exchange filters)
+ * @returns A merged OrderBook with bids sorted descending, asks sorted ascending
+ * 
+ * @example
+ * ```typescript
+ * const router = new Router({ pmxtApiKey: "..." });
+ * const orderBook = await router.fetchOrderBook("outcome-123", 10);
+ * console.log("Best bid:", orderBook.bids[0]);
+ * ```
+ */
+async fetchOrderBook(
+    outcomeId: string,
+    limit?: number,
+    params?: Record<string, any>
+): Promise<OrderBook> {
+    await this.initPromise;
+    
+    try {
+        const query: Record<string, unknown> = { outcomeId };
+        if (limit !== undefined) query.limit = limit;
+        if (params !== undefined) query.params = params;
+        
+        const json = await this.sidecarReadRequest('fetchOrderBook', query, [outcomeId, limit, params]);
+        const data = this.handleResponse(json);
+        return convertOrderBook(data);
+    } catch (error) {
+        if (error instanceof Error) throw error;
+        throw new Error(`Failed to fetchOrderBook: ${error}`);
+    }
+}
+
+    /**
      * Fetch connected clusters of semantically matched markets across venues.
      *
      * @param marketOrParams - A UnifiedMarket, or an options object.
@@ -441,6 +499,68 @@ export class Router extends Exchange {
             throw new Error(`Failed to fetchMatchedEventClusters: ${error}`);
         }
     }
+
+
+        // ------------------------------------------------------------------
+    // SQL Query
+    // ------------------------------------------------------------------
+
+    /**
+     * Execute a SQL query against the ClickHouse database.
+     * 
+     * @param query - SQL query string
+     * @returns Query results with data and metadata
+     * 
+     * @example
+     * ```typescript
+     * const router = new Router({ pmxtApiKey: "..." });
+     * const result = await router.sql('SELECT * FROM markets LIMIT 10');
+     * console.log(result.data);
+     * ```
+     */
+    async sql(query: string): Promise<SqlResult> {
+        await this.initPromise;
+        
+        try {
+            const url = `${this.resolveBaseUrl()}/v0/sql`;
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                ...this.getAuthHeaders(),
+            };
+            
+            const response = await this.fetchWithRetry(
+                url,
+                {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ query }),
+                }
+            );
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`SQL query failed: ${error}`);
+            }
+            
+            const data = await response.json();
+            
+            const resultData = data.data || data;
+            const resultMeta = data.meta || { columns: [], rows: 0 };
+            
+            return {
+                data: Array.isArray(resultData) ? resultData : [],
+                meta: {
+                    columns: resultMeta.columns || [],
+                    rows: resultMeta.rows || (Array.isArray(resultData) ? resultData.length : 0)
+                }
+            };
+        } catch (error) {
+            if (error instanceof Error) throw error;
+            throw new Error(`SQL query failed: ${error}`);
+        }
+    }
+
 
     // ------------------------------------------------------------------
     // Price comparison

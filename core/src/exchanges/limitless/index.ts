@@ -483,6 +483,12 @@ export class LimitlessExchange extends PredictionMarketExchange {
         return ws.watchOrderBook(slug);
     }
 
+    async unwatchOrderBook(outcomeId: string): Promise<void> {
+        const slug = await this.resolveSlug(outcomeId);
+        const ws = this.ensureWs();
+        await ws.unsubscribe(slug);
+    }
+
     async watchTrades(outcomeId: string, address?: string, since?: number, limit?: number): Promise<Trade[]> {
         const slug = await this.resolveSlug(outcomeId);
         const ws = this.ensureWs();

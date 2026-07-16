@@ -70,6 +70,8 @@ export class RainExchange extends PredictionMarketExchange {
     protected override readonly capabilityOverrides = {
         fetchSeries: false as const,
         fetchOrderBook: 'emulated' as const,
+        // Emulated batch: loops the single-outcome fetchOrderBook (no native batch endpoint).
+        fetchOrderBooks: 'emulated' as const,
         watchOrderBook: 'emulated' as const,
         watchTrades: 'emulated' as const,
         // Trading is on-chain via Rain SDK + viem. open/closed orders + fetchOrder
@@ -155,6 +157,14 @@ export class RainExchange extends PredictionMarketExchange {
         const raw = await this.fetcher.fetchRawMarket(parts[1]);
         if (!raw) return { bids: [], asks: [], timestamp: Date.now() };
         return this.normalizer.normalizeOrderBook(raw, outcomeId);
+    }
+
+    async fetchOrderBooks(outcomeIds: string[]): Promise<Record<string, OrderBook>> {
+        const response: Record<string, OrderBook> = {};
+        for (const outcomeId of outcomeIds) {
+            response[outcomeId] = await this.fetchOrderBook(outcomeId);
+        }
+        return response;
     }
 
     async fetchTrades(outcomeId: string, params: TradesParams | HistoryFilterParams): Promise<Trade[]> {

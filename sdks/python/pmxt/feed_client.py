@@ -146,9 +146,7 @@ class FeedClient:
         data = self._get("fetchOracleRound", {"feed": feed})
         return self._to_oracle_round(data)
 
-    def fetch_oracle_history(
-        self, feed: str, limit: Optional[int] = None
-    ) -> List[OracleRound]:
+    def fetch_oracle_history(self, feed: str, limit: Optional[int] = None) -> List[OracleRound]:
         params: Dict[str, Any] = {"feed": feed}
         if limit is not None:
             params["limit"] = limit
@@ -190,7 +188,12 @@ class FeedClient:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 body = json.loads(resp.read())
         except urllib.error.HTTPError as e:
-            body = json.loads(e.read()) if e.fp else {}
+            body = {}
+            if e.fp:
+                try:
+                    body = json.loads(e.read())
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    pass
             msg = body.get("error", e.reason)
             raise PmxtError(f"Feed API error ({e.code}): {msg}") from e
 

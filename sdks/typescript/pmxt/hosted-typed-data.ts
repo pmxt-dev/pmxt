@@ -12,6 +12,7 @@
 import { InvalidSignature } from "./hosted-errors";
 import { to6dec } from "./hosted-mappers";
 import { TypedData, loadEthers } from "./signers";
+import Decimal from 'decimal.js';
 
 // The constants module is updated in a parallel-agent change to add these
 // allowlists. We import them at runtime so we don't hard-fail if the change
@@ -478,7 +479,9 @@ function validatePolymarketSellEconomics(
     }
 }
 
-const SIX_DEC_DIVISOR = 1_000_000;
+
+
+const SIX_DEC_DIVISOR = new Decimal(1_000_000);
 
 function validateWorstPrice(
     message: Record<string, unknown>,
@@ -487,7 +490,8 @@ function validateWorstPrice(
     buildResponse: any,
 ): void {
     const worstPriceMicro = messageBigInt(message, "worst_price", "worstPrice");
-    const worstPrice = Number(worstPriceMicro) / SIX_DEC_DIVISOR;
+    
+    const worstPrice = new Decimal(worstPriceMicro.toString()).div(SIX_DEC_DIVISOR);
 
     // Hosted MARKET orders pin worst_price to the tick-grid extreme by
     // design ("textbook market semantics"): the binding user protection is
@@ -502,9 +506,10 @@ function validateWorstPrice(
         ),
     ).toLowerCase();
     if (orderType === "market") {
-        if (!(worstPrice > 0 && worstPrice < 1)) {
+      
+        if (!(worstPrice.greaterThan(0) && worstPrice.lessThan(1))) {
             economicFail(
-                `worst_price expected within (0, 1) got ${worstPrice}`,
+                `worst_price expected within (0, 1) got ${worstPrice.toString()}`,
             );
         }
         return;
@@ -519,33 +524,39 @@ function validateWorstPrice(
     );
     const slippagePct = toFiniteNumber(slippagePctRaw, "slippage_pct");
 
+    
+    const bestPriceRaw = firstPresent(
+        getPath(buildResponse, "quote", "best_price"),
+        getField(buildResponse, "best_price"),
+        getField(buildResponse, "best_ask"),
+        getField(buildResponse, "bestAsk"),
+    );
+
     if (route === "polymarket_buy") {
-        const bestPrice = toFiniteNumber(
-            firstPresent(
-                getPath(buildResponse, "quote", "best_price"),
-                getField(buildResponse, "best_price"),
-                getField(buildResponse, "best_ask"),
-                getField(buildResponse, "bestAsk"),
-            ),
-            "quote.best_price",
-        );
-        const upper = bestPrice * (1 + slippagePct / 100);
-        if (worstPrice > upper) {
-            economicFail(`worst_price expected <= ${upper} got ${worstPrice}`);
+        
+        const bestPrice = new Decimal(String(bestPriceRaw));
+        const slippageFactor = new Decimal(slippagePct).div(100);
+       
+        const upper = bestPrice.times(new Decimal(1).plus(slippageFactor));
+
+      
+        if (worstPrice.greaterThan(upper)) {
+            economicFail(
+                `worst_price expected <= ${upper.toString()} got ${worstPrice.toString()}`,
+            );
         }
     } else {
-        const bestPrice = toFiniteNumber(
-            firstPresent(
-                getPath(buildResponse, "quote", "best_price"),
-                getField(buildResponse, "best_price"),
-                getField(buildResponse, "best_bid"),
-                getField(buildResponse, "bestBid"),
-            ),
-            "quote.best_price",
-        );
-        const lower = bestPrice * (1 - slippagePct / 100);
-        if (worstPrice < lower) {
-            economicFail(`worst_price expected >= ${lower} got ${worstPrice}`);
+      
+        const bestPrice = new Decimal(String(bestPriceRaw));
+        const slippageFactor = new Decimal(slippagePct).div(100);
+         
+        const lower = bestPrice.times(new Decimal(1).minus(slippageFactor));
+
+      
+        if (worstPrice.lessThan(lower)) {
+            economicFail(
+                `worst_price expected >= ${lower.toString()} got ${worstPrice.toString()}`,
+            );
         }
     }
 }

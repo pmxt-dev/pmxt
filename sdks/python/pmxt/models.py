@@ -671,6 +671,7 @@ class PolymarketOptions(ExchangeOptions, total=False):
 class SuiBetsOptions(ExchangeOptions, total=False):
     """Constructor options for SuiBets clients."""
     wallet_address: str
+    api_base_url: str
 
 
 class RouterOptions(TypedDict, total=False):

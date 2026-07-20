@@ -70,7 +70,7 @@ export interface HostedClientLike {
  */
 export function ensureHostedTradingSupported(client: HostedClientLike): void {
     if (!client.pmxtApiKey) return;
-    if (!HOSTED_TRADING_VENUES.has(client.exchangeName)) {
+    if (!HOSTED_TRADING_VENUES.has(client.exchangeName.toLowerCase())) {
         throw new NotSupported(
             `Hosted trading is only supported for Polymarket, Opinion, and Limitless; ${client.exchangeName} is not supported with pmxtApiKey.`,
         );

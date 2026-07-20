@@ -21,6 +21,7 @@ jest.mock("../pmxt/hosted-typed-data", () => ({
 
 import { Polymarket } from "../pmxt/client";
 import {
+  ensureHostedTradingSupported,
   HOSTED_TRADING_BASE_URL,
 } from "../pmxt/hosted-routing";
 import { NotSupported } from "../pmxt/errors";
@@ -162,6 +163,16 @@ describe("hosted read methods raise MissingWalletAddress locally", () => {
 // --------------------------------------------------------------------------
 
 describe("hosted NotSupported", () => {
+  it.each(["Polymarket", "OPINION", "LiMiTlEsS"])(
+    "accepts supported venue %s regardless of casing",
+    (exchangeName) => {
+      expect(() => ensureHostedTradingSupported({
+        pmxtApiKey: PMXT_API_KEY,
+        exchangeName,
+      })).not.toThrow();
+    },
+  );
+
   it("fetchClosedOrders raises NotSupported without touching network", async () => {
     const spy = installFetchSpy(() => jsonResponse({}));
     const api = makePolymarket();

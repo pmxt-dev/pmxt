@@ -140,7 +140,9 @@ class SidecarWsClient:
 
         # Connection attempts default to CONNECT_ATTEMPTS; callers may override
         # via the "maxReconnectAttempts" config key.
-        max_attempts = self._config.get("maxReconnectAttempts") or CONNECT_ATTEMPTS
+        max_attempts = self._config.get("maxReconnectAttempts")
+        if max_attempts is None:
+            max_attempts = CONNECT_ATTEMPTS
         # When "reconnectInterval" (ms) is not configured, preserve the fast
         # default backoff (0.25s, 0.5s, ...). Only a longer, explicitly
         # configured interval overrides it.

@@ -388,11 +388,9 @@ describe('KalshiNormalizer', () => {
         rules_secondary: 'Data source: Federal Reserve',
         expiration_time: '2025-01-29T18:00:00Z',
         volume_24h: 12000,
-        volume: 350000,
         volume_24h_fp: '12000.00',
         volume_fp: '350000.00',
         open_interest_fp: '8500.00',
-        open_interest: 8500,
         liquidity: 5000,
         close_time: '2025-01-29T18:00:00Z',
     });
@@ -700,22 +698,6 @@ describe('KalshiNormalizer', () => {
             const result = normalizer.normalizeRawMarket(eventNoLastPrice, marketNoLastPrice);
             expect(result).not.toBeNull();
             expect(result!.outcomes[0].price).toBeCloseTo(0.55);
-        });
-
-        it('falls back to legacy cent fields when dollar fields are absent', () => {
-            const marketCents: KalshiRawMarket = {
-                ticker: 'TEST-CENTS',
-                expiration_time: '2025-06-01T00:00:00Z',
-                last_price: 65,
-            };
-            const eventCents: KalshiRawEvent = {
-                event_ticker: 'TEST-CENTS-EVT',
-                title: 'Cent Market',
-                markets: [marketCents],
-            };
-            const result = normalizer.normalizeRawMarket(eventCents, marketCents);
-            expect(result).not.toBeNull();
-            expect(result!.outcomes[0].price).toBeCloseTo(0.65);
         });
 
         it('maps zero price when no price fields are present', () => {

@@ -4,7 +4,10 @@ import socket
 import sys
 import types
 
+import pytest
+
 import pmxt.ws_client as ws_client
+from pmxt.errors import PmxtError
 from pmxt.ws_client import SidecarWsClient, _WsSubscription, _connect_websocket
 
 
@@ -145,6 +148,34 @@ def test_ws_config_custom_url_and_reconnect_interval(monkeypatch):
     assert urls == ["ws://custom.example.com/ws", "ws://custom.example.com/ws"]
     # A configured reconnectInterval (2000ms) is applied between attempts.
     assert sleeps == [2.0]
+
+
+def test_ws_none_reconnect_attempts_uses_default(monkeypatch):
+    urls = []
+    _install_failing_websocket(monkeypatch, urls)
+
+    client = SidecarWsClient(
+        "http://localhost:3847", config={"maxReconnectAttempts": None}
+    )
+    with pytest.raises(OSError, match="handshake failure"):
+        with client._lock:
+            client._ensure_connected()
+
+    assert len(urls) == 3
+
+
+def test_ws_zero_reconnect_attempts_is_honored(monkeypatch):
+    urls = []
+    _install_failing_websocket(monkeypatch, urls)
+
+    client = SidecarWsClient(
+        "http://localhost:3847", config={"maxReconnectAttempts": 0}
+    )
+    with pytest.raises(PmxtError, match="WebSocket connection failed"):
+        with client._lock:
+            client._ensure_connected()
+
+    assert urls == []
 
 
 def test_ws_default_backoff_is_fast(monkeypatch):

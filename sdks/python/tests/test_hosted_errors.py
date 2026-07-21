@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 import pytest
 
@@ -256,3 +258,16 @@ def test_hosted_exceptions_also_catch_as_legacy_base(error_class, legacy_base):
     assert issubclass(error_class, legacy_base)
     assert issubclass(error_class, HostedTradingError)
     assert issubclass(error_class, PmxtError)
+
+
+def test_malformed_response_body_is_logged_at_debug(caplog):
+    response = _response(500, text_body="<html>502 Bad Gateway</html>")
+
+    with caplog.at_level(logging.DEBUG, logger="pmxt._hosted_errors"):
+        with pytest.raises(HostedTradingError):
+            raise_from_response(response)
+
+    assert any(
+        "Could not parse hosted response body as JSON" in record.message
+        for record in caplog.records
+    )

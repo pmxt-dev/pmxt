@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Callable, Mapping, Sequence
 from typing import ClassVar, TYPE_CHECKING
 
@@ -19,6 +20,9 @@ from .errors import (
 
 if TYPE_CHECKING:
     import httpx
+
+
+logger = logging.getLogger(__name__)
 
 
 class HostedTradingError(PmxtError):
@@ -178,7 +182,8 @@ def _matches_status(expected_status: int | None, status: int) -> bool:
 def _json_payload(response: httpx.Response) -> object | None:
     try:
         return response.json()
-    except ValueError:
+    except ValueError as exc:
+        logger.debug("Could not parse hosted response body as JSON: %s", exc)
         return None
 
 

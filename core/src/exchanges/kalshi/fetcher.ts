@@ -14,9 +14,6 @@ export interface KalshiRawMarket {
     ticker: string;
     title?: string;
     status?: string;
-    last_price?: number;
-    yes_ask?: number;
-    yes_bid?: number;
     subtitle?: string;
     yes_sub_title?: string;
     previous_price_dollars?: string;
@@ -39,10 +36,8 @@ export interface KalshiRawMarket {
     rules_secondary?: string;
     expiration_time: string;
     volume_24h?: number;
-    volume?: number;
     liquidity?: number;
     liquidity_dollars?: string;
-    open_interest?: number;
     volume_24h_fp?: string;
     volume_fp?: string;
     open_interest_fp?: string;

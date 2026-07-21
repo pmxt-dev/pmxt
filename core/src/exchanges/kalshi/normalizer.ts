@@ -18,11 +18,11 @@ const KALSHI_PROMOTED_SERIES_KEYS = [
 
 const KALSHI_PROMOTED_MARKET_KEYS = [
     'ticker', 'title', 'rules_primary', 'rules_secondary', 'expiration_time',
-    'volume_24h_fp', 'volume_24h', 'volume', 'volume_fp',
-    'liquidity_dollars', 'liquidity', 'open_interest_fp', 'open_interest',
+    'volume_24h_fp', 'volume_24h', 'volume_fp',
+    'liquidity_dollars', 'liquidity', 'open_interest_fp',
     'status', 'last_price_dollars', 'previous_price_dollars',
     'yes_ask_dollars', 'yes_bid_dollars', 'no_ask_dollars', 'no_bid_dollars',
-    'response_price_units', 'last_price', 'yes_ask', 'yes_bid',
+    'response_price_units',
 ] as const;
 
 function parseKalshiPrice(value: string | number | undefined, responseUnits?: string): number | undefined {
@@ -54,8 +54,7 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
     normalizeRawMarket(event: KalshiRawEvent, market: KalshiRawMarket): UnifiedMarket | null {
         if (!market) return null;
 
-        // Kalshi API v2 migrated from cent integers to FixedPointDollars strings.
-        // Prefer the _dollars fields; fall back to deprecated cent fields.
+        // Kalshi API v2 returns prices as FixedPointDollars strings.
         const yesBid = parseKalshiPrice(market.yes_bid_dollars, market.response_price_units);
         const yesAsk = parseKalshiPrice(market.yes_ask_dollars, market.response_price_units);
         const noBid = parseKalshiPrice(market.no_bid_dollars, market.response_price_units);
@@ -67,12 +66,6 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
             price = (yesAsk + yesBid) / 2;
         } else if (yesAsk != null) {
             price = yesAsk;
-        } else if (market.last_price) {
-            price = fromKalshiCents(market.last_price);
-        } else if (market.yes_ask && market.yes_bid) {
-            price = (fromKalshiCents(market.yes_ask) + fromKalshiCents(market.yes_bid)) / 2;
-        } else if (market.yes_ask) {
-            price = fromKalshiCents(market.yes_ask);
         }
 
         const candidateName = this.deriveOutcomeLabel(market);
@@ -122,10 +115,10 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
             slug: market.ticker,
             outcomes,
             resolutionDate: new Date(market.expiration_time),
-            volume24h: parseFloat(market.volume_24h_fp ?? '') || Number(market.volume_24h || market.volume || 0),
-            volume: parseFloat(market.volume_fp ?? '') || Number(market.volume || 0),
+            volume24h: parseFloat(market.volume_24h_fp ?? '') || Number(market.volume_24h || 0),
+            volume: parseFloat(market.volume_fp ?? '') || 0,
             liquidity: parseFloat(String(market.liquidity_dollars || market.liquidity || '0')) || 0,
-            openInterest: parseFloat(market.open_interest_fp ?? '') || Number(market.open_interest || 0),
+            openInterest: parseFloat(market.open_interest_fp ?? '') || 0,
             url: `https://kalshi.com/events/${event.event_ticker}`,
             category: event.category,
             tags: unifiedTags,
@@ -632,11 +625,11 @@ export class KalshiNormalizer implements IExchangeNormalizer<KalshiRawEvent, Kal
 // -- Event sorting utility (exported for fetchEvents) -------------------------
 
 function eventVolume(event: KalshiRawEvent): number {
-    return (event.markets || []).reduce((sum: number, m: KalshiRawMarket) => sum + (parseFloat(m.volume_fp ?? '') || Number(m.volume || 0)), 0);
+    return (event.markets || []).reduce((sum: number, m: KalshiRawMarket) => sum + (parseFloat(m.volume_fp ?? '') || 0), 0);
 }
 
 function eventLiquidity(event: KalshiRawEvent): number {
-    return (event.markets || []).reduce((sum: number, m: KalshiRawMarket) => sum + (parseFloat(m.open_interest_fp ?? '') || parseFloat(String(m.liquidity_dollars || m.open_interest || m.liquidity || '0')) || 0), 0);
+    return (event.markets || []).reduce((sum: number, m: KalshiRawMarket) => sum + (parseFloat(m.open_interest_fp ?? '') || parseFloat(String(m.liquidity_dollars || m.liquidity || '0')) || 0), 0);
 }
 
 function eventNewest(event: KalshiRawEvent): number {

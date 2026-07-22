@@ -1,4 +1,5 @@
 import { Router } from "../pmxt/router";
+import type { MatchedMarketPair } from "../pmxt/models";
 
 const PMXT_API_KEY = "test_pmxt_key_xxx";
 const BASE_URL = "https://api.example.test";
@@ -101,5 +102,70 @@ describe("Router.fetchOrderBook", () => {
     expect(Array.isArray(result)).toBe(false);
     expect(result.bids[0].price).toBe(0.4);
     expect(result.asks[0].price).toBe(0.6);
+  });
+});
+
+describe("Router matched-market pair methods", () => {
+  const pairPayload = {
+    marketA: {
+      marketId: "market-a",
+      title: "Market A",
+      outcomes: [],
+      volume24h: 10,
+      liquidity: 20,
+      url: "https://example.test/a",
+      sourceExchange: "venue-a",
+    },
+    marketB: {
+      marketId: "market-b",
+      title: "Market B",
+      outcomes: [],
+      volume24h: 30,
+      liquidity: 40,
+      url: "https://example.test/b",
+      sourceExchange: "venue-b",
+    },
+    priceDifference: 0.12,
+    venueA: "venue-a",
+    venueB: "venue-b",
+    priceA: 0.44,
+    priceB: 0.56,
+    relation: "identity",
+    confidence: 0.97,
+    reasoning: "same resolution condition",
+  };
+
+  it("uses the typed Router override and converts nested markets", async () => {
+    const { captured } = installFetchSpy(() =>
+      jsonResponse({ success: true, data: [pairPayload] }),
+    );
+    const router = makeRouter();
+
+    const result: MatchedMarketPair[] = await router.fetchMatchedMarkets({
+      minDifference: 0.1,
+      relations: ["identity"],
+    });
+
+    expect(Object.prototype.hasOwnProperty.call(Router.prototype, "fetchMatchedMarkets")).toBe(true);
+    expect(captured[0].url).toBe(`${BASE_URL}/api/router/fetchMatchedMarkets`);
+    expect(JSON.parse(captured[0].init?.body as string).args).toEqual([
+      { minDifference: 0.1, relations: ["identity"] },
+    ]);
+    expect(result[0].marketA.marketId).toBe("market-a");
+    expect(result[0].marketB.sourceExchange).toBe("venue-b");
+    expect(result[0].priceDifference).toBe(0.12);
+  });
+
+  it("keeps fetchMatchedPrices as a typed alias", async () => {
+    const { captured } = installFetchSpy(() =>
+      jsonResponse({ success: true, data: [pairPayload] }),
+    );
+    const router = makeRouter();
+
+    const result: MatchedMarketPair[] = await router.fetchMatchedPrices({ limit: 2 });
+
+    expect(Object.prototype.hasOwnProperty.call(Router.prototype, "fetchMatchedPrices")).toBe(true);
+    expect(captured[0].url).toBe(`${BASE_URL}/api/router/fetchMatchedMarkets`);
+    expect(result[0].venueA).toBe("venue-a");
   });
 });

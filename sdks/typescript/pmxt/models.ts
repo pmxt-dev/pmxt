@@ -1148,6 +1148,41 @@ export interface MatchedEventCluster {
     rawMatches?: MatchedEventClusterEdge[];
 }
 
+/** Parameters for the Router's legacy matched-market pair endpoint. */
+export interface FetchMatchedMarketsParams {
+    /** Only return pairs whose price difference meets this threshold. */
+    minDifference?: number;
+
+    /** Filter source markets by category. */
+    category?: string;
+
+    /** Maximum number of source markets to scan. */
+    limit?: number;
+
+    /** Relation types to include (defaults to identity). */
+    relations?: MatchRelation[];
+}
+
+/** @deprecated Use {@link FetchMatchedMarketsParams} instead. */
+export type FetchMatchedPricesParams = FetchMatchedMarketsParams;
+
+/** A pair of semantically matched markets with their comparable prices. */
+export interface MatchedMarketPair {
+    marketA: UnifiedMarket;
+    marketB: UnifiedMarket;
+    priceDifference: number;
+    venueA: string;
+    venueB: string;
+    priceA: number;
+    priceB: number;
+    relation?: MatchRelation;
+    confidence?: number;
+    reasoning?: string | null;
+}
+
+/** @deprecated Use {@link MatchedMarketPair} instead. */
+export type MatchedPricePair = MatchedMarketPair;
+
 /** Side-by-side price comparison for a matched market. */
 export interface PriceComparison {
     /** The matched market. */

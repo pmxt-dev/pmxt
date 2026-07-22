@@ -957,6 +957,18 @@ FetchMatchedMarketClustersParams = MatchedMarketClusterParams
 FetchMatchedEventClustersParams = MatchedEventClusterParams
 
 
+class FetchMatchedMarketsParams(TypedDict, total=False):
+    """Parameters for the Router's legacy matched-market pair endpoint."""
+
+    min_difference: float
+    category: str
+    limit: int
+    relations: List[MatchRelation]
+
+
+FetchMatchedPricesParams = FetchMatchedMarketsParams
+
+
 @dataclass
 class MatchedMarketCluster:
     """A connected cluster of semantically matched markets across venues."""
@@ -1013,6 +1025,25 @@ class MatchedEventCluster:
 
     raw_matches: Optional[List[Dict[str, Any]]] = None
     """Pairwise match edges used to build the cluster when requested."""
+
+
+@dataclass
+class MatchedMarketPair:
+    """A pair of semantically matched markets with comparable prices."""
+
+    market_a: UnifiedMarket
+    market_b: UnifiedMarket
+    price_difference: float
+    venue_a: str
+    venue_b: str
+    price_a: float
+    price_b: float
+    relation: Optional[MatchRelation] = None
+    confidence: Optional[float] = None
+    reasoning: Optional[str] = None
+
+
+MatchedPricePair = MatchedMarketPair
 
 
 @dataclass

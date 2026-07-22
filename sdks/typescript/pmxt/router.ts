@@ -16,6 +16,10 @@ import {
     MatchedMarketClusterParams,
     MatchedEventCluster,
     MatchedMarketCluster,
+    FetchMatchedMarketsParams,
+    FetchMatchedPricesParams,
+    MatchedMarketPair,
+    MatchedPricePair,
     PriceComparison,
     ArbitrageOpportunity,
     UnifiedMarket,
@@ -188,6 +192,21 @@ function parseMatchedEventCluster(raw: any): MatchedEventCluster {
     return {
         ...raw,
         events: (raw.events || []).map(convertEvent),
+    };
+}
+
+function parseMatchedMarketPair(raw: any): MatchedMarketPair {
+    return {
+        marketA: convertMarket(raw.marketA || {}),
+        marketB: convertMarket(raw.marketB || {}),
+        priceDifference: raw.priceDifference ?? raw.spread ?? 0,
+        venueA: raw.venueA ?? raw.buyVenue ?? '',
+        venueB: raw.venueB ?? raw.sellVenue ?? '',
+        priceA: raw.priceA ?? raw.buyPrice ?? 0,
+        priceB: raw.priceB ?? raw.sellPrice ?? 0,
+        relation: raw.relation,
+        confidence: raw.confidence,
+        reasoning: raw.reasoning ?? null,
     };
 }
 
@@ -444,6 +463,22 @@ export class Router extends Exchange {
             if (error instanceof Error) throw error;
             throw new Error(`Failed to fetchMatchedEventClusters: ${error}`);
         }
+    }
+
+    /**
+     * Fetch pairs of semantically matched markets with comparable prices.
+     *
+     * @deprecated Use {@link fetchMarketMatches} without a market ID instead.
+     */
+    async fetchMatchedMarkets(params?: FetchMatchedMarketsParams): Promise<MatchedMarketPair[]> {
+        const raw = await super.fetchMatchedMarkets(params);
+        return (raw || []).map(parseMatchedMarketPair);
+    }
+
+    /** @deprecated Use {@link fetchMatchedMarkets} instead. */
+    async fetchMatchedPrices(params?: FetchMatchedPricesParams): Promise<MatchedPricePair[]> {
+        logger.warn('fetchMatchedPrices is deprecated, use fetchMatchedMarkets instead');
+        return this.fetchMatchedMarkets(params);
     }
 
     // ------------------------------------------------------------------

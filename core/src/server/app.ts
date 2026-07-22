@@ -437,7 +437,8 @@ export function createApp(options: CreateAppOptions = {}): Express {
         credentials &&
         (credentials.privateKey ||
           credentials.apiKey ||
-          credentials.apiToken)
+          credentials.apiToken ||
+          credentials.rpcUrl)
       ) {
         exchange = createExchange(exchangeName, credentials);
       } else {

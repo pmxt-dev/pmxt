@@ -401,6 +401,9 @@ export interface ExchangeCredentials {
 
     // Optional base URL override for venue API (e.g., proxy for geo-restricted venues)
     baseUrl?: string;
+
+    // Optional blockchain RPC override for venues backed by an on-chain client.
+    rpcUrl?: string;
 }
 
 export interface ExchangeOptions {

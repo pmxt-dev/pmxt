@@ -16,6 +16,10 @@ from .models import (
     EventMatchResult,
     MatchedEventCluster,
     MatchedMarketCluster,
+    FetchMatchedMarketsParams,
+    FetchMatchedPricesParams,
+    MatchedMarketPair,
+    MatchedPricePair,
     PriceComparison,
     ArbitrageOpportunity,
     MatchRelation,
@@ -106,6 +110,21 @@ def _parse_event_cluster(raw: Dict[str, Any]) -> MatchedEventCluster:
         category=raw.get("category"),
         volume_24h=raw.get("volume24h", raw.get("volume_24h")),
         raw_matches=raw.get("rawMatches", raw.get("raw_matches")),
+    )
+
+
+def _parse_matched_market_pair(raw: Dict[str, Any]) -> MatchedMarketPair:
+    return MatchedMarketPair(
+        market_a=_parse_market(raw.get("marketA", {})),
+        market_b=_parse_market(raw.get("marketB", {})),
+        price_difference=raw.get("priceDifference", raw.get("spread", 0.0)),
+        venue_a=raw.get("venueA", raw.get("buyVenue", "")),
+        venue_b=raw.get("venueB", raw.get("sellVenue", "")),
+        price_a=raw.get("priceA", raw.get("buyPrice", 0.0)),
+        price_b=raw.get("priceB", raw.get("sellPrice", 0.0)),
+        relation=raw.get("relation"),
+        confidence=raw.get("confidence"),
+        reasoning=raw.get("reasoning"),
     )
 
 
@@ -440,6 +459,57 @@ class Router(Exchange):
 
         raw = self._get_catalog_path("/v0/matched-event-clusters", params)
         return [_parse_event_cluster(c) for c in _extract_response_list(raw)]
+
+    def fetch_matched_markets(
+        self,
+        params: Optional[FetchMatchedMarketsParams] = None,
+        *,
+        min_difference: Optional[float] = None,
+        category: Optional[str] = None,
+        limit: Optional[int] = None,
+        relations: Optional[List[MatchRelation]] = None,
+    ) -> List[MatchedMarketPair]:
+        """Fetch pairs of semantically matched markets with comparable prices.
+
+        Deprecated: use :meth:`fetch_market_matches` without a market ID instead.
+        """
+        request: FetchMatchedMarketsParams = {}
+        if params:
+            request.update(params)
+        if min_difference is not None:
+            request["min_difference"] = min_difference
+        if category is not None:
+            request["category"] = category
+        if limit is not None:
+            request["limit"] = limit
+        if relations is not None:
+            request["relations"] = relations
+
+        raw = super().fetch_matched_markets(request or None)
+        return [_parse_matched_market_pair(pair) for pair in raw or []]
+
+    def fetch_matched_prices(
+        self,
+        params: Optional[FetchMatchedPricesParams] = None,
+        *,
+        min_difference: Optional[float] = None,
+        category: Optional[str] = None,
+        limit: Optional[int] = None,
+        relations: Optional[List[MatchRelation]] = None,
+    ) -> List[MatchedPricePair]:
+        """Deprecated: use :meth:`fetch_matched_markets` instead."""
+        warnings.warn(
+            "fetch_matched_prices is deprecated, use fetch_matched_markets instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.fetch_matched_markets(
+            params,
+            min_difference=min_difference,
+            category=category,
+            limit=limit,
+            relations=relations,
+        )
 
     # ------------------------------------------------------------------
     # Price comparison

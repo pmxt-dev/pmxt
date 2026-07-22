@@ -13,7 +13,7 @@ import json
 from typing import Any, Dict
 
 import pmxt
-from pmxt.models import SqlResult, SqlColumn, SqlMeta, OrderBook
+from pmxt.models import SqlResult, SqlColumn, SqlMeta, OrderBook, MatchedMarketPair
 from pmxt.router import Router
 
 
@@ -102,6 +102,97 @@ def test_fetch_order_book_returns_single_book(monkeypatch):
     assert book.asks[0].price == 0.6
 
 
+def test_fetch_matched_markets_uses_typed_router_override(monkeypatch):
+    router = _make_router()
+    payload = {
+        "success": True,
+        "data": [
+            {
+                "marketA": {
+                    "marketId": "market-a",
+                    "title": "Market A",
+                    "outcomes": [],
+                    "volume24h": 10,
+                    "liquidity": 20,
+                    "url": "https://example.test/a",
+                    "sourceExchange": "venue-a",
+                },
+                "marketB": {
+                    "marketId": "market-b",
+                    "title": "Market B",
+                    "outcomes": [],
+                    "volume24h": 30,
+                    "liquidity": 40,
+                    "url": "https://example.test/b",
+                    "sourceExchange": "venue-b",
+                },
+                "priceDifference": 0.12,
+                "venueA": "venue-a",
+                "venueB": "venue-b",
+                "priceA": 0.44,
+                "priceB": 0.56,
+                "relation": "identity",
+                "confidence": 0.97,
+                "reasoning": "same resolution condition",
+            }
+        ],
+    }
+    calls = _install_call_api(monkeypatch, router, payload)
+
+    result = router.fetch_matched_markets(
+        min_difference=0.1,
+        relations=["identity"],
+    )
+
+    assert calls[0]["url"] == f"{BASE_URL}/api/router/fetchMatchedMarkets"
+    assert calls[0]["body"]["args"] == [{"minDifference": 0.1, "relations": ["identity"]}]
+    assert isinstance(result[0], MatchedMarketPair)
+    assert result[0].market_a.market_id == "market-a"
+    assert result[0].market_b.source_exchange == "venue-b"
+    assert result[0].price_difference == 0.12
+
+
+def test_fetch_matched_prices_is_typed_alias(monkeypatch):
+    router = _make_router()
+    payload = {
+        "success": True,
+        "data": [
+            {
+                "marketA": {
+                    "marketId": "market-a",
+                    "title": "Market A",
+                    "outcomes": [],
+                    "volume24h": 0,
+                    "liquidity": 0,
+                    "url": "https://example.test/a",
+                },
+                "marketB": {
+                    "marketId": "market-b",
+                    "title": "Market B",
+                    "outcomes": [],
+                    "volume24h": 0,
+                    "liquidity": 0,
+                    "url": "https://example.test/b",
+                },
+                "priceDifference": 0.05,
+                "venueA": "a",
+                "venueB": "b",
+                "priceA": 0.45,
+                "priceB": 0.5,
+            }
+        ],
+    }
+    calls = _install_call_api(monkeypatch, router, payload)
+
+    import pytest
+
+    with pytest.warns(DeprecationWarning):
+        result = router.fetch_matched_prices(limit=2)
+
+    assert calls[0]["url"] == f"{BASE_URL}/api/router/fetchMatchedMarkets"
+    assert isinstance(result[0], MatchedMarketPair)
+
+
 def test_router_class_retains_all_methods():
     """AST check: fetch_order_book/sql are real Router methods and all the
     pre-existing public methods are still defined on the class body."""
@@ -118,6 +209,8 @@ def test_router_class_retains_all_methods():
         "fetch_event_matches",
         "fetch_matched_market_clusters",
         "fetch_matched_event_clusters",
+        "fetch_matched_markets",
+        "fetch_matched_prices",
         "compare_market_prices",
         "fetch_hedges",
         "fetch_arbitrage",
@@ -132,3 +225,8 @@ def test_sql_types_exported_from_package_root():
     assert pmxt.SqlResult is SqlResult
     assert pmxt.SqlColumn is SqlColumn
     assert pmxt.SqlMeta is SqlMeta
+
+
+def test_matched_pair_types_exported_from_package_root():
+    assert pmxt.MatchedMarketPair is MatchedMarketPair
+    assert pmxt.MatchedPricePair is MatchedMarketPair

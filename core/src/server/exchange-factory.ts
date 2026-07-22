@@ -85,8 +85,11 @@ export function createExchange(
       });
     case "baozi":
       return new BaoziExchange({
-        privateKey:
-          credentials?.privateKey || process.env.BAOZI_PRIVATE_KEY,
+        credentials: {
+          privateKey:
+            credentials?.privateKey || process.env.BAOZI_PRIVATE_KEY,
+        },
+        rpcUrl: credentials?.rpcUrl,
       });
     case "myriad":
       return new MyriadExchange({

@@ -13,6 +13,9 @@ const getFetcher = (exchange: unknown): Record<string, unknown> | undefined =>
 const getBaseUrl = (exchange: unknown): string | undefined =>
     (exchange as { baseUrl?: string }).baseUrl;
 
+const getRpcEndpoint = (exchange: unknown): string | undefined =>
+    (exchange as { connection?: { rpcEndpoint?: string } }).connection?.rpcEndpoint;
+
 const withEnv = <T>(env: NodeJS.ProcessEnv, run: () => T): T => {
     const originalEnv = process.env;
     process.env = { ...originalEnv, ...env };
@@ -24,6 +27,14 @@ const withEnv = <T>(env: NodeJS.ProcessEnv, run: () => T): T => {
 };
 
 describe('createExchange', () => {
+    test('baozi forwards a per-request RPC URL to its Solana connection', () => {
+        const exchange = createExchange('baozi', {
+            rpcUrl: 'https://baozi-rpc.test.local',
+        });
+
+        expect(getRpcEndpoint(exchange)).toBe('https://baozi-rpc.test.local');
+    });
+
     test('kalshi-demo prefers demo credentials before production fallbacks', () => {
         withEnv(
             {

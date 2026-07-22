@@ -2,6 +2,28 @@ import ast
 from pathlib import Path
 
 
+def test_hosted_trading_errors_are_top_level_public_exports():
+    import pmxt
+    from pmxt import _hosted_errors
+
+    hosted_error_names = {
+        "HostedTradingError",
+        "InsufficientEscrowBalance",
+        "OrderSizeTooSmall",
+        "InvalidApiKey",
+        "OutcomeNotFound",
+        "CatalogUnavailable",
+        "BuiltOrderExpired",
+        "InvalidSignature",
+        "NoLiquidity",
+        "MissingWalletAddress",
+    }
+
+    assert hosted_error_names <= set(pmxt.__all__)
+    for name in hosted_error_names:
+        assert getattr(pmxt, name) is getattr(_hosted_errors, name)
+
+
 def test_websocket_return_types_are_public_exports():
     init_path = Path(__file__).resolve().parents[1] / "pmxt" / "__init__.py"
     tree = ast.parse(init_path.read_text(encoding="utf-8"))

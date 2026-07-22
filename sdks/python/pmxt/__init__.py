@@ -40,6 +40,18 @@ from .errors import (
     NetworkError,
     ExchangeNotAvailable,
 )
+from ._hosted_errors import (
+    HostedTradingError,
+    InsufficientEscrowBalance,
+    OrderSizeTooSmall,
+    InvalidApiKey,
+    OutcomeNotFound,
+    CatalogUnavailable,
+    BuiltOrderExpired,
+    InvalidSignature,
+    NoLiquidity,
+    MissingWalletAddress,
+)
 from .models import (
     UnifiedMarket,
     UnifiedEvent,
@@ -225,6 +237,16 @@ __all__ = [
     "ValidationError",
     "NetworkError",
     "ExchangeNotAvailable",
+    "HostedTradingError",
+    "InsufficientEscrowBalance",
+    "OrderSizeTooSmall",
+    "InvalidApiKey",
+    "OutcomeNotFound",
+    "CatalogUnavailable",
+    "BuiltOrderExpired",
+    "InvalidSignature",
+    "NoLiquidity",
+    "MissingWalletAddress",
     # Data Models
     "UnifiedMarket",
     "UnifiedEvent",

@@ -33,9 +33,7 @@ class HostedTradingError(PmxtError):
         self.status = status_value
         self.detail = detail_value
         retryable = (
-            self.DEFAULT_RETRYABLE
-            if self.DEFAULT_RETRYABLE is not None
-            else status_value >= 500
+            self.DEFAULT_RETRYABLE if self.DEFAULT_RETRYABLE is not None else status_value >= 500
         )
         super().__init__(detail_value, code=self.DEFAULT_CODE, retryable=retryable)
 
@@ -147,8 +145,6 @@ HOSTED_ERROR_PATTERNS: list[HostedErrorPattern] = [
     (None, _matches_invalid_signature, InvalidSignature),
     (None, _matches_no_liquidity, NoLiquidity),
 ]
-
-ERROR_PATTERN_TABLE = HOSTED_ERROR_PATTERNS
 
 
 def raise_from_response(response: httpx.Response) -> None:

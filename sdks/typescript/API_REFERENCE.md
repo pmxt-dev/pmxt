@@ -130,6 +130,133 @@ exchange.has
 
 
 ---
+### `getAuthNonce`
+
+Override in subclasses to force specific capability values.
+
+
+**Signature:**
+
+```typescript
+async getAuthNonce(walletAddress: string): Promise<AuthNonceResponse>
+```
+
+**Parameters:**
+
+- `walletAddress` (string): The wallet address to authenticate
+
+**Returns:** Promise<AuthNonceResponse> - Result
+
+**Example:**
+
+```typescript
+await exchange.getAuthNonce("...")
+```
+
+
+---
+### `loginWithSignature`
+
+Login with a signed nonce to obtain session credentials.
+
+
+**Signature:**
+
+```typescript
+async loginWithSignature(walletAddress: string, signature: string, nonce: string): Promise<AuthLoginResponse>
+```
+
+**Parameters:**
+
+- `walletAddress` (string): The wallet address
+- `signature` (string): The signature of the nonce message
+- `nonce` (string): The nonce that was signed
+
+**Returns:** Promise<AuthLoginResponse> - Result
+
+**Example:**
+
+```typescript
+await exchange.loginWithSignature("...", "...", "...")
+```
+
+
+---
+### `logout`
+
+Logout and invalidate the current session.
+
+
+**Signature:**
+
+```typescript
+async logout(walletAddress?: string): Promise<void>
+```
+
+**Parameters:**
+
+- `walletAddress` (string) - **Optional**: The wallet address to logout (optional)
+
+**Returns:** Promise<void> - Result
+
+**Example:**
+
+```typescript
+await exchange.logout({ walletAddress: "..." })
+```
+
+
+---
+### `isSessionActive`
+
+Check if a session is active for the given wallet address.
+
+
+**Signature:**
+
+```typescript
+async isSessionActive(walletAddress: string): Promise<boolean>
+```
+
+**Parameters:**
+
+- `walletAddress` (string): The wallet address to check
+
+**Returns:** Promise<boolean> - Result
+
+**Example:**
+
+```typescript
+await exchange.isSessionActive("...")
+```
+
+
+---
+### `getSession`
+
+Get the stored session for a wallet address.
+
+
+**Signature:**
+
+```typescript
+async getSession(walletAddress: string): Promise<AuthSession | undefined>
+```
+
+**Parameters:**
+
+- `walletAddress` (string): The wallet address
+
+**Returns:** Promise<AuthSession | undefined> - Result
+
+**Example:**
+
+```typescript
+await exchange.getSession("...")
+```
+
+
+---
 ### `loadMarkets`
 
 Load and cache all markets from the exchange into `this.markets` and `this.marketsBySlug`.
@@ -1174,12 +1301,12 @@ Compare live prices for the same market across venues. Finds identity matches an
 **Signature:**
 
 ```typescript
-async compareMarketPrices(params: FetchMatchesParams): Promise<PriceComparison[]>
+async compareMarketPrices(params: CompareMarketPricesParams): Promise<PriceComparison[]>
 ```
 
 **Parameters:**
 
-- `params` (FetchMatchesParams): Match filter parameters (uses relation: 'identity' internally)
+- `params` (CompareMarketPricesParams): Match filter parameters (uses relation: 'identity' internally)
 
 **Returns:** Promise<[PriceComparison](#pricecomparison)[]> - Array of price comparisons across venues
 

@@ -128,6 +128,133 @@ exchange.has
 
 
 ---
+### `get_auth_nonce`
+
+Override in subclasses to force specific capability values.
+
+
+**Signature:**
+
+```python
+def get_auth_nonce(wallet_address: str) -> AuthNonceResponse:
+```
+
+**Parameters:**
+
+- `wallet_address` (str): The wallet address to authenticate
+
+**Returns:** AuthNonceResponse - Result
+
+**Example:**
+
+```python
+exchange.get_auth_nonce(wallet_address="...")
+```
+
+
+---
+### `login_with_signature`
+
+Login with a signed nonce to obtain session credentials.
+
+
+**Signature:**
+
+```python
+def login_with_signature(wallet_address: str, signature: str, nonce: str) -> AuthLoginResponse:
+```
+
+**Parameters:**
+
+- `wallet_address` (str): The wallet address
+- `signature` (str): The signature of the nonce message
+- `nonce` (str): The nonce that was signed
+
+**Returns:** AuthLoginResponse - Result
+
+**Example:**
+
+```python
+exchange.login_with_signature(wallet_address="...", signature="...", nonce="...")
+```
+
+
+---
+### `logout`
+
+Logout and invalidate the current session.
+
+
+**Signature:**
+
+```python
+def logout(wallet_address: Optional[str] = None) -> None:
+```
+
+**Parameters:**
+
+- `wallet_address` (str) - **Optional**: The wallet address to logout (optional)
+
+**Returns:** None - Result
+
+**Example:**
+
+```python
+exchange.logout(wallet_address="...")
+```
+
+
+---
+### `is_session_active`
+
+Check if a session is active for the given wallet address.
+
+
+**Signature:**
+
+```python
+def is_session_active(wallet_address: str) -> bool:
+```
+
+**Parameters:**
+
+- `wallet_address` (str): The wallet address to check
+
+**Returns:** bool - Result
+
+**Example:**
+
+```python
+exchange.is_session_active(wallet_address="...")
+```
+
+
+---
+### `get_session`
+
+Get the stored session for a wallet address.
+
+
+**Signature:**
+
+```python
+def get_session(wallet_address: str) -> Optional[AuthSession]:
+```
+
+**Parameters:**
+
+- `wallet_address` (str): The wallet address
+
+**Returns:** Optional[AuthSession] - Result
+
+**Example:**
+
+```python
+exchange.get_session(wallet_address="...")
+```
+
+
+---
 ### `load_markets`
 
 Load and cache all markets from the exchange into `this.markets` and `this.marketsBySlug`.
@@ -1172,12 +1299,12 @@ Compare live prices for the same market across venues. Finds identity matches an
 **Signature:**
 
 ```python
-def compare_market_prices(params: FetchMatchesParams) -> List[PriceComparison]:
+def compare_market_prices(params: CompareMarketPricesParams) -> List[PriceComparison]:
 ```
 
 **Parameters:**
 
-- `params` (FetchMatchesParams): Match filter parameters (uses relation: 'identity' internally)
+- `params` (CompareMarketPricesParams): Match filter parameters (uses relation: 'identity' internally)
 
 **Returns:** List[[PriceComparison](#pricecomparison)] - Array of price comparisons across venues
 

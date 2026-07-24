@@ -35,6 +35,7 @@ export type { Ticker, Tickers, OHLCV, Market as FeedMarket, OracleRound, FeedCli
 export { Router } from "./pmxt/router.js";
 export type { RouterOptions } from "./pmxt/router.js";
 export { ServerManager } from "./pmxt/server-manager.js";
+export type { ServerManagerOptions } from "./pmxt/server-manager.js";
 export {
     HOSTED_URL,
     LOCAL_URL,

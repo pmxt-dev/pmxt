@@ -751,12 +751,10 @@ and `trade.pmxt.dev`) — see [hosts](https://pmxt.dev/docs/authentication#hosts
 #### Limits
 
 
-| Plan | Monthly credits | Per-minute | WebSocket streams | Price |
-| ---- | --------------- | ---------- | ----------------- | ----- |
-| Free | 25,000 | 60 | 5 | $0/mo |
-| Starter | 250,000 | 300 | 20 | $29.99/mo |
-| Pro | 1,000,000 | 1,000 | 100 | $99.99/mo |
-| Enterprise | Custom | Custom | Custom | [Contact us](https://pmxt.dev/pricing) |
+| Endpoint | Per-minute | Per-month |
+| -------- | ---------- | --------- |
+| `/v0/*` | 60 | 25,000 |
+| `/api/*` | 60 | 25,000 |
 
 
 Limits apply per API key across both hosts (`api.pmxt.dev` and
@@ -1028,6 +1026,7 @@ The hosted catalog currently ingests the following venues:
 | Smarkets | `smarkets` | polling |
 | Probable | `probable` | polling |
 | Myriad | `myriad` | polling |
+| hyperliquid | `hyperliquid` | polling |
 
 
 #### Feature support
@@ -3887,6 +3886,157 @@ curl "https://api.pmxt.dev/api/polymarket/fetchMarket?slug=will-gavin-newsom-win
 </CodeGroup>
 
 
+## Cross Exchange
+
+### Fetch matched event clusters
+
+`GET /v0/matched-event-clusters`
+
+Returns connected clusters of semantically matched events across venues. Use this endpoint to browse or anchor event-level matches while preserving each venue's child markets.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventId` | string | No | Anchor the response to a specific event ID. |
+| `slug` | string | No | Anchor the response to a specific event slug. |
+| `url` | string | No | Anchor the response to a specific event URL. |
+| `query` | string | No | Text search across cluster titles. |
+| `category` | string | No | Filter both sides of matched edges by event category. |
+| `relations` | string | No | Comma-separated relation filter. Valid values: identity (same resolution), subset (A yes implies B yes), superset (B yes implies A yes), overlap (some shared scenarios), and disjoint (mutually exclusive). Defaults to identity. For subset and superset, direction follows the pairwise edge direction returned in rawMatches when includeRawMatches=true. |
+| `relation` | string | No | Single relation filter. Alias for relations. |
+| `minConfidence` | number | No |  |
+| `venues` | string | No | Comma-separated venue allow-list. |
+| `excludeVenues` | string | No | Comma-separated venue deny-list. |
+| `minVenues` | integer | No | Minimum number of venues required in a cluster. |
+| `withOrderbook` | boolean | No | Require at least one live orderbook on each matched edge. |
+| `updatedSince` | string | No | Only include matches updated after this timestamp. |
+| `includeRawMatches` | boolean | No | Include the pairwise match edges used to build each cluster. |
+| `sort` | string | No |  |
+| `limit` | integer | No |  |
+| `offset` | integer | No |  |
+| `edgeLimit` | integer | No | Maximum number of pairwise edges to scan before clustering. |
+
+**Python:**
+```python
+import pmxt
+
+router = pmxt.Router(pmxt_api_key="YOUR_PMXT_API_KEY")
+clusters = router.fetch_matched_event_clusters(
+    query="Satoshi",
+    relation="identity",
+    min_venues=2,
+    include_raw_matches=True,
+    limit=5,
+)
+
+for cluster in clusters:
+    venues = [event.source_exchange for event in cluster.events]
+    print(cluster.canonical_title, venues)
+
+```
+
+**TypeScript:**
+```typescript
+import { Router } from "pmxtjs";
+
+const router = new Router({ pmxtApiKey: "YOUR_PMXT_API_KEY" });
+
+async function main() {
+  const clusters = await router.fetchMatchedEventClusters({
+    query: "Satoshi",
+    relation: "identity",
+    minVenues: 2,
+    includeRawMatches: true,
+    limit: 5,
+  });
+
+  for (const cluster of clusters) {
+    console.log(
+      cluster.canonicalTitle,
+      cluster.events.map((event) => event.sourceExchange),
+    );
+  }
+}
+
+main();
+
+```
+
+
+### Fetch matched market clusters
+
+`GET /v0/matched-market-clusters`
+
+Returns connected clusters of semantically matched markets across venues. Use this endpoint to browse or anchor market-level matches without flattening the response into pairwise rows.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `marketId` | string | No | Anchor the response to a specific market ID. |
+| `slug` | string | No | Anchor the response to a specific market slug. |
+| `url` | string | No | Anchor the response to a specific market URL. |
+| `query` | string | No | Text search across cluster titles. |
+| `category` | string | No | Filter both sides of matched edges by market category. |
+| `relations` | string | No | Comma-separated relation filter. Valid values: identity (same resolution), subset (A yes implies B yes), superset (B yes implies A yes), overlap (some shared scenarios), and disjoint (mutually exclusive). Defaults to identity. For subset and superset, direction follows the pairwise edge direction returned in rawMatches when includeRawMatches=true. |
+| `relation` | string | No | Single relation filter. Alias for relations. |
+| `minConfidence` | number | No |  |
+| `venues` | string | No | Comma-separated venue allow-list. |
+| `excludeVenues` | string | No | Comma-separated venue deny-list. |
+| `minVenues` | integer | No | Minimum number of venues required in a cluster. |
+| `withOrderbook` | boolean | No | Require at least one live orderbook on each matched edge. |
+| `updatedSince` | string | No | Only include matches updated after this timestamp. |
+| `includeRawMatches` | boolean | No | Include the pairwise match edges used to build each cluster. |
+| `sort` | string | No |  |
+| `limit` | integer | No |  |
+| `offset` | integer | No |  |
+| `edgeLimit` | integer | No | Maximum number of pairwise edges to scan before clustering. |
+
+**Python:**
+```python
+import pmxt
+
+router = pmxt.Router(pmxt_api_key="YOUR_PMXT_API_KEY")
+clusters = router.fetch_matched_market_clusters(
+    query="Satoshi",
+    relation="identity",
+    min_venues=2,
+    include_raw_matches=True,
+    limit=5,
+)
+
+for cluster in clusters:
+    venues = [market.source_exchange for market in cluster.markets]
+    print(cluster.canonical_title, venues)
+
+```
+
+**TypeScript:**
+```typescript
+import { Router } from "pmxtjs";
+
+const router = new Router({ pmxtApiKey: "YOUR_PMXT_API_KEY" });
+
+async function main() {
+  const clusters = await router.fetchMatchedMarketClusters({
+    query: "Satoshi",
+    relation: "identity",
+    minVenues: 2,
+    includeRawMatches: true,
+    limit: 5,
+  });
+
+  for (const cluster of clusters) {
+    console.log(
+      cluster.canonicalTitle,
+      cluster.markets.map((market) => market.sourceExchange),
+    );
+  }
+}
+
+main();
+
+```
+
+
+
 ## Trading
 
 ### Create Order
@@ -4336,157 +4486,6 @@ const client = new Polymarket({
 
 const balances = await client.fetchBalance();
 console.log(balances[0].available, balances[0].currency);
-
-```
-
-
-
-## Cross Exchange
-
-### Fetch matched event clusters
-
-`GET /v0/matched-event-clusters`
-
-Returns connected clusters of semantically matched events across venues. Use this endpoint to browse or anchor event-level matches while preserving each venue's child markets.
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `eventId` | string | No | Anchor the response to a specific event ID. |
-| `slug` | string | No | Anchor the response to a specific event slug. |
-| `url` | string | No | Anchor the response to a specific event URL. |
-| `query` | string | No | Text search across cluster titles. |
-| `category` | string | No | Filter both sides of matched edges by event category. |
-| `relations` | string | No | Comma-separated relation filter. Valid values: identity (same resolution), subset (A yes implies B yes), superset (B yes implies A yes), overlap (some shared scenarios), and disjoint (mutually exclusive). Defaults to identity. For subset and superset, direction follows the pairwise edge direction returned in rawMatches when includeRawMatches=true. |
-| `relation` | string | No | Single relation filter. Alias for relations. |
-| `minConfidence` | number | No |  |
-| `venues` | string | No | Comma-separated venue allow-list. |
-| `excludeVenues` | string | No | Comma-separated venue deny-list. |
-| `minVenues` | integer | No | Minimum number of venues required in a cluster. |
-| `withOrderbook` | boolean | No | Require at least one live orderbook on each matched edge. |
-| `updatedSince` | string | No | Only include matches updated after this timestamp. |
-| `includeRawMatches` | boolean | No | Include the pairwise match edges used to build each cluster. |
-| `sort` | string | No |  |
-| `limit` | integer | No |  |
-| `offset` | integer | No |  |
-| `edgeLimit` | integer | No | Maximum number of pairwise edges to scan before clustering. |
-
-**Python:**
-```python
-import pmxt
-
-router = pmxt.Router(pmxt_api_key="YOUR_PMXT_API_KEY")
-clusters = router.fetch_matched_event_clusters(
-    query="Satoshi",
-    relation="identity",
-    min_venues=2,
-    include_raw_matches=True,
-    limit=5,
-)
-
-for cluster in clusters:
-    venues = [event.source_exchange for event in cluster.events]
-    print(cluster.canonical_title, venues)
-
-```
-
-**TypeScript:**
-```typescript
-import { Router } from "pmxtjs";
-
-const router = new Router({ pmxtApiKey: "YOUR_PMXT_API_KEY" });
-
-async function main() {
-  const clusters = await router.fetchMatchedEventClusters({
-    query: "Satoshi",
-    relation: "identity",
-    minVenues: 2,
-    includeRawMatches: true,
-    limit: 5,
-  });
-
-  for (const cluster of clusters) {
-    console.log(
-      cluster.canonicalTitle,
-      cluster.events.map((event) => event.sourceExchange),
-    );
-  }
-}
-
-main();
-
-```
-
-
-### Fetch matched market clusters
-
-`GET /v0/matched-market-clusters`
-
-Returns connected clusters of semantically matched markets across venues. Use this endpoint to browse or anchor market-level matches without flattening the response into pairwise rows.
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `marketId` | string | No | Anchor the response to a specific market ID. |
-| `slug` | string | No | Anchor the response to a specific market slug. |
-| `url` | string | No | Anchor the response to a specific market URL. |
-| `query` | string | No | Text search across cluster titles. |
-| `category` | string | No | Filter both sides of matched edges by market category. |
-| `relations` | string | No | Comma-separated relation filter. Valid values: identity (same resolution), subset (A yes implies B yes), superset (B yes implies A yes), overlap (some shared scenarios), and disjoint (mutually exclusive). Defaults to identity. For subset and superset, direction follows the pairwise edge direction returned in rawMatches when includeRawMatches=true. |
-| `relation` | string | No | Single relation filter. Alias for relations. |
-| `minConfidence` | number | No |  |
-| `venues` | string | No | Comma-separated venue allow-list. |
-| `excludeVenues` | string | No | Comma-separated venue deny-list. |
-| `minVenues` | integer | No | Minimum number of venues required in a cluster. |
-| `withOrderbook` | boolean | No | Require at least one live orderbook on each matched edge. |
-| `updatedSince` | string | No | Only include matches updated after this timestamp. |
-| `includeRawMatches` | boolean | No | Include the pairwise match edges used to build each cluster. |
-| `sort` | string | No |  |
-| `limit` | integer | No |  |
-| `offset` | integer | No |  |
-| `edgeLimit` | integer | No | Maximum number of pairwise edges to scan before clustering. |
-
-**Python:**
-```python
-import pmxt
-
-router = pmxt.Router(pmxt_api_key="YOUR_PMXT_API_KEY")
-clusters = router.fetch_matched_market_clusters(
-    query="Satoshi",
-    relation="identity",
-    min_venues=2,
-    include_raw_matches=True,
-    limit=5,
-)
-
-for cluster in clusters:
-    venues = [market.source_exchange for market in cluster.markets]
-    print(cluster.canonical_title, venues)
-
-```
-
-**TypeScript:**
-```typescript
-import { Router } from "pmxtjs";
-
-const router = new Router({ pmxtApiKey: "YOUR_PMXT_API_KEY" });
-
-async function main() {
-  const clusters = await router.fetchMatchedMarketClusters({
-    query: "Satoshi",
-    relation: "identity",
-    minVenues: 2,
-    includeRawMatches: true,
-    limit: 5,
-  });
-
-  for (const cluster of clusters) {
-    console.log(
-      cluster.canonicalTitle,
-      cluster.markets.map((market) => market.sourceExchange),
-    );
-  }
-}
-
-main();
 
 ```
 

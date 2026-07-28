@@ -140,6 +140,8 @@ export type HostedRoute =
     | "opinion_sell_polygon"
     | "opinion_sell_bsc_pull"
     | "cancel_polymarket"
+    | "cancel_limitless_polygon"
+    | "cancel_limitless_base_pull"
     | "cancel_opinion_polygon"
     | "cancel_opinion_bsc_pull"
     | "cancel_limitless_polygon"
@@ -207,6 +209,20 @@ const SCHEMAS: Readonly<Record<HostedRoute, TypedDataSchema>> = {
         domain: PREFUNDED_DOMAIN,
         fields: CANCEL_ORDER_FIELDS,
         messageKeys: messageKeysFromFields(CANCEL_ORDER_FIELDS),
+        walletField: "user",
+    },
+    cancel_limitless_polygon: {
+        primaryType: "CancelOrder",
+        domain: PREFUNDED_DOMAIN,
+        fields: CANCEL_ORDER_FIELDS,
+        messageKeys: messageKeysFromFields(CANCEL_ORDER_FIELDS),
+        walletField: "user",
+    },
+    cancel_limitless_base_pull: {
+        primaryType: "CancelPull",
+        domain: LIMITLESS_VENUE_DOMAIN,
+        fields: CANCEL_PULL_FIELDS,
+        messageKeys: messageKeysFromFields(CANCEL_PULL_FIELDS),
         walletField: "user",
     },
     cancel_opinion_polygon: {
@@ -423,7 +439,10 @@ export function validateEconomics(
     } else if (
         route === "opinion_buy" ||
         route === "opinion_sell_polygon" ||
-        route === "opinion_sell_bsc_pull"
+        route === "opinion_sell_bsc_pull" ||
+        route === "limitless_buy" ||
+        route === "limitless_sell_polygon" ||
+        route === "limitless_sell_base_pull"
     ) {
         validateOpinionMarketId(message, buildResponse);
     }

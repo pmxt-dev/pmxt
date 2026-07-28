@@ -1983,12 +1983,15 @@ export abstract class Exchange {
      */
     async fetchOHLCV(
         outcomeId: string | MarketOutcome,
-        params: any
+        params: any = {}
     ): Promise<PriceCandle[]> {
         await this.initPromise;
         const resolvedOutcomeId = resolveOutcomeId(outcomeId);
         try {
-            const paramsDict: any = { resolution: params.resolution };
+            const paramsDict: any = {};
+            if (params.resolution) {
+                paramsDict.resolution = params.resolution;
+            }
             if (params.start) {
                 paramsDict.start = params.start.toISOString();
             }
@@ -2021,7 +2024,7 @@ export abstract class Exchange {
      */
     async fetchTrades(
         outcomeId: string | MarketOutcome,
-        params: any
+        params: any = {}
     ): Promise<Trade[]> {
         await this.initPromise;
         const resolvedOutcomeId = resolveOutcomeId(outcomeId);

@@ -21,6 +21,8 @@ jest.mock("../pmxt/hosted-typed-data", () => ({
 
 import { Polymarket } from "../pmxt/client";
 import {
+  HOSTED_CATALOG_BASE_URL,
+  HOSTED_METHOD_ROUTES,
   HOSTED_TRADING_BASE_URL,
 } from "../pmxt/hosted-routing";
 import { NotSupported } from "../pmxt/errors";
@@ -85,6 +87,49 @@ afterEach(() => {
 // --------------------------------------------------------------------------
 
 describe("hosted read dispatch", () => {
+  it("route table includes hosted catalog order book reads", () => {
+    expect(HOSTED_METHOD_ROUTES.get("fetchOrderBook")).toMatchObject({
+      method: "POST",
+      path: "/api/{venue}/fetchOrderBook",
+      base: "catalog",
+    });
+    expect(HOSTED_METHOD_ROUTES.get("fetchOrderBooks")).toMatchObject({
+      method: "POST",
+      path: "/api/{venue}/fetchOrderBooks",
+      base: "catalog",
+    });
+  });
+
+  it("fetchOrderBook → hosted catalog /api/{venue}/fetchOrderBook", async () => {
+    const spy = installFetchSpy(() =>
+      jsonResponse({ success: true, data: { bids: [], asks: [] } }),
+    );
+    const api = makePolymarket();
+    await api.fetchOrderBook("outcome-1", 5, { outcome: "yes" } as any);
+    const reqs = captured(spy);
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0].url).toBe(`${HOSTED_CATALOG_BASE_URL}/api/polymarket/fetchOrderBook`);
+    expect(reqs[0].init?.method).toBe("POST");
+    const headers = reqs[0].init?.headers as Record<string, string> | undefined;
+    expect(headers?.Authorization).toBe(`Bearer ${PMXT_API_KEY}`);
+    const body = JSON.parse((reqs[0].init?.body as string) ?? "{}");
+    expect(body.args).toEqual(["outcome-1", 5, { outcome: "yes" }]);
+  });
+
+  it("fetchOrderBooks → hosted catalog /api/{venue}/fetchOrderBooks", async () => {
+    const spy = installFetchSpy(() =>
+      jsonResponse({ success: true, data: { "outcome-1": { bids: [], asks: [] } } }),
+    );
+    const api = makePolymarket();
+    await api.fetchOrderBooks(["outcome-1"]);
+    const reqs = captured(spy);
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0].url).toBe(`${HOSTED_CATALOG_BASE_URL}/api/polymarket/fetchOrderBooks`);
+    expect(reqs[0].init?.method).toBe("POST");
+    const body = JSON.parse((reqs[0].init?.body as string) ?? "{}");
+    expect(body.args).toEqual([["outcome-1"]]);
+  });
+
   it("fetchBalance → GET /v0/user/{addr}/balances", async () => {
     const spy = installFetchSpy(() =>
       jsonResponse({ balances: [{ currency: "USDC", amount: 12.5 }] }),

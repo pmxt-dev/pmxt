@@ -22,9 +22,9 @@ export interface ProbableRawMarket {
     slug?: string;
     market_slug?: string;
     endDate?: string;
-    volume24hr?: number;
-    volume?: number;
-    liquidity?: number;
+    volume24hr?: number | string;
+    volume?: number | string;
+    liquidity?: number | string;
     icon?: string;
     category?: string;
     tags?: string[];

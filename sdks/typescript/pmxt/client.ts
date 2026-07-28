@@ -276,8 +276,8 @@ export interface ExchangeOptions {
     /** Optional Polymarket Proxy/Smart Wallet address */
     proxyAddress?: string;
 
-    /** Optional signature type (0=EOA, 1=Proxy) */
-    signatureType?: number;
+    /** Optional signature type (0=EOA, 1=Proxy, or venue-specific string such as 'gnosis-safe') */
+    signatureType?: string | number;
 
     /**
      * EVM wallet address used for hosted reads/writes. Required for hosted
@@ -335,7 +335,7 @@ export abstract class Exchange {
     protected apiSecret?: string;
     protected privateKey?: string;
     protected proxyAddress?: string;
-    protected signatureType?: number;
+    protected signatureType?: string | number;
     protected api: DefaultApi;
     protected config: Configuration;
     protected serverManager: ServerManager;

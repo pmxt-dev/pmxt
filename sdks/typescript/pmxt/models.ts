@@ -1004,14 +1004,14 @@ export interface MatchResult extends Readonly<UnifiedMarket> {
     /** Confidence score (0.0 to 1.0). */
     confidence: number;
 
-    /** Human-readable explanation of the match. */
-    reasoning?: string | null;
+    /** Human-readable explanation of the match, or null when unavailable. */
+    reasoning: string | null;
 
-    /** Best bid price on the matched venue (when includePrices=true). */
-    bestBid?: number | null;
+    /** Best bid price on the matched venue, or null when unavailable. */
+    bestBid: number | null;
 
-    /** Best ask price on the matched venue (when includePrices=true). */
-    bestAsk?: number | null;
+    /** Best ask price on the matched venue, or null when unavailable. */
+    bestAsk: number | null;
 
     /** The source market this was matched against. Present in browse mode, absent in lookup mode. */
     sourceMarket?: UnifiedMarket;
@@ -1159,14 +1159,14 @@ export interface PriceComparison {
     /** Confidence score (0.0 to 1.0). */
     confidence: number;
 
-    /** Human-readable explanation. */
-    reasoning?: string | null;
+    /** Human-readable explanation, or null when unavailable. */
+    reasoning: string | null;
 
-    /** Best bid price on this venue. */
-    bestBid?: number | null;
+    /** Best bid price on this venue, or null when unavailable. */
+    bestBid: number | null;
 
-    /** Best ask price on this venue. */
-    bestAsk?: number | null;
+    /** Best ask price on this venue, or null when unavailable. */
+    bestAsk: number | null;
 
     /** The venue name (e.g. 'kalshi', 'polymarket'). */
     venue: string;

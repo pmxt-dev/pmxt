@@ -84,6 +84,25 @@ describe('SuibetsNormalizer', () => {
     // -------------------------------------------------------------------------
 
     describe('normalizeMarket', () => {
+        it('uses renamed eventId, eventName, and sportName fields from current SuiBets offers', () => {
+            const renamedOffer = {
+                ...rawOffer,
+                matchId: undefined,
+                matchName: undefined,
+                sport: undefined,
+                eventId: 'event-789',
+                eventName: 'Mets vs Yankees',
+                sportName: 'Baseball',
+            } as unknown as SuibetsRawOffer;
+
+            const market = normalizer.normalizeMarket(renamedOffer)!;
+
+            expect(market.eventId).toBe('suibets:event-789');
+            expect(market.title).toContain('Mets vs Yankees');
+            expect(market.description).toContain('Baseball match');
+            expect(market.tags).toContain('Baseball');
+        });
+
         it('returns a non-null result for a valid offer', () => {
             const market = normalizer.normalizeMarket(rawOffer);
             expect(market).not.toBeNull();

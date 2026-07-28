@@ -43,7 +43,7 @@ def _approval_token(token: str) -> str:
     )
 
 
-def _amount_wei(value: int | None) -> int | None:
+def _amount_wei(value: int | None) -> str | None:
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, int):
@@ -53,7 +53,7 @@ def _amount_wei(value: int | None) -> int | None:
         )
     if value < 0:
         raise ValidationError("amount_wei must be non-negative", field="amount_wei")
-    return value
+    return str(value)
 
 
 def _usdc_amount(value: float | Decimal, *, field: str = "amount") -> float:

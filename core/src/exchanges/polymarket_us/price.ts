@@ -1,4 +1,5 @@
 import type { OrderIntent, Amount } from 'polymarket-us';
+import { complementDecimal, roundToTickDecimal } from '../../utils/decimal-math';
 
 /**
  * Polymarket US price/quantity conversion utilities.
@@ -37,10 +38,8 @@ const LONG_INTENTS: ReadonlySet<OrderIntent> = new Set<OrderIntent>([
 ]);
 
 /**
- * Round a price to a tick size using Math.round. Defaults to the
+ * Round a price to a tick size using decimal string arithmetic. Defaults to the
  * Polymarket US tick size (0.001) but accepts a per-market override.
- * Re-rounds to `POLYMARKET_US_PRICE_DECIMALS` afterwards to avoid
- * floating-point drift.
  *
  * Note: this is a pure rounding helper - it does NOT validate bounds.
  * Out-of-range inputs (e.g. 0.9999 -> 1.000) will pass through unchanged.
@@ -49,10 +48,7 @@ export function roundToTickSize(
   price: number,
   tickSize: number = POLYMARKET_US_TICK_SIZE,
 ): number {
-  const ticks = Math.round(price / tickSize);
-  const rounded = ticks * tickSize;
-  const scale = Math.pow(10, POLYMARKET_US_PRICE_DECIMALS);
-  return Math.round(rounded * scale) / scale;
+  return roundToTickDecimal(price, tickSize, POLYMARKET_US_PRICE_DECIMALS);
 }
 
 /**
@@ -94,7 +90,7 @@ export function toLongSidePrice(intent: OrderIntent, userPrice: number): number 
   if (LONG_INTENTS.has(intent)) {
     return userPrice;
   }
-  const longPrice = 1 - userPrice;
+  const longPrice = complementDecimal(userPrice, POLYMARKET_US_PRICE_DECIMALS);
   validatePriceBounds(longPrice);
   return longPrice;
 }
@@ -114,7 +110,7 @@ export function fromLongSidePrice(intent: OrderIntent, longPrice: number): numbe
   if (LONG_INTENTS.has(intent)) {
     return longPrice;
   }
-  const userPrice = 1 - longPrice;
+  const userPrice = complementDecimal(longPrice, POLYMARKET_US_PRICE_DECIMALS);
   validatePriceBounds(userPrice);
   return userPrice;
 }

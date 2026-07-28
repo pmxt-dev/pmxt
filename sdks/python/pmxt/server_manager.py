@@ -19,6 +19,7 @@ import time
 import subprocess
 import shutil
 import threading
+import warnings
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import urllib.request
@@ -311,8 +312,12 @@ class ServerManager:
                     import signal
                     os.kill(pid, signal.SIGTERM)
                 time.sleep(0.5)
-            except (OSError, subprocess.TimeoutExpired):
-                pass
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                warnings.warn(
+                    f"Failed to terminate PMXT sidecar process {pid}: {exc}",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
 
             # Verify the process is actually dead; escalate to SIGKILL if not
             if os.name != 'nt':
@@ -323,8 +328,12 @@ class ServerManager:
                     try:
                         os.kill(pid, signal.SIGKILL)
                         time.sleep(0.2)
-                    except OSError:
-                        pass
+                    except OSError as exc:
+                        warnings.warn(
+                            f"Failed to force-kill PMXT sidecar process {pid}: {exc}",
+                            RuntimeWarning,
+                            stacklevel=2,
+                        )
                 except (OSError, ProcessLookupError):
                     pass  # Process is dead — good
         self._remove_stale_lock()
@@ -393,8 +402,12 @@ class ServerManager:
         """Remove stale lock file."""
         try:
             self.lock_path.unlink()
-        except OSError:
-            pass
+        except OSError as exc:
+            warnings.warn(
+                f"Failed to remove stale PMXT sidecar lock {self.lock_path}: {exc}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
     
     def _start_server_via_launcher(self) -> None:
         """

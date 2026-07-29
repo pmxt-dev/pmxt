@@ -15,6 +15,7 @@ This ensures zero-configuration usage across all SDKs.
 
 import os
 import json
+import logging
 import time
 import subprocess
 import shutil
@@ -22,7 +23,8 @@ import threading
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import urllib.request
-import urllib.error
+
+logger = logging.getLogger(__name__)
 
 
 class ServerManager:
@@ -495,7 +497,8 @@ class ServerManager:
                     return data.get('status') == 'ok'
             
             return False
-        except (urllib.error.URLError, urllib.error.HTTPError, Exception):
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.debug("Health check failed for port %s: %s", port, exc)
             return False
     
     def get_server_info(self) -> Optional[Dict[str, Any]]:

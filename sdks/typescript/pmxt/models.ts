@@ -1110,6 +1110,9 @@ export interface FetchMatchedEventClustersParams extends MatchedClusterFilterPar
     url?: string;
 }
 
+// Alias for SDK consistency with Python
+export type MatchedEventClusterParams = FetchMatchedEventClustersParams;
+
 /** Pairwise edge used to build a matched market cluster. */
 export interface MatchedMarketClusterEdge {
     marketAId: string;

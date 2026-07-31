@@ -96,6 +96,26 @@ describe('Documentation copy-paste samples', () => {
     expect(snippet).toContain('new Polymarket');
   });
 
+  test('self-hosted guide pairs Python workflows with TypeScript examples', () => {
+    const selfHosted = readDoc('docs/guides/self-hosted.mdx');
+    const configuration = readDoc('docs/api-reference/configuration.mdx');
+
+    expect(selfHosted).toContain('await pmxt.server.start()');
+    expect(selfHosted).toContain('const poly = new Polymarket({ privateKey: "0xYourPrivateKey..." });');
+    expect(selfHosted).toContain('const kalshi = new Kalshi({');
+    expect(selfHosted).toContain('apiKey: "...",');
+    expect(selfHosted).toContain('const smarkets = new Smarkets({');
+    expect(selfHosted).toContain('const baozi = new Baozi({ privateKey: "<base58 secret key>" });');
+    expect(selfHosted).toContain('const poly = new Polymarket({ privateKey: "0x..." });');
+    expect(selfHosted).toContain('const kalshi = new Kalshi({ apiKey: "...", privateKey: "..." });');
+    expect(configuration).toContain(
+      '| `api_key_id`, `private_key_pem` | `apiKey`, `privateKey` | `str` | Kalshi RSA credentials. |',
+    );
+    expect(configuration).toContain(
+      '| `email`, `password` | `apiKey`, `privateKey` | `str` | Smarkets session credentials. |',
+    );
+  });
+
   test('standalone Python README self-hosted examples import os before getenv use', () => {
     const readme = readDoc('readme.md');
     const snippets = [

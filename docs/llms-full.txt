@@ -2091,7 +2091,8 @@ The first call blocks briefly while the local server warms up; subsequent calls 
 
 For lifecycle control (start, stop, restart, status, logs), use the `server` namespace. See [Server Management](https://pmxt.dev/docs/sdk/server) for the full reference.
 
-```python
+<CodeGroup>
+```python Python
 import pmxt
 
 pmxt.server.start()       # idempotent
@@ -2102,6 +2103,18 @@ pmxt.server.restart()
 pmxt.server.logs(20)
 ```
 
+```typescript TypeScript
+import pmxt from "pmxtjs";
+
+await pmxt.server.start();       // idempotent
+await pmxt.server.health();      // boolean
+await pmxt.server.status();      // structured snapshot
+await pmxt.server.stop();
+await pmxt.server.restart();
+await pmxt.server.logs(20);
+```
+</CodeGroup>
+
 Most users never call these — creating an exchange instance auto-starts the server.
 
 #### 4. Per-venue raw credentials
@@ -2110,7 +2123,8 @@ Self-hosted unlocks the full venue-credential surface. Pass credentials directly
 
 ##### Polymarket — EVM private key
 
-```python
+<CodeGroup>
+```python Python
 import pmxt
 
 poly = pmxt.Polymarket(private_key="0xYourPrivateKey...")
@@ -2124,9 +2138,25 @@ amount=100,
 )
 ```
 
+```typescript TypeScript
+import { Polymarket } from "pmxtjs";
+
+const poly = new Polymarket({ privateKey: "0xYourPrivateKey..." });
+
+const order = await poly.createOrder({
+  outcome: market.yes!,
+  side: "buy",
+  type: "limit",
+  price: 0.42,
+  amount: 100,
+});
+```
+</CodeGroup>
+
 ##### Kalshi — RSA key pair
 
-```python
+<CodeGroup>
+```python Python
 import pmxt
 
 kalshi = pmxt.Kalshi(
@@ -2135,9 +2165,20 @@ private_key_pem="-----BEGIN RSA PRIVATE KEY-----\n...",
 )
 ```
 
+```typescript TypeScript
+import { Kalshi } from "pmxtjs";
+
+const kalshi = new Kalshi({
+  apiKey: "...",
+  privateKey: "-----BEGIN RSA PRIVATE KEY-----\n...",
+});
+```
+</CodeGroup>
+
 ##### Limitless / Probable / Opinion (self-hosted) — EVM private key
 
-```python
+<CodeGroup>
+```python Python
 import pmxt
 
 limitless = pmxt.Limitless(private_key="0x...")
@@ -2145,21 +2186,49 @@ probable  = pmxt.Probable(private_key="0x...")
 opinion   = pmxt.Opinion(private_key="0x...")
 ```
 
+```typescript TypeScript
+import { Limitless, Opinion, Probable } from "pmxtjs";
+
+const limitless = new Limitless({ privateKey: "0x..." });
+const probable = new Probable({ privateKey: "0x..." });
+const opinion = new Opinion({ privateKey: "0x..." });
+```
+</CodeGroup>
+
 ##### Smarkets — email + password
 
-```python
+<CodeGroup>
+```python Python
 import pmxt
 
 smarkets = pmxt.Smarkets(email="you@example.com", password="...")
 ```
 
+```typescript TypeScript
+import { Smarkets } from "pmxtjs";
+
+const smarkets = new Smarkets({
+  apiKey: "you@example.com",
+  privateKey: "...",
+});
+```
+</CodeGroup>
+
 ##### Baozi — Solana keypair
 
-```python
+<CodeGroup>
+```python Python
 import pmxt
 
 baozi = pmxt.Baozi(private_key="<base58 secret key>")
 ```
+
+```typescript TypeScript
+import { Baozi } from "pmxtjs";
+
+const baozi = new Baozi({ privateKey: "<base58 secret key>" });
+```
+</CodeGroup>
 
 See [Supported Venues](https://pmxt.dev/docs/concepts/venues) for the full credential matrix.
 
@@ -2182,13 +2251,23 @@ See [API Reference / Configuration](https://pmxt.dev/docs/api-reference/configur
 
 A single pmxt-core process can serve every venue. Construct multiple exchange clients against the same server — they all share the local process.
 
-```python
+<CodeGroup>
+```python Python
 import pmxt
 
 poly = pmxt.Polymarket(private_key="0x...")
 kalshi = pmxt.Kalshi(api_key_id="...", private_key_pem="...")
 # Both clients reuse the same pmxt-core process at http://localhost:3847
 ```
+
+```typescript TypeScript
+import { Kalshi, Polymarket } from "pmxtjs";
+
+const poly = new Polymarket({ privateKey: "0x..." });
+const kalshi = new Kalshi({ apiKey: "...", privateKey: "..." });
+// Both clients reuse the same pmxt-core process at http://localhost:3847
+```
+</CodeGroup>
 
 #### 7. Production deployment
 

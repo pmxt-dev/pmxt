@@ -78,8 +78,8 @@ When `pmxt_api_key` is absent, the SDK enters self-hosted mode and routes throug
 | Python kwarg | TypeScript key | Type | Description |
 | ------------ | -------------- | ---- | ----------- |
 | `private_key` | `privateKey` | `str` | EVM private key, for Polymarket / Limitless / Probable / Opinion / etc. |
-| `api_key_id`, `private_key_pem` | `apiKeyId`, `privateKeyPem` | `str` | Kalshi RSA credentials. |
-| `email`, `password` | `email`, `password` | `str` | Smarkets session credentials. |
+| `api_key_id`, `private_key_pem` | `apiKey`, `privateKey` | `str` | Kalshi RSA credentials. |
+| `email`, `password` | `apiKey`, `privateKey` | `str` | Smarkets session credentials. |
 | `local_port` | `localPort` | `int` | Override the default pmxt-core port (`3847`). |
 
 See [Self-hosted](/guides/self-hosted) for per-venue credential examples.

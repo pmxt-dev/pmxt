@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Added
+
+- **`docs(guides)`: sportsbook context for sports markets.** New guide + Python example showing a read-only compose of PMXT prediction-market data with Lumify sportsbook odds/intelligence for sports trading agents (`docs/guides/sportsbook-context.mdx`, `sdks/python/examples/integrations/`).
+
 # Changelog
 
 All notable changes to this project will be documented in this file.

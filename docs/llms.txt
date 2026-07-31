@@ -14,6 +14,7 @@ GitHub: https://github.com/pmxt-dev/pmxt
 - [Trading Quickstart](https://pmxt.dev/docs/trading-quickstart): Place your first hosted trade in 60 seconds — API key, escrow deposit, market order.
 - [Authentication](https://pmxt.dev/docs/authentication): API keys, SDK setup, and venue credentials.
 - [MCP Server](https://pmxt.dev/docs/mcp): Give AI assistants access to prediction markets via the Model Context Protocol.
+- [Sportsbook context for sports markets](https://pmxt.dev/docs/guides/sportsbook-context): Pair PMXT prediction-market prices with a sportsbook intelligence API (Lumify) for read-only sports trading research.
 - [Security & Credential Handling](https://pmxt.dev/docs/security): How PMXT handles credentials in hosted vs self-hosted modes, what risks to understand, and how to protect yourself.
 - [Rate Limits](https://pmxt.dev/docs/rate-limits): How much traffic your API key gives you.
 - [Prediction Markets 101](https://pmxt.dev/docs/concepts/prediction-markets-101): What a prediction market is, what an outcome is, and what 'price' means here.

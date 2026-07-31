@@ -59,6 +59,7 @@
               "trading-quickstart",
               "authentication",
               "mcp",
+              "guides/sportsbook-context",
               "security",
               "rate-limits"
             ]

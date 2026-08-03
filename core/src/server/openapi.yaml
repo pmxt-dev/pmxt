@@ -181,9 +181,11 @@ paths:
               properties:
                 args:
                   type: array
-                  maxItems: 1
+                  maxItems: 2
                   items:
-                    type: boolean
+                    oneOf:
+                      - type: boolean
+                      - type: object
                 credentials:
                   $ref: '#/components/schemas/ExchangeCredentials'
       responses:

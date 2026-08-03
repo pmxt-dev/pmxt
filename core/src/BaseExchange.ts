@@ -679,15 +679,19 @@ export abstract class PredictionMarketExchange {
      * `Object.values(exchange.markets)` locally.
      *
      * @param reload - Force a fresh fetch from the API even if markets are already loaded
+     * @param params - Optional exchange-specific fetch parameters (CCXT-compatible trailing bag)
      * @returns Dictionary of markets indexed by marketId
      */
-    async loadMarkets(reload: boolean = false): Promise<Record<string, UnifiedMarket>> {
+    async loadMarkets(
+        reload: boolean = false,
+        params: MarketFetchParams = {}
+    ): Promise<Record<string, UnifiedMarket>> {
         if (this.loadedMarkets && !reload) {
             return this.markets;
         }
 
         // Fetch all markets (implementation dependent, usually fetches active markets)
-        const markets = await this.fetchMarkets();
+        const markets = await this.fetchMarkets(params);
 
         // Reset caches
         this.markets = {};

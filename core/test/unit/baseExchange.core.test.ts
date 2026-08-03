@@ -56,4 +56,16 @@ describe('BaseExchange public read bounds', () => {
         expect(markets).toEqual([MARKET_B]);
         expect(exchange.marketCalls).toEqual([undefined]);
     });
+
+    it('forwards params from loadMarkets to fetchMarkets', async () => {
+        const exchange = new RecordingExchange();
+
+        await exchange.loadMarkets(false, { limit: 1 });
+
+        expect(exchange.marketCalls).toEqual([{ limit: 1 }]);
+        expect(exchange.markets).toEqual({
+            [MARKET_A.id]: MARKET_A,
+            [MARKET_B.id]: MARKET_B,
+        });
+    });
 });

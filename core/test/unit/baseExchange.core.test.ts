@@ -60,9 +60,10 @@ describe('BaseExchange public read bounds', () => {
     it('forwards params from loadMarkets to fetchMarkets', async () => {
         const exchange = new RecordingExchange();
 
-        await exchange.loadMarkets(false, { limit: 1 });
+        // Use a non-slicing param so this only asserts forwarding, not pagination
+        await exchange.loadMarkets(false, { similarityThreshold: 0.8 });
 
-        expect(exchange.marketCalls).toEqual([{ limit: 1 }]);
+        expect(exchange.marketCalls).toEqual([{ similarityThreshold: 0.8 }]);
         expect(exchange.markets).toEqual({
             [MARKET_A.id]: MARKET_A,
             [MARKET_B.id]: MARKET_B,

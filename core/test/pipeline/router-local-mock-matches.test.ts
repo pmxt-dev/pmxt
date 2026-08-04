@@ -115,3 +115,29 @@ describe('Router local mock match lookup', () => {
         }
     });
 });
+
+describe('Router hosted event filters', () => {
+    test.each([
+        ['closed', 'true'],
+        ['inactive', 'true'],
+        ['active', null],
+        ['all', null],
+    ] as const)('maps event status %s to closed=%s', async (status, expectedClosed) => {
+        let capturedUrl: URL | undefined;
+        const { server, baseUrl } = await startRawServer((req, res) => {
+            capturedUrl = new URL(req.url ?? '/', 'http://localhost');
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ data: [] }));
+        });
+
+        try {
+            const router = new Router({ apiKey: 'test', baseUrl });
+            await expect(router.fetchEvents({ status, query: 'election' })).resolves.toEqual([]);
+            expect(capturedUrl?.pathname).toBe('/v0/events');
+            expect(capturedUrl?.searchParams.get('q')).toBe('election');
+            expect(capturedUrl?.searchParams.get('closed')).toBe(expectedClosed);
+        } finally {
+            await stopTestServer(server);
+        }
+    });
+});

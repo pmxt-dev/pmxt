@@ -98,14 +98,16 @@ export interface MarketFilterParams {
     exchange?: string;
 }
 
-export interface MarketFetchParams extends MarketFilterParams {
+export type MarketFetchParams = MarketFilterParams & {
     /** Optional client-side filter applied after fetching */
     filter?: MarketFilterCriteria;
     /** Filter by category. Each market belongs to a venue-assigned category such as "Sports", "Politics", "Crypto", "Bitcoin", "Soccer", "Economic Policy" (Polymarket) or "Sports", "Mentions" (Kalshi). */
     category?: string;
     /** Filter by tags. Returns markets matching ANY of the provided tags. Tags are more specific than categories -- for example a "Sports" market might carry tags ["Sports", "FIFA World Cup", "2026 FIFA World Cup"]. Common tags include "Crypto", "Politics", "Elections", "Geopolitics", "Fed Rates", "Trump". */
     tags?: string[];
-}
+    /** CCXT-style free-form exchange keys (e.g. `{ type: 'spot' }`) */
+    [key: string]: unknown;
+};
 
 export interface EventFetchParams {
     query?: string;  // For keyword search
@@ -679,15 +681,19 @@ export abstract class PredictionMarketExchange {
      * `Object.values(exchange.markets)` locally.
      *
      * @param reload - Force a fresh fetch from the API even if markets are already loaded
+     * @param params - Optional exchange-specific fetch parameters (CCXT-compatible trailing bag)
      * @returns Dictionary of markets indexed by marketId
      */
-    async loadMarkets(reload: boolean = false): Promise<Record<string, UnifiedMarket>> {
+    async loadMarkets(
+        reload: boolean = false,
+        params: MarketFetchParams = {}
+    ): Promise<Record<string, UnifiedMarket>> {
         if (this.loadedMarkets && !reload) {
             return this.markets;
         }
 
         // Fetch all markets (implementation dependent, usually fetches active markets)
-        const markets = await this.fetchMarkets();
+        const markets = await this.fetchMarkets(params);
 
         // Reset caches
         this.markets = {};

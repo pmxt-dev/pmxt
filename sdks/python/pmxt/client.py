@@ -1266,7 +1266,9 @@ class Exchange(ABC):
 
     # Market Data Methods
 
-    def load_markets(self, reload: bool = False) -> Dict[str, UnifiedMarket]:
+    def load_markets(
+        self, reload: bool = False, params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, UnifiedMarket]:
         """
         Load and cache all markets from the exchange into self.markets.
         Subsequent calls return the cached result without hitting the API again.
@@ -1278,6 +1280,7 @@ class Exchange(ABC):
 
         Args:
             reload: Force a fresh fetch even if markets are already loaded
+            params: Optional exchange-specific fetch parameters (CCXT-compatible trailing bag)
 
         Returns:
             Dict[str, UnifiedMarket] - All markets indexed by marketId
@@ -1291,7 +1294,7 @@ class Exchange(ABC):
         if self._loaded_markets and not reload:
             return self.markets
 
-        markets = self.fetch_markets()
+        markets = self.fetch_markets(params or {})
 
         self.markets = {}
         self.markets_by_slug = {}

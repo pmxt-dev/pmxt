@@ -953,9 +953,18 @@
                 "properties": {
                   "args": {
                     "type": "array",
-                    "maxItems": 1,
+                    "maxItems": 2,
+                    "description": "Positional arguments for loadMarkets: [reload: boolean, params: object]. `reload` forces a fresh fetch; `params` is a CCXT-compatible free-form bag forwarded to fetchMarkets.",
+                    "example": [true, { "type": "spot" }],
                     "items": {
-                      "type": "boolean"
+                      "oneOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "object"
+                        }
+                      ]
                     }
                   },
                   "credentials": {

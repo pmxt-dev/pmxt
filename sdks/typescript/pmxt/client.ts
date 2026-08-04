@@ -1059,11 +1059,15 @@ export abstract class Exchange {
         }
     }
 
-    async loadMarkets(reload: boolean = false): Promise<Record<string, UnifiedMarket>> {
+    async loadMarkets(
+        reload: boolean = false,
+        params: Record<string, unknown> = {}
+    ): Promise<Record<string, UnifiedMarket>> {
         await this.initPromise;
         try {
             const args: any[] = [];
             args.push(reload);
+            args.push(params);
             const response = await this.fetchWithRetry(`${this.resolveBaseUrl()}/api/${this.exchangeName}/loadMarkets`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },

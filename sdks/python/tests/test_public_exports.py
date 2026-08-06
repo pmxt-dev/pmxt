@@ -2,6 +2,49 @@ import ast
 from pathlib import Path
 
 
+def test_hosted_trading_errors_are_top_level_public_exports():
+    import pmxt
+    from pmxt import _hosted_errors
+
+    init_path = Path(__file__).resolve().parents[1] / "pmxt" / "__init__.py"
+    tree = ast.parse(init_path.read_text(encoding="utf-8"))
+    expected = {
+        "HostedTradingError",
+        "InsufficientEscrowBalance",
+        "OrderSizeTooSmall",
+        "InvalidApiKey",
+        "OutcomeNotFound",
+        "CatalogUnavailable",
+        "BuiltOrderExpired",
+        "InvalidSignature",
+        "NoLiquidity",
+        "MissingWalletAddress",
+    }
+    imported_hosted_errors = set()
+    public_exports = set()
+
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom) and node.module == "_hosted_errors":
+            imported_hosted_errors.update(alias.name for alias in node.names)
+        elif (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == "__all__"
+            and isinstance(node.value, ast.List)
+        ):
+            public_exports.update(
+                item.value
+                for item in node.value.elts
+                if isinstance(item, ast.Constant) and isinstance(item.value, str)
+            )
+
+    assert expected <= imported_hosted_errors
+    assert expected <= public_exports
+    for name in expected:
+        assert getattr(pmxt, name) is getattr(_hosted_errors, name)
+
+
 def test_websocket_return_types_are_public_exports():
     init_path = Path(__file__).resolve().parents[1] / "pmxt" / "__init__.py"
     tree = ast.parse(init_path.read_text(encoding="utf-8"))

@@ -179,6 +179,25 @@ def test_suibets_constructor_accepts_wallet_address_for_hosted_mode() -> None:
     assert api._get_credentials_dict() == {"walletAddress": WALLET_ADDRESS}
 
 
+def test_suibets_constructor_forwards_api_base_url_credential() -> None:
+    api = SuiBets(
+        wallet_address=WALLET_ADDRESS,
+        api_base_url="https://suibets.example",
+        auto_start_server=False,
+    )
+
+    assert api._get_credentials_dict() == {
+        "walletAddress": WALLET_ADDRESS,
+        "baseUrl": "https://suibets.example",
+    }
+
+
+def test_suibets_api_base_url_alone_produces_credentials() -> None:
+    api = SuiBets(api_base_url="https://suibets.example", auto_start_server=False)
+
+    assert api._get_credentials_dict() == {"baseUrl": "https://suibets.example"}
+
+
 # --------------------------------------------------------------------------- #
 # Read-method dispatch tests
 # --------------------------------------------------------------------------- #

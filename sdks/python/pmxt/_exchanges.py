@@ -593,6 +593,7 @@ class SuiBets(Exchange):
         auto_start_server: Optional[bool] = None,
         pmxt_api_key: Optional[str] = None,
         wallet_address: Optional[str] = None,
+        api_base_url: Optional[str] = None,
         signer: Optional[object] = None,
         websocket: Optional[dict] = None,
     ) -> None:
@@ -604,6 +605,10 @@ class SuiBets(Exchange):
             auto_start_server: Automatically start server if not running (default: True)
             pmxt_api_key: Hosted PMXT API key (optional; enables hosted mode)
             wallet_address: Wallet address for hosted reads/writes (optional)
+            api_base_url: Base URL of the SuiBets exchange API itself (not the
+                sidecar — that is ``base_url``). Forwarded to the sidecar as the
+                ``baseUrl`` credential; falls back to the SUIBETS_BASE_URL env
+                var on the sidecar side when unset (optional)
             signer: Custom signer for hosted writes (optional)
             websocket: WebSocket transport configuration dict (optional)
         """
@@ -616,11 +621,14 @@ class SuiBets(Exchange):
             signer=signer,
             websocket=websocket,
         )
+        self.api_base_url = api_base_url
 
     def _get_credentials_dict(self) -> Optional[Dict[str, Any]]:
         creds = super()._get_credentials_dict() or {}
         if self.wallet_address:
             creds["walletAddress"] = self.wallet_address
+        if self.api_base_url:
+            creds["baseUrl"] = self.api_base_url
         return creds if creds else None
 
 

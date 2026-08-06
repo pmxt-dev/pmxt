@@ -3648,6 +3648,14 @@ export interface SuiBetsOptions extends ExchangeOptions {
      * SUIBETS_WALLET_ADDRESS environment variable on the sidecar.
      */
     walletAddress?: string;
+
+    /**
+     * Base URL of the SuiBets exchange API itself (not the PMXT sidecar —
+     * use `baseUrl` for that). Forwarded to the sidecar as the `baseUrl`
+     * credential. Can also be set via the SUIBETS_BASE_URL environment
+     * variable on the sidecar.
+     */
+    apiBaseUrl?: string;
 }
 
 /**
@@ -3669,25 +3677,29 @@ export interface SuiBetsOptions extends ExchangeOptions {
  */
 export class SuiBets extends Exchange {
     private readonly _walletAddress?: string;
+    private readonly _apiBaseUrl?: string;
 
     constructor(options: SuiBetsOptions = {}) {
         super("suibets", options);
         this._walletAddress = options.walletAddress;
+        this._apiBaseUrl = options.apiBaseUrl;
     }
 
     /**
      * Includes walletAddress in the credentials sent to the sidecar so
-     * that fetchPositions() can reach the /api/p2p/my endpoint.
-     * Falls back to SUIBETS_WALLET_ADDRESS env var on the sidecar side
-     * when walletAddress is not set here.
+     * that fetchPositions() can reach the /api/p2p/my endpoint, and
+     * apiBaseUrl as the `baseUrl` credential controlling the SuiBets
+     * exchange API origin. Each falls back to the corresponding sidecar
+     * env var (SUIBETS_WALLET_ADDRESS / SUIBETS_BASE_URL) when unset.
      */
     protected override getCredentials(): ExchangeCredentials | undefined {
         const base = super.getCredentials();
-        if (!this._walletAddress) return base;
+        if (!this._walletAddress && !this._apiBaseUrl) return base;
         return {
             ...(base ?? {}),
-            walletAddress: this._walletAddress,
-        } as ExchangeCredentials & { walletAddress: string };
+            ...(this._walletAddress ? { walletAddress: this._walletAddress } : {}),
+            ...(this._apiBaseUrl ? { baseUrl: this._apiBaseUrl } : {}),
+        } as ExchangeCredentials;
     }
 }
 

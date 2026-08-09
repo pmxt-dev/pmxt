@@ -299,6 +299,9 @@ export interface ExchangeOptions {
      * the SDK defaults.
      */
     websocket?: WsClientConfig;
+
+    apiToken?: string;
+    passphrase?: string; 
 }
 
 /**
@@ -337,6 +340,8 @@ export abstract class Exchange {
     protected proxyAddress?: string;
     protected signatureType?: number;
     protected api: DefaultApi;
+    protected apiToken?: string;
+    protected passphrase?: string;
     protected config: Configuration;
     protected serverManager: ServerManager;
     protected initPromise: Promise<void>;
@@ -380,6 +385,7 @@ export abstract class Exchange {
         this.walletAddress = options.walletAddress;
         this.signer = options.signer;
         this._websocketConfig = options.websocket;
+        this.apiToken = options.apiToken;
 
         // Resolve base URL + hosted API key via the shared precedence
         // rules. See constants.ts for the full resolution table.
@@ -488,6 +494,9 @@ export abstract class Exchange {
             apiSecret: this.apiSecret,
             privateKey: this.privateKey,
             funderAddress: this.proxyAddress,
+            apiToken: this.apiToken,
+            walletAddress: this.walletAddress,
+            passphrase: this.passphrase,
             signatureType: this.signatureType,
         };
     }
@@ -2521,6 +2530,11 @@ export abstract class Exchange {
         params: CreateOrderInput,
     ): Promise<BuiltOrder> {
         const body = this._hostedBuildOrderBody(params);
+        if (params.price !== undefined) body["price"] = params.price;
+    
+        if (params.fee !== undefined) { 
+            body["fee"] = params.fee;
+        }
         const route = HOSTED_METHOD_ROUTES.get("buildOrder")!;
         const data = await _tradingRequest(this, {
             method: route.method,
@@ -2781,6 +2795,9 @@ export abstract class Exchange {
         }
 
         if (params.price !== undefined) body["price"] = params.price;
+        if (params.fee !== undefined) {
+            body["fee"] = params.fee;
+        }
         const extra = params as unknown as Record<string, unknown>;
         if (extra["slippage_pct"] !== undefined) {
             body["slippage_pct"] = extra["slippage_pct"];
@@ -3727,6 +3744,16 @@ export class Hunch extends Exchange {
     constructor(options: ExchangeOptions = {}) {
         super("hunch", options);
     }
+
+    protected override getCredentials(): ExchangeCredentials | undefined {
+    const base = super.getCredentials();
+    if (!base) return base;
+    if (!this.walletAddress) return base;
+    return {
+        ...base,
+        walletAddress: this.walletAddress,
+    };
+}
 }
 
 /**

@@ -236,6 +236,9 @@ export interface UserTrade {
     /** Market ID */
     marketId?: string;
 
+    /** Trading fee paid by the user for this fill, when the venue exposes it. */
+    fee?: number;
+
     /** On-chain transaction hash (populated in hosted mode when the trade was settled on-chain). */
     txHash?: string | null;
 

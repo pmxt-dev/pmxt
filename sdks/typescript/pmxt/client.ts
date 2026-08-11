@@ -2894,17 +2894,8 @@ export abstract class Exchange {
      * @returns The volume-weighted average price, or 0 if insufficient liquidity
      */
     getExecutionPrice(orderBook: OrderBook, side: 'buy' | 'sell', amount: number): number {
-        const levels = side === 'buy' ? orderBook.asks : orderBook.bids;
-        let remaining = amount;
-        let totalCost = 0;
-        for (const level of levels) {
-            const fill = Math.min(remaining, level.size);
-            totalCost += fill * level.price;
-            remaining -= fill;
-            if (remaining <= 0) break;
-        }
-        if (remaining > 0) return 0;
-        return totalCost / amount;
+        const result = this.getExecutionPriceDetailed(orderBook, side, amount);
+        return result.fullyFilled ? result.price : 0;
     }
 
     /**

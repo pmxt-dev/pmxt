@@ -477,32 +477,12 @@ export class Router extends Exchange {
         if (params.url) query.url = params.url;
 
         try {
-            const url = `${this.config.basePath}/api/${this.exchangeName}/compareMarketPrices`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
-                body: JSON.stringify({ args: [query], credentials: this.getCredentials() }),
-                signal: AbortSignal.timeout(30_000),
-            });
-            if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                if (body.error && typeof body.error === 'object') {
-                    const { fromServerError } = await import('./errors.js');
-                    throw fromServerError(body.error);
-                }
-                throw new Error(body.error?.message || response.statusText);
-            }
-            const json = await response.json();
+            const json = await this.sidecarReadRequest('compareMarketPrices', query, [query]);
             const data = this.handleResponse(json);
             if (!data) return [];
             return (data as any[]).map((r) => {
                 const marketPayload = r.market || {};
                 const market = convertMarket(marketPayload);
-                // Hosted /api/router response carries the live bid/ask on the
-                // nested market (and the venue via market.sourceExchange). The
-                // top-level bestBid/bestAsk/venue fields are legacy and often
-                // null on the wire, so prefer the market fields and fall back
-                // to the top-level only when needed.
                 const bestBid =
                     r.bestBid ?? (market as any).bestBid ?? marketPayload.bestBid ?? null;
                 const bestAsk =

@@ -3112,7 +3112,7 @@ export abstract class Exchange {
             // Price change filter
             if (criteria.priceChange24h) {
                 const outcome = market[criteria.priceChange24h.outcome];
-                if (!outcome || outcome.priceChange24h === undefined) return false;
+                if (!outcome || outcome.priceChange24h == null) return false;
 
                 if (criteria.priceChange24h.min !== undefined && outcome.priceChange24h < criteria.priceChange24h.min) {
                     return false;

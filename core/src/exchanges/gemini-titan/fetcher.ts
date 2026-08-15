@@ -106,11 +106,18 @@ export class GeminiFetcher implements IExchangeFetcher<GeminiRawEvent, GeminiRaw
     }
 
     async fetchRawOrderBook(instrumentSymbol: string): Promise<GeminiRawOrderBook | undefined> {
-        const eventTicker = this.getEventTickerForSymbol(instrumentSymbol);
+        let eventTicker = this.getEventTickerForSymbol(instrumentSymbol);
+        if (!eventTicker) {
+            // The symbol index is populated as a side effect of fetchRawEvents/
+            // fetchRawMarkets. A freshly constructed fetcher (e.g. a new instance
+            // created per server request for a credentialed client) has an empty
+            // index, so lazily build it once before giving up.
+            await this.fetchRawEvents({});
+            eventTicker = this.getEventTickerForSymbol(instrumentSymbol);
+        }
         if (!eventTicker) {
             throw new Error(
-                `Cannot fetch order book: no event ticker found for ${instrumentSymbol}. ` +
-                'Call fetchMarkets first to build the symbol index.',
+                `Cannot fetch order book: no event ticker found for ${instrumentSymbol}.`,
             );
         }
 

@@ -82,3 +82,67 @@ describe('GeminiFetcher authenticated orders', () => {
         await expect(fetcher.cancelRawOrder(123)).resolves.toBe(rawOrder);
     });
 });
+
+describe('GeminiFetcher order book symbol index', () => {
+    const eventsResponse = {
+        data: [
+            {
+                ticker: 'EVT-1',
+                contracts: [
+                    {
+                        instrumentSymbol: 'ABC-YES',
+                        ticker: 'ABC-YES',
+                        prices: { bestBid: '0.60', bestAsk: '0.62' },
+                    },
+                ],
+            },
+        ],
+        pagination: { total: 1 },
+    };
+
+    const singleEventResponse = {
+        ticker: 'EVT-1',
+        contracts: [
+            {
+                instrumentSymbol: 'ABC-YES',
+                prices: { bestBid: '0.60', bestAsk: '0.62' },
+            },
+        ],
+    };
+
+    function makeGetFetcher(getResponses: unknown[]) {
+        const get = jest.fn(async () => ({ data: getResponses.shift() }));
+        const ctx: FetcherContext = {
+            http: { get } as any,
+            callApi: jest.fn() as any,
+            getHeaders: jest.fn(() => ({})),
+        };
+
+        return { fetcher: new GeminiFetcher(ctx, 'https://api.gemini.test'), get };
+    }
+
+    it('lazily builds the symbol index when fetchRawOrderBook is called first', async () => {
+        // Regression for #2037: a freshly constructed fetcher has an empty
+        // symbolToEventTicker index. fetchRawOrderBook must populate it lazily
+        // instead of throwing when fetchMarkets/fetchEvents was not called first.
+        const { fetcher, get } = makeGetFetcher([eventsResponse, singleEventResponse]);
+
+        const book = await fetcher.fetchRawOrderBook('ABC-YES');
+
+        expect(book).toEqual({
+            bids: [{ price: '0.60', size: '0' }],
+            asks: [{ price: '0.62', size: '0' }],
+            timestamp: expect.any(Number),
+        });
+        // One GET to list events (build the index) + one GET for the single event.
+        expect(get).toHaveBeenCalledTimes(2);
+    });
+
+    it('still throws when the symbol is unknown even after building the index', async () => {
+        const { fetcher } = makeGetFetcher([eventsResponse]);
+
+        await expect(fetcher.fetchRawOrderBook('UNKNOWN-YES')).rejects.toThrow(
+            /no event ticker found for UNKNOWN-YES/,
+        );
+    });
+});

@@ -62,17 +62,7 @@ class ServerManager:
         """
         self.base_url = base_url
         self.lock_path = Path.home() / '.pmxt' / 'server.lock'
-        self._port = self._extract_port_from_url(base_url)
-    
-    def _extract_port_from_url(self, url: str) -> int:
-        """Extract port number from URL."""
-        try:
-            from urllib.parse import urlparse
-            parsed = urlparse(url)
-            return parsed.port or self.DEFAULT_PORT
-        except (ValueError, AttributeError):
-            return self.DEFAULT_PORT
-    
+
     def ensure_server_running(self) -> None:
         """
         Ensure the PMXT server is running.

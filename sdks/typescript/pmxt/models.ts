@@ -871,6 +871,9 @@ export interface UnifiedEvent {
 // Advanced Filtering Types
 // ----------------------------------------------------------------------------
 
+/** Supported outcome labels for binary and up/down markets. */
+export type OutcomeType = 'yes' | 'no' | 'up' | 'down';
+
 /**
  * Advanced criteria for filtering markets.
  * Supports text search, numeric ranges, dates, categories, and price filters.
@@ -908,14 +911,14 @@ export interface MarketFilterCriteria {
 
     /** Filter by outcome price (for binary markets) */
     price?: {
-        outcome: 'yes' | 'no' | 'up' | 'down';
+        outcome: OutcomeType;
         min?: number;
         max?: number;
     };
 
     /** Filter by 24-hour price change */
     priceChange24h?: {
-        outcome: 'yes' | 'no' | 'up' | 'down';
+        outcome: OutcomeType;
         min?: number;
         max?: number;
     };

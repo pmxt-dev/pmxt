@@ -13,7 +13,6 @@ import {
     EventMatchResult,
     FetchMatchedEventClustersParams,
     FetchMatchedMarketClustersParams,
-    MatchedMarketClusterParams,
     MatchedEventCluster,
     MatchedMarketCluster,
     PriceComparison,

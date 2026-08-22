@@ -8,7 +8,7 @@ legacy sidecar's camelCase auto-mapper.
 from __future__ import annotations
 
 import dataclasses as _dc
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, Mapping, TypeVar
 
@@ -362,3 +362,17 @@ def _ms_to_timestamp(value: Any) -> str | None:
     dt = datetime.fromtimestamp(int(value) / 1000, tz=timezone.utc)
     return dt.isoformat().replace("+00:00", "Z")
 
+
+def _format_datetime_utc(value: datetime | date) -> str:
+    """Serialize a datetime like JavaScript ``Date.toISOString()``.
+
+    Naive values are treated as UTC, aware values are converted to UTC, and
+    bare dates count as UTC midnight.  The result always has millisecond
+    precision and a ``Z`` suffix, e.g. ``2026-01-01T00:00:00.000Z``.
+    """
+    dt = value if isinstance(value, datetime) else datetime(value.year, value.month, value.day)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")

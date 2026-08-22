@@ -11,6 +11,7 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Union
 
 from .client import Exchange, _convert_market, _convert_event
+from ._hosted_mappers import _format_datetime_utc
 from .models import (
     MatchResult,
     EventMatchResult,
@@ -66,7 +67,7 @@ def _parse_match_result(raw: Dict[str, Any]) -> MatchResult:
 
 def _normalize_query_value(value: Any) -> Any:
     if isinstance(value, (datetime, date)):
-        return value.isoformat()
+        return _format_datetime_utc(value)
     return value
 
 

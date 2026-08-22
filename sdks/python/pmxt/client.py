@@ -80,6 +80,7 @@ from ._hosted_routing import (
     resolve_wallet_address,
 )
 from ._hosted_mappers import (
+    _format_datetime_utc,
     balance_from_v0,
     built_order_from_v0,
     order_from_v0,
@@ -2372,9 +2373,9 @@ class Exchange(ABC):
             if resolution:
                 params_dict["resolution"] = resolution
             if start:
-                params_dict["start"] = start.isoformat()
+                params_dict["start"] = _format_datetime_utc(start)
             if end:
-                params_dict["end"] = end.isoformat()
+                params_dict["end"] = _format_datetime_utc(end)
             if limit:
                 params_dict["limit"] = limit
 

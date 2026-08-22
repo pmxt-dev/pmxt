@@ -114,6 +114,28 @@ class TestSorCreateOrderDispatch:
         assert args["shares"] == 5
         assert args["price"] == 0.55
 
+    def test_market_id_only_call_omits_outcome_key_entirely(self, monkeypatch):
+        # The None-filter must strip "outcome"/"outcomeId" when no outcome was
+        # supplied, so the hosted API never receives an explicit null.
+        captured = _install_sor_transport(monkeypatch)
+        api = _make_sor_exchange(monkeypatch)
+
+        api.create_order(
+            market_id=MARKET_ID,
+            side="buy",
+            order_type="limit",
+            amount=5,
+            price=0.55,
+        )
+
+        assert len(captured) == 2
+        build_url, build_body = captured[0]
+        assert build_url.endswith("/api/sor/buildOrder")
+        args = build_body["args"][0]
+        assert "outcomeId" not in args
+        assert "outcome" not in args
+        assert args["marketId"] == MARKET_ID
+
     def test_outcome_shorthand_still_reaches_build_order(self, monkeypatch):
         captured = _install_sor_transport(monkeypatch)
         api = _make_sor_exchange(monkeypatch)

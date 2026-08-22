@@ -3058,7 +3058,7 @@ class Exchange(ABC):
         if o is not None and hasattr(o, "market_id"):
             params = {"marketId": o.market_id, "outcomeId": o.outcome_id, "side": kwargs.get("side", "buy"), "shares": kwargs.get("amount", 0)}
         else:
-            params = {"marketId": kwargs.get("market_id"), "side": kwargs.get("side", "buy"), "outcome": kwargs.get("outcome"), "shares": kwargs.get("amount", 0)}
+            params = {"marketId": kwargs.get("market_id"), "outcomeId": kwargs.get("outcome_id"), "side": kwargs.get("side", "buy"), "outcome": kwargs.get("outcome"), "shares": kwargs.get("amount", 0)}
         if kwargs.get("price") is not None:
             params["price"] = kwargs["price"]
         if kwargs.get("tick_size") is not None:

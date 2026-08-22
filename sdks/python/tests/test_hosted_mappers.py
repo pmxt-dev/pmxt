@@ -236,3 +236,93 @@ def test_to_6dec_rejects_sub_micro_precision():
     with pytest.raises(InvalidOrder):
         to_6dec(0.1234567)
 
+class TestHostedMalformedNumerics:
+    """Malformed numeric wire fields degrade instead of raising.
+
+    ``_float_value`` backs every numeric field of the v0 mappers. It must stay
+    total and return ``None`` for non-numeric input, mirroring the TypeScript
+    ``floatOrUndefined`` helper in ``sdks/typescript/pmxt/hosted-mappers.ts``;
+    ``_float_or_zero`` then falls back to ``0.0`` like ``floatOrZero``.
+    """
+
+    def test_float_value_returns_none_for_non_numeric_string(self):
+        assert _hosted_mappers._float_value("N/A") is None
+        assert _hosted_mappers._float_value("12,5") is None
+
+    def test_float_value_returns_none_for_unsupported_types(self):
+        assert _hosted_mappers._float_value({"micros": 1}) is None
+        assert _hosted_mappers._float_value([1]) is None
+        assert _hosted_mappers._float_value(object()) is None
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (7, 7.0),
+            (2.5, 2.5),
+            (Decimal("0.75"), 0.75),
+            ("42.5", 42.5),
+            ("", None),
+            (None, None),
+        ],
+    )
+    def test_float_value_keeps_existing_numeric_behavior(self, value, expected):
+        result = _hosted_mappers._float_value(value)
+        assert result == expected
+        if expected is not None:
+            assert isinstance(result, float)
+
+    def test_order_malformed_numerics_degrade_instead_of_raising(self):
+        raw = _order_v0()
+        raw.update(
+            {
+                "amount": "N/A",
+                "price": "12,5",
+                "fee": {"micros": 1},
+                "filled": "?",
+                "remaining": [],
+            }
+        )
+        order = map_order_v0(raw)
+
+        assert order.amount is None
+        assert order.price is None
+        assert order.fee is None
+        # Zero-fallback fields mirror TypeScript's floatOrZero.
+        assert order.filled == 0.0
+        assert order.remaining == 0.0
+
+    def test_user_trade_malformed_numerics_degrade_instead_of_raising(self):
+        raw = _user_trade_v0()
+        raw.update({"amount": "unknown", "price": "N/A", "fee": [1]})
+        trade = map_user_trade_v0(raw)
+
+        assert trade.amount is None
+        assert trade.price is None
+        assert trade.fee is None
+
+    def test_position_malformed_numerics_degrade_instead_of_raising(self):
+        raw = _position_v0(
+            shares="N/A",
+            entry_price={},
+            current_price="?",
+            realized_pnl=[1],
+            current_value="x",
+        )
+        position = map_position_v0(raw)
+
+        assert position.size is None
+        assert position.entry_price is None
+        assert position.current_price is None
+        assert position.realized_pnl is None
+        assert position.current_value is None
+        # Derived PnL stays unset instead of crashing on partial data.
+        assert position.unrealized_pnl is None
+
+    def test_balance_malformed_amount_degrades_instead_of_raising(self):
+        balance = map_balance_v0(
+            {"currency": "USDC", "amount": "12,5", "venue": "polymarket"}
+        )
+
+        assert balance.total is None
+        assert balance.available is None
+        assert balance.locked == 0.0

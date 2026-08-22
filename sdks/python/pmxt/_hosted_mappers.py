@@ -308,8 +308,13 @@ def _float_value(value: Any) -> float | None:
     if isinstance(value, str):
         if not value:
             return None
-        return float(value)
-    raise TypeError(f"unsupported numeric type: {type(value).__name__}")
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    # Degrade unsupported types to None instead of raising, mirroring the
+    # TypeScript floatOrUndefined helper in sdks/typescript/pmxt/hosted-mappers.ts.
+    return None
 
 
 def _construct(model: type[_T], values: Mapping[str, Any]) -> _T:

@@ -63,11 +63,11 @@ export class GeminiAuth {
     /**
      * Build WebSocket handshake authentication headers.
      *
-     * WebSocket auth uses a time-based nonce (seconds since epoch)
+     * WebSocket auth uses a time-based nonce (milliseconds since epoch)
      * as the payload, not a JSON object.
      */
     buildWsHeaders(): Record<string, string> {
-        const nonce = Math.floor(Date.now() / 1000).toString();
+        const nonce = Date.now().toString();
         const b64Payload = Buffer.from(nonce).toString('base64');
         const signature = crypto
             .createHmac('sha384', this.apiSecret)

@@ -32,6 +32,7 @@ export { Exchange, Polymarket, Kalshi, KalshiDemo, Limitless, Myriad, Probable, 
 export type { ExchangeOptions, SuiBetsOptions } from "./pmxt/client.js";
 export { FeedClient } from "./pmxt/feed-client.js";
 export type { Ticker, Tickers, OHLCV, Market as FeedMarket, OracleRound, FeedClientOptions } from "./pmxt/feed-client.js";
+export type { WsClientConfig } from "./pmxt/ws-client.js";
 export { Router } from "./pmxt/router.js";
 export type { RouterOptions } from "./pmxt/router.js";
 export { ServerManager } from "./pmxt/server-manager.js";

@@ -29,6 +29,11 @@ map_user_trade_v0 = _mapper(
 to_6dec = _hosted_mappers.to_6dec
 
 
+def test_six_decimal_scale_is_module_private():
+    assert not hasattr(_hosted_mappers, "SIX_DEC_SCALE")
+    assert _hosted_mappers._SIX_DEC_SCALE == 1_000_000
+
+
 def _iso_ms(value: str) -> int:
     return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp() * 1000)
 

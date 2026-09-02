@@ -15,7 +15,7 @@ from typing import Any, Mapping, TypeVar
 from .errors import InvalidOrder
 from .models import Balance, BuiltOrder, Order, Position, UserTrade
 
-SIX_DEC_SCALE = 1_000_000
+_SIX_DEC_SCALE = 1_000_000
 
 _T = TypeVar("_T")
 
@@ -23,7 +23,7 @@ _T = TypeVar("_T")
 def to_6dec(amount: float | str | Decimal) -> int:
     """Convert a decimal amount to integer micro-units with no rounding."""
     d = Decimal(str(amount))
-    scaled = d * SIX_DEC_SCALE
+    scaled = d * _SIX_DEC_SCALE
     if scaled != scaled.to_integral_value():
         raise InvalidOrder(f"amount precision exceeds 6 decimals: {amount!r}")
     return int(scaled)

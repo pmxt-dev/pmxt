@@ -90,19 +90,19 @@ balance = kalshi_demo.fetch_balance()
 
 ## 5. Initialization (TypeScript)
 
+Install the TypeScript SDK with `npm install pmxtjs`. Its classes are `Kalshi` and `KalshiDemo`; `KalshiExchange` and `KalshiDemoExchange` are native `pmxt-core` exports.
+
 ```typescript
-import { KalshiExchange } from 'pmxt';
+import { Kalshi, KalshiDemo } from 'pmxtjs';
 
 // ── Public data — no credentials needed ──────────────────────────────────────
-const kalshi = new KalshiExchange();
-const markets = await kalshi.fetchMarkets({ query: 'Fed rates' });
+const publicKalshi = new Kalshi();
+const markets = await publicKalshi.fetchMarkets({ query: 'Fed rates' });
 
 // ── Production trading ────────────────────────────────────────────────────────
-const kalshi = new KalshiExchange({
-  credentials: {
-    apiKey: process.env.KALSHI_API_KEY,
-    privateKey: process.env.KALSHI_PRIVATE_KEY,
-  },
+const kalshi = new Kalshi({
+  apiKey: process.env.KALSHI_API_KEY,
+  privateKey: process.env.KALSHI_PRIVATE_KEY,
 });
 
 const balance = await kalshi.fetchBalance();
@@ -110,6 +110,7 @@ console.log(`Available: ${balance[0].available}`);
 
 const order = await kalshi.createOrder({
   marketId: 'FED-25JAN29-B4.75',
+  outcomeId: 'outcome-id-from-fetchMarkets', // Choose the desired market outcome
   side: 'buy',
   type: 'limit',
   price: 0.55,
@@ -118,13 +119,10 @@ const order = await kalshi.createOrder({
 
 // ── Demo / paper-trading environment ─────────────────────────────────────────
 // Use demo credentials generated on demo.kalshi.com
-import { KalshiDemoExchange } from 'pmxt';
 
-const kalshiDemo = new KalshiDemoExchange({
-  credentials: {
-    apiKey: process.env.KALSHI_API_KEY,       // demo API key
-    privateKey: process.env.KALSHI_PRIVATE_KEY,
-  },
+const kalshiDemo = new KalshiDemo({
+  apiKey: process.env.KALSHI_API_KEY,       // demo API key
+  privateKey: process.env.KALSHI_PRIVATE_KEY,
 });
 
 const demoBalance = await kalshiDemo.fetchBalance();

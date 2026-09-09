@@ -2,6 +2,8 @@
 
 PMXT implements CCXT-style unified error handling across supported exchanges and venues. All errors follow a consistent structure with HTTP status codes, error codes, and retry semantics.
 
+This guide describes the native TypeScript library (`npm install pmxt-core`). Its `BaseError`, `NotFound`, and `status` property belong to `pmxt-core`. The sidecar TypeScript SDK (`pmxtjs`) instead exports `PmxtError` and `NotFoundError`; see the [SDK error reference](../../docs/api-reference/errors.mdx) for that API.
+
 ## Table of Contents
 
 - [Error Class Hierarchy](#error-class-hierarchy)
@@ -21,7 +23,7 @@ All PMXT errors extend from `BaseError`, which provides consistent properties ac
 Generic bad request error. Base class for more specific validation errors.
 
 ```typescript
-import { BadRequest } from 'pmxt';
+import { BadRequest } from 'pmxt-core';
 
 throw new BadRequest('Invalid parameter', 'Polymarket');
 ```
@@ -30,7 +32,7 @@ throw new BadRequest('Invalid parameter', 'Polymarket');
 Authentication credentials are missing or invalid.
 
 ```typescript
-import { AuthenticationError } from 'pmxt';
+import { AuthenticationError } from 'pmxt-core';
 
 throw new AuthenticationError('Invalid API key', 'Polymarket');
 ```
@@ -39,7 +41,7 @@ throw new AuthenticationError('Invalid API key', 'Polymarket');
 The authenticated user doesn't have permission for this operation.
 
 ```typescript
-import { PermissionDenied } from 'pmxt';
+import { PermissionDenied } from 'pmxt-core';
 
 throw new PermissionDenied('Insufficient permissions', 'Kalshi');
 ```
@@ -48,7 +50,7 @@ throw new PermissionDenied('Insufficient permissions', 'Kalshi');
 The requested resource doesn't exist.
 
 ```typescript
-import { NotFound, OrderNotFound, MarketNotFound } from 'pmxt';
+import { NotFound, OrderNotFound, MarketNotFound } from 'pmxt-core';
 
 // Generic not found
 throw new NotFound('Resource not found', 'Limitless');
@@ -64,7 +66,7 @@ throw new MarketNotFound('market-456', 'Kalshi');
 Rate limit exceeded. This error is retryable and may include `retryAfter` seconds.
 
 ```typescript
-import { RateLimitExceeded } from 'pmxt';
+import { RateLimitExceeded } from 'pmxt-core';
 
 // With retry-after header
 throw new RateLimitExceeded('Too many requests', 60, 'Polymarket');
@@ -77,7 +79,7 @@ throw new RateLimitExceeded('Rate limit exceeded', undefined, 'Kalshi');
 Order parameters are invalid (price, size, tick size, etc.).
 
 ```typescript
-import { InvalidOrder } from 'pmxt';
+import { InvalidOrder } from 'pmxt-core';
 
 throw new InvalidOrder('Invalid tick size: must be 0.01', 'Polymarket');
 ```
@@ -86,7 +88,7 @@ throw new InvalidOrder('Invalid tick size: must be 0.01', 'Polymarket');
 Insufficient funds to complete the operation.
 
 ```typescript
-import { InsufficientFunds } from 'pmxt';
+import { InsufficientFunds } from 'pmxt-core';
 
 throw new InsufficientFunds('Insufficient balance: need $100, have $50', 'Kalshi');
 ```
@@ -95,7 +97,7 @@ throw new InsufficientFunds('Insufficient balance: need $100, have $50', 'Kalshi
 Input validation failed. Includes optional `field` property.
 
 ```typescript
-import { ValidationError } from 'pmxt';
+import { ValidationError } from 'pmxt-core';
 
 throw new ValidationError('ID cannot be empty', 'id');
 ```
@@ -106,7 +108,7 @@ throw new ValidationError('ID cannot be empty', 'id');
 Network connectivity issues. This error is retryable.
 
 ```typescript
-import { NetworkError } from 'pmxt';
+import { NetworkError } from 'pmxt-core';
 
 throw new NetworkError('Connection timeout', 'Polymarket');
 ```
@@ -115,7 +117,7 @@ throw new NetworkError('Connection timeout', 'Polymarket');
 Exchange is down or unreachable. This error is retryable.
 
 ```typescript
-import { ExchangeNotAvailable } from 'pmxt';
+import { ExchangeNotAvailable } from 'pmxt-core';
 
 throw new ExchangeNotAvailable('Exchange is temporarily unavailable', 'Limitless');
 ```
@@ -163,7 +165,7 @@ Additional properties for specific errors:
 ### Basic Error Handling
 
 ```typescript
-import { Polymarket, AuthenticationError, InsufficientFunds } from 'pmxt';
+import { Polymarket, AuthenticationError, InsufficientFunds } from 'pmxt-core';
 
 const exchange = new Polymarket({ privateKey: '0x...' });
 
@@ -190,9 +192,9 @@ try {
 ### Retry Logic for Retryable Errors
 
 ```typescript
-import { Polymarket, BaseError, RateLimitExceeded } from 'pmxt';
+import { Polymarket, BaseError, RateLimitExceeded } from 'pmxt-core';
 
-async function fetchMarketsWithRetry(exchange: Polymarket, maxRetries = 3) {
+async function fetchMarketsWithRetry(exchange: InstanceType<typeof Polymarket>, maxRetries = 3) {
     let retries = 0;
 
     while (retries < maxRetries) {
@@ -291,7 +293,7 @@ Uses CLOB client (similar to Polymarket):
 ### Before (v1.6.0 and earlier)
 
 ```typescript
-import { Polymarket } from 'pmxt';
+import { Polymarket } from 'pmxt-core';
 
 const exchange = new Polymarket({ privateKey: '0x...' });
 
@@ -310,7 +312,7 @@ try {
 ### After (v1.7.0+)
 
 ```typescript
-import { Polymarket, NetworkError, AuthenticationError, BaseError } from 'pmxt';
+import { Polymarket, NetworkError, AuthenticationError, BaseError } from 'pmxt-core';
 
 const exchange = new Polymarket({ privateKey: '0x...' });
 

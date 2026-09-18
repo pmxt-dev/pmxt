@@ -13,7 +13,7 @@ def main():
     order = client.create_order(
         outcome=market.yes,
         side='buy',
-        type='limit',
+        order_type='limit',
         amount=10,
         price=0.10
     )
@@ -24,7 +24,7 @@ def main():
     #     market_id='663583',
     #     outcome_id='10991849228756847439673778874175365458450913336396982752046655649803657501964',
     #     side='buy',
-    #     type='limit',
+    #     order_type='limit',
     #     amount=10,
     #     price=0.10
     # )

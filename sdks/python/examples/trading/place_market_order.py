@@ -11,7 +11,7 @@ def main():
         market_id='663583',
         outcome_id='10991849228756847439673778874175365458450913336396982752046655649803657501964',
         side='buy',
-        type='market',
+        order_type='market',
         amount=10
     )
     print(order)

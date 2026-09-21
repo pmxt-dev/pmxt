@@ -3,6 +3,22 @@ import { BinanceFeed } from '../../src/feeds/binance';
 import { ChainlinkFeed } from '../../src/feeds/chainlink/chainlink-feed';
 
 describe('Data feed backend errors', () => {
+    test('Binance normalizes symbols before cache lookup', async () => {
+        const feed = new BinanceFeed({ wsUrl: '', apiKey: '' });
+        const ticker = { symbol: 'BTC/USDT', last: 100 } as any;
+        (feed as any).latestTickers.set('BTC/USDT', ticker);
+
+        await expect(feed.fetchTicker('btc/usdt')).resolves.toBe(ticker);
+    });
+
+    test('Binance normalizes symbols when registering subscriptions', () => {
+        const feed = new BinanceFeed({ wsUrl: '', apiKey: '' });
+        const unsubscribe = (feed as any).watchTickerImpl('btc/usdt', () => {});
+
+        expect((feed as any).subscriptions[0].symbol).toBe('BTC/USDT');
+        unsubscribe();
+    });
+
     test('Binance fetchTicker names the missing relay URL setting', async () => {
         const feed = new BinanceFeed({ wsUrl: '', apiKey: '' });
 

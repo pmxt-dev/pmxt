@@ -100,7 +100,8 @@ export class BinanceFeed extends BaseDataFeed {
     }
 
     protected async fetchTickerImpl(symbol: string): Promise<Ticker> {
-        const cached = this.latestTickers.get(symbol);
+        const normalizedSymbol = symbol.toUpperCase();
+        const cached = this.latestTickers.get(normalizedSymbol);
         if (cached) return cached;
 
         await this.ensureConnected();
@@ -110,7 +111,7 @@ export class BinanceFeed extends BaseDataFeed {
                 reject(new Error(`BinanceFeed: timed out waiting for trade on ${symbol} (10s)`));
             }, 10_000);
 
-            const cleanup = this.watchTickerImpl(symbol, (ticker) => {
+            const cleanup = this.watchTickerImpl(normalizedSymbol, (ticker) => {
                 clearTimeout(timeout);
                 cleanup();
                 resolve(ticker);
@@ -130,7 +131,7 @@ export class BinanceFeed extends BaseDataFeed {
     }
 
     protected watchTickerImpl(symbol: string, callback: (ticker: Ticker) => void): () => void {
-        const sub: Subscription = { symbol, callback };
+        const sub: Subscription = { symbol: symbol.toUpperCase(), callback };
         this.subscriptions.push(sub);
         this.ensureConnected().catch((err: unknown) => {
             logger.error('[BinanceFeed] initial connect failed in watchTickerImpl', {

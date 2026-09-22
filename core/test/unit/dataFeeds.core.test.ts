@@ -1,6 +1,16 @@
 import { ExchangeNotAvailable, NotSupported } from '../../src/errors';
 import { BinanceFeed } from '../../src/feeds/binance';
 import { ChainlinkFeed } from '../../src/feeds/chainlink/chainlink-feed';
+import { Ticker } from '../../src/feeds/types';
+
+class TestBinanceFeed extends BinanceFeed {
+    subscribe(symbol: string, callback: (ticker: Ticker) => void) {
+        return this.watchTickerImpl(symbol, callback);
+    }
+    setCachedTicker(ticker: Ticker) {
+        (this as any).latestTickers.set(ticker.symbol, ticker);
+    }
+}
 
 describe('Data feed backend errors', () => {
     test('Binance fetchTicker names the missing relay URL setting', async () => {
@@ -20,6 +30,53 @@ describe('Data feed backend errors', () => {
             code: 'NOT_SUPPORTED',
             status: 501,
         } satisfies Partial<NotSupported>);
+    });
+
+    test('Binance watchTicker normalizes symbol case', async () => {
+        const feed = new TestBinanceFeed({ wsUrl: '', apiKey: '' });
+        const callback = jest.fn<(ticker: Ticker) => void>();
+
+        feed.subscribe('btc/usdt', callback);
+
+        const subscriptions = (feed as any).subscriptions;
+
+        expect(subscriptions[0].symbol).toBe('BTC/USDT');
+
+        await feed.close();
+    });
+
+        test('Binance fetchTicker normalizes symbol case', async () => {
+        const feed = new TestBinanceFeed({ wsUrl: '', apiKey: '' });
+        const ticker = {
+            symbol: 'BTC/USDT',
+            info: {},
+            timestamp: undefined,
+            datetime: undefined,
+            high: undefined,
+            low: undefined,
+            bid: undefined,
+            bidVolume: undefined,
+            ask: undefined,
+            askVolume: undefined,
+            vwap: undefined,
+            open: undefined,
+            close: 50000,
+            last: 50000,
+            previousClose: undefined,
+            change: undefined,
+            percentage: undefined,
+            average: undefined,
+            quoteVolume: undefined,
+            baseVolume: undefined,
+            indexPrice: undefined,
+            markPrice: undefined,
+        } satisfies Ticker;
+
+        feed.setCachedTicker(ticker);
+
+        await expect(feed.fetchTicker('btc/usdt')).resolves.toBe(ticker);
+
+        await feed.close();
     });
 
     test('Chainlink oracle calls name the missing REST API URL setting', async () => {

@@ -35,12 +35,46 @@ Authorization: Bearer pmxt_live_...
 | `category`    | `string`  | —       | Exact match on normalized category.                      |
 | `exchange`    | `string`  | —       | Filter to a single venue (`polymarket`, `kalshi`, ...).  |
 
+<Note>
+  The SDK methods accept the same filters as the query parameters above:
+  `query`, `limit`, `offset`, `category`, and `exchange`. For
+  `fetch_markets` / `fetchMarkets`, pass `status="closed"` (Python) or
+  `status: "closed"` (TypeScript) to include closed markets.
+</Note>
+
 ## Events shape
 
-```bash
-curl "https://api.pmxt.dev/v0/events?query=election&limit=2" \
-  -H "Authorization: Bearer pmxt_live_..."
-```
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import pmxt
+
+    router = pmxt.Router(pmxt_api_key="pmxt_live_...")
+
+    events = router.fetch_events(query="election", limit=2)
+    for event in events:
+        print(event.title, event.volume_24h)
+    ```
+  </Tab>
+  <Tab title="TypeScript">
+    ```typescript
+    import pmxt from "pmxtjs";
+
+    const router = new pmxt.Router({ pmxtApiKey: "pmxt_live_..." });
+
+    const events = await router.fetchEvents({ query: "election", limit: 2 });
+    for (const event of events) {
+      console.log(event.title, event.volume24h);
+    }
+    ```
+  </Tab>
+  <Tab title="curl">
+    ```bash
+    curl "https://api.pmxt.dev/v0/events?query=election&limit=2" \
+      -H "Authorization: Bearer pmxt_live_..."
+    ```
+  </Tab>
+</Tabs>
 
 ```json
 {
@@ -69,10 +103,37 @@ Exactly the same shape as [`UnifiedEvent`](/concepts/unified-schema#unifiedevent
 
 ## Markets shape
 
-```bash
-curl "https://api.pmxt.dev/v0/markets?query=election&limit=3" \
-  -H "Authorization: Bearer pmxt_live_..."
-```
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import pmxt
+
+    router = pmxt.Router(pmxt_api_key="pmxt_live_...")
+
+    markets = router.fetch_markets(query="election", limit=3)
+    for market in markets:
+        print(market.title, market.volume_24h)
+    ```
+  </Tab>
+  <Tab title="TypeScript">
+    ```typescript
+    import pmxt from "pmxtjs";
+
+    const router = new pmxt.Router({ pmxtApiKey: "pmxt_live_..." });
+
+    const markets = await router.fetchMarkets({ query: "election", limit: 3 });
+    for (const market of markets) {
+      console.log(market.title, market.volume24h);
+    }
+    ```
+  </Tab>
+  <Tab title="curl">
+    ```bash
+    curl "https://api.pmxt.dev/v0/markets?query=election&limit=3" \
+      -H "Authorization: Bearer pmxt_live_..."
+    ```
+  </Tab>
+</Tabs>
 
 ```json
 {

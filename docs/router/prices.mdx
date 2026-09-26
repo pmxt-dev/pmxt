@@ -195,27 +195,54 @@ deciding how to trade.
 The Router is read-only. To trade, use venue-specific exchange
 classes with the local SDK. A typical workflow:
 
-```python
-import pmxt
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import pmxt
 
-router = pmxt.Router(pmxt_api_key="pmxt_live_...")
-poly   = pmxt.Polymarket(private_key="0x...")
+    router = pmxt.Router(pmxt_api_key="pmxt_live_...")
+    poly   = pmxt.Polymarket(private_key="0x...")
 
-# 1. Browse matched market clusters across venues
-clusters = router.fetch_matched_market_clusters(relation="identity", limit=20)
+    # 1. Browse matched market clusters across venues
+    clusters = router.fetch_matched_market_clusters(relation="identity", limit=20)
 
-# 2. Direct self-hosted calls need IDs returned by the venue client.
-# Re-fetch or reverse-resolve the matched venue market, then verify the outcome.
-polymarket_match = next(m for m in clusters[0].markets if m.source_exchange == "polymarket")
-venue_markets = poly.fetch_markets({"query": polymarket_match.title, "limit": 1})
-venue_outcome = venue_markets[0].outcomes[0]  # verify label/slug before trading
+    # 2. Direct self-hosted calls need IDs returned by the venue client.
+    # Re-fetch or reverse-resolve the matched venue market, then verify the outcome.
+    polymarket_match = next(m for m in clusters[0].markets if m.source_exchange == "polymarket")
+    venue_markets = poly.fetch_markets({"query": polymarket_match.title, "limit": 1})
+    venue_outcome = venue_markets[0].outcomes[0]  # verify label/slug before trading
 
-# 3. Inspect the order book on that venue with its native outcome ID
-book = poly.fetch_order_book(outcome_id=venue_outcome.outcome_id)
+    # 3. Inspect the order book on that venue with its native outcome ID
+    book = poly.fetch_order_book(outcome_id=venue_outcome.outcome_id)
 
-# 4. Place an order locally (never proxied through PMXT)
-# poly.create_order(...)
-```
+    # 4. Place an order locally (never proxied through PMXT)
+    # poly.create_order(...)
+    ```
+  </Tab>
+  <Tab title="TypeScript">
+    ```typescript
+    import pmxt from "pmxtjs";
+
+    const router = new pmxt.Router({ pmxtApiKey: "pmxt_live_..." });
+    const poly = new pmxt.Polymarket({ privateKey: "0x..." });
+
+    // 1. Browse matched market clusters across venues
+    const clusters = await router.fetchMatchedMarketClusters({ relation: "identity", limit: 20 });
+
+    // 2. Direct self-hosted calls need IDs returned by the venue client.
+    // Re-fetch or reverse-resolve the matched venue market, then verify the outcome.
+    const polymarketMatch = clusters[0].markets.find((m) => m.sourceExchange === "polymarket")!;
+    const venueMarkets = await poly.fetchMarkets({ query: polymarketMatch.title, limit: 1 });
+    const venueOutcome = venueMarkets[0].outcomes[0]; // verify label/slug before trading
+
+    // 3. Inspect the order book on that venue with its native outcome ID
+    const book = await poly.fetchOrderBook(venueOutcome.outcomeId);
+
+    // 4. Place an order locally (never proxied through PMXT)
+    // await poly.createOrder(...);
+    ```
+  </Tab>
+</Tabs>
 
 Router returns the same [unified schema](/concepts/unified-schema) as
 every other exchange, but identifiers keep their address space. Catalog

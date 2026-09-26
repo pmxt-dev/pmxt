@@ -3158,6 +3158,10 @@ deciding how to trade.
 The Router is read-only. To trade, use venue-specific exchange
 classes with the local SDK. A typical workflow:
 
+
+
+**Python:**
+
 ```python
 import pmxt
 
@@ -3179,6 +3183,33 @@ book = poly.fetch_order_book(outcome_id=venue_outcome.outcome_id)
 # 4. Place an order locally (never proxied through PMXT)
 # poly.create_order(...)
 ```
+
+
+**TypeScript:**
+
+```typescript
+import pmxt from "pmxtjs";
+
+const router = new pmxt.Router({ pmxtApiKey: "pmxt_live_..." });
+const poly = new pmxt.Polymarket({ privateKey: "0x..." });
+
+// 1. Browse matched market clusters across venues
+const clusters = await router.fetchMatchedMarketClusters({ relation: "identity", limit: 20 });
+
+// 2. Direct self-hosted calls need IDs returned by the venue client.
+// Re-fetch or reverse-resolve the matched venue market, then verify the outcome.
+const polymarketMatch = clusters[0].markets.find((m) => m.sourceExchange === "polymarket")!;
+const venueMarkets = await poly.fetchMarkets({ query: polymarketMatch.title, limit: 1 });
+const venueOutcome = venueMarkets[0].outcomes[0]; // verify label/slug before trading
+
+// 3. Inspect the order book on that venue with its native outcome ID
+const book = await poly.fetchOrderBook(venueOutcome.outcomeId);
+
+// 4. Place an order locally (never proxied through PMXT)
+// await poly.createOrder(...);
+```
+
+
 
 Router returns the same [unified schema](https://pmxt.dev/docs/concepts/unified-schema) as
 every other exchange, but identifiers keep their address space. Catalog

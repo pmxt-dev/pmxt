@@ -4755,53 +4755,76 @@ const result = await exchange.fetchOrderBooks(["67890"]);
 
 ### Fetch Trades
 
-`GET /api/{exchange}/fetchTrades`
+Source: https://pmxt.dev/docs/api-reference/fetch-trades
 
-Fetch raw trade history for a specific outcome.
+> **Note:**
+**Hosted and self-hosted data depth** — Hosted `api.pmxt.dev` calls require a PMXT API key. If you omit the key, SDK calls route through your local `pmxt-core` process and use venue-native APIs. `fetchTrades` returns normalized `Trade` rows for venues whose implementation supports `fetchTrades`; history length and rate limits remain venue-specific, and Polymarket requires an API key. Check [Feature Support & Compliance](https://github.com/pmxt-dev/pmxt/blob/main/core/COMPLIANCE.md) for the current matrix. [Get your API key](https://pmxt.dev/dashboard).
 
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `outcomeId` | string | Yes |  |
-| `start` | string | No | Start of the time range |
-| `end` | string | No | End of the time range |
-| `limit` | number | No | Maximum number of results to return (max {@link MAX_TRADES_LIMIT}) |
 
-**Response:** `{ success: true, data: Trade[] }`
+Each returned `Trade` has `id`, `timestamp` (Unix milliseconds), `price` (0–1 probability), `amount` (contracts), and `side` (`"buy"`, `"sell"`, or `"unknown"`). To stream new trades instead of polling history, use [`watchTrades`](https://pmxt.dev/docs/api-reference/watch-trades).
 
-**Python:**
-```python
+#### Use cases
+
+##### Get recent trades for an outcome
+
+<CodeGroup>
+```python Python
 import pmxt
 
-# API key optional — enables faster catalog-backed lookups
-exchange = pmxt.Kalshi(
-    pmxt_api_key="YOUR_PMXT_API_KEY",
-)
-result = exchange.fetch_trades(
-    "67890",
-    start="2026-01-01T00:00:00Z",
-    end="2026-01-31T00:00:00Z",
-    limit=10,
+# Hosted route: include pmxt_api_key. Omit it for self-hosted/local pmxt-core.
+api = pmxt.Polymarket(pmxt_api_key="YOUR_PMXT_API_KEY")
+market = api.fetch_market(slug="will-alexandria-ocasio-cortez-win-the-2028-us-presidential-election")
+
+trades = api.fetch_trades(market.yes, limit=50)
+for t in trades:
+print(f"{t.side.upper()} {t.amount} contracts @ {t.price:.1%}")
+```
+
+```javascript JavaScript
+import { Polymarket } from "pmxtjs";
+
+// Hosted route: include pmxtApiKey. Omit it for self-hosted/local pmxt-core.
+const api = new Polymarket({ pmxtApiKey: "YOUR_PMXT_API_KEY" });
+const market = await api.fetchMarket({ slug: "will-alexandria-ocasio-cortez-win-the-2028-us-presidential-election" });
+
+const trades = await api.fetchTrades(market.yes, { limit: 50 });
+for (const t of trades) {
+  console.log(`${t.side.toUpperCase()} ${t.amount} contracts @ ${(t.price * 100).toFixed(1)}%`);
+}
+```
+
+```bash curl
+# First get the outcome ID from a market, then pass it as the outcomeId parameter
+curl "https://api.pmxt.dev/api/polymarket/fetchTrades?outcomeId=YOUR_OUTCOME_ID&limit=50" \
+  -H "Authorization: Bearer $PMXT_API_KEY"
+```
+</CodeGroup>
+
+##### Get trades in a time range
+
+<CodeGroup>
+```python Python
+trades = api.fetch_trades(
+market.yes,
+start="2026-01-01T00:00:00Z",
+end="2026-01-31T00:00:00Z",
+limit=100,
 )
 ```
 
-**TypeScript:**
-```typescript
-import { Kalshi } from "pmxtjs";
-
-// API key optional — enables faster catalog-backed lookups
-const exchange = new Kalshi({
-  pmxtApiKey: "YOUR_PMXT_API_KEY",
+```javascript JavaScript
+const trades = await api.fetchTrades(market.yes, {
+  start: new Date("2026-01-01T00:00:00Z"),
+  end: new Date("2026-01-31T00:00:00Z"),
+  limit: 100,
 });
-const result = await exchange.fetchTrades(
-  "67890",
-  {
-    start: new Date("2026-01-01T00:00:00Z"),
-    end: new Date("2026-01-31T00:00:00Z"),
-    limit: 10,
-  },
-);
 ```
 
+```bash curl
+curl "https://api.pmxt.dev/api/polymarket/fetchTrades?outcomeId=YOUR_OUTCOME_ID&start=2026-01-01T00:00:00Z&end=2026-01-31T00:00:00Z&limit=100" \
+  -H "Authorization: Bearer $PMXT_API_KEY"
+```
+</CodeGroup>
 
 ### Get Execution Price
 

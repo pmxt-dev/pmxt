@@ -56,7 +56,7 @@ GitHub: https://github.com/pmxt-dev/pmxt
 - [Fetch OHLCV](https://pmxt.dev/docs/api-reference/fetch-ohlcv)
 - [Fetch Order Book](https://pmxt.dev/docs/api-reference/fetch-order-book)
 - [Fetch Order Books](https://pmxt.dev/docs/api-reference/fetchOrderBooks): Batch variant of {@link fetchOrderBook}. Fetches order books for multiple outcomes in a single request where the exchange supports it.
-- [Fetch Trades](https://pmxt.dev/docs/api-reference/fetchTrades): Fetch raw trade history for a specific outcome.
+- [Fetch Trades](https://pmxt.dev/docs/api-reference/fetch-trades)
 - [Get Execution Price](https://pmxt.dev/docs/api-reference/getExecutionPrice): Calculate the volume-weighted average execution price for a given order size. Returns 0 if the order cannot be fully filled.
 - [Get Execution Price Detailed](https://pmxt.dev/docs/api-reference/getExecutionPriceDetailed): Calculate detailed execution price information including partial fill data.
 - [WebSocket Overview](https://pmxt.dev/docs/api-reference/websocket): Real-time orderbook and trade streaming via WebSocket

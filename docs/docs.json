@@ -181,7 +181,7 @@
               "api-reference/fetch-ohlcv",
               "api-reference/fetch-order-book",
               "POST /api/{exchange}/fetchOrderBooks",
-              "GET /api/{exchange}/fetchTrades",
+              "api-reference/fetch-trades",
               "POST /api/{exchange}/getExecutionPrice",
               "POST /api/{exchange}/getExecutionPriceDetailed"
             ],

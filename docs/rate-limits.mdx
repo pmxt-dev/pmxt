@@ -12,12 +12,10 @@ and `trade.pmxt.dev`) — see [hosts](/authentication#hosts).
 ## Limits
 
 {/* HOSTED-AUTOGEN:rate-limits-table:START */}
-| Plan | Monthly credits | Per-minute | WebSocket streams | Price |
-| ---- | --------------- | ---------- | ----------------- | ----- |
-| Free | 25,000 | 60 | 5 | $0/mo |
-| Starter | 250,000 | 300 | 20 | $29.99/mo |
-| Pro | 1,000,000 | 1,000 | 100 | $99.99/mo |
-| Enterprise | Custom | Custom | Custom | [Contact us](https://pmxt.dev/pricing) |
+| Endpoint | Per-minute | Per-month |
+| -------- | ---------- | --------- |
+| `/v0/*` | 60 | 25,000 |
+| `/api/*` | 60 | 25,000 |
 {/* HOSTED-AUTOGEN:rate-limits-table:END */}
 
 Limits apply per API key across both hosts (`api.pmxt.dev` and

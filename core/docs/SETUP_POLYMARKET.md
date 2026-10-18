@@ -61,3 +61,15 @@ exchange = pmxt.Polymarket(
     signature_type='deposit_wallet'
 )
 ```
+
+## 5. Initialization (TypeScript)
+
+```typescript
+import { Polymarket } from 'pmxtjs';
+
+const exchange = new Polymarket({
+    privateKey: process.env.POLYMARKET_PRIVATE_KEY,
+    proxyAddress: process.env.POLYMARKET_PROXY_ADDRESS,
+    signatureType: 'gnosis-safe'
+});
+```

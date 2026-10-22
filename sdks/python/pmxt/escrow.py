@@ -173,11 +173,13 @@ class Escrow:
         address: str | None = None,
     ) -> dict[str, Any]:
         """Return pending withdrawal state and/or withdrawal events for an address."""
+        # Resolve the wallet address before validating ``include`` so the error
+        # raised for invalid inputs matches the TypeScript SDK.
+        wallet_address = quote(self._wallet_address(address), safe="")
         include_value = include.strip()
         if not include_value:
             raise ValidationError("include must not be empty", field="include")
 
-        wallet_address = quote(self._wallet_address(address), safe="")
         include_query = quote(include_value, safe=",")
         path = f"/v0/escrow/{wallet_address}/withdrawals?include={include_query}"
         return self._request("GET", path)

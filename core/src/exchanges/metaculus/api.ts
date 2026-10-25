@@ -54,6 +54,34 @@ export const metaculusApiSpec = {
                 "parameters": [
                     {
                         "in": "query",
+                        "name": "acting_user",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "categories",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "include_cp_history",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "include_descriptions",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "in": "query",
                         "name": "tournaments",
                         "schema": {
                             "type": "array",

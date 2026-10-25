@@ -1031,6 +1031,26 @@ paths:
         - Feed
       parameters:
         - in: query
+          name: acting_user
+          schema:
+            type: integer
+          description: Filters posts by acting or proxy user ID.
+        - in: query
+          name: categories
+          schema:
+            type: string
+          description: Comma-separated category slugs to filter posts.
+        - in: query
+          name: include_cp_history
+          schema:
+            type: boolean
+          description: Includes community prediction history in the response.
+        - in: query
+          name: include_descriptions
+          schema:
+            type: boolean
+          description: Includes full question descriptions in the response.
+        - in: query
           name: tournaments
           schema:
             type: array

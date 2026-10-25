@@ -2562,6 +2562,7 @@ paths:
           - CFTC
           - DGA
           - IGC
+          - IRGC
           - MGA
           - SGA
           - UKGC
@@ -3046,6 +3047,7 @@ paths:
           - CFTC
           - DGA
           - IGC
+          - IRGC
           - MGA
           - SGA
           - UKGC
@@ -5786,6 +5788,7 @@ paths:
           - CFTC
           - DGA
           - IGC
+          - IRGC
           - MGA
           - SGA
           - UKGC

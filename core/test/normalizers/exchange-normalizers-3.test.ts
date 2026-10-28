@@ -275,6 +275,15 @@ describe('PolymarketUSNormalizer', () => {
     });
 
     // -------------------------------------------------------------------------
+    test('parses JSON-encoded outcomePrices from the gateway', () => {
+        const market = normalizer.normalizeMarket({
+            slug: 'json-outcome-prices',
+            outcomePrices: '["0.97","0.03"]',
+        } as any);
+        expect(market.outcomes[0].price).toBeCloseTo(0.97, 3);
+        expect(market.outcomes[1].price).toBeCloseTo(0.03, 3);
+    });
+
     // normalizeMarket - missing sides => price defaults to 0
     // -------------------------------------------------------------------------
 

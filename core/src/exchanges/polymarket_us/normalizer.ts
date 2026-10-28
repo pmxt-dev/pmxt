@@ -79,7 +79,7 @@ interface RealMarket {
     marketSides?: RealMarketSide[];
     // Fallback price source used by some gateway responses: a 2-element
     // array of stringified long-side prices, [longPrice, shortPrice].
-    outcomePrices?: string[];
+    outcomePrices?: string[] | string;
     // Per-market minimum price increment (e.g. 0.001). Lifted onto
     // `UnifiedMarket.tickSize` so price-sensitive helpers can honour the
     // real tick rather than falling back to the hard-coded default.
@@ -168,8 +168,18 @@ function buildBinaryOutcomes(
 function buildOutcomes(
     slug: string,
     sides: RealMarketSide[] | undefined,
-    outcomePrices: string[] | undefined,
+    outcomePrices: string[] | string | undefined,
 ): MarketOutcome[] {
+    const prices = typeof outcomePrices === 'string'
+        ? (() => {
+            try {
+                const parsed: unknown = JSON.parse(outcomePrices);
+                return Array.isArray(parsed) ? parsed as string[] : undefined;
+            } catch {
+                return undefined;
+            }
+        })()
+        : outcomePrices;
     let longPrice: number | undefined;
     let shortPrice: number | undefined;
     let longDescription: string | undefined;
@@ -188,11 +198,11 @@ function buildOutcomes(
         }
     }
 
-    if (longPrice === undefined && outcomePrices && outcomePrices.length >= 1) {
-        longPrice = parsePriceString(outcomePrices[0]);
+    if (longPrice === undefined && prices && prices.length >= 1) {
+        longPrice = parsePriceString(prices[0]);
     }
-    if (shortPrice === undefined && outcomePrices && outcomePrices.length >= 2) {
-        shortPrice = parsePriceString(outcomePrices[1]);
+    if (shortPrice === undefined && prices && prices.length >= 2) {
+        shortPrice = parsePriceString(prices[1]);
     }
 
     // Fill in the complementary side from the binary identity when only

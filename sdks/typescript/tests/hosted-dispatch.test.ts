@@ -423,6 +423,9 @@ describe("hosted buildOrder amount validation", () => {
     return expectAmountError("not-a-number", "amount must be a finite positive number");
   });
 
+  it("negative numeric amount -> 'amount must be positive'", () => {
+    return expectAmountError(-5, "amount must be positive");
+  });
 
 
 

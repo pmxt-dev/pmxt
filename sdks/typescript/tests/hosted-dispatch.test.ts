@@ -23,7 +23,7 @@ import { Polymarket } from "../pmxt/client";
 import {
   HOSTED_TRADING_BASE_URL,
 } from "../pmxt/hosted-routing";
-import { NotSupported } from "../pmxt/errors";
+import { NotSupported, InvalidOrder } from "../pmxt/errors";
 import { MissingWalletAddress } from "../pmxt/hosted-errors";
 
 const PMXT_API_KEY = "test_pmxt_key_xxx";
@@ -395,4 +395,35 @@ describe("hosted write dispatch", () => {
     expect(reqs[0].url).toContain("/v0/orders/cancel/build");
     expect(reqs[1].url).toContain("/v0/orders/cancel");
   });
+});
+
+// --------------------------------------------------------------------------
+// Hosted build-order amount validation (issue #2423)
+// --------------------------------------------------------------------------
+
+describe("hosted buildOrder amount validation", () => {
+  const baseParams = {
+    marketId: "11111111-1111-4111-8111-111111111111",
+    outcomeId: "22222222-2222-4222-8222-222222222222",
+    side: "buy",
+    type: "market",
+    denom: "usdc",
+  };
+
+  // The amount guard runs before any network or wallet access, so these
+  // reject locally. `amount` is typed `number`, so malformed inputs are cast.
+  function expectAmountError(amount: unknown, message: string) {
+    const api = makePolymarket();
+    return expect(
+      api.buildOrder({ ...baseParams, amount } as any),
+    ).rejects.toThrow(new InvalidOrder(message));
+  }
+
+  it("non-numeric string amount -> 'amount must be a finite positive number'", () => {
+    return expectAmountError("not-a-number", "amount must be a finite positive number");
+  });
+
+
+
+
 });

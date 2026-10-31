@@ -427,6 +427,9 @@ describe("hosted buildOrder amount validation", () => {
     return expectAmountError(-5, "amount must be positive");
   });
 
+  it("zero amount -> 'amount must be positive'", () => {
+    return expectAmountError(0, "amount must be positive");
+  });
 
 
 });

@@ -431,5 +431,11 @@ describe("hosted buildOrder amount validation", () => {
     return expectAmountError(0, "amount must be positive");
   });
 
+  it("NaN amount -> 'amount must be a finite positive number'", () => {
+    return expectAmountError(NaN, "amount must be a finite positive number");
+  });
 
+  it("Infinity amount -> 'amount must be a finite positive number'", () => {
+    return expectAmountError(Infinity, "amount must be a finite positive number");
+  });
 });

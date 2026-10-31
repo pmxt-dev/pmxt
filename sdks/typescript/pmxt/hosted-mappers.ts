@@ -153,7 +153,7 @@ export function userTradeToV0(trade: UserTrade): Record<string, unknown> {
  * Map a `PositionV0` JSON object to {@link Position}.
  *
  * Optional fields (`outcomeLabel`, `entryPrice`, `currentPrice`,
- * `unrealizedPnL`, `realizedPnL`) surface as `undefined` when missing —
+ * `currentValue`, `unrealizedPnL`, `realizedPnL`) surface as `undefined` when missing —
  * **never** a fake `0` or `""`. This keeps the SDK honest about which data
  * the server actually provided.
  */
@@ -191,6 +191,9 @@ export function positionFromV0(payload: Record<string, unknown>): Position {
         size,
         entryPrice: entryPrice as number | undefined,
         currentPrice: currentPrice as number | undefined,
+        currentValue: floatOrUndefined(
+            payload["current_value"] ?? payload["currentValue"],
+        ),
         unrealizedPnL: unrealizedPnL as number | undefined,
         realizedPnL: floatOrUndefined(
             payload["realized_pnl"] ?? payload["realizedPnl"] ?? payload["realizedPnL"],

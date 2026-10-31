@@ -29,4 +29,14 @@ describe("positionFromV0", () => {
     expect(position.unrealizedPnL).toBe(3.75);
     expect(position.realizedPnL).toBe(0);
   });
+  it("leaves currentValue undefined when the hosted payload omits it", () => {
+    const position = positionFromV0({
+      market_id: "mkt-2",
+      outcome_id: "out-no",
+      shares: 10,
+      current_price: 0.3,
+    });
+
+    expect(position.currentValue).toBeUndefined();
+  });
 });

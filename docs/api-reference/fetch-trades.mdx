@@ -1,0 +1,113 @@
+---
+title: Fetch Trades
+openapi: GET /api/{exchange}/fetchTrades
+---
+
+## Use cases
+
+### Recent trade history
+
+Fetch raw trade history for a single outcome. Pass the outcome token ID as `outcomeId` and omit `start`/`end` to get the most recent trades.
+
+<Warning>
+Polymarket requires an API key for trade history. Use `fetchOHLCV` for public historical price data on Polymarket.
+</Warning>
+
+<CodeGroup>
+```python Python
+import pmxt
+
+poly = pmxt.Polymarket(pmxt_api_key="pmxt_...")
+trades = poly.fetch_trades(
+    "104932610032177696635191871147557737718087870958469629338467406422339967452218",
+    limit=50,
+)
+for t in trades:
+    print(f"{t.side.upper()} {t.amount} contracts @ {t.price:.1%} ({t.timestamp})")
+```
+
+```javascript JavaScript
+import { Polymarket } from "pmxtjs";
+
+const poly = new Polymarket({ pmxtApiKey: "pmxt_..." });
+const trades = await poly.fetchTrades(
+  "104932610032177696635191871147557737718087870958469629338467406422339967452218",
+  { limit: 50 }
+);
+trades.forEach((t) =>
+  console.log(`${t.side.toUpperCase()} ${t.amount} contracts @ ${(t.price * 100).toFixed(1)}% (${t.timestamp})`)
+);
+```
+
+```bash curl
+curl "https://api.pmxt.dev/api/polymarket/fetchTrades?outcomeId=104932610032177696635191871147557737718087870958469629338467406422339967452218&limit=50" \
+  -H "Authorization: Bearer ***"
+```
+</CodeGroup>
+
+### Historical range
+
+Pass `start` and `end` to get trades inside a time range. The TypeScript SDK accepts `Date` objects (converted to ISO 8601 strings); the Python SDK accepts ISO 8601 strings or epoch timestamps. The `since` parameter (Unix milliseconds) is also supported by the Python SDK.
+
+<CodeGroup>
+```python Python
+import pmxt
+
+poly = pmxt.Polymarket(pmxt_api_key="pmxt_...")
+trades = poly.fetch_trades(
+    "104932610032177696635191871147557737718087870958469629338467406422339967452218",
+    start="2025-01-01T00:00:00Z",
+    end="2025-02-01T00:00:00Z",
+    limit=100,
+)
+print(f"{len(trades)} trades")
+```
+
+```javascript JavaScript
+import { Polymarket } from "pmxtjs";
+
+const poly = new Polymarket({ pmxtApiKey: "pmxt_..." });
+const trades = await poly.fetchTrades(
+  "104932610032177696635191871147557737718087870958469629338467406422339967452218",
+  { start: new Date("2025-01-01T00:00:00Z"), end: new Date("2025-02-01T00:00:00Z"), limit: 100 }
+);
+console.log(`${trades.length} trades`);
+```
+
+```bash curl
+curl "https://api.pmxt.dev/api/polymarket/fetchTrades?outcomeId=104932610032177696635191871147557737718087870958469629338467406422339967452218&start=2025-01-01T00%3A00%3A00Z&end=2025-02-01T00%3A00%3A00Z&limit=100" \
+  -H "Authorization: Bearer ***"
+```
+</CodeGroup>
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `outcomeId` | string | Yes | Outcome token ID. Market slugs are not accepted. |
+| `start` | string / Date | No | Start of the time range (ISO 8601 on the hosted API). |
+| `end` | string / Date | No | End of the time range (ISO 8601 on the hosted API). |
+| `since` | number | No | Return trades after this Unix-millisecond timestamp (Python SDK). |
+| `limit` | number | No | Maximum number of trades to return. Capped at 1000; larger values raise a validation error. |
+
+The `resolution` parameter is deprecated for `fetchTrades` and is ignored (it logs a warning and will be removed in v3.0.0). Trades are discrete events, not aggregated candles — use `fetchOHLCV` when you need a resolution.
+
+## Response
+
+Returns a `Trade[]` array:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique trade ID |
+| `timestamp` | number | Unix timestamp in milliseconds when the trade executed |
+| `price` | number | Trade price as a probability between 0.0 and 1.0 |
+| `amount` | number | Size of the trade in contracts/shares |
+| `side` | string | Trade side from the taker's perspective: `"buy"`, `"sell"`, or `"unknown"` |
+| `outcomeId` | string | The outcome this trade is for, when known |
+
+## Notes
+
+- Every trade returned is for the single `outcomeId` you passed; there is no batch variant like `fetchOrderBooks`.
+- At least the Polymarket implementation applies `limit` after normalization (trades beyond the limit are dropped), so retrieving trades beyond the most recent `limit` requires narrowing `start`/`end` and paging forward in time.
+- History depth and rate limits remain venue-specific. Check [Feature Support & Compliance](https://github.com/pmxt-dev/pmxt/blob/main/core/COMPLIANCE.md) for the current venue matrix.
+- For real-time trade updates, use [`watchTrades`](/api-reference/watch-trades) instead of polling this endpoint.

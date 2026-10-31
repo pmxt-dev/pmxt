@@ -29,6 +29,7 @@ describe("positionFromV0", () => {
     expect(position.unrealizedPnL).toBe(3.75);
     expect(position.realizedPnL).toBe(0);
   });
+
   it("leaves currentValue undefined when the hosted payload omits it", () => {
     const position = positionFromV0({
       market_id: "mkt-2",
@@ -38,5 +39,16 @@ describe("positionFromV0", () => {
     });
 
     expect(position.currentValue).toBeUndefined();
+  });
+
+  it("maps camelCase currentValue payloads as well", () => {
+    const position = positionFromV0({
+      marketId: "mkt-3",
+      outcomeId: "out-yes",
+      size: 4,
+      currentValue: 2,
+    });
+
+    expect(position.currentValue).toBe(2);
   });
 });

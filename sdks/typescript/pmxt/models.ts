@@ -372,6 +372,9 @@ export interface Position {
     /** Current market price (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
     currentPrice?: number | null;
 
+    /** Current market value of the position (size * currentPrice). Populated in hosted mode when the server supplies mark-to-market data; may be undefined in hosted mode when the server hasn't enriched. */
+    currentValue?: number | null;
+
     /** Unrealized profit/loss (populated in venue-direct mode; may be undefined in hosted mode when the server hasn't enriched). */
     unrealizedPnL?: number | null;
 

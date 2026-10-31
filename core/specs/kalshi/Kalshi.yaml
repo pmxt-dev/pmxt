@@ -3537,6 +3537,10 @@ components:
           description: List of scopes to grant to the API key. Valid values are 'read' and 'write'. If 'write' is included, 'read' must also be included. Defaults to full access (['read', 'write']) if not provided.
           items:
             type: string
+        key_type:
+          type: string
+          enum: ['ed25519', 'rsa']
+          description: Type of key pair to generate. Valid values are 'ed25519' and 'rsa'. Added in Kalshi changelog 2026-09-24.
 
     GenerateApiKeyResponse:
       type: object

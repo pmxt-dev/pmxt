@@ -2742,6 +2742,9 @@ export abstract class Exchange {
             resolvedDenom = "shares";
         }
 
+        if (!Number.isFinite(Number(params.amount))) {
+            throw new InvalidOrder("amount must be a finite positive number");
+        }
         if (!(Number(params.amount) > 0)) {
             throw new InvalidOrder("amount must be positive");
         }

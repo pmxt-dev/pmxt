@@ -37,10 +37,30 @@ Authorization: Bearer pmxt_live_...
 
 ## Events shape
 
-```bash
-curl "https://api.pmxt.dev/v0/events?query=election&limit=2" \
-  -H "Authorization: Bearer pmxt_live_..."
-```
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import pmxt
+
+    router = pmxt.Router(pmxt_api_key="pmxt_live_...")
+
+    # GET /v0/events?query=election&limit=2
+    # Also supported: offset, and status="closed" to include closed rows.
+    events = router.fetch_events(query="election", limit=2)
+    ```
+  </Tab>
+  <Tab title="TypeScript">
+    ```typescript
+    import pmxt from "pmxtjs";
+
+    const router = new pmxt.Router({ pmxtApiKey: "pmxt_live_..." });
+
+    // GET /v0/events?query=election&limit=2
+    // Also supported: offset, and status: "closed" to include closed rows.
+    const events = await router.fetchEvents({ query: "election", limit: 2 });
+    ```
+  </Tab>
+</Tabs>
 
 ```json
 {
@@ -69,10 +89,32 @@ Exactly the same shape as [`UnifiedEvent`](/concepts/unified-schema#unifiedevent
 
 ## Markets shape
 
-```bash
-curl "https://api.pmxt.dev/v0/markets?query=election&limit=3" \
-  -H "Authorization: Bearer pmxt_live_..."
-```
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import pmxt
+
+    router = pmxt.Router(pmxt_api_key="pmxt_live_...")
+
+    # GET /v0/markets?query=election&limit=3
+    # Also supported: offset, category, exchange; use status="closed"
+    # to include closed rows.
+    markets = router.fetch_markets(query="election", limit=3)
+    ```
+  </Tab>
+  <Tab title="TypeScript">
+    ```typescript
+    import pmxt from "pmxtjs";
+
+    const router = new pmxt.Router({ pmxtApiKey: "pmxt_live_..." });
+
+    // GET /v0/markets?query=election&limit=3
+    // Also supported: offset, category, exchange; use status: "closed"
+    // to include closed rows.
+    const markets = await router.fetchMarkets({ query: "election", limit: 3 });
+    ```
+  </Tab>
+</Tabs>
 
 ```json
 {

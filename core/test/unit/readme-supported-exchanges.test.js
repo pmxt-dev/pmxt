@@ -23,6 +23,7 @@ describe('README supported exchanges', () => {
       'SuiBets',
       'Rain',
       'Hunch',
+      'GADUIN',
     ];
 
     for (const altText of expectedAltTexts) {

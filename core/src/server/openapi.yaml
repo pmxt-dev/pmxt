@@ -232,6 +232,7 @@ paths:
               - suibets
               - rain
               - hunch
+              - gaduin
               - router
           required: true
           description: The prediction market exchange to target.
@@ -926,6 +927,7 @@ paths:
               - hyperliquid
               - rain
               - hunch
+              - gaduin
           required: true
           description: The prediction market exchange to target.
         - in: query
@@ -3118,6 +3120,7 @@ components:
           - suibets
           - rain
           - hunch
+          - gaduin
           - mock
           - router
       required: true
@@ -5057,6 +5060,17 @@ x-sdk-constructors:
         tsName: privateKey
         type: string
         description: Private key for authentication
+  gaduin:
+    className: Gaduin
+    params:
+      - name: pmxt_api_key
+        tsName: pmxtApiKey
+        type: string
+        description: PMXT API key for hosted access
+      - name: api_key
+        tsName: apiKey
+        type: string
+        description: API key for authentication
   mock:
     className: Mock
     params:

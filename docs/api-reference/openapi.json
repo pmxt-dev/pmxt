@@ -184,6 +184,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.get_auth_nonce()"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.get_auth_nonce()"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.getAuthNonce();"
@@ -262,6 +267,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.getAuthNonce();"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.getAuthNonce();"
           }
         ]
       }
@@ -419,6 +429,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.login_with_signature()"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.login_with_signature()"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.loginWithSignature();"
@@ -497,6 +512,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.loginWithSignature();"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.loginWithSignature();"
           }
         ]
       }
@@ -628,6 +648,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.logout()"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.logout()"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.logout();"
@@ -706,6 +731,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.logout();"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.logout();"
           }
         ]
       }
@@ -853,6 +883,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.is_session_active()"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.is_session_active()"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.isSessionActive();"
@@ -931,6 +966,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.isSessionActive();"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.isSessionActive();"
           }
         ]
       }
@@ -1080,6 +1120,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.load_markets()"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.load_markets()"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.loadMarkets();"
@@ -1158,6 +1203,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.loadMarkets();"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.loadMarkets();"
           }
         ]
       }
@@ -1428,6 +1478,11 @@
           },
           {
             "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_markets(\n    query=\"election\",\n    limit=10,\n    status=\"active\",\n)"
+          },
+          {
+            "lang": "python",
             "label": "Router",
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Router(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_markets(\n    query=\"election\",\n    limit=10,\n    status=\"active\",\n)"
           },
@@ -1510,6 +1565,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchMarkets({\n  query: \"election\",\n  limit: 10,\n  status: \"active\",\n});"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchMarkets({\n  query: \"election\",\n  limit: 10,\n  status: \"active\",\n});"
           },
           {
             "lang": "javascript",
@@ -1663,6 +1723,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_markets_paginated(limit=10, cursor=\"abc123\")"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_markets_paginated(limit=10, cursor=\"abc123\")"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchMarketsPaginated({ limit: 10, cursor: \"abc123\" });"
@@ -1741,6 +1806,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchMarketsPaginated({ limit: 10, cursor: \"abc123\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchMarketsPaginated({ limit: 10, cursor: \"abc123\" });"
           }
         ]
       }
@@ -1889,6 +1959,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_events_paginated(limit=10, cursor=\"abc123\")"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_events_paginated(limit=10, cursor=\"abc123\")"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventsPaginated({ limit: 10, cursor: \"abc123\" });"
@@ -1967,6 +2042,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventsPaginated({ limit: 10, cursor: \"abc123\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventsPaginated({ limit: 10, cursor: \"abc123\" });"
           }
         ]
       }
@@ -2818,6 +2898,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_market(market_id=\"12345\")"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_market(market_id=\"12345\")"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchMarket({ marketId: \"12345\" });"
@@ -2896,6 +2981,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchMarket({ marketId: \"12345\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchMarket({ marketId: \"12345\" });"
           }
         ]
       }
@@ -3178,6 +3268,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event(event_id=\"12345\")"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event(event_id=\"12345\")"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEvent({ eventId: \"12345\" });"
@@ -3256,6 +3351,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEvent({ eventId: \"12345\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEvent({ eventId: \"12345\" });"
           }
         ]
       }
@@ -3386,6 +3486,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_event_metadata(event_ticker=\"value\")"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
@@ -3464,6 +3569,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchEventMetadata({ eventTicker: \"value\" });"
           }
         ]
       }
@@ -3634,6 +3744,11 @@
             "source": "import pmxt\nfrom datetime import datetime, timezone\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_ohlcv(\n    \"67890\",\n    resolution=\"1h\",\n    start=datetime(2026, 1, 1, tzinfo=timezone.utc),\n    end=datetime(2026, 1, 31, tzinfo=timezone.utc),\n    limit=10,\n)"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\nfrom datetime import datetime, timezone\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.fetch_ohlcv(\n    \"67890\",\n    resolution=\"1h\",\n    start=datetime(2026, 1, 1, tzinfo=timezone.utc),\n    end=datetime(2026, 1, 31, tzinfo=timezone.utc),\n    limit=10,\n)"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchOHLCV(\n  \"67890\",\n  {\n    resolution: \"1h\",\n    start: new Date(\"2026-01-01T00:00:00Z\"),\n    end: new Date(\"2026-01-31T00:00:00Z\"),\n    limit: 10,\n  },\n);"
@@ -3712,6 +3827,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchOHLCV(\n  \"67890\",\n  {\n    resolution: \"1h\",\n    start: new Date(\"2026-01-01T00:00:00Z\"),\n    end: new Date(\"2026-01-31T00:00:00Z\"),\n    limit: 10,\n  },\n);"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.fetchOHLCV(\n  \"67890\",\n  {\n    resolution: \"1h\",\n    start: new Date(\"2026-01-01T00:00:00Z\"),\n    end: new Date(\"2026-01-31T00:00:00Z\"),\n    limit: 10,\n  },\n);"
           }
         ]
       }
@@ -7119,6 +7239,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\norder_book = pmxt.OrderBook(\n    bids=[pmxt.OrderLevel(price=0.52, size=100)],\n    asks=[pmxt.OrderLevel(price=0.54, size=100)],\n)\nresult = exchange.get_execution_price(order_book, \"buy\", 10)"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\norder_book = pmxt.OrderBook(\n    bids=[pmxt.OrderLevel(price=0.52, size=100)],\n    asks=[pmxt.OrderLevel(price=0.54, size=100)],\n)\nresult = exchange.get_execution_price(order_book, \"buy\", 10)"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst orderBook = {\n  bids: [{ price: 0.52, size: 100 }],\n  asks: [{ price: 0.54, size: 100 }],\n  timestamp: Date.now(),\n};\nconst result = exchange.getExecutionPrice(orderBook, \"buy\", 10);"
@@ -7197,6 +7322,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst orderBook = {\n  bids: [{ price: 0.52, size: 100 }],\n  asks: [{ price: 0.54, size: 100 }],\n  timestamp: Date.now(),\n};\nconst result = exchange.getExecutionPrice(orderBook, \"buy\", 10);"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst orderBook = {\n  bids: [{ price: 0.52, size: 100 }],\n  asks: [{ price: 0.54, size: 100 }],\n  timestamp: Date.now(),\n};\nconst result = exchange.getExecutionPrice(orderBook, \"buy\", 10);"
           }
         ]
       }
@@ -7358,6 +7488,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\norder_book = pmxt.OrderBook(\n    bids=[pmxt.OrderLevel(price=0.52, size=100)],\n    asks=[pmxt.OrderLevel(price=0.54, size=100)],\n)\nresult = exchange.get_execution_price_detailed(order_book, \"buy\", 10)"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\norder_book = pmxt.OrderBook(\n    bids=[pmxt.OrderLevel(price=0.52, size=100)],\n    asks=[pmxt.OrderLevel(price=0.54, size=100)],\n)\nresult = exchange.get_execution_price_detailed(order_book, \"buy\", 10)"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst orderBook = {\n  bids: [{ price: 0.52, size: 100 }],\n  asks: [{ price: 0.54, size: 100 }],\n  timestamp: Date.now(),\n};\nconst result = await exchange.getExecutionPriceDetailed(orderBook, \"buy\", 10);"
@@ -7436,6 +7571,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst orderBook = {\n  bids: [{ price: 0.52, size: 100 }],\n  asks: [{ price: 0.54, size: 100 }],\n  timestamp: Date.now(),\n};\nconst result = await exchange.getExecutionPriceDetailed(orderBook, \"buy\", 10);"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst orderBook = {\n  bids: [{ price: 0.52, size: 100 }],\n  asks: [{ price: 0.54, size: 100 }],\n  timestamp: Date.now(),\n};\nconst result = await exchange.getExecutionPriceDetailed(orderBook, \"buy\", 10);"
           }
         ]
       }
@@ -7602,6 +7742,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.filter_markets()"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.filter_markets()"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.filterMarkets();"
@@ -7680,6 +7825,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.filterMarkets();"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.filterMarkets();"
           }
         ]
       }
@@ -7846,6 +7996,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.filter_events()"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.filter_events()"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.filterEvents();"
@@ -7924,6 +8079,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.filterEvents();"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.filterEvents();"
           }
         ]
       }
@@ -8053,6 +8213,11 @@
             "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Hunch(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.close()"
           },
           {
+            "lang": "python",
+            "label": "Gaduin",
+            "source": "import pmxt\n\n# API key optional — enables faster catalog-backed lookups\nexchange = pmxt.Gaduin(\n    pmxt_api_key=\"YOUR_PMXT_API_KEY\",\n)\nresult = exchange.close()"
+          },
+          {
             "lang": "javascript",
             "label": "Polymarket",
             "source": "import { Polymarket } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Polymarket({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.close();"
@@ -8131,6 +8296,11 @@
             "lang": "javascript",
             "label": "Hunch",
             "source": "import { Hunch } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Hunch({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.close();"
+          },
+          {
+            "lang": "javascript",
+            "label": "Gaduin",
+            "source": "import { Gaduin } from \"pmxtjs\";\n\n// API key optional — enables faster catalog-backed lookups\nconst exchange = new Gaduin({\n  pmxtApiKey: \"YOUR_PMXT_API_KEY\",\n});\nconst result = await exchange.close();"
           }
         ]
       }
@@ -10102,6 +10272,7 @@
             "suibets",
             "rain",
             "hunch",
+            "gaduin",
             "router"
           ]
         },
@@ -12670,6 +12841,23 @@
           "tsName": "privateKey",
           "type": "string",
           "description": "Private key for authentication"
+        }
+      ]
+    },
+    "gaduin": {
+      "className": "Gaduin",
+      "params": [
+        {
+          "name": "pmxt_api_key",
+          "tsName": "pmxtApiKey",
+          "type": "string",
+          "description": "PMXT API key for hosted access"
+        },
+        {
+          "name": "api_key",
+          "tsName": "apiKey",
+          "type": "string",
+          "description": "API key for authentication"
         }
       ]
     },

@@ -40,6 +40,7 @@ const PREFERRED_EXCHANGE_ORDER = [
     'suibets',
     'rain',
     'hunch',
+    'gaduin',
 ];
 
 // kalshi-demo is a demo wrapper around Kalshi, and mock is for local tests.
@@ -49,6 +50,7 @@ const DISPLAY_NAMES = {
     polymarket_us: 'PolymarketUS',
     'gemini-titan': 'GeminiTitan',
     suibets: 'SuiBets',
+    gaduin: 'GADUIN',
 };
 
 function listProductionExchangeSlugs() {
@@ -298,6 +300,9 @@ RAIN_WS_RPC_URL=...
 HUNCH_PRIVATE_KEY=0x...
 HUNCH_WALLET_ADDRESS=0x...
 HUNCH_BASE_URL=...
+
+# GADUIN (read-only API key, required for every REST read)
+GADUIN_API_KEY=pk_live_...
 \`\`\`
 `;
 

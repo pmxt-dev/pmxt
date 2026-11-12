@@ -3730,6 +3730,24 @@ export class Hunch extends Exchange {
 }
 
 /**
+ * GADUIN exchange client.
+ *
+ * GADUIN is a read-only venue for prediction markets on transport outcomes
+ * (flights, trains, ships). Every read needs a GADUIN API key.
+ *
+ * @example
+ * ```typescript
+ * const gaduin = new Gaduin({ apiKey: 'pk_live_...' });
+ * const markets = await gaduin.fetchMarkets({ category: 'FLIGHT' });
+ * ```
+ */
+export class Gaduin extends Exchange {
+    constructor(options: ExchangeOptions = {}) {
+        super("gaduin", options);
+    }
+}
+
+/**
  * Mock exchange client.
  *
  * Offline deterministic exchange for testing and development.

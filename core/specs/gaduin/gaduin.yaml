@@ -1,0 +1,410 @@
+openapi: 3.1.0
+info:
+  title: GADUIN Public Read API
+  version: 1.0.0
+  description: 'Read-only endpoints for browsing prediction markets on real-world transport outcomes. Every request needs a bearer token exchanged from a read-only API key (see /auth.md), limited to 1 request per second and an hourly budget of distinct markets and rows per account; the website admits browsers with a human check instead. The same key reads your own account; the MCP server card describes the read-only MCP tools. Trading and withdrawals happen only on the website.'
+servers:
+  - url: 'https://gaduin.com/api/v1'
+    description: Production
+security:
+  - bearerAuth: []
+paths:
+  /flights/discovery:
+    get:
+      operationId: GetFlightsDiscovery
+      summary: Browse recurring flights with sufficient recent observed history.
+      description: 'Returns up to 100 qualified flight identities per candidate page. Continue with next_cursor even when flights is empty. Cursors retain the observation window and filters. next_after is a stable directory position for starting a new observation window. The cursor expires after one hour. The unfiltered first page interleaves airlines; the pages after it run in airline and flight-number order, so some of its flights appear again there.'
+      parameters:
+        - name: cursor
+          in: query
+          description: Opaque continuation from the previous response; do not combine with after.
+          schema:
+            type: string
+        - name: after
+          in: query
+          description: 'Stable exclusive position, for example BAW:117.'
+          schema:
+            type: string
+            pattern: '^[A-Z]{3}:[1-9][0-9]{0,4}[A-Z]?$'
+        - name: bucket
+          in: query
+          description: Stable sitemap partition.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 63
+        - name: airline
+          in: query
+          description: Verified IATA or ICAO airline code; do not combine with numbers.
+          schema:
+            type: string
+        - name: numbers
+          in: query
+          description: 'Comma-separated flight designators, at most 100; do not combine with airline.'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'Qualified identities with generated_at, as_of and optional next_cursor/next_after.'
+        '400':
+          description: 'Invalid, conflicting or expired pagination/filter parameters.'
+        '401':
+          description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
+        '409':
+          description: Airline code cannot be resolved unambiguously.
+        '429':
+          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
+        '503':
+          description: Discovery is temporarily unavailable; no partial inventory is returned.
+  /markets:
+    get:
+      operationId: GetMarkets
+      summary: List markets.
+      parameters:
+        - name: status
+          in: query
+          description: Filter by status. Omit it to get markets in every status.
+          schema:
+            type: string
+            enum:
+              - DRAFT
+              - OPEN
+              - CLOSED
+              - SETTLED
+              - CANCELLED
+              - DISPUTED
+        - name: category
+          in: query
+          description: Filter by transport category.
+          schema:
+            type: string
+            enum:
+              - FLIGHT
+              - TRAIN
+              - SHIP
+        - name: limit
+          in: query
+          description: 'Page size. Defaults to 100; above 1000 is a 400, not a clamp.'
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: offset
+          in: query
+          description: 'Rows to skip in the sorted result. Capped at 10000. A deeper offset is a 400, not a clamp. Use sort=close_desc to reach the far end of a filter larger than that.'
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+        - name: close_after
+          in: query
+          description: Inclusive RFC3339 floor on close_at. Walk it forward as a keyset cursor to page past the offset ceiling.
+          schema:
+            type: string
+            format: date-time
+        - name: tradable
+          in: query
+          description: 'true keeps only markets that still accept orders now: OPEN, before their trading deadline and not yet decided. Combining it with a status other than OPEN is a 400.'
+          schema:
+            type: boolean
+            default: false
+        - name: sort
+          in: query
+          description: 'Row order. close_asc (the default) is soonest close_at first; close_desc is the same order reversed, so the newest rows are offset 0.'
+          schema:
+            type: string
+            enum:
+              - close_asc
+              - close_desc
+            default: close_asc
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - markets
+                properties:
+                  markets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Market'
+        '401':
+          description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
+        '429':
+          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
+  '/markets/{id}':
+    get:
+      operationId: GetMarket
+      summary: 'Get a single market; a settled market carries settled_on, the rule and times it settled on.'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Market UUID or slug. A retired slug answers 301 to the current one.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - market
+                properties:
+                  market:
+                    $ref: '#/components/schemas/Market'
+        '401':
+          description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
+        '429':
+          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
+  '/markets/{id}/activity':
+    get:
+      operationId: GetMarketActivity
+      summary: 'Recent trades for a market, newest first (anonymous: no trader is named).'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Market UUID.
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Entries to return. Defaults to 50; values above 500 are clamped to 500.
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - entries
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - occurred_at
+                        - outcome_idx
+                        - amount
+                      properties:
+                        occurred_at:
+                          type: string
+                          format: date-time
+                        outcome_idx:
+                          type: integer
+                        amount:
+                          type: string
+                          description: 'Cost paid, USDT decimal string.'
+        '401':
+          description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
+        '429':
+          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
+  '/markets/{id}/price-history':
+    get:
+      operationId: GetMarketPriceHistory
+      summary: Historical price snapshots for a market.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Market UUID.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - points
+                properties:
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - t
+                        - prices
+                      properties:
+                        t:
+                          type: string
+                          format: date-time
+                        prices:
+                          type: array
+                          items:
+                            type: number
+        '401':
+          description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
+        '429':
+          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
+  /markets/config:
+    get:
+      operationId: GetMarketsConfig
+      summary: Trading bounds (min/max trade amount).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  min_trade_amount:
+                    type: string
+                    description: Decimal string; absent when unset.
+                  max_trade_amount:
+                    type: string
+                    description: Decimal string; absent when unset.
+        '401':
+          description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
+        '429':
+          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
+  /healthz:
+    get:
+      operationId: GetHealthz
+      summary: Liveness probe.
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
+        '429':
+          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
+      security: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Exchange a read-only API key at POST /api/v1/auth/token; see /auth.md.
+  schemas:
+    Market:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        kind:
+          type: string
+          enum:
+            - LMSR
+        category:
+          type: string
+          enum:
+            - FLIGHT
+            - TRAIN
+            - SHIP
+        question:
+          type: string
+        rules:
+          type: string
+          description: 'The delay or counting rule the question leaves out, e.g. "Delayed means more than 15 minutes late." Absent when the market has none.'
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - OPEN
+            - CLOSED
+            - SETTLED
+            - CANCELLED
+            - DISPUTED
+        settlement_source:
+          type: string
+        close_at:
+          type: string
+          format: date-time
+        trading_closes_at:
+          type: string
+          format: date-time
+          description: When trades start being refused; never later than close_at.
+        tradable:
+          type: boolean
+          description: 'Whether the order gate admitted an order when this response was built: false once trading stops, even while status is still OPEN.'
+        feed_eligible:
+          type: boolean
+          description: 'Whether the homepage may offer the market: it trades at least 30 more minutes and its journey is not about to settle.'
+        prices:
+          type:
+            - array
+            - 'null'
+          items:
+            type: number
+          description: 'Current price per outcome (0–1), indexed like outcomes. null for CANCELLED and DISPUTED markets.'
+        volume:
+          type: string
+          description: 'USDT, decimal string.'
+        outcomes:
+          type: array
+          items:
+            type: object
+            required:
+              - idx
+              - label
+            properties:
+              idx:
+                type: integer
+              label:
+                type: string
+        settled_outcome_idx:
+          type: integer
+          description: Winning outcome; present once settled.
+        hold:
+          type: object
+          description: 'Present while the market is paused because its scheduled side cannot yet be taken from a source the public can see. It still trades, and ends in a settlement or a full refund.'
+          properties:
+            code:
+              type: string
+              enum:
+                - schedule_not_published
+                - schedule_not_timetabled
+                - planned_berthing_only
+                - under_review
+            reason:
+              type: string
+            since:
+              type: string
+              format: date-time
+        judged_arrival:
+          type: object
+          description: 'Flight markets: the scheduled arrival the outcome is measured against, drawn by the settlement''s own rule; on a settled market, the one its settlement measured against. scheduled_at is present only when status is fixed: awaiting_airport_schedule means the destination airport has not yet published the figure the market is measured against, not_established that its schedule at opening cannot be established, so the market is held and refunded if that persists.'
+          properties:
+            status:
+              type: string
+              enum:
+                - fixed
+                - awaiting_airport_schedule
+                - not_established
+            scheduled_at:
+              type: string
+              format: date-time
+      required:
+        - id
+        - slug
+        - kind
+        - category
+        - question
+        - outcomes
+        - status
+        - close_at
+        - trading_closes_at
+        - prices
+        - volume

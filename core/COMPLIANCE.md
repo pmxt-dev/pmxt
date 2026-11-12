@@ -8,28 +8,28 @@ This document details the feature support and compliance status for each exchang
 
 ## Functions Status
 
-| Category | Function | Polymarket | PolymarketUS | Kalshi | Limitless | Probable | Baozi | Myriad | Opinion | Metaculus | Smarkets | Hyperliquid | GeminiTitan | SuiBets | Rain | Hunch |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Market Data** | `fetchMarkets` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
-|  | `fetchEvents` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
-|  | `fetchMarket` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
-|  | `fetchEvent` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
-| **Public Data** | `fetchOHLCV` | Y | - | Y | Y | Y | Y | Y | Y | - | - | Y | - | - | Y | Y |
-|  | `fetchOrderBook` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y |
-|  | `fetchTrades` | Y | - | Y | Y | Y | Y | Y | - | - | Y | Y | - | - | Y | Y |
-| **Private Data** | `fetchBalance` | Y | Y | Y | Y | Y | Y | Y | - | - | Y | Y | - | - | Y | Y |
-|  | `fetchPositions` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y |
-|  | `fetchMyTrades` | Y | Y | Y | Y | Y | - | Y | Y | - | Y | Y | - | - | Y | - |
-| **Trading** | `createOrder` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y |
-|  | `cancelOrder` | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | - | Y | - |
-|  | `fetchOrder` | Y | Y | Y | Y | Y | Y | - | Y | - | Y | - | - | - | Y | - |
-|  | `fetchOpenOrders` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | - | Y | Y |
-|  | `fetchClosedOrders` | - | - | Y | Y | - | - | - | Y | - | Y | Y | Y | - | - | - |
-|  | `fetchAllOrders` | - | - | Y | Y | - | - | - | Y | - | Y | Y | Y | - | - | - |
-| **Calculations** | `getExecutionPrice` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y |
-|  | `getExecutionPriceDetailed` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y |
-| **Real-time** | `watchOrderBook` | Y | Y | Y | Y | Y | Y | Y | Y | - | - | - | Y | - | Y | Y |
-|  | `watchTrades` | Y | Y | Y | Y | - | - | Y | Y | - | - | - | Y | - | Y | Y |
+| Category | Function | Polymarket | PolymarketUS | Kalshi | Limitless | Probable | Baozi | Myriad | Opinion | Metaculus | Smarkets | Hyperliquid | GeminiTitan | SuiBets | Rain | Hunch | GADUIN |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Market Data** | `fetchMarkets` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+|  | `fetchEvents` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | - |
+|  | `fetchMarket` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y |
+|  | `fetchEvent` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | - |
+| **Public Data** | `fetchOHLCV` | Y | - | Y | Y | Y | Y | Y | Y | - | - | Y | - | - | Y | Y | Y |
+|  | `fetchOrderBook` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y | - |
+|  | `fetchTrades` | Y | - | Y | Y | Y | Y | Y | - | - | Y | Y | - | - | Y | Y | - |
+| **Private Data** | `fetchBalance` | Y | Y | Y | Y | Y | Y | Y | - | - | Y | Y | - | - | Y | Y | - |
+|  | `fetchPositions` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y | - |
+|  | `fetchMyTrades` | Y | Y | Y | Y | Y | - | Y | Y | - | Y | Y | - | - | Y | - | - |
+| **Trading** | `createOrder` | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | - |
+|  | `cancelOrder` | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | - | Y | - | - |
+|  | `fetchOrder` | Y | Y | Y | Y | Y | Y | - | Y | - | Y | - | - | - | Y | - | - |
+|  | `fetchOpenOrders` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | - | Y | Y | - |
+|  | `fetchClosedOrders` | - | - | Y | Y | - | - | - | Y | - | Y | Y | Y | - | - | - | - |
+|  | `fetchAllOrders` | - | - | Y | Y | - | - | - | Y | - | Y | Y | Y | - | - | - | - |
+| **Calculations** | `getExecutionPrice` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y | - |
+|  | `getExecutionPriceDetailed` | Y | Y | Y | Y | Y | Y | Y | Y | - | Y | Y | Y | Y | Y | Y | - |
+| **Real-time** | `watchOrderBook` | Y | Y | Y | Y | Y | Y | Y | Y | - | - | - | Y | - | Y | Y | - |
+|  | `watchTrades` | Y | Y | Y | Y | - | - | Y | Y | - | - | - | Y | - | Y | Y | - |
 
 ## Legend
 - **Y** - Supported
@@ -112,4 +112,7 @@ RAIN_WS_RPC_URL=...
 HUNCH_PRIVATE_KEY=0x...
 HUNCH_WALLET_ADDRESS=0x...
 HUNCH_BASE_URL=...
+
+# GADUIN (read-only API key, required for every REST read)
+GADUIN_API_KEY=pk_live_...
 ```

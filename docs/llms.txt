@@ -1,6 +1,6 @@
 # PMXT
 
-> One API for supported prediction markets. Unified data and hosted catalog search across Polymarket, Kalshi, Limitless, Smarkets, and 12 more venues. Trading where venues expose writes.
+> One API for supported prediction markets. Unified data and hosted catalog search across Polymarket, Kalshi, Limitless, Smarkets, and 13 more venues. Trading where venues expose writes.
 
 Docs: https://pmxt.dev/docs
 API Base: https://api.pmxt.dev

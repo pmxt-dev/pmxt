@@ -95,6 +95,7 @@ describe('LLMS docs generation', () => {
       '| SuiBets | `suibets` |',
       '| Rain | `rain` |',
       '| Hunch | `hunch` |',
+      '| GADUIN | `gaduin` |',
     ];
 
     for (const row of expectedRows) {

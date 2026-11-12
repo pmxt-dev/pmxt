@@ -15,6 +15,7 @@ import { GeminiTitanExchange } from "../exchanges/gemini-titan";
 import { SuiBetsExchange } from "../exchanges/suibets";
 import { RainExchange } from "../exchanges/rain";
 import { HunchExchange } from "../exchanges/hunch";
+import { GaduinExchange } from "../exchanges/gaduin";
 import { MockExchange } from "../exchanges/mock";
 import { Router } from "../router";
 
@@ -176,6 +177,11 @@ export function createExchange(
           (credentials as { walletAddress?: string })?.walletAddress ||
           process.env.HUNCH_WALLET_ADDRESS,
         baseUrl: credentials?.baseUrl || process.env.HUNCH_BASE_URL,
+      });
+    case "gaduin":
+      return new GaduinExchange({
+        apiKey: credentials?.apiKey || process.env.GADUIN_API_KEY,
+        baseUrl: credentials?.baseUrl,
       });
     case "mock":
       return new MockExchange();

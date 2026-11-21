@@ -78,7 +78,7 @@ const order = await exchange.createOrder({
 
 ## Important Notes
 
-- Limitless uses the **Ethereum** network (similar to Polymarket's Polygon setup)
+- Limitless runs on **Base** (chain ID 8453), not Ethereum mainnet or Polygon: fund the wallet with USDC on Base
 - Your private key should start with `0x`
 - Never share your private key or commit it to version control
 - Consider using environment variables for security

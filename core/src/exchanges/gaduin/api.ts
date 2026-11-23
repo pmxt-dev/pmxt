@@ -1,6 +1,6 @@
 /**
  * Auto-generated from core/specs/gaduin/gaduin.yaml
- * Generated at: 2026-11-12T10:11:15.647Z
+ * Generated at: 2026-11-23T11:42:22.000Z
  * Do not edit manually -- run "npm run fetch:openapi" to regenerate.
  */
 export const gaduinApiSpec = {
@@ -104,7 +104,7 @@ export const gaduinApiSpec = {
                         "schema": {
                             "type": "integer",
                             "minimum": 1,
-                            "maximum": 1000,
+                            "maximum": 100,
                             "default": 100
                         }
                     },
@@ -183,7 +183,9 @@ export const gaduinApiSpec = {
                         "in": "query",
                         "schema": {
                             "type": "integer",
-                            "minimum": 1
+                            "minimum": 1,
+                            "maximum": 500,
+                            "default": 50
                         }
                     }
                 ]
@@ -210,13 +212,6 @@ export const gaduinApiSpec = {
             "get": {
                 "operationId": "GetMarketsConfig",
                 "summary": "Trading bounds (min/max trade amount)."
-            }
-        },
-        "/healthz": {
-            "get": {
-                "operationId": "GetHealthz",
-                "summary": "Liveness probe.",
-                "security": []
             }
         }
     },

@@ -2,9 +2,9 @@ openapi: 3.1.0
 info:
   title: GADUIN Public Read API
   version: 1.0.0
-  description: 'Read-only endpoints for browsing prediction markets on real-world transport outcomes. Every request needs a bearer token exchanged from a read-only API key (see /auth.md), limited to 1 request per second and an hourly budget of distinct markets and rows per account; the website admits browsers with a human check instead. The same key reads your own account; the MCP server card describes the read-only MCP tools. Trading and withdrawals happen only on the website.'
+  description: Read-only endpoints for browsing prediction markets on real-world transport outcomes. Every request needs a bearer token exchanged from a read-only API key (see /auth.md), limited to 1 request per second and an hourly budget of distinct markets and rows per account; the website admits browsers with a human check instead. The same key reads your own account; the MCP server card describes the read-only MCP tools. Trading and withdrawals happen only on the website.
 servers:
-  - url: 'https://gaduin.com/api/v1'
+  - url: https://gaduin.com/api/v1
     description: Production
 security:
   - bearerAuth: []
@@ -13,7 +13,7 @@ paths:
     get:
       operationId: GetFlightsDiscovery
       summary: Browse recurring flights with sufficient recent observed history.
-      description: 'Returns up to 100 qualified flight identities per candidate page. Continue with next_cursor even when flights is empty. Cursors retain the observation window and filters. next_after is a stable directory position for starting a new observation window. The cursor expires after one hour. The unfiltered first page interleaves airlines; the pages after it run in airline and flight-number order, so some of its flights appear again there.'
+      description: Returns up to 100 qualified flight identities per candidate page. Continue with next_cursor even when flights is empty. Cursors retain the observation window and filters. next_after is a stable directory position for starting a new observation window. The cursor expires after one hour. The unfiltered first page interleaves airlines; the pages after it run in airline and flight-number order, so some of its flights appear again there.
       parameters:
         - name: cursor
           in: query
@@ -22,10 +22,10 @@ paths:
             type: string
         - name: after
           in: query
-          description: 'Stable exclusive position, for example BAW:117.'
+          description: Stable exclusive position, for example BAW:117.
           schema:
             type: string
-            pattern: '^[A-Z]{3}:[1-9][0-9]{0,4}[A-Z]?$'
+            pattern: ^[A-Z]{3}:[1-9][0-9]{0,4}[A-Z]?$
         - name: bucket
           in: query
           description: Stable sitemap partition.
@@ -40,20 +40,20 @@ paths:
             type: string
         - name: numbers
           in: query
-          description: 'Comma-separated flight designators, at most 100; do not combine with airline.'
+          description: Comma-separated flight designators, at most 100; do not combine with airline.
           schema:
             type: string
       responses:
         '200':
-          description: 'Qualified identities with generated_at, as_of and optional next_cursor/next_after.'
+          description: Qualified identities with generated_at, as_of and optional next_cursor/next_after.
         '400':
-          description: 'Invalid, conflicting or expired pagination/filter parameters.'
+          description: Invalid, conflicting or expired pagination/filter parameters.
         '401':
           description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
         '409':
           description: Airline code cannot be resolved unambiguously.
         '429':
-          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
+          description: Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.
         '503':
           description: Discovery is temporarily unavailable; no partial inventory is returned.
   /markets:
@@ -84,15 +84,15 @@ paths:
               - SHIP
         - name: limit
           in: query
-          description: 'Page size. Defaults to 100; above 1000 is a 400, not a clamp.'
+          description: Page size. Defaults to 100; above 100 is a 400, not a clamp.
           schema:
             type: integer
             minimum: 1
-            maximum: 1000
+            maximum: 100
             default: 100
         - name: offset
           in: query
-          description: 'Rows to skip in the sorted result. Capped at 10000. A deeper offset is a 400, not a clamp. Use sort=close_desc to reach the far end of a filter larger than that.'
+          description: Rows to skip in the sorted result. Capped at 10000. A deeper offset is a 400, not a clamp. Use sort=close_desc to reach the far end of a filter larger than that.
           schema:
             type: integer
             minimum: 0
@@ -111,7 +111,7 @@ paths:
             default: false
         - name: sort
           in: query
-          description: 'Row order. close_asc (the default) is soonest close_at first; close_desc is the same order reversed, so the newest rows are offset 0.'
+          description: Row order. close_asc (the default) is soonest close_at first; close_desc is the same order reversed, so the newest rows are offset 0.
           schema:
             type: string
             enum:
@@ -135,11 +135,11 @@ paths:
         '401':
           description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
         '429':
-          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
-  '/markets/{id}':
+          description: Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.
+  /markets/{id}:
     get:
       operationId: GetMarket
-      summary: 'Get a single market; a settled market carries settled_on, the rule and times it settled on.'
+      summary: Get a single market; a settled market carries settled_on, the rule and times it settled on.
       parameters:
         - name: id
           in: path
@@ -162,8 +162,8 @@ paths:
         '401':
           description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
         '429':
-          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
-  '/markets/{id}/activity':
+          description: Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.
+  /markets/{id}/activity:
     get:
       operationId: GetMarketActivity
       summary: 'Recent trades for a market, newest first (anonymous: no trader is named).'
@@ -177,10 +177,12 @@ paths:
             format: uuid
         - name: limit
           in: query
-          description: Entries to return. Defaults to 50; values above 500 are clamped to 500.
+          description: Entries to return. Defaults to 50; above 500 is a 400, not a clamp.
           schema:
             type: integer
             minimum: 1
+            maximum: 500
+            default: 50
       responses:
         '200':
           description: OK
@@ -207,12 +209,15 @@ paths:
                           type: integer
                         amount:
                           type: string
-                          description: 'Cost paid, USDT decimal string.'
+                          description: Cost paid, USDT decimal string.
+                  truncated:
+                    type: boolean
+                    description: True when the market has older trades than the entries returned.
         '401':
           description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
         '429':
-          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
-  '/markets/{id}/price-history':
+          description: Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.
+  /markets/{id}/price-history:
     get:
       operationId: GetMarketPriceHistory
       summary: Historical price snapshots for a market.
@@ -249,10 +254,17 @@ paths:
                           type: array
                           items:
                             type: number
+                  truncated:
+                    type: boolean
+                    description: 'True when the market has more trades than the window: points cover only the most recent ones.'
+                  starts_at:
+                    type: string
+                    format: date-time
+                    description: When the window starts; set with truncated.
         '401':
           description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
         '429':
-          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
+          description: Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.
   /markets/config:
     get:
       operationId: GetMarketsConfig
@@ -274,19 +286,7 @@ paths:
         '401':
           description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
         '429':
-          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
-  /healthz:
-    get:
-      operationId: GetHealthz
-      summary: Liveness probe.
-      responses:
-        '200':
-          description: OK
-        '401':
-          description: 'No valid credential: {"code":"clearance_required"}. Send a token exchanged from a read-only API key.'
-        '429':
-          description: 'Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.'
-      security: []
+          description: Over the rate limit ({"code":"rate_limited"}) or temporarily blocked ({"code":"scraping_suspected"}); honour Retry-After.
 components:
   securitySchemes:
     bearerAuth:
@@ -317,7 +317,7 @@ components:
           type: string
         rules:
           type: string
-          description: 'The delay or counting rule the question leaves out, e.g. "Delayed means more than 15 minutes late." Absent when the market has none.'
+          description: The delay or counting rule the question leaves out, e.g. "Delayed means more than 15 minutes late." Absent when the market has none.
         status:
           type: string
           enum:
@@ -348,10 +348,10 @@ components:
             - 'null'
           items:
             type: number
-          description: 'Current price per outcome (0–1), indexed like outcomes. null for CANCELLED and DISPUTED markets.'
+          description: Current price per outcome (0–1), indexed like outcomes. null for CANCELLED and DISPUTED markets.
         volume:
           type: string
-          description: 'USDT, decimal string.'
+          description: USDT, decimal string.
         outcomes:
           type: array
           items:
@@ -369,7 +369,7 @@ components:
           description: Winning outcome; present once settled.
         hold:
           type: object
-          description: 'Present while the market is paused because its scheduled side cannot yet be taken from a source the public can see. It still trades, and ends in a settlement or a full refund.'
+          description: Present while the market is paused because its scheduled side cannot yet be taken from a source the public can see. It still trades, and ends in a settlement or a full refund.
           properties:
             code:
               type: string

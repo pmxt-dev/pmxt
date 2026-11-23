@@ -30,6 +30,12 @@ import { BASE_URL } from './utils';
  * (`pk_live_...`) minted at https://gaduin.com/account/ai. Pass `{ apiKey }`;
  * it is exchanged for a short-lived token automatically. API access is
  * read-only: trading happens only on the GADUIN website.
+ *
+ * ## Not covered
+ *
+ * This venue reads the markets API only. GADUIN's transport data (flight
+ * status, airport and rail station boards, ship traffic through chokepoints)
+ * is a separate REST API with its own key: https://gaduin.com/docs/api
  */
 export class GaduinExchange extends PredictionMarketExchange {
     private readonly auth?: GaduinAuth;

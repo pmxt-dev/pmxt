@@ -1,6 +1,6 @@
 # PMXT — Full Documentation
 
-> One API for supported prediction markets. Unified data and hosted catalog search across Polymarket, Kalshi, Limitless, Smarkets, and 12 more venues. Trading where venues expose writes.
+> One API for supported prediction markets. Unified data and hosted catalog search across Polymarket, Kalshi, Limitless, Smarkets, and 13 more venues. Trading where venues expose writes.
 
 Docs: https://pmxt.dev/docs
 API Base: https://api.pmxt.dev
@@ -23,7 +23,7 @@ Source: https://pmxt.dev/docs/introduction
 
 
 PMXT is a unified API for supported prediction-market venues — Polymarket,
-Kalshi, Limitless, Smarkets, and [12 more venues](https://pmxt.dev/docs/concepts/venues). It uses
+Kalshi, Limitless, Smarkets, and [13 more venues](https://pmxt.dev/docs/concepts/venues). It uses
 shared SDK method names and unified response shapes where each venue supports
 the underlying capability.
 
@@ -1007,6 +1007,7 @@ or `new pmxt.Polymarket({})` from the SDKs.
 | SuiBets | `suibets` | `POST /api/suibets/:method` |
 | Rain | `rain` | `POST /api/rain/:method` |
 | Hunch | `hunch` | `POST /api/hunch/:method` |
+| GADUIN | `gaduin` | `POST /api/gaduin/:method` |
 
 
 > **Note:**

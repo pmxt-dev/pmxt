@@ -272,6 +272,7 @@ const defaultExchanges: Record<string, any> = {
   metaculus: null,
   smarkets: null,
   hunch: null,
+  gaduin: null,
   mock: null,
 };
 

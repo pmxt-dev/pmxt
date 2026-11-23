@@ -78,6 +78,8 @@
   <a href="https://rain.one" style="color: inherit; text-decoration: none;"><img src="https://www.rain.one/favicon.png" alt="Rain" width="24" height="24"> <b>Rain</b></a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://www.playhunch.xyz" style="color: inherit; text-decoration: none;"><img src="https://www.playhunch.xyz/favicon.ico" alt="Hunch" width="24" height="24"> <b>Hunch</b></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://gaduin.com" style="color: inherit; text-decoration: none;"><img src="https://gaduin.com/favicon.ico" alt="GADUIN" width="24" height="24"> <b>GADUIN</b></a>
 </p>
 
 [Feature Support & Compliance](core/COMPLIANCE.md).

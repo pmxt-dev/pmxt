@@ -33,6 +33,7 @@ describe('generate-compliance', () => {
       'SuiBets',
       'Rain',
       'Hunch',
+      'GADUIN',
     ];
 
     for (const exchange of expectedExchangeHeaders) {
@@ -54,6 +55,7 @@ describe('generate-compliance', () => {
       'SUIBETS_WALLET_ADDRESS',
       'RAIN_WALLET_ADDRESS',
       'HUNCH_WALLET_ADDRESS',
+      'GADUIN_API_KEY',
     ];
 
     for (const variableName of expectedCredentialVariables) {

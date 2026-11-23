@@ -48,6 +48,7 @@ const VENUE_LABELS = {
     suibets: 'SuiBets',
     rain: 'Rain',
     hunch: 'Hunch',
+    gaduin: 'GADUIN',
 };
 
 const INTERNAL_EXCHANGE_TARGETS = new Set(['mock', 'router']);

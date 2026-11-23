@@ -59,6 +59,12 @@ const SPECS = [
         outFile: path.resolve(__dirname, '../src/exchanges/opinion/api.ts'),
         exportName: 'opinionApiSpec',
     },
+    {
+        name: 'gaduin',
+        localFile: path.resolve(__dirname, '../specs/gaduin/gaduin.yaml'),
+        outFile: path.resolve(__dirname, '../src/exchanges/gaduin/api.ts'),
+        exportName: 'gaduinApiSpec',
+    },
 ];
 
 function fetch(url) {

@@ -20,6 +20,7 @@ export * from './exchanges/gemini-titan';
 export * from './exchanges/suibets';
 export * from './exchanges/rain';
 export * from './exchanges/hunch';
+export * from './exchanges/gaduin';
 export * from './router';
 export * from './feeds';
 export * from './server/app';
@@ -43,6 +44,7 @@ import { GeminiTitanExchange } from './exchanges/gemini-titan';
 import { SuiBetsExchange } from './exchanges/suibets';
 import { RainExchange } from './exchanges/rain';
 import { HunchExchange } from './exchanges/hunch';
+import { GaduinExchange } from './exchanges/gaduin';
 import { Router } from './router';
 
 const pmxt = {
@@ -63,6 +65,7 @@ const pmxt = {
     SuiBets: SuiBetsExchange,
     Rain: RainExchange,
     Hunch: HunchExchange,
+    Gaduin: GaduinExchange,
     Router,
 };
 
@@ -83,5 +86,6 @@ export const GeminiTitan = GeminiTitanExchange;
 export const SuiBets = SuiBetsExchange;
 export const Rain = RainExchange;
 export const Hunch = HunchExchange;
+export const Gaduin = GaduinExchange;
 
 export default pmxt;

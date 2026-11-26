@@ -102,8 +102,8 @@ const TYPE_MAP = {
     PaginatedMarketsResult: { pyType: 'PaginatedMarketsResult', converter: null, pattern: 'paginatedMarkets' },
     PaginatedEventsResult: { pyType: 'PaginatedEventsResult', converter: null, pattern: 'paginatedEvents' },
 
-    AuthNonceResponse: { pyType: 'Dict[str, Any]', converter: null, pattern: 'raw' },
-    AuthLoginResponse: { pyType: 'Dict[str, Any]', converter: null, pattern: 'raw' },
+    AuthNonceResponse: { pyType: 'AuthNonceResponse', converter: null, pattern: 'raw' },
+    AuthLoginResponse: { pyType: 'AuthLoginResponse', converter: null, pattern: 'raw' },
 };
 
 // Parameter names that represent outcome IDs and should accept MarketOutcome.

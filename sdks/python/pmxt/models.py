@@ -545,6 +545,27 @@ class TxPayload(TypedDict):
     value: str
     chainId: int
 
+
+class _AuthNonceRequired(TypedDict):
+    nonce: str
+    messageToSign: str
+
+
+class AuthNonceResponse(_AuthNonceRequired, total=False):
+    """Challenge returned by ``get_auth_nonce`` for the Web3 login flow."""
+    expiresAt: int
+
+
+class _AuthLoginRequired(TypedDict):
+    apiKey: str
+    apiSecret: str
+
+
+class AuthLoginResponse(_AuthLoginRequired, total=False):
+    """Credentials returned by ``login_with_signature``."""
+    passphrase: str
+    expiresAt: int
+
 @dataclass
 class Position:
     """A current position in a market.

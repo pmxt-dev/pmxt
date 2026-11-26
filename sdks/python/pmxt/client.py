@@ -42,6 +42,8 @@ from .models import (
     Order,
     BuiltOrder,
     Position,
+    AuthNonceResponse,
+    AuthLoginResponse,
     Balance,
     ExecutionPriceResult,
     MarketFilterCriteria,
@@ -1306,7 +1308,7 @@ class Exchange(ABC):
 
     # BEGIN GENERATED METHODS
 
-    def get_auth_nonce(self, wallet_address: str) -> Dict[str, Any]:
+    def get_auth_nonce(self, wallet_address: str) -> AuthNonceResponse:
         try:
             args = []
             args.append(wallet_address)
@@ -1326,7 +1328,7 @@ class Exchange(ABC):
         except ApiException as e:
             raise self._parse_api_exception(e) from None
 
-    def login_with_signature(self, wallet_address: str, signature: str, nonce: str) -> Dict[str, Any]:
+    def login_with_signature(self, wallet_address: str, signature: str, nonce: str) -> AuthLoginResponse:
         try:
             args = []
             args.append(wallet_address)

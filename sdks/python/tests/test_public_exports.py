@@ -267,3 +267,17 @@ def test_documented_exchange_only_methods_exist_on_python_client(monkeypatch):
     assert by_id.id == "12345"
     assert isinstance(by_slug, UnifiedEvent)
     assert by_slug.slug == "example-event"
+
+
+def test_auth_response_types_are_public_exports_and_used_by_client():
+    import pmxt
+    from pmxt.client import Exchange
+    from typing import get_type_hints
+
+    assert pmxt.AuthNonceResponse.__required_keys__ == {"nonce", "messageToSign"}
+    assert pmxt.AuthNonceResponse.__optional_keys__ == {"expiresAt"}
+    assert pmxt.AuthLoginResponse.__required_keys__ == {"apiKey", "apiSecret"}
+    assert pmxt.AuthLoginResponse.__optional_keys__ == {"passphrase", "expiresAt"}
+
+    assert get_type_hints(Exchange.get_auth_nonce)["return"] is pmxt.AuthNonceResponse
+    assert get_type_hints(Exchange.login_with_signature)["return"] is pmxt.AuthLoginResponse
